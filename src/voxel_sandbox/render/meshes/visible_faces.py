@@ -105,9 +105,7 @@ def build_visible_face_mesh(
         vertices[:, :, 10] = ao
         vertex_batches.append(vertices.reshape((-1, 11)))
 
-        bases = np.arange(face_count, dtype=np.uint32) * 4 + vertex_offset
-        pattern = np.asarray((0, 1, 2, 0, 2, 3), dtype=np.uint32)
-        index_batches.append((bases[:, None] + pattern[None, :]).reshape(-1))
+        index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
         vertex_offset += face_count * 4
 
     if not vertex_batches:
@@ -116,6 +114,24 @@ def build_visible_face_mesh(
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
+
+
+def build_quad_indices(
+    sky_lights: NDArray[np.float32],
+    block_lights: NDArray[np.float32],
+    ao: NDArray[np.float32],
+    vertex_offset: int,
+) -> NDArray[np.uint32]:
+    face_count = sky_lights.shape[0]
+    bases = np.arange(face_count, dtype=np.uint32) * 4 + vertex_offset
+    indices = np.empty((face_count, 6), dtype=np.uint32)
+    default_pattern = np.asarray((0, 1, 2, 0, 2, 3), dtype=np.uint32)
+    flipped_pattern = np.asarray((0, 1, 3, 1, 2, 3), dtype=np.uint32)
+    brightness = np.maximum(sky_lights, block_lights) * ao
+    flip = brightness[:, 0] + brightness[:, 2] > brightness[:, 1] + brightness[:, 3]
+    indices[:] = bases[:, None] + default_pattern[None, :]
+    indices[flip] = bases[flip, None] + flipped_pattern[None, :]
+    return indices.reshape(-1)
 
 
 def _vertex_lighting(

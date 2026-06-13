@@ -13,7 +13,7 @@ from pyglet.window import key, mouse
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.render.camera import FirstPersonCamera
-from voxel_sandbox.render.input_state import KeyState
+from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
@@ -24,6 +24,7 @@ FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
 
 class GameWindow(pyglet.window.Window):
     def __init__(self, settings: AppSettings, *, visible: bool = True) -> None:
+        configure_layout_independent_game_keys()
         config = pyglet.gl.Config(
             major_version=3,
             minor_version=3,

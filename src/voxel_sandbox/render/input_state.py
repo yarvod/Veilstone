@@ -1,5 +1,26 @@
 from __future__ import annotations
 
+import sys
+
+from pyglet.window import key
+
+
+def configure_layout_independent_game_keys() -> None:
+    """Bind macOS physical letter positions used by gameplay controls."""
+    if sys.platform != "darwin":
+        return
+
+    from pyglet.libs.darwin import quartzkey
+
+    quartzkey.keymap.update(
+        {
+            quartzkey.QZ_w: key.W,
+            quartzkey.QZ_a: key.A,
+            quartzkey.QZ_s: key.S,
+            quartzkey.QZ_d: key.D,
+        }
+    )
+
 
 class KeyState:
     def __init__(self) -> None:
