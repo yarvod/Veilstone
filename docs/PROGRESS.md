@@ -39,9 +39,17 @@ Phase 07 - Lighting MVP: complete and ready for manual testing.
 - [x] Block edits relight and remesh affected loaded chunks.
 - [x] Graphics settings in `config/settings.toml`.
 - [x] Unit coverage for propagation, vertex lighting, AO, and atmosphere.
-- [x] Final gate: 58 tests, Ruff, Pyright, client/server smoke, and lighting/mesher benchmarks.
+- [x] Final gate: 61 tests, Ruff, Pyright, client/server smoke, and lighting/mesher benchmarks.
 - commits: `0edffc4`, `0a17218`, `98bacb8`.
-- tag: `phase-07-complete` after final documentation commit.
+- tag: `phase-07-complete`.
+
+### Phase 07 manual-test fixes
+
+- [x] Clear held movement keys when pausing or losing window focus.
+- [x] Release and restore exclusive mouse capture across window deactivation.
+- [x] Find the nearest spawn column with solid support and clear body/head space.
+- [x] Use block `is_solid` metadata for player collision.
+- commit: `44079e4`.
 
 ## Failed checks
 
