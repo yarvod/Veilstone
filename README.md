@@ -16,10 +16,17 @@ and dedicated server use:
 
 ```bash
 uv run python -m voxel_sandbox --help
-uv run python -m voxel_sandbox client
+uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
 uv run python -m voxel_sandbox server
-uv run python -m voxel_sandbox host
+uv run python -m voxel_sandbox benchmark-mesher
+uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-network
 ```
+
+Singleplayer uses the same server-authoritative simulation planned for multiplayer:
+the game client owns an in-process local server. `Open to LAN` exposes that server to
+other clients instead of launching a separate player-facing mode. The standalone
+`server` command is for dedicated LAN hosting and development.
 
 Quality checks:
 

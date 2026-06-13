@@ -20,14 +20,9 @@ def build_parser() -> argparse.ArgumentParser:
     server.add_argument("--port", type=int, default=25565)
     server.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
 
-    host = subparsers.add_parser("host", help="Start a local server and client")
-    host.add_argument("--world", default="saves/dev_world")
-    host.add_argument("--players", type=int, default=8)
-    host.add_argument("--port", type=int, default=25565)
-    host.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
-
     subparsers.add_parser("benchmark-mesher", help="Run the section meshing benchmark")
     subparsers.add_parser("benchmark-worldgen", help="Run the world generation benchmark")
+    subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
     return parser
 
 

@@ -28,21 +28,14 @@ def run_command(args: argparse.Namespace) -> int:
             port=int(args.port),
             smoke_test=bool(args.smoke_test),
         )
-    if command == "host":
-        from voxel_sandbox.app.main_host import run_host
-
-        return run_host(
-            settings,
-            world=str(args.world),
-            port=int(args.port),
-            players=int(args.players),
-            smoke_test=bool(args.smoke_test),
-        )
     if command == "benchmark-mesher":
         LOGGER.error("Mesher benchmark is not available before Phase 4")
         return 2
     if command == "benchmark-worldgen":
         LOGGER.error("World generation benchmark is not available before Phase 5")
+        return 2
+    if command == "benchmark-network":
+        LOGGER.error("Network benchmark is not available before Phase 13")
         return 2
     raise ValueError(f"Unsupported command: {command}")
 

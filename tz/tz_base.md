@@ -143,9 +143,12 @@
 
 ```bash
 uv sync
-uv run python -m voxel_sandbox client
+uv run python -m voxel_sandbox
+uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
 uv run python -m voxel_sandbox server
-uv run python -m voxel_sandbox host
+uv run python -m voxel_sandbox benchmark-mesher
+uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-network
 uv run pytest
 uv run ruff check .
 uv run ruff format .
@@ -461,27 +464,40 @@ Main Menu
   └── Exit
 ```
 
-Технические entry points остаются для разработки, dedicated server и benchmark-сценариев:
+Этот запуск открывает полное игровое приложение: main menu, settings,
+singleplayer и multiplayer UI. Обычный игрок не должен выбирать между `client`, `server`
+и `host`.
 
-Нужны понятные entry points:
-
-```bash
-python -m voxel_sandbox client
-python -m voxel_sandbox server
-python -m voxel_sandbox host
-python -m voxel_sandbox benchmark-mesher
-python -m voxel_sandbox benchmark-worldgen
-```
-
-`host` должен запускать локальный сервер и клиент в одном процессе или в двух процессах.
-
-Рекомендуемая CLI:
+Технические entry points существуют только для development, testing, dedicated LAN hosting
+и debugging:
 
 ```bash
-voxel client --connect 127.0.0.1:25565
-voxel server --world saves/dev_world --port 25565
-voxel host --world saves/dev_world --players 8
+uv run python -m voxel_sandbox server
+uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
+uv run python -m voxel_sandbox benchmark-mesher
+uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-network
 ```
+
+`server` и `client --connect` не являются primary user experience. Отдельного player-facing
+`host` mode нет: обычный hosting выполняется через `Singleplayer -> Pause Menu -> Open to LAN`.
+
+Обязательная модель запуска и authority:
+
+```text
+Singleplayer:
+  Client -> local in-process authoritative server
+
+Open to LAN:
+  Client -> existing local in-process authoritative server becomes LAN-visible
+  Other clients -> connect to that server over LAN
+
+Dedicated server:
+  Standalone authoritative server process, advanced/developer mode only
+```
+
+Singleplayer и multiplayer обязаны использовать одну game simulation и одни server-side rules.
+Нельзя реализовывать singleplayer как отдельную неавторитарную ветку gameplay-логики.
 
 ---
 
@@ -996,10 +1012,14 @@ saves/
 
 ### 17.1 Modes
 
-- Singleplayer = local server + local client.
-- Host LAN = server + client + LAN discovery.
-- Dedicated LAN server = standalone server process.
-- Client joins by IP.
+- Singleplayer = game client + local in-process authoritative server.
+- Open to LAN = existing singleplayer server becomes LAN-visible and enables LAN discovery.
+- Join LAN World = client selects a discovered server from the Multiplayer menu.
+- Direct Connect = client connects to an explicitly entered address.
+- Dedicated LAN server = standalone advanced/developer server process.
+
+Все режимы используют один server-authoritative simulation pipeline. `Open to LAN` не
+создаёт второй мир и не перезапускает gameplay в другом режиме.
 
 ### 17.2 Authority
 
@@ -1668,7 +1688,8 @@ Checklist:
 - [x] Add CLI entry point.
 - [x] Add logging.
 - [x] Add config loading.
-- [x] Add `client`, `server`, `host` commands.
+- [x] Add primary no-argument game entry point.
+- [x] Keep `server` and `client --connect` as developer/advanced commands.
 - [x] Add dev README.
 - [x] Add architecture decision records folder.
 
@@ -1988,7 +2009,7 @@ Checklist:
 - [ ] Add rate limiting.
 - [ ] Add disconnect/reconnect handling.
 - [ ] Add LAN discovery.
-- [ ] Add host LAN menu.
+- [ ] Add Open to LAN flow in the singleplayer Pause Menu.
 - [ ] Add join LAN menu.
 - [ ] Add nickname selection.
 
@@ -2054,7 +2075,7 @@ Checklist:
 - [x] Main menu.
 - [ ] Create world menu.
 - [ ] Load world menu.
-- [ ] Host LAN menu.
+- [ ] Open to LAN action in the singleplayer Pause Menu.
 - [ ] Join LAN menu.
 - [ ] Settings menu.
 - [ ] Controls menu.
@@ -2293,7 +2314,7 @@ Full game is done when:
 
 - [ ] Client launches from menu.
 - [ ] Singleplayer works.
-- [ ] Host LAN works.
+- [ ] Open to LAN works from a running singleplayer world.
 - [ ] Join LAN works.
 - [ ] Procedural world streams around player.
 - [ ] Player can mine/place blocks.
@@ -2543,10 +2564,10 @@ Codex должен использовать Git как обязательный 
 
 В Phase 1 обязательно:
 
-- [ ] Проверить, есть ли `.git`.
-- [ ] Если `.git` нет — выполнить `git init`.
-- [ ] Создать `.gitignore`.
-- [ ] Добавить в `.gitignore`:
+- [x] Проверить, есть ли `.git`.
+- [x] Если `.git` нет — выполнить `git init`.
+- [x] Создать `.gitignore`.
+- [x] Добавить в `.gitignore`:
   - `.venv/`
   - `.pytest_cache/`
   - `.ruff_cache/`
@@ -2559,7 +2580,7 @@ Codex должен использовать Git как обязательный 
   - local logs
   - generated profiling dumps
   - OS junk files.
-- [ ] Сделать первый коммит с каркасом проекта.
+- [x] Сделать первый phase-коммит с каркасом проекта.
 
 Первый коммит:
 
@@ -2898,15 +2919,19 @@ Checklist item считается завершённым только если:
 
 Start with this exact first task:
 
-> Create the project skeleton for `voxel_sandbox` with Python 3.12+, `pyproject.toml`, Ruff, pytest, pyglet + ModernGL client window, CLI entry points `client`, `server`, `host`, a basic debug overlay showing FPS, and an empty render loop with a movable first-person camera. Do not implement chunks yet. Keep architecture modular according to this document.
+> Create the project skeleton for `voxel_sandbox` with Python 3.12+, `pyproject.toml`, Ruff, pytest,
+> a primary player entry point `uv run python -m voxel_sandbox`, a Main Menu shell, a pyglet +
+> ModernGL client window, developer commands `server` and `client --connect`, a basic debug overlay
+> showing FPS/frame time, and an empty render loop with a movable first-person camera. Do not implement
+> chunks yet. Singleplayer must be designed to run through a local in-process authoritative server.
 
 Acceptance criteria:
 
-- [x] `python -m voxel_sandbox client` opens a window.
+- [x] `uv run python -m voxel_sandbox` opens the game application and Main Menu.
+- [x] Developer command `uv run python -m voxel_sandbox client --connect ...` opens a client window.
 - [x] Mouse look and WASD camera movement work.
 - [x] FPS is displayed.
-- [x] `python -m voxel_sandbox server` starts a placeholder server loop.
-- [x] `python -m voxel_sandbox host` starts placeholder host mode.
+- [x] Developer command `uv run python -m voxel_sandbox server` starts a placeholder server loop.
 - [x] `pytest` passes.
 - [x] `ruff check .` passes.
 - [x] README explains how to run.

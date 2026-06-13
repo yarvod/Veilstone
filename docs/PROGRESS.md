@@ -56,6 +56,8 @@ None recorded.
 ### Completed
 
 - [x] `uv run python -m voxel_sandbox` is the player-facing entry point.
+- [x] Public CLI no longer exposes a separate player-facing `host` mode.
+- [x] Developer CLI retains `server`, `client --connect`, and benchmark commands.
 - [x] Main Menu exposes Singleplayer, Multiplayer, Settings, and Exit.
 - [x] Singleplayer exposes Create World and Load World prototype actions.
 - [x] Multiplayer exposes Join LAN World and Direct Connect placeholders.
@@ -65,6 +67,7 @@ None recorded.
 ### In progress
 
 - [ ] Real world creation/loading, settings controls, and networking remain in their phases.
+- [ ] Singleplayer local authoritative server composition remains for Phase 13.
 
 ### Known bugs
 
