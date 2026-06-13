@@ -1,7 +1,7 @@
 # Next steps
 
-1. `phase-04.item-01`: implement visible-face section meshing.
-2. `phase-04.item-02`: generate a small original texture atlas.
-3. `phase-04.item-03`: upload section VBO/IBO data to ModernGL.
-4. `phase-04.item-04`: render the generated section from the free camera.
-5. `phase-04.item-05`: add meshing benchmark and mesh statistics.
+1. `perf.phase-04.item-01`: reduce visible-face mesher allocations and registry lookups.
+2. `phase-05.item-01`: add deterministic world seed handling.
+3. `phase-05.item-02`: generate a noise-based heightmap and biome sample.
+4. `phase-05.item-03`: generate chunks around the camera in a background worker.
+5. `phase-05.item-04`: add chunk load/unload queues and deterministic tests.

@@ -1752,23 +1752,23 @@ Done when:
 
 Checklist:
 
-- [ ] Implement visible-face mesher.
-- [ ] Generate vertices/indices for chunk section.
-- [ ] Upload mesh to GPU.
-- [ ] Render opaque chunk mesh.
-- [ ] Implement texture atlas.
-- [ ] Add UV mapping.
-- [ ] Render grass/dirt/stone test chunk.
-- [ ] Add frustum culling.
-- [ ] Add mesh cache per chunk section.
-- [ ] Add benchmark for meshing.
+- [x] Implement visible-face mesher.
+- [x] Generate vertices/indices for chunk section.
+- [x] Upload mesh to GPU.
+- [x] Render opaque chunk mesh.
+- [x] Implement texture atlas.
+- [x] Add UV mapping.
+- [x] Render grass/dirt/stone test chunk.
+- [x] Add frustum culling.
+- [x] Add mesh cache per chunk section.
+- [x] Add benchmark for meshing.
 
 Done when:
 
-- [ ] A chunk renders.
-- [ ] Only visible faces are meshed.
-- [ ] Camera can fly around.
-- [ ] Meshing benchmark exists.
+- [x] A chunk renders.
+- [x] Only visible faces are meshed.
+- [x] Camera can fly around.
+- [x] Meshing benchmark exists.
 
 ---
 
@@ -2950,11 +2950,11 @@ After Phase 1 is done:
 
 Acceptance criteria:
 
-- [ ] One chunk section renders.
-- [ ] Only visible faces are generated.
-- [ ] Texture atlas works.
-- [ ] Mesh benchmark prints timings.
-- [ ] Tests pass.
+- [x] One chunk section renders.
+- [x] Only visible faces are generated.
+- [x] Texture atlas works.
+- [x] Mesh benchmark prints timings.
+- [x] Tests pass.
 
 ---
 

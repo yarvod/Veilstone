@@ -59,3 +59,7 @@ Client controls:
 - `tests`: unit, integration, and performance coverage.
 
 Architecture decisions are recorded in `docs/adr`.
+
+Current prototype state: selecting Create World or Load World enters a rendered generated
+`16^3` section with original programmatic block textures. The free camera can fly around
+the section while the overlay reports mesh statistics.

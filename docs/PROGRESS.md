@@ -94,6 +94,38 @@ None recorded.
 
 None recorded.
 
+## Phase 04 - Basic meshing and rendering
+
+### Completed
+
+- [x] Visible-face mesher emits indexed position/UV/normal vertex data.
+  - commit: `6c9da62 phase-04.items-01-02`
+- [x] Programmatically generated original block atlas with stone, dirt, and grass tiles.
+- [x] ModernGL VBO/IBO upload and one draw call for a generated section.
+  - commit: `757a957 phase-04.items-03-07`
+- [x] Section-keyed GPU mesh cache and AABB frustum culling.
+  - commit: `7ff01f2 phase-04.items-08-09`
+- [x] Debug overlay reports faces, triangles, and draw calls.
+- [x] Hidden client smoke renders both the menu and 3D world paths.
+
+### In progress
+
+- [ ] Phase 5 deterministic terrain generation and chunk streaming.
+
+### Failed checks
+
+None recorded.
+
+### Performance notes
+
+Visible-face benchmark for a half-solid `16^3` section: approximately 5.2 ms average,
+1024 faces, and 2048 triangles on the current Apple Silicon development machine.
+This exceeds the 2 ms target and is tracked as optimization debt before broad streaming.
+
+### Known bugs
+
+- Visible-face meshing is correct but currently above its target CPU budget.
+
 ### Performance notes
 
 Voxel storage uses dense NumPy arrays: `uint16` block IDs and `uint8` auxiliary fields.
