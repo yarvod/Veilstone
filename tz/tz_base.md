@@ -1779,21 +1779,21 @@ Checklist:
 - [x] Add deterministic seed system.
 - [x] Add noise-based heightmap.
 - [x] Generate stone/dirt/grass.
-- [ ] Add trees.
-- [ ] Add ores.
-- [ ] Add caves.
+- [x] Add trees.
+- [x] Add ores.
+- [x] Add caves.
 - [x] Add biomes MVP.
-- [ ] Generate chunks around player.
-- [ ] Add background worker for worldgen.
-- [ ] Add chunk loading queue.
-- [ ] Add chunk unloading.
+- [x] Generate chunks around player.
+- [x] Add background worker for worldgen.
+- [x] Add chunk loading queue.
+- [x] Add chunk unloading.
 - [x] Add tests for deterministic generation.
 
 Done when:
 
-- [ ] Player can fly over generated terrain.
+- [x] Player can fly over generated terrain.
 - [x] Same seed creates same world.
-- [ ] Chunks stream around camera.
+- [x] Chunks stream around camera.
 
 ---
 

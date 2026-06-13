@@ -61,5 +61,20 @@ Client controls:
 Architecture decisions are recorded in `docs/adr`.
 
 Current prototype state: selecting Create World or Load World enters a rendered generated
-`16^3` section with original programmatic block textures. The free camera can fly around
-the section while the overlay reports mesh statistics.
+world with original programmatic block textures. Chunks stream around the free camera on
+background workers while the overlay reports loaded, pending, visible, and mesh counts.
+
+## Test Phase 5
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Select `Singleplayer`, then `Create World`.
+2. Fly with `W/A/S/D`, `Space`, and `Shift`; use the mouse to look around.
+3. Watch `Chunks` and `Pending` in the overlay while crossing chunk boundaries.
+4. Confirm terrain includes caves, dusk crystal ore, and veilwood trees.
+5. Press `Escape` to verify the Pause Menu, then choose `Resume`.
+
+The prototype render distance, seed, generation worker count, and upload budget can be
+changed under `[world]` in `config/settings.toml`.

@@ -1,172 +1,71 @@
 # Progress
 
-## Phase 01 - Project skeleton
+## Current phase
 
-### Completed
+Phase 05 - Terrain generation: complete and ready for manual testing.
 
-- [x] Project metadata targets Python 3.13 and uses `uv`.
-- [x] Ruff, pytest, and Pyright are configured.
-- [x] Modular package, settings, logging, and CLI commands are present.
-- [x] Placeholder server and host modes have automated smoke paths.
-- [x] Base project skeleton committed as `3e51c4b phase-01.items-01-03`.
-- [x] Pyglet window creates a ModernGL 3.3 context and clears the frame.
-- [x] Fixed-rate camera movement, mouse look, and FPS/debug overlays are implemented.
-- [x] Client shell committed as `5e0ee3c phase-01.items-04-06`.
-- [x] Client, server, and host smoke paths pass on macOS with OpenGL 4.1 Metal.
-- [x] Phase gate passes: 9 tests, Ruff, Ruff format check, and Pyright.
+## Completed checklist
 
-### Failed checks
+### Phase 01 - Project skeleton
 
-None recorded.
+- [x] Python 3.13 `uv` project, Ruff, pytest, Pyright, logging, config, and CLI.
+- [x] Player-facing no-argument entry point and developer server/client commands.
+- [x] Pyglet window, ModernGL context, camera input, FPS/frame-time overlay.
+- commits: `3e51c4b`, `5e0ee3c`, `e4dc47e`; tag: `phase-01-complete`.
 
-### Performance notes
+### Phase 02 - OpenGL client shell
 
-The empty client shell runs with a fixed 60 Hz update and a variable render loop.
-Meshing performance is not applicable until Phase 4.
+- [x] GLSL loading, compilation, timestamp hot reload, and manual `F5` reload.
+- commit: `39abdea`; tag: `phase-02-complete`.
 
-### Known bugs
+### Phase 03 - Blocks and chunks
 
-None recorded.
+- [x] Immutable block definitions and validated registry.
+- [x] Chunk/section coordinates, negative coordinate conversion, NumPy storage.
+- [x] Dirty flags, revisions, World protocol, and in-memory world access.
+- commits: `a846ccb`, `b93c292`; tag: `phase-03-complete`.
 
-### Next recommended tasks
+### Phase 04 - Basic meshing and rendering
 
-- Start block registry, coordinate types, and chunk storage.
+- [x] Vectorized visible-face meshing with indexed position/UV/normal buffers.
+- [x] Original generated texture atlas, ModernGL VBO/IBO upload, chunk shader.
+- [x] Section mesh cache, frustum culling, and mesh debug statistics.
+- commits: `6c9da62`, `757a957`, `7ff01f2`, `c52faa9`; tag: `phase-04-complete`.
 
-## Phase 02 - OpenGL client shell
+### Phase 05 - Terrain generation
 
-### Completed
+- [x] Stable numeric/text seeds, smooth heightmap, and four MVP biomes.
+- [x] Stone/dirt/grass layers, veilwood trees, dusk crystal ore, and caves.
+- [x] Camera-centered chunk requests and deterministic generation tests.
+- [x] Background worldgen workers, completed upload queue, and chunk unloading.
+- [x] Streamed section rendering and loaded/pending/visible debug statistics.
+- [x] Final gate: 43 tests, Ruff, Pyright, client/server smoke tests, and both benchmarks.
+- commits: `a5ede0a`, `dc6b92f`, `211346b`, `5bb4332`.
+- tag: `phase-05-complete`.
 
-- [x] Shader files load from package resources.
-- [x] GLSL programs compile through the active ModernGL context.
-- [x] Development hot reload checks timestamps and keeps the previous program on failure.
-- [x] `F5` forces a shader reload.
-- [x] Client smoke test compiles the debug shader on macOS OpenGL 4.1 Metal.
-- [x] Shader layer committed as `39abdea phase-02.items-01-03`.
+### UI foundation pulled forward from Phase 17
 
-### In progress
+- [x] Main Menu, Singleplayer/Multiplayer shells, Pause Menu, and Open to LAN placeholder.
+- [x] One player-facing entry point; no separate player-facing `host` command.
+- commits: `27fa351`, `8a46ce0`.
 
-- [ ] Phase 3 block registry and chunk storage.
-
-### Failed checks
-
-None recorded.
-
-## Phase 17 - UI polish and settings (foundation pulled forward)
-
-### Completed
-
-- [x] `uv run python -m voxel_sandbox` is the player-facing entry point.
-- [x] Public CLI no longer exposes a separate player-facing `host` mode.
-- [x] Developer CLI retains `server`, `client --connect`, and benchmark commands.
-- [x] Entry-point contract corrected in `8a46ce0 refactor.phase-17.item-01`.
-- [x] Main Menu exposes Singleplayer, Multiplayer, Settings, and Exit.
-- [x] Singleplayer exposes Create World and Load World prototype actions.
-- [x] Multiplayer exposes Join LAN World and Direct Connect placeholders.
-- [x] Gameplay `Escape` opens a Pause Menu with Open to LAN.
-- [x] Menu transitions are covered by unit tests.
-
-### In progress
-
-- [ ] Real world creation/loading, settings controls, and networking remain in their phases.
-- [ ] Singleplayer local authoritative server composition remains for Phase 13.
-
-### Known bugs
+## Failed checks
 
 None recorded.
 
-## Phase 03 - Blocks and chunks
+## Performance notes
 
-### Completed
+- Visible-face meshing, half-solid `16^3`: approximately 0.24 ms average.
+- Full terrain generation with features: approximately 8.3 ms per chunk.
+- World generation runs outside the render thread; GPU uploads are capped per frame.
+- Voxel storage uses `uint16` block IDs and `uint8` auxiliary NumPy arrays.
 
-- [x] Immutable `BlockDef` and validated read-only `BlockRegistry`.
-  - commit: `a846ccb phase-03.items-01-02`
-- [x] `ChunkCoord`, `SectionCoord`, and negative world coordinate conversion.
-- [x] NumPy-backed `ChunkSection` arrays for blocks, lighting, and metadata.
-- [x] Dirty flags, revision tracking, `Chunk`, `World` protocol, and `InMemoryWorld`.
-  - commit: `b93c292 phase-03.items-03-08`
-- [x] Block registry, coordinate, chunk storage, and world get/set tests.
+## Known bugs
 
-### In progress
+- Section meshing currently treats neighboring sections/chunks as air, producing hidden duplicate
+  boundary faces. Cross-section world views will remove these during later meshing work.
+- Create/Load World currently enters the configured development seed; save selection belongs to Phase 12.
 
-- [ ] Phase 4 visible-face meshing and first rendered section.
+## Next recommended tasks
 
-### Failed checks
-
-None recorded.
-
-## Phase 04 - Basic meshing and rendering
-
-### Completed
-
-- [x] Visible-face mesher emits indexed position/UV/normal vertex data.
-  - commit: `6c9da62 phase-04.items-01-02`
-- [x] Programmatically generated original block atlas with stone, dirt, and grass tiles.
-- [x] ModernGL VBO/IBO upload and one draw call for a generated section.
-  - commit: `757a957 phase-04.items-03-07`
-- [x] Section-keyed GPU mesh cache and AABB frustum culling.
-  - commit: `7ff01f2 phase-04.items-08-09`
-- [x] Debug overlay reports faces, triangles, and draw calls.
-- [x] Hidden client smoke renders both the menu and 3D world paths.
-
-### In progress
-
-- [ ] Phase 5 deterministic terrain generation and chunk streaming.
-
-### Failed checks
-
-None recorded.
-
-## Phase 05 - Terrain generation
-
-### Completed
-
-- [x] Stable numeric and text world seeds.
-- [x] Deterministic smooth heightmap and climate sampling.
-- [x] Four MVP biome identities: Calm Plains, Old Forest, Ash Swamp, Moonlit Highlands.
-- [x] Layered stone, dirt, and grass chunk generation.
-- [x] Deterministic generation tests and 100-chunk benchmark.
-  - commit: `a5ede0a phase-05.items-01-03`
-
-### In progress
-
-- [ ] Trees, ores, caves, background workers, and chunk streaming.
-
-### Failed checks
-
-None recorded.
-
-### Performance notes
-
-World generation benchmark: approximately 1.34 ms per chunk for 100 chunks on the current
-Apple Silicon development machine, before trees, ores, and caves are added.
-
-### Known bugs
-
-None recorded.
-
-### Performance notes
-
-After vectorizing face masks and quad buffer construction with NumPy, the visible-face
-benchmark for a half-solid `16^3` section averages approximately 0.25 ms with 1024 faces
-and 2048 triangles on the current Apple Silicon development machine. The 2 ms target is met.
-
-### Known bugs
-
-None recorded.
-
-### Performance notes
-
-Voxel storage uses dense NumPy arrays: `uint16` block IDs and `uint8` auxiliary fields.
-No Python object is created per voxel.
-
-### Known bugs
-
-None recorded.
-
-### Performance notes
-
-Automatic shader timestamp checks run twice per second and do no source reads when unchanged.
-
-### Known bugs
-
-None recorded.
+Stop after Phase 05 for manual testing. Begin Phase 06 only after the milestone is accepted.
