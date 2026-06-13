@@ -58,6 +58,7 @@ None recorded.
 - [x] `uv run python -m voxel_sandbox` is the player-facing entry point.
 - [x] Public CLI no longer exposes a separate player-facing `host` mode.
 - [x] Developer CLI retains `server`, `client --connect`, and benchmark commands.
+- [x] Entry-point contract corrected in `8a46ce0 refactor.phase-17.item-01`.
 - [x] Main Menu exposes Singleplayer, Multiplayer, Settings, and Exit.
 - [x] Singleplayer exposes Create World and Load World prototype actions.
 - [x] Multiplayer exposes Join LAN World and Direct Connect placeholders.
