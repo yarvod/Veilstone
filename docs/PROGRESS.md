@@ -88,6 +88,8 @@ Phase 10 - Inventory, items, and crafting: complete and ready for manual testing
 - [x] Safe spawn rejects fluid-filled body and head cells.
 - [x] `3` selects a debug water source for placement.
 - [x] Final gate: 73 tests, Ruff, Pyright, client/server smoke, and all core benchmarks.
+- commit: `18d0397`.
+- tag: `phase-09-complete`.
 
 ### Phase 10 - Inventory, items, and crafting
 
@@ -102,6 +104,8 @@ Phase 10 - Inventory, items, and crafting: complete and ready for manual testing
 - [x] Water Vessel item provides the optional bucket-like water-source placement path.
 - [x] Property-based inventory count invariant and drop-to-crafting integration coverage.
 - [x] Final gate: 86 tests, Ruff, Pyright, OpenGL inventory/crafting smoke, and benchmarks.
+- commit: `f8d4feb`.
+- tag: `phase-10-complete`.
 
 ## Failed checks
 
