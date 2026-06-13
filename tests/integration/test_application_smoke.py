@@ -7,13 +7,13 @@ from voxel_sandbox.__main__ import main
 pytestmark = pytest.mark.smoke
 
 
-@pytest.mark.parametrize(
-    "arguments",
-    [
-        ["--smoke-test"],
-        ["server", "--smoke-test"],
-    ],
-    ids=["primary-player-entry", "dedicated-server"],
-)
-def test_application_entry_points_start_and_stop(arguments: list[str]) -> None:
-    assert main(arguments) == 0
+def test_primary_player_entry_starts_and_stops() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    assert main(["--smoke-test"]) == 0
+
+
+def test_dedicated_server_starts_and_stops() -> None:
+    assert main(["server", "--smoke-test"]) == 0

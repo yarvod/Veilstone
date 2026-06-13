@@ -42,6 +42,7 @@ class WorldSettings:
 
 @dataclass(frozen=True, slots=True)
 class GraphicsSettings:
+    greedy_meshing: bool = True
     smooth_lighting: bool = True
     ambient_occlusion: bool = True
     fog: bool = True

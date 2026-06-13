@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections import deque
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -13,8 +11,8 @@ def relight_chunk(chunk: Chunk, registry: BlockRegistry) -> None:
     blocks = _combine_blocks(chunk)
     opaque_lookup, emission_lookup = _block_lookups(registry)
     opaque = opaque_lookup[blocks]
-    sky_light = _direct_skylight(opaque)
-    block_light = _propagate_block_light(blocks, opaque, emission_lookup)
+    sky_light = _propagate_light(_direct_skylight(opaque), opaque)
+    block_light = _propagate_light(emission_lookup[blocks], opaque)
 
     for section_y, section in enumerate(chunk.sections):
         start = section_y * SECTION_SIZE
@@ -47,32 +45,21 @@ def _direct_skylight(opaque: NDArray[np.bool_]) -> NDArray[np.uint8]:
     return sky
 
 
-def _propagate_block_light(
-    blocks: NDArray[np.uint16],
-    opaque: NDArray[np.bool_],
-    emission_lookup: NDArray[np.uint8],
-) -> NDArray[np.uint8]:
-    light = emission_lookup[blocks].copy()
-    queue: deque[tuple[int, int, int]] = deque(
-        (int(x), int(y), int(z)) for x, y, z in np.argwhere(light > 0)
-    )
-    while queue:
-        x, y, z = queue.popleft()
-        next_light = int(light[x, y, z]) - 1
-        if next_light <= 0:
-            continue
-        for nx, ny, nz in (
-            (x + 1, y, z),
-            (x - 1, y, z),
-            (x, y + 1, z),
-            (x, y - 1, z),
-            (x, y, z + 1),
-            (x, y, z - 1),
-        ):
-            if not (0 <= nx < SECTION_SIZE and 0 <= ny < CHUNK_HEIGHT and 0 <= nz < SECTION_SIZE):
-                continue
-            if opaque[nx, ny, nz] or int(light[nx, ny, nz]) >= next_light:
-                continue
-            light[nx, ny, nz] = next_light
-            queue.append((nx, ny, nz))
+def _propagate_light(sources: NDArray[np.uint8], opaque: NDArray[np.bool_]) -> NDArray[np.uint8]:
+    light = sources.copy()
+    blocked = opaque & (sources == 0)
+    for _ in range(15):
+        attenuated = np.where(light > 0, light - 1, 0).astype(np.uint8)
+        neighbors = np.zeros_like(light)
+        neighbors[1:, :, :] = np.maximum(neighbors[1:, :, :], attenuated[:-1, :, :])
+        neighbors[:-1, :, :] = np.maximum(neighbors[:-1, :, :], attenuated[1:, :, :])
+        neighbors[:, 1:, :] = np.maximum(neighbors[:, 1:, :], attenuated[:, :-1, :])
+        neighbors[:, :-1, :] = np.maximum(neighbors[:, :-1, :], attenuated[:, 1:, :])
+        neighbors[:, :, 1:] = np.maximum(neighbors[:, :, 1:], attenuated[:, :, :-1])
+        neighbors[:, :, :-1] = np.maximum(neighbors[:, :, :-1], attenuated[:, :, 1:])
+        updated = np.maximum(sources, neighbors)
+        updated[blocked] = 0
+        if np.array_equal(updated, light):
+            break
+        light = updated
     return light

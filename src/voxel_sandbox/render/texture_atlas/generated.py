@@ -44,9 +44,16 @@ def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
     for name, (tile_x, tile_y) in positions.items():
         x0, y0 = tile_x * tile_size, tile_y * tile_size
         draw.rectangle((x0, y0, x0 + tile_size - 1, y0 + tile_size - 1), fill=colors[name])
-        for offset in range(3, tile_size, 7):
-            shade = (*tuple(max(0, channel - 12) for channel in colors[name][:3]), 255)
-            draw.point((x0 + offset, y0 + (offset * 5) % tile_size), fill=shade)
+        seed = sum((index + 1) * ord(character) for index, character in enumerate(name))
+        for point_y in range(1, tile_size - 1):
+            for point_x in range(1, tile_size - 1):
+                seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
+                offset = int(seed >> 29) - 3
+                shade = (
+                    *tuple(min(255, max(0, channel + offset)) for channel in colors[name][:3]),
+                    255,
+                )
+                draw.point((x0 + point_x, y0 + point_y), fill=shade)
         u0, v0 = tile_x / columns, 1.0 - (tile_y + 1) / rows
         u1, v1 = (tile_x + 1) / columns, 1.0 - tile_y / rows
         inset_u = 0.5 / (tile_size * columns)

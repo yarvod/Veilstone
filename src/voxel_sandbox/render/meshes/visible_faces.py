@@ -8,6 +8,11 @@ from numpy.typing import NDArray
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkSection
 from voxel_sandbox.render.meshes.data import MeshData
+from voxel_sandbox.render.meshes.neighborhood import (
+    HALO_RADIUS,
+    MeshingNeighborhood,
+    as_neighborhood,
+)
 
 Face = tuple[
     tuple[int, int, int],
@@ -28,14 +33,15 @@ UVS: Final = ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0))
 
 
 def build_visible_face_mesh(
-    section: ChunkSection,
+    section: ChunkSection | MeshingNeighborhood,
     registry: BlockRegistry,
     texture_uvs: dict[str, tuple[float, float, float, float]],
     *,
     smooth_lighting: bool = True,
     ambient_occlusion: bool = True,
 ) -> MeshData:
-    blocks = section.blocks
+    neighborhood = as_neighborhood(section)
+    blocks = neighborhood.center_blocks
     max_block_id = max((definition.id for definition in registry), default=0)
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     texture_lookups = {
@@ -49,22 +55,18 @@ def build_visible_face_mesh(
             if texture in texture_uvs:
                 texture_lookups[face][definition.id] = texture_uvs[texture]
 
-    opaque = opaque_lookup[blocks]
-    padded = np.pad(opaque, 1, constant_values=False)
-    padded_sky_light = np.pad(section.sky_light.astype(np.float32) / 15.0, 2, constant_values=0.0)
-    padded_block_light = np.pad(
-        section.block_light.astype(np.float32) / 15.0, 2, constant_values=0.0
-    )
-    padded_opaque = np.pad(opaque, 2, constant_values=False)
+    padded_opaque = opaque_lookup[neighborhood.blocks]
+    padded_sky_light = neighborhood.sky_light.astype(np.float32) / 15.0
+    padded_block_light = neighborhood.block_light.astype(np.float32) / 15.0
     vertex_batches: list[NDArray[np.float32]] = []
     index_batches: list[NDArray[np.uint32]] = []
     vertex_offset = 0
 
     for (dx, dy, dz), corners, normal, texture_face in FACES:
-        neighbor = padded[
-            1 + dx : 1 + dx + SECTION_SIZE,
-            1 + dy : 1 + dy + SECTION_SIZE,
-            1 + dz : 1 + dz + SECTION_SIZE,
+        neighbor = padded_opaque[
+            HALO_RADIUS + dx : HALO_RADIUS + dx + SECTION_SIZE,
+            HALO_RADIUS + dy : HALO_RADIUS + dy + SECTION_SIZE,
+            HALO_RADIUS + dz : HALO_RADIUS + dz + SECTION_SIZE,
         ]
         coordinates = np.argwhere((blocks != 0) & ~neighbor)
         face_count = coordinates.shape[0]
@@ -75,18 +77,7 @@ def build_visible_face_mesh(
         positions = coordinates[:, None, :].astype(np.float32) + corners_array[None, :, :]
         block_ids = blocks[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
         rectangles = texture_lookups[texture_face][block_ids]
-        local_uvs = np.asarray(UVS, dtype=np.float32)
-        uvs = np.empty((face_count, 4, 2), dtype=np.float32)
-        uvs[:, :, 0] = (
-            rectangles[:, 0, None]
-            + (rectangles[:, 2, None] - rectangles[:, 0, None]) * local_uvs[None, :, 0]
-        )
-        uvs[:, :, 1] = (
-            rectangles[:, 1, None]
-            + (rectangles[:, 3, None] - rectangles[:, 1, None]) * local_uvs[None, :, 1]
-        )
-
-        sky_lights, block_lights, ao = _vertex_lighting(
+        sky_lights, block_lights, ao = sample_vertex_lighting(
             coordinates,
             (dx, dy, dz),
             corners,
@@ -96,21 +87,22 @@ def build_visible_face_mesh(
             smooth_lighting=smooth_lighting,
             ambient_occlusion=ambient_occlusion,
         )
-        vertices = np.empty((face_count, 4, 11), dtype=np.float32)
+        vertices = np.empty((face_count, 4, 15), dtype=np.float32)
         vertices[:, :, :3] = positions
-        vertices[:, :, 3:5] = uvs
+        vertices[:, :, 3:5] = np.asarray(UVS, dtype=np.float32)
         vertices[:, :, 5:8] = np.asarray(normal, dtype=np.float32)
         vertices[:, :, 8] = sky_lights
         vertices[:, :, 9] = block_lights
         vertices[:, :, 10] = ao
-        vertex_batches.append(vertices.reshape((-1, 11)))
+        vertices[:, :, 11:15] = rectangles[:, None, :]
+        vertex_batches.append(vertices.reshape((-1, 15)))
 
         index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
         vertex_offset += face_count * 4
 
     if not vertex_batches:
         return MeshData(
-            np.empty((0, 11), dtype=np.float32),
+            np.empty((0, 15), dtype=np.float32),
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
@@ -134,7 +126,7 @@ def build_quad_indices(
     return indices.reshape(-1)
 
 
-def _vertex_lighting(
+def sample_vertex_lighting(
     coordinates: NDArray[np.int64],
     direction: tuple[int, int, int],
     corners: tuple[tuple[int, int, int], ...],
@@ -184,10 +176,10 @@ def _vertex_lighting(
 def _sample_float(
     array: NDArray[np.float32], coordinates: NDArray[np.int64]
 ) -> NDArray[np.float32]:
-    indices = np.clip(coordinates + 2, 0, SECTION_SIZE + 3)
+    indices = coordinates + HALO_RADIUS
     return array[indices[:, 0], indices[:, 1], indices[:, 2]]
 
 
 def _sample_bool(array: NDArray[np.bool_], coordinates: NDArray[np.int64]) -> NDArray[np.bool_]:
-    indices = np.clip(coordinates + 2, 0, SECTION_SIZE + 3)
+    indices = coordinates + HALO_RADIUS
     return array[indices[:, 0], indices[:, 1], indices[:, 2]]

@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import ChunkSection
-from voxel_sandbox.render.meshes import build_visible_face_mesh
+from voxel_sandbox.render.meshes import (
+    MeshingNeighborhood,
+    build_greedy_mesh,
+    build_visible_face_mesh,
+)
+from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.visible_faces import build_quad_indices
 from voxel_sandbox.tools.benchmark_mesher import UVS
 
@@ -19,7 +24,7 @@ def test_single_block_has_six_visible_faces() -> None:
 
     mesh = build_visible_face_mesh(section, create_core_block_registry(), UVS)
 
-    assert mesh.vertices.shape == (24, 11)
+    assert mesh.vertices.shape == (24, 15)
     assert mesh.face_count == 6
     assert mesh.triangle_count == 12
 
@@ -38,7 +43,7 @@ def test_adjacent_blocks_hide_shared_faces() -> None:
 def test_empty_section_produces_empty_arrays() -> None:
     mesh = build_visible_face_mesh(lit_section(), create_core_block_registry(), UVS)
 
-    assert mesh.vertices.shape == (0, 11)
+    assert mesh.vertices.shape == (0, 15)
     assert mesh.indices.size == 0
 
 
@@ -78,3 +83,41 @@ def test_quad_diagonal_follows_vertex_brightness() -> None:
     indices = build_quad_indices(sky, block, ao, vertex_offset=8)
 
     assert indices.tolist() == [8, 9, 11, 9, 10, 11]
+
+
+def test_neighbor_halo_hides_boundary_face_and_supplies_light() -> None:
+    import numpy as np
+
+    blocks = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint16)
+    sky = np.full((HALO_SIZE, HALO_SIZE, HALO_SIZE), 15, dtype=np.uint8)
+    block_light = np.zeros_like(sky)
+    blocks[HALO_RADIUS + 15, HALO_RADIUS + 1, HALO_RADIUS + 1] = 1
+    blocks[HALO_RADIUS + 16, HALO_RADIUS + 1, HALO_RADIUS + 1] = 1
+    neighborhood = MeshingNeighborhood(blocks, sky, block_light)
+
+    mesh = build_visible_face_mesh(neighborhood, create_core_block_registry(), UVS)
+
+    assert mesh.face_count == 5
+    assert mesh.vertices[:, 8].min() == 1.0
+
+
+def test_greedy_meshing_reduces_flat_section_to_six_quads() -> None:
+    import numpy as np
+
+    blocks = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint16)
+    sky = np.full((HALO_SIZE, HALO_SIZE, HALO_SIZE), 15, dtype=np.uint8)
+    block_light = np.zeros_like(sky)
+    blocks[
+        HALO_RADIUS : HALO_RADIUS + 16,
+        HALO_RADIUS : HALO_RADIUS + 8,
+        HALO_RADIUS : HALO_RADIUS + 16,
+    ] = 1
+    neighborhood = MeshingNeighborhood(blocks, sky, block_light)
+
+    visible = build_visible_face_mesh(neighborhood, create_core_block_registry(), UVS)
+    greedy = build_greedy_mesh(neighborhood, create_core_block_registry(), UVS)
+
+    assert visible.triangle_count == 2048
+    assert greedy.face_count == 6
+    assert greedy.triangle_count == 12
+    assert greedy.vertices[:, 3:5].max() == 16.0

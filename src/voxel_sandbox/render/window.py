@@ -57,6 +57,7 @@ class GameWindow(pyglet.window.Window):
             render_distance=settings.world.render_distance,
             generation_workers=settings.world.generation_workers,
             uploads_per_frame=settings.world.chunk_uploads_per_frame,
+            greedy_meshing=settings.graphics.greedy_meshing,
             smooth_lighting=settings.graphics.smooth_lighting,
             ambient_occlusion=settings.graphics.ambient_occlusion,
             fog=settings.graphics.fog,
@@ -181,9 +182,10 @@ class GameWindow(pyglet.window.Window):
             f"Daylight {self.world_renderer.daylight:4.2f}  "
             f"Smooth {self.world_renderer.smooth_lighting}  "
             f"AO {self.world_renderer.ambient_occlusion}  "
-            f"Fog {self.world_renderer.fog_enabled}\n"
+            f"Fog {self.world_renderer.fog_enabled}  "
+            f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
             f"Place {self.world_renderer.registry.by_id(self.place_block_id).name}  "
-            "[1 grass, 2 lantern; F6 smooth, F7 AO, F8 fog]"
+            "[1 grass, 2 lantern; F6 smooth, F7 AO, F8 fog, F9 mesher]"
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
@@ -222,6 +224,9 @@ class GameWindow(pyglet.window.Window):
             return
         if symbol == key.F8:
             self.world_renderer.toggle_fog()
+            return
+        if symbol == key.F9:
+            self.world_renderer.toggle_mesher()
             return
         if symbol == ord("1"):
             self.place_block_id = 3

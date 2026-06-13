@@ -23,6 +23,7 @@ generation_workers = 2
 chunk_uploads_per_frame = 2
 
 [graphics]
+greedy_meshing = true
 smooth_lighting = true
 ambient_occlusion = true
 fog = true

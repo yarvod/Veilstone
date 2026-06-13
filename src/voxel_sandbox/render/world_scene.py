@@ -30,8 +30,14 @@ from voxel_sandbox.render.block_highlight import BlockHighlightRenderer
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.frustum import aabb_intersects_frustum
 from voxel_sandbox.render.math3d import camera_matrix
-from voxel_sandbox.render.meshes import MeshData, build_visible_face_mesh
+from voxel_sandbox.render.meshes import (
+    MeshData,
+    MeshingNeighborhood,
+    build_greedy_mesh,
+    build_visible_face_mesh,
+)
 from voxel_sandbox.render.meshes.gpu_cache import SectionMeshCache
+from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.texture_atlas import create_block_atlas
 
@@ -45,6 +51,7 @@ class DemoWorldRenderer:
         render_distance: int,
         generation_workers: int,
         uploads_per_frame: int,
+        greedy_meshing: bool,
         smooth_lighting: bool,
         ambient_occlusion: bool,
         fog: bool,
@@ -64,6 +71,7 @@ class DemoWorldRenderer:
         self.registry = create_core_block_registry()
         self.atlas_uvs = atlas.uvs
         self.uploads_per_frame = uploads_per_frame
+        self.greedy_meshing = greedy_meshing
         self.smooth_lighting = smooth_lighting
         self.ambient_occlusion = ambient_occlusion
         self.fog_enabled = fog
@@ -146,6 +154,10 @@ class DemoWorldRenderer:
     def toggle_fog(self) -> None:
         self.fog_enabled = not self.fog_enabled
 
+    def toggle_mesher(self) -> None:
+        self.greedy_meshing = not self.greedy_meshing
+        self._remesh_all()
+
     def render(self, camera: FirstPersonCamera, width: int, height: int, fov: float) -> None:
         if self.shader.program is None:
             return
@@ -159,6 +171,7 @@ class DemoWorldRenderer:
             self._remove_chunk(coord)
         for chunk in batch.loaded:
             self._upload_chunk(chunk)
+            self._remesh_horizontal_neighbors(chunk.coord)
 
         camera_uniform = cast("moderngl.Uniform", self.shader.program["camera_matrix"])
         texture_uniform = cast("moderngl.Uniform", self.shader.program["texture_atlas"])
@@ -222,7 +235,7 @@ class DemoWorldRenderer:
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
                 continue
-            mesh = self._build_mesh(section)
+            mesh = self._build_mesh(key, section)
             if mesh.indices.size:
                 self.mesh_cache.upload(key, mesh)
 
@@ -261,18 +274,47 @@ class DemoWorldRenderer:
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
                 continue
-            mesh = self._build_mesh(section)
+            mesh = self._build_mesh(key, section)
             if mesh.indices.size:
                 self.mesh_cache.upload(key, mesh)
 
-    def _build_mesh(self, section: ChunkSection) -> MeshData:
-        return build_visible_face_mesh(
-            section,
+    def _build_mesh(self, key: SectionCoord, section: ChunkSection) -> MeshData:
+        neighborhood = self._build_neighborhood(key)
+        builder = build_greedy_mesh if self.greedy_meshing else build_visible_face_mesh
+        return builder(
+            neighborhood,
             self.registry,
             self.atlas_uvs,
             smooth_lighting=self.smooth_lighting,
             ambient_occlusion=self.ambient_occlusion,
         )
+
+    def _build_neighborhood(self, key: SectionCoord) -> MeshingNeighborhood:
+        blocks = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint16)
+        sky_light = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint8)
+        block_light = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint8)
+        origin_x = key.x * SECTION_SIZE - HALO_RADIUS
+        origin_y = key.y * SECTION_SIZE - HALO_RADIUS
+        origin_z = key.z * SECTION_SIZE - HALO_RADIUS
+        for local_x in range(HALO_SIZE):
+            world_x = origin_x + local_x
+            for local_y in range(HALO_SIZE):
+                world_y = origin_y + local_y
+                for local_z in range(HALO_SIZE):
+                    world_z = origin_z + local_z
+                    blocks[local_x, local_y, local_z] = self.streamer.get_block(
+                        world_x, world_y, world_z
+                    )
+                    sky, block = self.streamer.get_light(world_x, world_y, world_z)
+                    sky_light[local_x, local_y, local_z] = sky
+                    block_light[local_x, local_y, local_z] = block
+        return MeshingNeighborhood(blocks, sky_light, block_light)
+
+    def _remesh_horizontal_neighbors(self, coord: ChunkCoord) -> None:
+        for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            neighbor = self.streamer.get_chunk(ChunkCoord(coord.x + dx, coord.z + dz))
+            if neighbor is not None:
+                self._upload_lit_chunk(neighbor)
 
     def _remesh_all(self) -> None:
         for chunk in self.streamer.loaded_chunks():

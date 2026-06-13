@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import sys
 
-from pyglet.window import key
+
+def macos_game_key_bindings() -> dict[int, int]:
+    return {
+        0x0D: ord("w"),
+        0x00: ord("a"),
+        0x01: ord("s"),
+        0x02: ord("d"),
+    }
 
 
 def configure_layout_independent_game_keys() -> None:
@@ -12,14 +19,7 @@ def configure_layout_independent_game_keys() -> None:
 
     from pyglet.libs.darwin import quartzkey
 
-    quartzkey.keymap.update(
-        {
-            quartzkey.QZ_w: key.W,
-            quartzkey.QZ_a: key.A,
-            quartzkey.QZ_s: key.S,
-            quartzkey.QZ_d: key.D,
-        }
-    )
+    quartzkey.keymap.update(macos_game_key_bindings())
 
 
 class KeyState:

@@ -9,6 +9,7 @@ in vec3 in_normal;
 in float in_sky_light;
 in float in_block_light;
 in float in_ao;
+in vec4 in_atlas_rect;
 
 out vec2 vertex_uv;
 out float vertex_directional;
@@ -16,6 +17,7 @@ out float vertex_sky_light;
 out float vertex_block_light;
 out float vertex_ao;
 out vec3 vertex_world_position;
+out vec4 vertex_atlas_rect;
 
 void main() {
     vec3 sun_direction = normalize(vec3(0.4, 0.8, 0.25));
@@ -24,6 +26,7 @@ void main() {
     vertex_sky_light = in_sky_light;
     vertex_block_light = in_block_light;
     vertex_ao = in_ao;
+    vertex_atlas_rect = in_atlas_rect;
     vertex_world_position = in_position + section_origin;
     gl_Position = camera_matrix * vec4(vertex_world_position, 1.0);
 }

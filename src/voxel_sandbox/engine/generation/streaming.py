@@ -71,6 +71,21 @@ class ChunkStreamer:
             return 0
         return chunk.get_block(local_x, y, local_z)
 
+    def get_light(self, x: int, y: int, z: int) -> tuple[int, int]:
+        if not 0 <= y < CHUNK_HEIGHT:
+            return 0, 0
+        chunk_x, local_x = split_world_axis(x)
+        chunk_z, local_z = split_world_axis(z)
+        chunk = self.get_chunk(ChunkCoord(chunk_x, chunk_z))
+        if chunk is None:
+            return 0, 0
+        section_y, local_y = divmod(y, SECTION_SIZE)
+        section = chunk.sections[section_y]
+        return (
+            int(section.sky_light[local_x, local_y, local_z]),
+            int(section.block_light[local_x, local_y, local_z]),
+        )
+
     def set_block(self, x: int, y: int, z: int, block_id: int) -> bool:
         if not 0 <= y < CHUNK_HEIGHT:
             return False
