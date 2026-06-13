@@ -53,7 +53,7 @@ Runtime settings live in `config/settings.toml`.
 Client controls:
 
 - Arrow keys or `W/S` and `Enter`: navigate menus.
-- `W/A/S/D`: walk.
+- `W/A/S/D`: walk; physical key positions remain usable with a non-English macOS layout.
 - `Space`: jump.
 - Mouse: look around.
 - Left mouse: break the highlighted block.
