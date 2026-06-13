@@ -148,6 +148,7 @@ uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
 uv run python -m voxel_sandbox server
 uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-physics
 uv run python -m voxel_sandbox benchmark-network
 uv run pytest
 uv run ruff check .
@@ -476,6 +477,7 @@ uv run python -m voxel_sandbox server
 uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
 uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-physics
 uv run python -m voxel_sandbox benchmark-network
 ```
 

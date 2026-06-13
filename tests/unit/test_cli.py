@@ -21,5 +21,10 @@ def test_application_smoke_commands(command: str) -> None:
 
 def test_developer_benchmark_commands_are_registered() -> None:
     parser = build_parser()
-    for command in ("benchmark-mesher", "benchmark-worldgen", "benchmark-network"):
+    for command in (
+        "benchmark-mesher",
+        "benchmark-worldgen",
+        "benchmark-physics",
+        "benchmark-network",
+    ):
         assert parser.parse_args([command]).command == command
