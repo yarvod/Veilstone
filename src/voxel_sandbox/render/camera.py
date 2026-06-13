@@ -23,6 +23,16 @@ class FirstPersonCamera:
     def position(self) -> tuple[float, float, float]:
         return self.x, self.y, self.z
 
+    @property
+    def direction(self) -> tuple[float, float, float]:
+        yaw = math.radians(self.yaw_degrees)
+        pitch = math.radians(self.pitch_degrees)
+        return (
+            math.cos(yaw) * math.cos(pitch),
+            math.sin(pitch),
+            math.sin(yaw) * math.cos(pitch),
+        )
+
     def rotate(self, delta_x: float, delta_y: float, sensitivity: float) -> None:
         self.yaw_degrees += delta_x * sensitivity
         self.pitch_degrees = max(
