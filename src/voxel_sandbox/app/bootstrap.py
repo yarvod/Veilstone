@@ -33,8 +33,9 @@ def run_command(args: argparse.Namespace) -> int:
 
         return run_benchmark()
     if command == "benchmark-worldgen":
-        LOGGER.error("World generation benchmark is not available before Phase 5")
-        return 2
+        from voxel_sandbox.tools.benchmark_worldgen import run_benchmark
+
+        return run_benchmark()
     if command == "benchmark-network":
         LOGGER.error("Network benchmark is not available before Phase 13")
         return 2
