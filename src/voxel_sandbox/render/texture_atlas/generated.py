@@ -28,6 +28,7 @@ def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
         "veilwood_leaves": (48, 85, 76, 255),
         "dusk_crystal_ore": (90, 72, 122, 255),
         "gloam_lantern": (226, 154, 72, 255),
+        "water": (46, 105, 157, 180),
     }
     positions = {
         "stone": (0, 0),
@@ -39,6 +40,7 @@ def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
         "veilwood_leaves": (2, 1),
         "dusk_crystal_ore": (3, 1),
         "gloam_lantern": (4, 0),
+        "water": (4, 1),
     }
     uvs: dict[str, tuple[float, float, float, float]] = {}
     for name, (tile_x, tile_y) in positions.items():

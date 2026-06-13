@@ -128,5 +128,19 @@ def create_core_block_registry() -> BlockRegistry:
                 texture_side="gloam_lantern",
                 texture_bottom="gloam_lantern",
             ),
+            BlockDef(
+                8,
+                "water",
+                "Water",
+                Material.FLUID,
+                hardness=0.0,
+                is_solid=False,
+                is_opaque=False,
+                is_transparent=True,
+                is_fluid=True,
+                texture_top="water",
+                texture_side="water",
+                texture_bottom="water",
+            ),
         )
     )

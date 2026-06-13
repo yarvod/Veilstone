@@ -22,7 +22,9 @@ def test_core_registry_reserves_zero_for_air() -> None:
     assert registry.by_key("veilwood_log").id == 4
     assert registry.by_key("dusk_crystal_ore").id == 6
     assert registry.by_key("gloam_lantern").emits_light == 14
-    assert len(registry) == 8
+    assert registry.by_key("water").is_fluid
+    assert not registry.by_key("water").is_solid
+    assert len(registry) == 9
 
 
 def test_registry_rejects_duplicate_ids_and_keys() -> None:

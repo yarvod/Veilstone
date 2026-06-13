@@ -76,14 +76,36 @@ def test_region_snapshot_copies_blocks_and_light_across_chunk_boundary() -> None
         right = streamer.prime(ChunkCoord(0, 0))
         left.set_block(15, 10, 2, 6)
         right.set_block(0, 10, 2, 7)
+        right.set_metadata(0, 10, 2, 6)
         left.sections[0].sky_light[15, 10, 2] = 11
         right.sections[0].block_light[0, 10, 2] = 14
 
-        blocks, sky, block = streamer.snapshot_region((-1, 9, 1), (3, 3, 3))
+        blocks, sky, block, metadata = streamer.snapshot_region((-1, 9, 1), (3, 3, 3))
 
         assert blocks[0, 1, 1] == 6
         assert blocks[1, 1, 1] == 7
         assert sky[0, 1, 1] == 11
         assert block[1, 1, 1] == 14
+        assert metadata[1, 1, 1] == 6
+    finally:
+        streamer.close()
+
+
+def test_streamer_preserves_fluid_level_across_reload() -> None:
+    streamer = ChunkStreamer(
+        TerrainGenerator(WorldSeed.parse("fluid-override")),
+        render_distance=0,
+        workers=1,
+    )
+    try:
+        streamer.prime(ChunkCoord(0, 0))
+        assert streamer.set_fluid(8, 40, 8, 8, 5)
+        assert streamer.get_metadata(8, 40, 8) == 5
+
+        streamer.update(ChunkCoord(4, 0), max_completed=0)
+        streamer.prime(ChunkCoord(0, 0))
+
+        assert streamer.get_block(8, 40, 8) == 8
+        assert streamer.get_metadata(8, 40, 8) == 5
     finally:
         streamer.close()

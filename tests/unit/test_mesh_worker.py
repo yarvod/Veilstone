@@ -43,5 +43,6 @@ def test_mesh_worker_builds_section_off_thread(
         assert len(completed) == 1
         assert completed[0].key == key
         assert completed[0].mesh.triangle_count < 2048
+        assert completed[0].transparent_mesh.indices.size == 0
     finally:
         worker.close()

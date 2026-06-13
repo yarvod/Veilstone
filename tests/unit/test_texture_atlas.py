@@ -19,6 +19,7 @@ def test_generated_atlas_contains_core_textures() -> None:
         "veilwood_leaves",
         "dusk_crystal_ore",
         "gloam_lantern",
+        "water",
     }
     assert all(0.0 <= coordinate <= 1.0 for uv in atlas.uvs.values() for coordinate in uv)
     assert repeated.pixels == atlas.pixels

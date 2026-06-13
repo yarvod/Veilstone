@@ -1899,21 +1899,21 @@ Done when:
 
 Checklist:
 
-- [ ] Add water block.
-- [ ] Add transparent render pass.
-- [ ] Add water shader.
-- [ ] Add animated UV/waves.
-- [ ] Add underwater fog.
-- [ ] Add fluid levels.
-- [ ] Add simple fluid propagation.
+- [x] Add water block.
+- [x] Add transparent render pass.
+- [x] Add water shader.
+- [x] Add animated UV/waves.
+- [x] Add underwater fog.
+- [x] Add fluid levels.
+- [x] Add simple fluid propagation.
 - [ ] Add bucket-like item optional.
-- [ ] Add tests for fluid propagation.
+- [x] Add tests for fluid propagation.
 
 Done when:
 
-- [ ] Water renders separately.
-- [ ] Water is transparent.
-- [ ] Water can flow in simple cases.
+- [x] Water renders separately.
+- [x] Water is transparent.
+- [x] Water can flow in simple cases.
 
 ---
 

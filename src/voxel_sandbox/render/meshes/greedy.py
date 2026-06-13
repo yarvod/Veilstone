@@ -31,12 +31,14 @@ def build_greedy_mesh(
     blocks = neighborhood.center_blocks
     max_block_id = max((definition.id for definition in registry), default=0)
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
+    fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     texture_lookups = {
         face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
         for face in ("top", "side", "bottom")
     }
     for definition in registry:
         opaque_lookup[definition.id] = definition.is_opaque
+        fluid_lookup[definition.id] = definition.is_fluid
         for face in texture_lookups:
             texture = getattr(definition, f"texture_{face}")
             if texture in texture_uvs:
@@ -56,7 +58,7 @@ def build_greedy_mesh(
             HALO_RADIUS + dy : HALO_RADIUS + dy + SECTION_SIZE,
             HALO_RADIUS + dz : HALO_RADIUS + dz + SECTION_SIZE,
         ]
-        coordinates = np.argwhere((blocks != 0) & ~neighbor)
+        coordinates = np.argwhere((blocks != 0) & ~fluid_lookup[blocks] & ~neighbor)
         if coordinates.size == 0:
             continue
         sky, block_light, ao = sample_vertex_lighting(

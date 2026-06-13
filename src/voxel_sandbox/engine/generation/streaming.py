@@ -57,6 +57,7 @@ class ChunkStreamer:
         self._pending: dict[ChunkCoord, Future[Chunk]] = {}
         self._desired: set[ChunkCoord] = set()
         self._overrides: dict[tuple[int, int, int], int] = {}
+        self._metadata_overrides: dict[tuple[int, int, int], int] = {}
 
     @property
     def loaded_count(self) -> int:
@@ -105,14 +106,31 @@ class ChunkStreamer:
             int(section.block_light[local_x, local_y, local_z]),
         )
 
+    def get_metadata(self, x: int, y: int, z: int) -> int:
+        if not 0 <= y < CHUNK_HEIGHT:
+            return 0
+        chunk_x, local_x = split_world_axis(x)
+        chunk_z, local_z = split_world_axis(z)
+        chunk = self.get_chunk(ChunkCoord(chunk_x, chunk_z))
+        if chunk is None:
+            return 0
+        section_y, local_y = divmod(y, SECTION_SIZE)
+        return int(chunk.sections[section_y].metadata[local_x, local_y, local_z])
+
     def snapshot_region(
         self,
         origin: tuple[int, int, int],
         shape: tuple[int, int, int],
-    ) -> tuple[NDArray[np.uint16], NDArray[np.uint8], NDArray[np.uint8]]:
+    ) -> tuple[
+        NDArray[np.uint16],
+        NDArray[np.uint8],
+        NDArray[np.uint8],
+        NDArray[np.uint8],
+    ]:
         blocks = np.zeros(shape, dtype=np.uint16)
         sky_light = np.zeros(shape, dtype=np.uint8)
         block_light = np.zeros(shape, dtype=np.uint8)
+        metadata = np.zeros(shape, dtype=np.uint8)
         end_x = origin[0] + shape[0]
         end_y = origin[1] + shape[1]
         end_z = origin[2] + shape[2]
@@ -150,7 +168,8 @@ class ChunkStreamer:
                     blocks[target] = section.blocks[source]
                     sky_light[target] = section.sky_light[source]
                     block_light[target] = section.block_light[source]
-        return blocks, sky_light, block_light
+                    metadata[target] = section.metadata[source]
+        return blocks, sky_light, block_light, metadata
 
     def set_block(self, x: int, y: int, z: int, block_id: int) -> bool:
         if not 0 <= y < CHUNK_HEIGHT:
@@ -163,6 +182,22 @@ class ChunkStreamer:
         changed = chunk.set_block(local_x, y, local_z, block_id)
         if changed:
             self._overrides[(x, y, z)] = block_id
+            self._metadata_overrides.pop((x, y, z), None)
+        return changed
+
+    def set_fluid(self, x: int, y: int, z: int, block_id: int, level: int) -> bool:
+        if not 1 <= level <= 8 or not 0 <= y < CHUNK_HEIGHT:
+            return False
+        chunk_x, local_x = split_world_axis(x)
+        chunk_z, local_z = split_world_axis(z)
+        chunk = self.get_chunk(ChunkCoord(chunk_x, chunk_z))
+        if chunk is None:
+            return False
+        changed = chunk.set_block(local_x, y, local_z, block_id)
+        changed = chunk.set_metadata(local_x, y, local_z, level) or changed
+        if changed:
+            self._overrides[(x, y, z)] = block_id
+            self._metadata_overrides[(x, y, z)] = level
         return changed
 
     def update(self, center: ChunkCoord, *, max_completed: int) -> StreamBatch:
@@ -206,6 +241,7 @@ class ChunkStreamer:
         self._pending.clear()
         self._loaded.clear()
         self._overrides.clear()
+        self._metadata_overrides.clear()
 
     def _desired_coords(self, center: ChunkCoord) -> set[ChunkCoord]:
         radius = self.render_distance
@@ -221,6 +257,9 @@ class ChunkStreamer:
         for (x, y, z), block_id in self._overrides.items():
             if min_x <= x < min_x + SECTION_SIZE and min_z <= z < min_z + SECTION_SIZE:
                 chunk.set_block(x - min_x, y, z - min_z, block_id)
+                metadata = self._metadata_overrides.get((x, y, z))
+                if metadata is not None:
+                    chunk.set_metadata(x - min_x, y, z - min_z, metadata)
 
     def _generate_chunk(self, coord: ChunkCoord) -> Chunk:
         chunk = self.generator.generate_chunk(coord)

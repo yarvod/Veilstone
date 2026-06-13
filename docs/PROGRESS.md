@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 08 - Greedy meshing: complete and ready for manual testing.
+Phase 09 - Water: complete and ready for manual testing.
 
 ## Completed checklist
 
@@ -76,6 +76,19 @@ Phase 08 - Greedy meshing: complete and ready for manual testing.
 - [x] Frame streaming benchmark: approximately `0.73 ms` average, `1.97 ms` p95, and
   `4.72 ms` maximum render integration time while loading 25 chunks.
 
+### Phase 09 - Water
+
+- [x] Water block and generated lakes below world water level.
+- [x] Water excluded from opaque meshes and rendered in a back-to-front transparent pass.
+- [x] Dedicated animated water shader with subtle surface waves and UV drift.
+- [x] Fluid metadata levels control rendered surface height.
+- [x] Deterministic downward and horizontal propagation without same-tick cascading.
+- [x] Underwater fog switches to a short blue visibility range.
+- [x] Water sources persist through session-local chunk unload/reload.
+- [x] Safe spawn rejects fluid-filled body and head cells.
+- [x] `3` selects a debug water source for placement.
+- [x] Final gate: 73 tests, Ruff, Pyright, client/server smoke, and all core benchmarks.
+
 ## Failed checks
 
 None recorded.
@@ -83,20 +96,23 @@ None recorded.
 ## Performance notes
 
 - Player physics benchmark, 20,000 ticks: approximately 3.9 microseconds per tick.
-- Full featured terrain generation remains approximately 8.5 ms per chunk off-thread.
+- Full featured terrain generation with lakes remains approximately 9.86 ms per chunk off-thread.
 - Lit visible-face meshing with smooth light and AO is approximately 1.39 ms per section.
 - Greedy meshing is approximately 2.46 ms and reduces the flat benchmark from 2048 to 12
   triangles.
 - Full `16x64x16` chunk relighting with four sources is approximately 1.54 ms.
 - Vectorized `18^3` section halo snapshot is approximately 0.02 ms.
+- Streaming with opaque and water meshes remains approximately `0.84 ms` average,
+  `1.64 ms` p95, and `9.93 ms` maximum after process-pool warmup.
 
 ## Known bugs
 
 - Block edits persist only for the running session; disk persistence belongs to Phase 12.
 - Emissive block-light propagation does not yet transfer energy across chunk boundaries;
   mesh halo sampling itself does cross loaded section/chunk boundaries.
-- Placement has only two debug selections because inventory/hotbar arrives in Phase 10.
+- Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
+- Water has a debug placement key; bucket behavior belongs to the Phase 10 item system.
 
 ## Next recommended tasks
 
-Stop after Phase 08 for manual testing. Begin Phase 09 only after acceptance.
+Test Phase 09 water, then continue with Phase 10 inventory, items, and crafting.

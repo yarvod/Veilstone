@@ -24,6 +24,10 @@ class Chunk:
         section, local_y = self._split_y(y)
         return self.sections[section].set_block(x, local_y, z, block_id)
 
+    def set_metadata(self, x: int, y: int, z: int, value: int) -> bool:
+        section, local_y = self._split_y(y)
+        return self.sections[section].set_metadata(x, local_y, z, value)
+
     @staticmethod
     def _split_y(y: int) -> tuple[int, int]:
         if not 0 <= y < CHUNK_HEIGHT:

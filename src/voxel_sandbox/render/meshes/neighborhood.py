@@ -17,6 +17,7 @@ class MeshingNeighborhood:
     blocks: NDArray[np.uint16]
     sky_light: NDArray[np.uint8]
     block_light: NDArray[np.uint8]
+    metadata: NDArray[np.uint8] | None = None
 
     @classmethod
     def from_section(cls, section: ChunkSection) -> MeshingNeighborhood:
@@ -25,11 +26,18 @@ class MeshingNeighborhood:
             np.pad(section.blocks, padding),
             np.pad(section.sky_light, padding),
             np.pad(section.block_light, padding),
+            np.pad(section.metadata, padding),
         )
 
     @property
     def center_blocks(self) -> NDArray[np.uint16]:
         return self.blocks[CENTER, CENTER, CENTER]
+
+    @property
+    def center_metadata(self) -> NDArray[np.uint8]:
+        if self.metadata is None:
+            return np.zeros_like(self.center_blocks, dtype=np.uint8)
+        return self.metadata[CENTER, CENTER, CENTER]
 
 
 def as_neighborhood(source: ChunkSection | MeshingNeighborhood) -> MeshingNeighborhood:

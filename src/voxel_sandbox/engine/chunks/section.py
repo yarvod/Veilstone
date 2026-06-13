@@ -38,7 +38,19 @@ class ChunkSection:
         if int(self.blocks[x, y, z]) == block_id:
             return False
         self.blocks[x, y, z] = block_id
+        self.metadata[x, y, z] = 0
         self.dirty |= DirtyFlag.MESH | DirtyFlag.LIGHTING | DirtyFlag.SAVE
+        self.revision += 1
+        return True
+
+    def set_metadata(self, x: int, y: int, z: int, value: int) -> bool:
+        self._validate_local(x, y, z)
+        if not 0 <= value <= 255:
+            raise ValueError("Block metadata must fit into uint8")
+        if int(self.metadata[x, y, z]) == value:
+            return False
+        self.metadata[x, y, z] = value
+        self.dirty |= DirtyFlag.MESH | DirtyFlag.SAVE
         self.revision += 1
         return True
 

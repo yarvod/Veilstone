@@ -17,6 +17,8 @@ class Biome(Enum):
 
 
 class TerrainGenerator:
+    WATER_LEVEL = 32
+
     def __init__(self, seed: WorldSeed) -> None:
         self.seed = seed
 
@@ -50,6 +52,15 @@ class TerrainGenerator:
                     chunk, local_x, local_z, stone_end, height - 1, 2, touched_sections
                 )
                 self._fill_column(chunk, local_x, local_z, height - 1, height, 3, touched_sections)
+                if height < self.WATER_LEVEL:
+                    self._fill_water_column(
+                        chunk,
+                        local_x,
+                        local_z,
+                        height,
+                        self.WATER_LEVEL,
+                        touched_sections,
+                    )
         self._carve_caves(chunk, coord, touched_sections)
         self._place_ores(chunk, coord, touched_sections)
         self._place_trees(chunk, coord, touched_sections)
@@ -107,6 +118,8 @@ class TerrainGenerator:
         for world_x in range(min_x - 2, min_x + SECTION_SIZE + 2):
             for world_z in range(min_z - 2, min_z + SECTION_SIZE + 2):
                 biome = self.biome_at(world_x, world_z)
+                if self.height_at(world_x, world_z) < self.WATER_LEVEL:
+                    continue
                 threshold = 0.982 if biome is Biome.OLD_FOREST else 0.994
                 if biome is Biome.ASH_SWAMP:
                     threshold = 0.989
@@ -156,6 +169,22 @@ class TerrainGenerator:
             return
         section.blocks[local_x, local_y, local_z] = block_id
         touched_sections.add(section_index)
+
+    @staticmethod
+    def _fill_water_column(
+        chunk: Chunk,
+        x: int,
+        z: int,
+        start_y: int,
+        end_y: int,
+        touched_sections: set[int],
+    ) -> None:
+        for y in range(start_y, end_y):
+            section_index, local_y = divmod(y, SECTION_SIZE)
+            section = chunk.sections[section_index]
+            section.blocks[x, local_y, z] = 8
+            section.metadata[x, local_y, z] = 8
+            touched_sections.add(section_index)
 
     @staticmethod
     def _fill_column(

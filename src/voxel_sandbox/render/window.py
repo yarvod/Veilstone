@@ -190,7 +190,7 @@ class GameWindow(pyglet.window.Window):
             f"Fog {self.world_renderer.fog_enabled}  "
             f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
             f"Place {self.world_renderer.registry.by_id(self.place_block_id).name}  "
-            "[1 grass, 2 lantern; F6 smooth, F7 AO, F8 fog, F9 mesher]"
+            "[1 grass, 2 lantern, 3 water; F6 smooth, F7 AO, F8 fog, F9 mesher]"
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
@@ -238,6 +238,9 @@ class GameWindow(pyglet.window.Window):
             return
         if symbol == ord("2"):
             self.place_block_id = 7
+            return
+        if symbol == ord("3"):
+            self.place_block_id = 8
             return
         self.key_state.press(symbol)
 

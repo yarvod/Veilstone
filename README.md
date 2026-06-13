@@ -61,7 +61,7 @@ Client controls:
 - `Space`: jump.
 - Mouse: look around.
 - Left mouse: break the highlighted block.
-- `1` / `2`: select grass or a Gloam Lantern for placement.
+- `1` / `2` / `3`: select grass, a Gloam Lantern, or a water source for placement.
 - Right mouse: place the selected block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - `F5`: force shader reload.
@@ -100,6 +100,18 @@ uv run python -m voxel_sandbox
 
 The prototype render distance, seed, generation worker count, and upload budget can be
 changed under `[world]` in `config/settings.toml`.
+
+## Test Phase 9
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Select `Singleplayer -> Create World` and locate a generated lake below elevation 32.
+2. Inspect the animated transparent surface and shore geometry from above and below water.
+3. Press `3`, then place water over a ledge and verify downward then sideways flow.
+4. Enter water and verify the view changes to short-range blue underwater fog.
+5. Cross chunk boundaries near water and watch the frame-time overlay for streaming spikes.
 
 ## Test Phase 6
 

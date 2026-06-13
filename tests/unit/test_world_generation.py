@@ -46,3 +46,4 @@ def test_generation_adds_caves_ores_and_trees_across_sample() -> None:
     assert 4 in block_ids
     assert 5 in block_ids
     assert 6 in block_ids
+    assert 8 in block_ids

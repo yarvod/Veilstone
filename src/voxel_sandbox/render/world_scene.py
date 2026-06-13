@@ -17,6 +17,7 @@ from voxel_sandbox.engine.chunks import (
     ChunkSection,
     SectionCoord,
 )
+from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
 from voxel_sandbox.engine.generation import (
     ChunkStreamer,
     TerrainGenerator,
@@ -35,8 +36,9 @@ from voxel_sandbox.render.meshes import (
     MeshingNeighborhood,
     build_greedy_mesh,
     build_visible_face_mesh,
+    build_water_mesh,
 )
-from voxel_sandbox.render.meshes.gpu_cache import SectionMeshCache
+from voxel_sandbox.render.meshes.gpu_cache import GpuSectionMesh, SectionMeshCache
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
@@ -69,6 +71,7 @@ class DemoWorldRenderer:
         self.shader = ShaderProgram(
             context, ShaderFiles.from_directory(shader_root, "chunk_opaque")
         )
+        self.water_shader = ShaderProgram(context, ShaderFiles.from_directory(shader_root, "water"))
         atlas = create_block_atlas()
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
@@ -85,6 +88,9 @@ class DemoWorldRenderer:
         self.fog_end = fog_end
         self.day_cycle_seconds = max(day_cycle_seconds, 1.0)
         self.time_of_day = 0.25
+        self.animation_time = 0.0
+        self._fluid_accumulator = 0.0
+        self._fluid_chunk_cursor = 0
         self.generator = TerrainGenerator(WorldSeed.parse(seed))
         self.streamer = ChunkStreamer(
             self.generator,
@@ -93,9 +99,10 @@ class DemoWorldRenderer:
             backend=cast(Literal["thread", "process"], generation_backend),
             prepare_lighting=True,
         )
-        if self.shader.program is None:
-            raise RuntimeError("Chunk shader failed to compile")
+        if self.shader.program is None or self.water_shader.program is None:
+            raise RuntimeError("World shaders failed to compile")
         self.mesh_cache = SectionMeshCache(context, self.shader.program)
+        self.water_mesh_cache = SectionMeshCache(context, self.water_shader.program)
         self.mesh_worker = SectionMeshWorker(
             self.registry,
             self.atlas_uvs,
@@ -123,7 +130,9 @@ class DemoWorldRenderer:
         return find_safe_spawn(
             self.get_block,
             self.generator.height_at,
-            lambda block_id: self.registry.by_id(block_id).is_solid,
+            lambda block_id: (
+                self.registry.by_id(block_id).is_solid or self.registry.by_id(block_id).is_fluid
+            ),
         )
 
     @property
@@ -153,13 +162,30 @@ class DemoWorldRenderer:
         return voxel_raycast(self.get_block, origin, direction, max_distance)
 
     def set_block(self, block: tuple[int, int, int], block_id: int) -> bool:
-        if not self.streamer.set_block(*block, block_id):
+        if block_id == WATER_BLOCK_ID:
+            changed = self.streamer.set_fluid(*block, block_id, FLUID_MAX_LEVEL)
+        else:
+            changed = self.streamer.set_block(*block, block_id)
+        if not changed:
             return False
         self._remesh_around(block)
         return True
 
     def update(self, delta_time: float) -> None:
         self.time_of_day = (self.time_of_day + delta_time / self.day_cycle_seconds) % 1.0
+        self.animation_time += delta_time
+        self._fluid_accumulator += delta_time
+        if self._fluid_accumulator < 0.2:
+            return
+        self._fluid_accumulator %= 0.2
+        chunks = self.streamer.loaded_chunks()
+        if not chunks:
+            return
+        chunk = chunks[self._fluid_chunk_cursor % len(chunks)]
+        self._fluid_chunk_cursor += 1
+        if simulate_water_step(chunk).changed:
+            relight_chunk(chunk, self.registry)
+            self._schedule_chunk(chunk)
 
     def toggle_smooth_lighting(self) -> None:
         self.smooth_lighting = not self.smooth_lighting
@@ -197,6 +223,10 @@ class DemoWorldRenderer:
                 self.mesh_cache.upload(completed.key, completed.mesh)
             else:
                 self.mesh_cache.remove(completed.key)
+            if completed.transparent_mesh.indices.size:
+                self.water_mesh_cache.upload(completed.key, completed.transparent_mesh)
+            else:
+                self.water_mesh_cache.remove(completed.key)
 
         camera_uniform = cast("moderngl.Uniform", self.shader.program["camera_matrix"])
         texture_uniform = cast("moderngl.Uniform", self.shader.program["texture_atlas"])
@@ -217,9 +247,19 @@ class DemoWorldRenderer:
             0.62 + 0.38 * self.daylight,
             0.78 + 0.22 * self.daylight,
         )
-        fog_color_uniform.value = self.clear_color[:3]
-        fog_start_uniform.value = self.fog_start
-        fog_end_uniform.value = self.fog_end
+        underwater = self.registry.by_id(
+            self.get_block(
+                int(np.floor(camera.x)),
+                int(np.floor(camera.y)),
+                int(np.floor(camera.z)),
+            )
+        ).is_fluid
+        active_fog_color = (0.035, 0.16, 0.24) if underwater else self.clear_color[:3]
+        active_fog_start = 0.0 if underwater else self.fog_start
+        active_fog_end = 12.0 if underwater else self.fog_end
+        fog_color_uniform.value = active_fog_color
+        fog_start_uniform.value = active_fog_start
+        fog_end_uniform.value = active_fog_end
         fog_enabled_uniform.value = int(self.fog_enabled)
         origin_uniform = cast("moderngl.Uniform", self.shader.program["section_origin"])
         self.visible_sections = 0
@@ -242,6 +282,13 @@ class DemoWorldRenderer:
             self.draw_calls += 1
             self.face_count += gpu_mesh.data.face_count
             self.triangle_count += gpu_mesh.data.triangle_count
+        self._render_water(
+            matrix,
+            camera,
+            active_fog_color,
+            active_fog_start,
+            active_fog_end,
+        )
         self.selection = self.raycast(camera.position, camera.direction)
         if self.selection is not None:
             self.highlight.render(matrix, self.selection.block)
@@ -250,24 +297,31 @@ class DemoWorldRenderer:
         self.mesh_worker.close()
         self.streamer.close()
         self.highlight.release()
+        self.water_mesh_cache.release()
         self.mesh_cache.release()
         self.texture.release()
         self.shader.release()
+        self.water_shader.release()
 
     def _upload_chunk_sync(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
+                self.water_mesh_cache.remove(key)
                 continue
-            mesh = self._build_mesh(key, section)
+            mesh, water_mesh = self._build_mesh(key, section)
             if mesh.indices.size:
                 self.mesh_cache.upload(key, mesh)
+            if water_mesh.indices.size:
+                self.water_mesh_cache.upload(key, water_mesh)
 
     def _remove_chunk(self, coord: ChunkCoord) -> None:
         self.mesh_worker.invalidate_chunk(coord.x, coord.z)
         for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
-            self.mesh_cache.remove(SectionCoord(coord.x, section_y, coord.z))
+            key = SectionCoord(coord.x, section_y, coord.z)
+            self.mesh_cache.remove(key)
+            self.water_mesh_cache.remove(key)
 
     def _remesh_around(self, block: tuple[int, int, int]) -> None:
         x, y, z = block
@@ -299,6 +353,7 @@ class DemoWorldRenderer:
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
+                self.water_mesh_cache.remove(key)
                 continue
             self.mesh_worker.submit(
                 key,
@@ -308,15 +363,18 @@ class DemoWorldRenderer:
                 ambient_occlusion=self.ambient_occlusion,
             )
 
-    def _build_mesh(self, key: SectionCoord, section: ChunkSection) -> MeshData:
+    def _build_mesh(self, key: SectionCoord, section: ChunkSection) -> tuple[MeshData, MeshData]:
         neighborhood = self._build_neighborhood(key)
         builder = build_greedy_mesh if self.greedy_meshing else build_visible_face_mesh
-        return builder(
-            neighborhood,
-            self.registry,
-            self.atlas_uvs,
-            smooth_lighting=self.smooth_lighting,
-            ambient_occlusion=self.ambient_occlusion,
+        return (
+            builder(
+                neighborhood,
+                self.registry,
+                self.atlas_uvs,
+                smooth_lighting=self.smooth_lighting,
+                ambient_occlusion=self.ambient_occlusion,
+            ),
+            build_water_mesh(neighborhood, self.registry, self.atlas_uvs),
         )
 
     def _build_neighborhood(self, key: SectionCoord) -> MeshingNeighborhood:
@@ -325,11 +383,64 @@ class DemoWorldRenderer:
             key.y * SECTION_SIZE - HALO_RADIUS,
             key.z * SECTION_SIZE - HALO_RADIUS,
         )
-        blocks, sky_light, block_light = self.streamer.snapshot_region(
+        blocks, sky_light, block_light, metadata = self.streamer.snapshot_region(
             origin,
             (HALO_SIZE, HALO_SIZE, HALO_SIZE),
         )
-        return MeshingNeighborhood(blocks, sky_light, block_light)
+        return MeshingNeighborhood(blocks, sky_light, block_light, metadata)
+
+    def _render_water(
+        self,
+        matrix: np.ndarray,
+        camera: FirstPersonCamera,
+        fog_color: tuple[float, float, float],
+        fog_start: float,
+        fog_end: float,
+    ) -> None:
+        program = self.water_shader.program
+        if program is None:
+            return
+        cast("moderngl.Uniform", program["camera_matrix"]).write(matrix.T.astype("f4").tobytes())
+        cast("moderngl.Uniform", program["texture_atlas"]).value = 0
+        cast("moderngl.Uniform", program["camera_position"]).value = camera.position
+        cast("moderngl.Uniform", program["animation_time"]).value = self.animation_time
+        cast("moderngl.Uniform", program["fog_color"]).value = fog_color
+        cast("moderngl.Uniform", program["fog_start"]).value = fog_start
+        cast("moderngl.Uniform", program["fog_end"]).value = fog_end
+        cast("moderngl.Uniform", program["fog_enabled"]).value = int(self.fog_enabled)
+        origin_uniform = cast("moderngl.Uniform", program["section_origin"])
+        visible: list[tuple[float, SectionCoord, GpuSectionMesh]] = []
+        for key, gpu_mesh in self.water_mesh_cache.items():
+            origin = (key.x * SECTION_SIZE, key.y * SECTION_SIZE, key.z * SECTION_SIZE)
+            minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
+            maximum = (
+                float(origin[0] + SECTION_SIZE),
+                float(origin[1] + SECTION_SIZE),
+                float(origin[2] + SECTION_SIZE),
+            )
+            if not aabb_intersects_frustum(matrix, minimum, maximum):
+                continue
+            center = tuple(value + SECTION_SIZE * 0.5 for value in origin)
+            distance = sum((center[i] - camera.position[i]) ** 2 for i in range(3))
+            visible.append((distance, key, gpu_mesh))
+
+        self.context.enable(moderngl.BLEND)
+        self.context.disable(moderngl.CULL_FACE)
+        self.context.depth_mask = False  # pyright: ignore[reportAttributeAccessIssue]
+        self.context.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        for _distance, key, gpu_mesh in sorted(visible, reverse=True, key=lambda item: item[0]):
+            origin_uniform.value = (
+                key.x * SECTION_SIZE,
+                key.y * SECTION_SIZE,
+                key.z * SECTION_SIZE,
+            )
+            gpu_mesh.vertex_array.render(moderngl.TRIANGLES)
+            self.draw_calls += 1
+            self.face_count += gpu_mesh.data.face_count
+            self.triangle_count += gpu_mesh.data.triangle_count
+        self.context.depth_mask = True  # pyright: ignore[reportAttributeAccessIssue]
+        self.context.disable(moderngl.BLEND)
+        self.context.enable(moderngl.CULL_FACE)
 
     def _schedule_horizontal_neighbors(self, coord: ChunkCoord) -> None:
         for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):

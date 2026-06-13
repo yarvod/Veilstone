@@ -10,6 +10,7 @@ from voxel_sandbox.render.meshes.data import MeshData
 from voxel_sandbox.render.meshes.greedy import build_greedy_mesh
 from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
 from voxel_sandbox.render.meshes.visible_faces import build_visible_face_mesh
+from voxel_sandbox.render.meshes.water import build_water_mesh
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +18,7 @@ class CompletedMesh:
     key: SectionCoord
     revision: int
     mesh: MeshData
+    transparent_mesh: MeshData
 
 
 class SectionMeshWorker:
@@ -131,7 +133,8 @@ class SectionMeshWorker:
             smooth_lighting=smooth_lighting,
             ambient_occlusion=ambient_occlusion,
         )
-        return CompletedMesh(key, revision, mesh)
+        transparent_mesh = build_water_mesh(neighborhood, self.registry, self.texture_uvs)
+        return CompletedMesh(key, revision, mesh, transparent_mesh)
 
 
 _process_registry: BlockRegistry | None = None
@@ -165,4 +168,9 @@ def _build_process_mesh(
         smooth_lighting=smooth_lighting,
         ambient_occlusion=ambient_occlusion,
     )
-    return CompletedMesh(key, revision, mesh)
+    transparent_mesh = build_water_mesh(
+        neighborhood,
+        _process_registry,
+        _process_texture_uvs,
+    )
+    return CompletedMesh(key, revision, mesh, transparent_mesh)
