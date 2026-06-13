@@ -63,3 +63,27 @@ def test_streamer_exposes_loaded_world_blocks_and_mutation() -> None:
         assert reloaded.get_block(8, 1, 8) == 0
     finally:
         streamer.close()
+
+
+def test_region_snapshot_copies_blocks_and_light_across_chunk_boundary() -> None:
+    streamer = ChunkStreamer(
+        TerrainGenerator(WorldSeed.parse("snapshot-test")),
+        render_distance=1,
+        workers=1,
+    )
+    try:
+        left = streamer.prime(ChunkCoord(-1, 0))
+        right = streamer.prime(ChunkCoord(0, 0))
+        left.set_block(15, 10, 2, 6)
+        right.set_block(0, 10, 2, 7)
+        left.sections[0].sky_light[15, 10, 2] = 11
+        right.sections[0].block_light[0, 10, 2] = 14
+
+        blocks, sky, block = streamer.snapshot_region((-1, 9, 1), (3, 3, 3))
+
+        assert blocks[0, 1, 1] == 6
+        assert blocks[1, 1, 1] == 7
+        assert sky[0, 1, 1] == 11
+        assert block[1, 1, 1] == 14
+    finally:
+        streamer.close()

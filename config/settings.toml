@@ -20,7 +20,11 @@ shader_hot_reload = true
 seed = "veilstone-dev"
 render_distance = 2
 generation_workers = 2
-chunk_uploads_per_frame = 2
+generation_backend = "process"
+chunk_uploads_per_frame = 1
+meshing_workers = 2
+meshing_backend = "process"
+mesh_uploads_per_frame = 2
 
 [graphics]
 greedy_meshing = true

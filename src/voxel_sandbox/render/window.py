@@ -56,7 +56,11 @@ class GameWindow(pyglet.window.Window):
             seed=settings.world.seed,
             render_distance=settings.world.render_distance,
             generation_workers=settings.world.generation_workers,
+            generation_backend=settings.world.generation_backend,
             uploads_per_frame=settings.world.chunk_uploads_per_frame,
+            meshing_workers=settings.world.meshing_workers,
+            meshing_backend=settings.world.meshing_backend,
+            mesh_uploads_per_frame=settings.world.mesh_uploads_per_frame,
             greedy_meshing=settings.graphics.greedy_meshing,
             smooth_lighting=settings.graphics.smooth_lighting,
             ambient_occlusion=settings.graphics.ambient_occlusion,
@@ -175,6 +179,7 @@ class GameWindow(pyglet.window.Window):
             f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
             f"\nChunks {self.world_renderer.loaded_chunks}  "
             f"Pending {self.world_renderer.pending_chunks}  "
+            f"Mesh queue {self.world_renderer.pending_meshes}  "
             f"Visible sections {self.world_renderer.visible_sections}\n"
             f"Faces {self.world_renderer.face_count}  "
             f"Triangles {self.world_renderer.triangle_count}  "

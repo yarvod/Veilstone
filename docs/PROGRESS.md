@@ -67,6 +67,15 @@ Phase 08 - Greedy meshing: complete and ready for manual testing.
 - commits: `cb3239f`, `fc165f7`.
 - tag: `phase-08-complete`.
 
+### Phase 08 streaming performance fixes
+
+- [x] Replace per-voxel Python halo reads with vectorized section slice copies.
+- [x] Run worldgen/lighting and greedy meshing in reusable process pools.
+- [x] Upload at most two completed section meshes per frame.
+- [x] Add mesh queue telemetry and streaming/frame benchmarks.
+- [x] Frame streaming benchmark: approximately `0.73 ms` average, `1.97 ms` p95, and
+  `4.72 ms` maximum render integration time while loading 25 chunks.
+
 ## Failed checks
 
 None recorded.
@@ -79,6 +88,7 @@ None recorded.
 - Greedy meshing is approximately 2.46 ms and reduces the flat benchmark from 2048 to 12
   triangles.
 - Full `16x64x16` chunk relighting with four sources is approximately 1.54 ms.
+- Vectorized `18^3` section halo snapshot is approximately 0.02 ms.
 
 ## Known bugs
 

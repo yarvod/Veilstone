@@ -150,6 +150,8 @@ uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
 uv run python -m voxel_sandbox benchmark-physics
 uv run python -m voxel_sandbox benchmark-lighting
+uv run python -m voxel_sandbox benchmark-streaming
+uv run python -m voxel_sandbox benchmark-frame-streaming
 uv run python -m voxel_sandbox benchmark-network
 uv run pytest
 uv run ruff check .
@@ -1880,6 +1882,8 @@ Checklist:
 - [x] Remove visible diagonal/cross-shaped smooth-light and AO artifacts.
 - [x] Add debug mode to show mesh stats and active mesher.
 - [x] Add chunk mesh triangle count overlay.
+- [x] Move worldgen/lighting and section meshing to reusable process workers.
+- [x] Limit completed chunk integration and GPU section uploads per frame.
 
 Done when:
 
@@ -1887,6 +1891,7 @@ Done when:
 - [x] Meshing stays inside the performance budget.
 - [x] Visual artifacts are acceptable for the generated-texture prototype.
 - [x] Section/chunk halo sampling does not create false zero-light borders.
+- [x] Streaming render benchmark remains below the 16.6 ms frame budget.
 
 ---
 

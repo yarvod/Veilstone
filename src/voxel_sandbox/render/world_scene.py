@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 import moderngl
 import numpy as np
@@ -38,6 +38,7 @@ from voxel_sandbox.render.meshes import (
 )
 from voxel_sandbox.render.meshes.gpu_cache import SectionMeshCache
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
+from voxel_sandbox.render.meshes.worker import SectionMeshWorker
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.texture_atlas import create_block_atlas
 
@@ -50,7 +51,11 @@ class DemoWorldRenderer:
         seed: str,
         render_distance: int,
         generation_workers: int,
+        generation_backend: str,
         uploads_per_frame: int,
+        meshing_workers: int,
+        meshing_backend: str,
+        mesh_uploads_per_frame: int,
         greedy_meshing: bool,
         smooth_lighting: bool,
         ambient_occlusion: bool,
@@ -71,6 +76,7 @@ class DemoWorldRenderer:
         self.registry = create_core_block_registry()
         self.atlas_uvs = atlas.uvs
         self.uploads_per_frame = uploads_per_frame
+        self.mesh_uploads_per_frame = mesh_uploads_per_frame
         self.greedy_meshing = greedy_meshing
         self.smooth_lighting = smooth_lighting
         self.ambient_occlusion = ambient_occlusion
@@ -84,17 +90,25 @@ class DemoWorldRenderer:
             self.generator,
             render_distance=render_distance,
             workers=generation_workers,
+            backend=cast(Literal["thread", "process"], generation_backend),
+            prepare_lighting=True,
         )
         if self.shader.program is None:
             raise RuntimeError("Chunk shader failed to compile")
         self.mesh_cache = SectionMeshCache(context, self.shader.program)
+        self.mesh_worker = SectionMeshWorker(
+            self.registry,
+            self.atlas_uvs,
+            workers=meshing_workers,
+            backend=cast(Literal["thread", "process"], meshing_backend),
+        )
         self.highlight = BlockHighlightRenderer(context)
         self.visible_sections = 0
         self.draw_calls = 0
         self.face_count = 0
         self.triangle_count = 0
         self.selection: RaycastHit | None = None
-        self._upload_chunk(self.streamer.prime(ChunkCoord(0, 0)))
+        self._upload_chunk_sync(self.streamer.prime(ChunkCoord(0, 0)))
 
     @property
     def daylight(self) -> float:
@@ -119,6 +133,10 @@ class DemoWorldRenderer:
     @property
     def pending_chunks(self) -> int:
         return self.streamer.pending_count
+
+    @property
+    def pending_meshes(self) -> int:
+        return self.mesh_worker.pending_count
 
     def get_block(self, x: int, y: int, z: int) -> int:
         return self.streamer.get_block(x, y, z)
@@ -170,8 +188,15 @@ class DemoWorldRenderer:
         for coord in batch.unloaded:
             self._remove_chunk(coord)
         for chunk in batch.loaded:
-            self._upload_chunk(chunk)
-            self._remesh_horizontal_neighbors(chunk.coord)
+            self._schedule_chunk(chunk)
+            self._schedule_horizontal_neighbors(chunk.coord)
+        for completed in self.mesh_worker.poll(self.mesh_uploads_per_frame):
+            if self.streamer.get_chunk(completed.key.chunk) is None:
+                continue
+            if completed.mesh.indices.size:
+                self.mesh_cache.upload(completed.key, completed.mesh)
+            else:
+                self.mesh_cache.remove(completed.key)
 
         camera_uniform = cast("moderngl.Uniform", self.shader.program["camera_matrix"])
         texture_uniform = cast("moderngl.Uniform", self.shader.program["texture_atlas"])
@@ -222,14 +247,14 @@ class DemoWorldRenderer:
             self.highlight.render(matrix, self.selection.block)
 
     def release(self) -> None:
+        self.mesh_worker.close()
         self.streamer.close()
         self.highlight.release()
         self.mesh_cache.release()
         self.texture.release()
         self.shader.release()
 
-    def _upload_chunk(self, chunk: Chunk) -> None:
-        relight_chunk(chunk, self.registry)
+    def _upload_chunk_sync(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
@@ -240,6 +265,7 @@ class DemoWorldRenderer:
                 self.mesh_cache.upload(key, mesh)
 
     def _remove_chunk(self, coord: ChunkCoord) -> None:
+        self.mesh_worker.invalidate_chunk(coord.x, coord.z)
         for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
             self.mesh_cache.remove(SectionCoord(coord.x, section_y, coord.z))
 
@@ -266,17 +292,21 @@ class DemoWorldRenderer:
             if chunk is None:
                 continue
             relight_chunk(chunk, self.registry)
-            self._upload_lit_chunk(chunk)
+            self._schedule_chunk(chunk)
 
-    def _upload_lit_chunk(self, chunk: Chunk) -> None:
+    def _schedule_chunk(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
                 continue
-            mesh = self._build_mesh(key, section)
-            if mesh.indices.size:
-                self.mesh_cache.upload(key, mesh)
+            self.mesh_worker.submit(
+                key,
+                self._build_neighborhood(key),
+                greedy=self.greedy_meshing,
+                smooth_lighting=self.smooth_lighting,
+                ambient_occlusion=self.ambient_occlusion,
+            )
 
     def _build_mesh(self, key: SectionCoord, section: ChunkSection) -> MeshData:
         neighborhood = self._build_neighborhood(key)
@@ -290,32 +320,23 @@ class DemoWorldRenderer:
         )
 
     def _build_neighborhood(self, key: SectionCoord) -> MeshingNeighborhood:
-        blocks = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint16)
-        sky_light = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint8)
-        block_light = np.zeros((HALO_SIZE, HALO_SIZE, HALO_SIZE), dtype=np.uint8)
-        origin_x = key.x * SECTION_SIZE - HALO_RADIUS
-        origin_y = key.y * SECTION_SIZE - HALO_RADIUS
-        origin_z = key.z * SECTION_SIZE - HALO_RADIUS
-        for local_x in range(HALO_SIZE):
-            world_x = origin_x + local_x
-            for local_y in range(HALO_SIZE):
-                world_y = origin_y + local_y
-                for local_z in range(HALO_SIZE):
-                    world_z = origin_z + local_z
-                    blocks[local_x, local_y, local_z] = self.streamer.get_block(
-                        world_x, world_y, world_z
-                    )
-                    sky, block = self.streamer.get_light(world_x, world_y, world_z)
-                    sky_light[local_x, local_y, local_z] = sky
-                    block_light[local_x, local_y, local_z] = block
+        origin = (
+            key.x * SECTION_SIZE - HALO_RADIUS,
+            key.y * SECTION_SIZE - HALO_RADIUS,
+            key.z * SECTION_SIZE - HALO_RADIUS,
+        )
+        blocks, sky_light, block_light = self.streamer.snapshot_region(
+            origin,
+            (HALO_SIZE, HALO_SIZE, HALO_SIZE),
+        )
         return MeshingNeighborhood(blocks, sky_light, block_light)
 
-    def _remesh_horizontal_neighbors(self, coord: ChunkCoord) -> None:
+    def _schedule_horizontal_neighbors(self, coord: ChunkCoord) -> None:
         for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             neighbor = self.streamer.get_chunk(ChunkCoord(coord.x + dx, coord.z + dz))
             if neighbor is not None:
-                self._upload_lit_chunk(neighbor)
+                self._schedule_chunk(neighbor)
 
     def _remesh_all(self) -> None:
         for chunk in self.streamer.loaded_chunks():
-            self._upload_lit_chunk(chunk)
+            self._schedule_chunk(chunk)

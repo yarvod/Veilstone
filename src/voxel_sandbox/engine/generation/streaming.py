@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from concurrent.futures import Future, ThreadPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import Executor, Future, ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
+from typing import Literal
+
+import numpy as np
+from numpy.typing import NDArray
 
 from voxel_sandbox.engine.chunks import (
     CHUNK_HEIGHT,
@@ -26,14 +31,28 @@ class ChunkStreamer:
         *,
         render_distance: int,
         workers: int,
+        postprocess: Callable[[Chunk], None] | None = None,
+        backend: Literal["thread", "process"] = "thread",
+        prepare_lighting: bool = False,
     ) -> None:
         if render_distance < 0:
             raise ValueError("Render distance cannot be negative")
         if workers < 1:
             raise ValueError("At least one generation worker is required")
+        if backend not in {"thread", "process"}:
+            raise ValueError(f"Unsupported generation backend: {backend}")
         self.generator = generator
         self.render_distance = render_distance
-        self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="worldgen")
+        self._postprocess = postprocess
+        self._prepare_lighting = prepare_lighting
+        self._backend = backend
+        self._executor: Executor
+        if backend == "process":
+            if postprocess is not None:
+                raise ValueError("Process worldgen uses prepare_lighting instead of postprocess")
+            self._executor = ProcessPoolExecutor(max_workers=workers)
+        else:
+            self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="worldgen")
         self._loaded: dict[ChunkCoord, Chunk] = {}
         self._pending: dict[ChunkCoord, Future[Chunk]] = {}
         self._desired: set[ChunkCoord] = set()
@@ -50,7 +69,7 @@ class ChunkStreamer:
     def prime(self, coord: ChunkCoord) -> Chunk:
         chunk = self._loaded.get(coord)
         if chunk is None:
-            chunk = self.generator.generate_chunk(coord)
+            chunk = self._generate_chunk(coord)
             self._apply_overrides(chunk)
             self._loaded[coord] = chunk
         return chunk
@@ -86,6 +105,53 @@ class ChunkStreamer:
             int(section.block_light[local_x, local_y, local_z]),
         )
 
+    def snapshot_region(
+        self,
+        origin: tuple[int, int, int],
+        shape: tuple[int, int, int],
+    ) -> tuple[NDArray[np.uint16], NDArray[np.uint8], NDArray[np.uint8]]:
+        blocks = np.zeros(shape, dtype=np.uint16)
+        sky_light = np.zeros(shape, dtype=np.uint8)
+        block_light = np.zeros(shape, dtype=np.uint8)
+        end_x = origin[0] + shape[0]
+        end_y = origin[1] + shape[1]
+        end_z = origin[2] + shape[2]
+        for chunk_x in range(origin[0] // SECTION_SIZE, (end_x - 1) // SECTION_SIZE + 1):
+            for chunk_z in range(origin[2] // SECTION_SIZE, (end_z - 1) // SECTION_SIZE + 1):
+                chunk = self.get_chunk(ChunkCoord(chunk_x, chunk_z))
+                if chunk is None:
+                    continue
+                source_x_start = max(origin[0], chunk_x * SECTION_SIZE)
+                source_x_end = min(end_x, (chunk_x + 1) * SECTION_SIZE)
+                source_z_start = max(origin[2], chunk_z * SECTION_SIZE)
+                source_z_end = min(end_z, (chunk_z + 1) * SECTION_SIZE)
+                for section_y, section in enumerate(chunk.sections):
+                    section_start_y = section_y * SECTION_SIZE
+                    source_y_start = max(origin[1], section_start_y, 0)
+                    source_y_end = min(end_y, section_start_y + SECTION_SIZE, CHUNK_HEIGHT)
+                    if source_y_start >= source_y_end:
+                        continue
+                    source = (
+                        slice(
+                            source_x_start - chunk_x * SECTION_SIZE,
+                            source_x_end - chunk_x * SECTION_SIZE,
+                        ),
+                        slice(source_y_start - section_start_y, source_y_end - section_start_y),
+                        slice(
+                            source_z_start - chunk_z * SECTION_SIZE,
+                            source_z_end - chunk_z * SECTION_SIZE,
+                        ),
+                    )
+                    target = (
+                        slice(source_x_start - origin[0], source_x_end - origin[0]),
+                        slice(source_y_start - origin[1], source_y_end - origin[1]),
+                        slice(source_z_start - origin[2], source_z_end - origin[2]),
+                    )
+                    blocks[target] = section.blocks[source]
+                    sky_light[target] = section.sky_light[source]
+                    block_light[target] = section.block_light[source]
+        return blocks, sky_light, block_light
+
     def set_block(self, x: int, y: int, z: int, block_id: int) -> bool:
         if not 0 <= y < CHUNK_HEIGHT:
             return False
@@ -111,7 +177,15 @@ class ChunkStreamer:
 
         missing = self._desired - self._loaded.keys() - self._pending.keys()
         for coord in sorted(missing, key=lambda item: _distance_squared(item, center)):
-            self._pending[coord] = self._executor.submit(self.generator.generate_chunk, coord)
+            if self._backend == "process":
+                self._pending[coord] = self._executor.submit(
+                    _generate_chunk_task,
+                    self.generator,
+                    coord,
+                    self._prepare_lighting,
+                )
+            else:
+                self._pending[coord] = self._executor.submit(self._generate_chunk, coord)
 
         completed: list[Chunk] = []
         for coord, future in tuple(self._pending.items()):
@@ -147,6 +221,31 @@ class ChunkStreamer:
         for (x, y, z), block_id in self._overrides.items():
             if min_x <= x < min_x + SECTION_SIZE and min_z <= z < min_z + SECTION_SIZE:
                 chunk.set_block(x - min_x, y, z - min_z, block_id)
+
+    def _generate_chunk(self, coord: ChunkCoord) -> Chunk:
+        chunk = self.generator.generate_chunk(coord)
+        if self._prepare_lighting:
+            from voxel_sandbox.domain.blocks import create_core_block_registry
+            from voxel_sandbox.engine.lighting import relight_chunk
+
+            relight_chunk(chunk, create_core_block_registry())
+        if self._postprocess is not None:
+            self._postprocess(chunk)
+        return chunk
+
+
+def _generate_chunk_task(
+    generator: TerrainGenerator,
+    coord: ChunkCoord,
+    prepare_lighting: bool,
+) -> Chunk:
+    chunk = generator.generate_chunk(coord)
+    if prepare_lighting:
+        from voxel_sandbox.domain.blocks import create_core_block_registry
+        from voxel_sandbox.engine.lighting import relight_chunk
+
+        relight_chunk(chunk, create_core_block_registry())
+    return chunk
 
 
 def _distance_squared(first: ChunkCoord, second: ChunkCoord) -> int:

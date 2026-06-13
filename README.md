@@ -22,6 +22,8 @@ uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
 uv run python -m voxel_sandbox benchmark-physics
 uv run python -m voxel_sandbox benchmark-lighting
+uv run python -m voxel_sandbox benchmark-streaming
+uv run python -m voxel_sandbox benchmark-frame-streaming
 uv run python -m voxel_sandbox benchmark-network
 ```
 
@@ -49,6 +51,8 @@ menu and world once, and starts the dedicated server entry point.
 
 The committed `.python-version` and `pyproject.toml` keep the project on Python 3.13.
 Runtime settings live in `config/settings.toml`.
+World generation and section meshing use reusable process pools by default. CPU work stays
+off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 
 Client controls:
 

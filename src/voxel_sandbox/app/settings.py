@@ -37,7 +37,11 @@ class WorldSettings:
     seed: str = "veilstone-dev"
     render_distance: int = 2
     generation_workers: int = 2
-    chunk_uploads_per_frame: int = 2
+    generation_backend: str = "process"
+    chunk_uploads_per_frame: int = 1
+    meshing_workers: int = 2
+    meshing_backend: str = "process"
+    mesh_uploads_per_frame: int = 2
 
 
 @dataclass(frozen=True, slots=True)
