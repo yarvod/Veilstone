@@ -19,7 +19,9 @@ def test_core_registry_reserves_zero_for_air() -> None:
 
     assert registry.by_id(0).key == "air"
     assert registry.by_key("grass").id == 3
-    assert len(registry) == 4
+    assert registry.by_key("veilwood_log").id == 4
+    assert registry.by_key("dusk_crystal_ore").id == 6
+    assert len(registry) == 7
 
 
 def test_registry_rejects_duplicate_ids_and_keys() -> None:

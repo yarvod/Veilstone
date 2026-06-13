@@ -31,3 +31,18 @@ def test_generated_chunk_is_deterministic_and_layered() -> None:
     assert first.get_block(0, height - 1, 0) == 3
     assert first.get_block(0, height - 2, 0) == 2
     assert first.get_block(0, 0, 0) == 1
+
+
+def test_generation_adds_caves_ores_and_trees_across_sample() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("feature-sample"))
+    block_ids: set[int] = set()
+    for chunk_x in range(-2, 3):
+        for chunk_z in range(-2, 3):
+            chunk = generator.generate_chunk(ChunkCoord(chunk_x, chunk_z))
+            for section in chunk.sections:
+                block_ids.update(int(value) for value in np.unique(section.blocks))
+
+    assert 0 in block_ids
+    assert 4 in block_ids
+    assert 5 in block_ids
+    assert 6 in block_ids
