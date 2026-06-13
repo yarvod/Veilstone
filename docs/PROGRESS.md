@@ -118,13 +118,13 @@ None recorded.
 
 ### Performance notes
 
-Visible-face benchmark for a half-solid `16^3` section: approximately 5.2 ms average,
-1024 faces, and 2048 triangles on the current Apple Silicon development machine.
-This exceeds the 2 ms target and is tracked as optimization debt before broad streaming.
+After vectorizing face masks and quad buffer construction with NumPy, the visible-face
+benchmark for a half-solid `16^3` section averages approximately 0.25 ms with 1024 faces
+and 2048 triangles on the current Apple Silicon development machine. The 2 ms target is met.
 
 ### Known bugs
 
-- Visible-face meshing is correct but currently above its target CPU budget.
+None recorded.
 
 ### Performance notes
 
