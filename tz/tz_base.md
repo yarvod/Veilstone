@@ -149,6 +149,7 @@ uv run python -m voxel_sandbox server
 uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
 uv run python -m voxel_sandbox benchmark-physics
+uv run python -m voxel_sandbox benchmark-lighting
 uv run python -m voxel_sandbox benchmark-network
 uv run pytest
 uv run ruff check .
@@ -478,6 +479,7 @@ uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
 uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
 uv run python -m voxel_sandbox benchmark-physics
+uv run python -m voxel_sandbox benchmark-lighting
 uv run python -m voxel_sandbox benchmark-network
 ```
 
@@ -1828,22 +1830,22 @@ Done when:
 
 Checklist:
 
-- [ ] Add sky light simple model.
-- [ ] Add block light array.
-- [ ] Add torch block.
-- [ ] Add light value into mesh vertices.
-- [ ] Add smooth lighting option.
-- [ ] Add ambient occlusion option.
-- [ ] Add day/night color.
-- [ ] Add fog.
-- [ ] Add graphics settings toggles.
+- [x] Add sky light simple model.
+- [x] Add block light array.
+- [x] Add torch/light-emitting block (`Gloam Lantern`).
+- [x] Add sky and block light values into mesh vertices.
+- [x] Add smooth lighting option.
+- [x] Add ambient occlusion option.
+- [x] Add day/night color.
+- [x] Add fog.
+- [x] Add graphics settings toggles (`F6` smooth, `F7` AO, `F8` fog).
 
 Done when:
 
-- [ ] Terrain has non-flat lighting.
-- [ ] Torch emits visible light.
-- [ ] Fog hides far chunks.
-- [ ] Smooth lighting can be toggled.
+- [x] Terrain has non-flat lighting.
+- [x] Gloam Lantern emits visible warm light.
+- [x] Fog hides far chunks.
+- [x] Smooth lighting can be toggled.
 
 ---
 
@@ -2681,6 +2683,7 @@ uv run python -m voxel_sandbox benchmark-mesher
 
 ```bash
 uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-lighting
 uv run python -m voxel_sandbox benchmark-network
 ```
 

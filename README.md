@@ -21,6 +21,7 @@ uv run python -m voxel_sandbox server
 uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
 uv run python -m voxel_sandbox benchmark-physics
+uv run python -m voxel_sandbox benchmark-lighting
 uv run python -m voxel_sandbox benchmark-network
 ```
 
@@ -48,9 +49,13 @@ Client controls:
 - `Space`: jump.
 - Mouse: look around.
 - Left mouse: break the highlighted block.
-- Right mouse: place a grass block on the highlighted face.
+- `1` / `2`: select grass or a Gloam Lantern for placement.
+- Right mouse: place the selected block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - `F5`: force shader reload.
+- `F6`: toggle smooth lighting.
+- `F7`: toggle ambient occlusion.
+- `F8`: toggle fog.
 
 ## Architecture
 
@@ -64,8 +69,9 @@ Client controls:
 Architecture decisions are recorded in `docs/adr`.
 
 Current prototype state: selecting Create World or Load World enters a rendered generated
-world with original programmatic block textures. Chunks stream around the free camera on
-background workers while the overlay reports loaded, pending, visible, and mesh counts.
+world with original programmatic block textures. Chunks stream around the player on
+background workers while the overlay reports loaded, pending, visible, lighting, and mesh
+counts.
 
 ## Test Phase 5
 
@@ -100,3 +106,25 @@ Player physics benchmark:
 ```bash
 uv run python -m voxel_sandbox benchmark-physics
 ```
+
+## Test Phase 7
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Select `Singleplayer -> Create World` and compare open terrain, shaded sides, and corners.
+2. Press `F6` and `F7`; confirm smooth lighting and ambient occlusion visibly toggle.
+3. Press `2`, then place a Gloam Lantern with right mouse in a dark recess or small cave.
+4. Break the lantern with left mouse; confirm its warm block light disappears.
+5. Walk away from terrain and press `F8`; confirm distance fog toggles.
+6. Observe the sky and terrain tint change during the configured day/night cycle.
+
+Lighting benchmark:
+
+```bash
+uv run python -m voxel_sandbox benchmark-lighting
+```
+
+The cycle duration and graphics defaults can be changed under `[graphics]` in
+`config/settings.toml`. Set `day_cycle_seconds = 30.0` for a faster manual check.
