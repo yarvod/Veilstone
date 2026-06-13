@@ -40,6 +40,10 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.benchmark_physics import run_benchmark
 
         return run_benchmark()
+    if command == "benchmark-lighting":
+        from voxel_sandbox.tools.benchmark_lighting import run_benchmark
+
+        return run_benchmark()
     if command == "benchmark-network":
         LOGGER.error("Network benchmark is not available before Phase 13")
         return 2

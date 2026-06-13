@@ -51,8 +51,10 @@ def build_visible_face_mesh(
 
     opaque = opaque_lookup[blocks]
     padded = np.pad(opaque, 1, constant_values=False)
-    combined_light = np.maximum(section.sky_light, section.block_light).astype(np.float32) / 15.0
-    padded_light = np.pad(combined_light, 2, constant_values=0.0)
+    padded_sky_light = np.pad(section.sky_light.astype(np.float32) / 15.0, 2, constant_values=0.0)
+    padded_block_light = np.pad(
+        section.block_light.astype(np.float32) / 15.0, 2, constant_values=0.0
+    )
     padded_opaque = np.pad(opaque, 2, constant_values=False)
     vertex_batches: list[NDArray[np.float32]] = []
     index_batches: list[NDArray[np.uint32]] = []
@@ -84,22 +86,24 @@ def build_visible_face_mesh(
             + (rectangles[:, 3, None] - rectangles[:, 1, None]) * local_uvs[None, :, 1]
         )
 
-        lights, ao = _vertex_lighting(
+        sky_lights, block_lights, ao = _vertex_lighting(
             coordinates,
             (dx, dy, dz),
             corners,
-            padded_light,
+            padded_sky_light,
+            padded_block_light,
             padded_opaque,
             smooth_lighting=smooth_lighting,
             ambient_occlusion=ambient_occlusion,
         )
-        vertices = np.empty((face_count, 4, 10), dtype=np.float32)
+        vertices = np.empty((face_count, 4, 11), dtype=np.float32)
         vertices[:, :, :3] = positions
         vertices[:, :, 3:5] = uvs
         vertices[:, :, 5:8] = np.asarray(normal, dtype=np.float32)
-        vertices[:, :, 8] = lights
-        vertices[:, :, 9] = ao
-        vertex_batches.append(vertices.reshape((-1, 10)))
+        vertices[:, :, 8] = sky_lights
+        vertices[:, :, 9] = block_lights
+        vertices[:, :, 10] = ao
+        vertex_batches.append(vertices.reshape((-1, 11)))
 
         bases = np.arange(face_count, dtype=np.uint32) * 4 + vertex_offset
         pattern = np.asarray((0, 1, 2, 0, 2, 3), dtype=np.uint32)
@@ -108,7 +112,7 @@ def build_visible_face_mesh(
 
     if not vertex_batches:
         return MeshData(
-            np.empty((0, 10), dtype=np.float32),
+            np.empty((0, 11), dtype=np.float32),
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
@@ -118,14 +122,16 @@ def _vertex_lighting(
     coordinates: NDArray[np.int64],
     direction: tuple[int, int, int],
     corners: tuple[tuple[int, int, int], ...],
-    padded_light: NDArray[np.float32],
+    padded_sky_light: NDArray[np.float32],
+    padded_block_light: NDArray[np.float32],
     padded_opaque: NDArray[np.bool_],
     *,
     smooth_lighting: bool,
     ambient_occlusion: bool,
-) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     face_count = coordinates.shape[0]
-    lights = np.empty((face_count, 4), dtype=np.float32)
+    sky_lights = np.empty((face_count, 4), dtype=np.float32)
+    block_lights = np.empty((face_count, 4), dtype=np.float32)
     ao = np.ones((face_count, 4), dtype=np.float32)
     normal_axis = next(axis for axis, value in enumerate(direction) if value != 0)
     tangent_axes = tuple(axis for axis in range(3) if axis != normal_axis)
@@ -141,8 +147,10 @@ def _vertex_lighting(
         corner_offset = side_offsets[0] + side_offsets[1]
         if smooth_lighting:
             offsets.extend((*side_offsets, corner_offset))
-        samples = [_sample_float(padded_light, base + offset) for offset in offsets]
-        lights[:, vertex_index] = np.mean(np.stack(samples), axis=0)
+        sky_samples = [_sample_float(padded_sky_light, base + offset) for offset in offsets]
+        block_samples = [_sample_float(padded_block_light, base + offset) for offset in offsets]
+        sky_lights[:, vertex_index] = np.mean(np.stack(sky_samples), axis=0)
+        block_lights[:, vertex_index] = np.mean(np.stack(block_samples), axis=0)
 
         if ambient_occlusion:
             side_one = _sample_bool(padded_opaque, base + side_offsets[0]).astype(np.float32)
@@ -154,7 +162,7 @@ def _vertex_lighting(
                 side_one + side_two + corner_block,
             )
             ao[:, vertex_index] = 1.0 - occlusion * 0.18
-    return lights, ao
+    return sky_lights, block_lights, ao
 
 
 def _sample_float(

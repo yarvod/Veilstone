@@ -21,3 +21,11 @@ seed = "veilstone-dev"
 render_distance = 2
 generation_workers = 2
 chunk_uploads_per_frame = 2
+
+[graphics]
+smooth_lighting = true
+ambient_occlusion = true
+fog = true
+fog_start = 24.0
+fog_end = 56.0
+day_cycle_seconds = 240.0

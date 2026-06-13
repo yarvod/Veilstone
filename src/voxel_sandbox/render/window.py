@@ -55,12 +55,19 @@ class GameWindow(pyglet.window.Window):
             render_distance=settings.world.render_distance,
             generation_workers=settings.world.generation_workers,
             uploads_per_frame=settings.world.chunk_uploads_per_frame,
+            smooth_lighting=settings.graphics.smooth_lighting,
+            ambient_occlusion=settings.graphics.ambient_occlusion,
+            fog=settings.graphics.fog,
+            fog_start=settings.graphics.fog_start,
+            fog_end=settings.graphics.fog_end,
+            day_cycle_seconds=settings.graphics.day_cycle_seconds,
         )
         self.menu = MenuController()
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
         self.held_keys: set[int] = set()
+        self.place_block_id = 3
         self.mouse_captured = False
         self.fps_display = pyglet.window.FPSDisplay(self)
         self.debug_label = pyglet.text.Label(
@@ -126,6 +133,7 @@ class GameWindow(pyglet.window.Window):
     def fixed_update(self, delta_time: float) -> None:
         if not self.menu.in_game:
             return
+        self.world_renderer.update(delta_time)
         forward = float(key.W in self.held_keys) - float(key.S in self.held_keys)
         right = float(key.D in self.held_keys) - float(key.A in self.held_keys)
         self.player.update(
@@ -141,7 +149,12 @@ class GameWindow(pyglet.window.Window):
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
-        self.mgl_context.clear(0.025, 0.04, 0.075, 1.0, depth=1.0)
+        clear_color = (
+            self.world_renderer.clear_color
+            if self.menu.in_game
+            else (0.025, 0.04, 0.075, 1.0)
+        )
+        self.mgl_context.clear(*clear_color, depth=1.0)
         if not self.menu.in_game:
             self._draw_menu()
             return
@@ -164,7 +177,13 @@ class GameWindow(pyglet.window.Window):
             f"Visible sections {self.world_renderer.visible_sections}\n"
             f"Faces {self.world_renderer.face_count}  "
             f"Triangles {self.world_renderer.triangle_count}  "
-            f"Draws {self.world_renderer.draw_calls}"
+            f"Draws {self.world_renderer.draw_calls}\n"
+            f"Daylight {self.world_renderer.daylight:4.2f}  "
+            f"Smooth {self.world_renderer.smooth_lighting}  "
+            f"AO {self.world_renderer.ambient_occlusion}  "
+            f"Fog {self.world_renderer.fog_enabled}\n"
+            f"Place {self.world_renderer.registry.by_id(self.place_block_id).name}  "
+            "[1 grass, 2 lantern; F6 smooth, F7 AO, F8 fog]"
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
@@ -195,6 +214,21 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.F5:
             self.debug_shader.reload(force=True)
             return
+        if symbol == key.F6:
+            self.world_renderer.toggle_smooth_lighting()
+            return
+        if symbol == key.F7:
+            self.world_renderer.toggle_ambient_occlusion()
+            return
+        if symbol == key.F8:
+            self.world_renderer.toggle_fog()
+            return
+        if symbol == ord("1"):
+            self.place_block_id = 3
+            return
+        if symbol == ord("2"):
+            self.place_block_id = 7
+            return
         self.held_keys.add(symbol)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
@@ -218,7 +252,7 @@ class GameWindow(pyglet.window.Window):
         if button == mouse.LEFT:
             self.world_renderer.set_block(hit.block, 0)
         elif button == mouse.RIGHT and not self.player.intersects_block(hit.previous):
-            self.world_renderer.set_block(hit.previous, 3)
+            self.world_renderer.set_block(hit.previous, self.place_block_id)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         if not self.menu.in_game:

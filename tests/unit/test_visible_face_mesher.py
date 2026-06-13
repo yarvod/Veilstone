@@ -18,7 +18,7 @@ def test_single_block_has_six_visible_faces() -> None:
 
     mesh = build_visible_face_mesh(section, create_core_block_registry(), UVS)
 
-    assert mesh.vertices.shape == (24, 10)
+    assert mesh.vertices.shape == (24, 11)
     assert mesh.face_count == 6
     assert mesh.triangle_count == 12
 
@@ -37,7 +37,7 @@ def test_adjacent_blocks_hide_shared_faces() -> None:
 def test_empty_section_produces_empty_arrays() -> None:
     mesh = build_visible_face_mesh(lit_section(), create_core_block_registry(), UVS)
 
-    assert mesh.vertices.shape == (0, 10)
+    assert mesh.vertices.shape == (0, 11)
     assert mesh.indices.size == 0
 
 
@@ -63,5 +63,5 @@ def test_vertex_light_and_ao_can_be_toggled() -> None:
     )
 
     assert smooth.vertices[:, 8].min() < smooth.vertices[:, 8].max()
-    assert smooth.vertices[:, 9].min() < 1.0
-    assert flat.vertices[:, 9].min() == 1.0
+    assert smooth.vertices[:, 10].min() < 1.0
+    assert flat.vertices[:, 10].min() == 1.0

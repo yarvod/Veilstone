@@ -41,12 +41,23 @@ class WorldSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class GraphicsSettings:
+    smooth_lighting: bool = True
+    ambient_occlusion: bool = True
+    fog: bool = True
+    fog_start: float = 24.0
+    fog_end: float = 56.0
+    day_cycle_seconds: float = 240.0
+
+
+@dataclass(frozen=True, slots=True)
 class AppSettings:
     window: WindowSettings = WindowSettings()
     camera: CameraSettings = CameraSettings()
     logging: LoggingSettings = LoggingSettings()
     development: DevelopmentSettings = DevelopmentSettings()
     world: WorldSettings = WorldSettings()
+    graphics: GraphicsSettings = GraphicsSettings()
 
 
 def _section(data: dict[str, Any], key: str) -> dict[str, Any]:
@@ -70,4 +81,5 @@ def load_settings(path: Path | None = None) -> AppSettings:
         logging=LoggingSettings(**_section(data, "logging")),
         development=DevelopmentSettings(**_section(data, "development")),
         world=WorldSettings(**_section(data, "world")),
+        graphics=GraphicsSettings(**_section(data, "graphics")),
     )

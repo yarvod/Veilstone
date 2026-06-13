@@ -58,6 +58,9 @@ class ChunkStreamer:
     def get_chunk(self, coord: ChunkCoord) -> Chunk | None:
         return self._loaded.get(coord)
 
+    def loaded_chunks(self) -> tuple[Chunk, ...]:
+        return tuple(self._loaded.values())
+
     def get_block(self, x: int, y: int, z: int) -> int:
         if not 0 <= y < CHUNK_HEIGHT:
             return 0

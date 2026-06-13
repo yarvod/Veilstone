@@ -9,14 +9,23 @@ import moderngl
 import numpy as np
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
-from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, SECTION_SIZE, Chunk, ChunkCoord, SectionCoord
+from voxel_sandbox.engine.chunks import (
+    CHUNK_HEIGHT,
+    SECTION_SIZE,
+    Chunk,
+    ChunkCoord,
+    ChunkSection,
+    SectionCoord,
+)
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
+from voxel_sandbox.engine.lighting import relight_chunk
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
+from voxel_sandbox.render.atmosphere import daylight_factor, sky_color
 from voxel_sandbox.render.block_highlight import BlockHighlightRenderer
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.frustum import aabb_intersects_frustum
 from voxel_sandbox.render.math3d import camera_matrix
-from voxel_sandbox.render.meshes import build_visible_face_mesh
+from voxel_sandbox.render.meshes import MeshData, build_visible_face_mesh
 from voxel_sandbox.render.meshes.gpu_cache import SectionMeshCache
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.texture_atlas import create_block_atlas
@@ -31,6 +40,12 @@ class DemoWorldRenderer:
         render_distance: int,
         generation_workers: int,
         uploads_per_frame: int,
+        smooth_lighting: bool,
+        ambient_occlusion: bool,
+        fog: bool,
+        fog_start: float,
+        fog_end: float,
+        day_cycle_seconds: float,
     ) -> None:
         self.context = context
         shader_root = Path(__file__).parent / "shaders" / "glsl"
@@ -44,6 +59,13 @@ class DemoWorldRenderer:
         self.registry = create_core_block_registry()
         self.atlas_uvs = atlas.uvs
         self.uploads_per_frame = uploads_per_frame
+        self.smooth_lighting = smooth_lighting
+        self.ambient_occlusion = ambient_occlusion
+        self.fog_enabled = fog
+        self.fog_start = fog_start
+        self.fog_end = fog_end
+        self.day_cycle_seconds = max(day_cycle_seconds, 1.0)
+        self.time_of_day = 0.25
         self.generator = TerrainGenerator(WorldSeed.parse(seed))
         self.streamer = ChunkStreamer(
             self.generator,
@@ -60,6 +82,14 @@ class DemoWorldRenderer:
         self.triangle_count = 0
         self.selection: RaycastHit | None = None
         self._upload_chunk(self.streamer.prime(ChunkCoord(0, 0)))
+
+    @property
+    def daylight(self) -> float:
+        return daylight_factor(self.time_of_day)
+
+    @property
+    def clear_color(self) -> tuple[float, float, float, float]:
+        return sky_color(self.daylight)
 
     @property
     def spawn_position(self) -> tuple[float, float, float]:
@@ -91,6 +121,20 @@ class DemoWorldRenderer:
         self._remesh_around(block)
         return True
 
+    def update(self, delta_time: float) -> None:
+        self.time_of_day = (self.time_of_day + delta_time / self.day_cycle_seconds) % 1.0
+
+    def toggle_smooth_lighting(self) -> None:
+        self.smooth_lighting = not self.smooth_lighting
+        self._remesh_all()
+
+    def toggle_ambient_occlusion(self) -> None:
+        self.ambient_occlusion = not self.ambient_occlusion
+        self._remesh_all()
+
+    def toggle_fog(self) -> None:
+        self.fog_enabled = not self.fog_enabled
+
     def render(self, camera: FirstPersonCamera, width: int, height: int, fov: float) -> None:
         if self.shader.program is None:
             return
@@ -107,9 +151,27 @@ class DemoWorldRenderer:
 
         camera_uniform = cast("moderngl.Uniform", self.shader.program["camera_matrix"])
         texture_uniform = cast("moderngl.Uniform", self.shader.program["texture_atlas"])
+        camera_position_uniform = cast("moderngl.Uniform", self.shader.program["camera_position"])
+        day_tint_uniform = cast("moderngl.Uniform", self.shader.program["day_tint"])
+        daylight_uniform = cast("moderngl.Uniform", self.shader.program["daylight"])
+        fog_color_uniform = cast("moderngl.Uniform", self.shader.program["fog_color"])
+        fog_start_uniform = cast("moderngl.Uniform", self.shader.program["fog_start"])
+        fog_end_uniform = cast("moderngl.Uniform", self.shader.program["fog_end"])
+        fog_enabled_uniform = cast("moderngl.Uniform", self.shader.program["fog_enabled"])
         camera_uniform.write(matrix.T.astype("f4").tobytes())
         self.texture.use(0)
         texture_uniform.value = 0
+        camera_position_uniform.value = camera.position
+        daylight_uniform.value = self.daylight
+        day_tint_uniform.value = (
+            0.55 + 0.45 * self.daylight,
+            0.62 + 0.38 * self.daylight,
+            0.78 + 0.22 * self.daylight,
+        )
+        fog_color_uniform.value = self.clear_color[:3]
+        fog_start_uniform.value = self.fog_start
+        fog_end_uniform.value = self.fog_end
+        fog_enabled_uniform.value = int(self.fog_enabled)
         origin_uniform = cast("moderngl.Uniform", self.shader.program["section_origin"])
         self.visible_sections = 0
         self.draw_calls = 0
@@ -143,12 +205,13 @@ class DemoWorldRenderer:
         self.shader.release()
 
     def _upload_chunk(self, chunk: Chunk) -> None:
+        relight_chunk(chunk, self.registry)
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
                 continue
-            mesh = build_visible_face_mesh(section, self.registry, self.atlas_uvs)
+            mesh = self._build_mesh(section)
             if mesh.indices.size:
                 self.mesh_cache.upload(key, mesh)
 
@@ -165,21 +228,41 @@ class DemoWorldRenderer:
             coords.add((x, y - 1 if y % SECTION_SIZE == 0 else y + 1, z))
         if z % SECTION_SIZE in {0, SECTION_SIZE - 1}:
             coords.add((x, y, z - 1 if z % SECTION_SIZE == 0 else z + 1))
+        affected_chunks: set[ChunkCoord] = set()
         for world_x, world_y, world_z in coords:
             if not 0 <= world_y < CHUNK_HEIGHT:
                 continue
-            chunk_x, local_x = divmod(world_x, SECTION_SIZE)
-            chunk_z, local_z = divmod(world_z, SECTION_SIZE)
-            del local_x, local_z
-            section_y = world_y // SECTION_SIZE
+            chunk_x = world_x // SECTION_SIZE
+            chunk_z = world_z // SECTION_SIZE
             chunk = self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z))
-            key = SectionCoord(chunk_x, section_y, chunk_z)
+            if chunk is not None:
+                affected_chunks.add(chunk.coord)
+        for chunk_coord in affected_chunks:
+            chunk = self.streamer.get_chunk(chunk_coord)
             if chunk is None:
-                self.mesh_cache.remove(key)
                 continue
-            section = chunk.sections[section_y]
+            relight_chunk(chunk, self.registry)
+            self._upload_lit_chunk(chunk)
+
+    def _upload_lit_chunk(self, chunk: Chunk) -> None:
+        for section_y, section in enumerate(chunk.sections):
+            key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
                 self.mesh_cache.remove(key)
                 continue
-            mesh = build_visible_face_mesh(section, self.registry, self.atlas_uvs)
-            self.mesh_cache.upload(key, mesh)
+            mesh = self._build_mesh(section)
+            if mesh.indices.size:
+                self.mesh_cache.upload(key, mesh)
+
+    def _build_mesh(self, section: ChunkSection) -> MeshData:
+        return build_visible_face_mesh(
+            section,
+            self.registry,
+            self.atlas_uvs,
+            smooth_lighting=self.smooth_lighting,
+            ambient_occlusion=self.ambient_occlusion,
+        )
+
+    def _remesh_all(self) -> None:
+        for chunk in self.streamer.loaded_chunks():
+            self._upload_lit_chunk(chunk)

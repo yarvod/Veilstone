@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("benchmark-mesher", help="Run the section meshing benchmark")
     subparsers.add_parser("benchmark-worldgen", help="Run the world generation benchmark")
     subparsers.add_parser("benchmark-physics", help="Run the player physics benchmark")
+    subparsers.add_parser("benchmark-lighting", help="Run the chunk lighting benchmark")
     subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
     return parser
 

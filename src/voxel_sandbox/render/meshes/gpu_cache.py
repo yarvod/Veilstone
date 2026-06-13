@@ -39,11 +39,12 @@ class SectionMeshCache:
             [
                 (
                     vertex_buffer,
-                    "3f 2f 3f 1f 1f",
+                    "3f 2f 3f 1f 1f 1f",
                     "in_position",
                     "in_uv",
                     "in_normal",
-                    "in_light",
+                    "in_sky_light",
+                    "in_block_light",
                     "in_ao",
                 )
             ],

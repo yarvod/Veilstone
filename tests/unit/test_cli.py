@@ -25,6 +25,7 @@ def test_developer_benchmark_commands_are_registered() -> None:
         "benchmark-mesher",
         "benchmark-worldgen",
         "benchmark-physics",
+        "benchmark-lighting",
         "benchmark-network",
     ):
         assert parser.parse_args([command]).command == command
