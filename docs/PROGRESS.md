@@ -11,10 +11,13 @@
 - [x] Base project skeleton committed as `3e51c4b phase-01.items-01-03`.
 - [x] Pyglet window creates a ModernGL 3.3 context and clears the frame.
 - [x] Fixed-rate camera movement, mouse look, and FPS/debug overlays are implemented.
+- [x] Client shell committed as `5e0ee3c phase-01.items-04-06`.
+- [x] Client, server, and host smoke paths pass on macOS with OpenGL 4.1 Metal.
+- [x] Phase gate passes: 9 tests, Ruff, Ruff format check, and Pyright.
 
 ### In progress
 
-- [ ] Complete Phase 1 verification and create the stable phase tag.
+- [ ] Phase 2 shader loading and hot reload.
 
 ### Failed checks
 
@@ -22,7 +25,8 @@ None recorded.
 
 ### Performance notes
 
-Not applicable before rendering and chunk meshing.
+The empty client shell runs with a fixed 60 Hz update and a variable render loop.
+Meshing performance is not applicable until Phase 4.
 
 ### Known bugs
 
@@ -30,5 +34,5 @@ None recorded.
 
 ### Next recommended tasks
 
-- Verify client, server, and host smoke paths.
-- Start block registry and chunk storage work.
+- Add shader loading and development hot reload.
+- Start block registry, coordinate types, and chunk storage.
