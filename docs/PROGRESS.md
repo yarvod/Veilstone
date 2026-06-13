@@ -119,6 +119,8 @@ Phase 11 - Entities and mobs: complete and ready for manual testing.
 - [x] ECS item pickup replaces the temporary invisible drop store in gameplay.
 - [x] Unit coverage for storage cleanup, health, AI transitions, spawn rules, death, and pickup.
 - [x] Final gate: 92 tests, Ruff, Pyright, entity shader/application smoke, and benchmarks.
+- commit: `26f4d17`.
+- tag: `phase-11-complete`.
 
 ## Failed checks
 
