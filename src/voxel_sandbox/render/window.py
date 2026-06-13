@@ -14,6 +14,7 @@ from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.render.camera import FirstPersonCamera, MovementIntent
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
+from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
 LOGGER = logging.getLogger(__name__)
 FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
@@ -46,6 +47,7 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context,
             ShaderFiles.from_directory(shader_root, "debug"),
         )
+        self.world_renderer = DemoWorldRenderer(self.mgl_context)
         self.camera = FirstPersonCamera()
         self.menu = MenuController()
         self.held_keys: set[int] = set()
@@ -96,6 +98,7 @@ class GameWindow(pyglet.window.Window):
         pyglet.clock.unschedule(self.fixed_update)
         pyglet.clock.unschedule(self.reload_shaders)
         self.debug_shader.release()
+        self.world_renderer.release()
         super().close()
 
     def reload_shaders(self, delta_time: float) -> None:
@@ -121,6 +124,12 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             self._draw_menu()
             return
+        self.world_renderer.render(
+            self.camera,
+            self.width,
+            self.height,
+            self.settings.camera.field_of_view,
+        )
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
         frame_time_ms = 1000.0 / fps if fps > 0.0 else 0.0
@@ -128,6 +137,8 @@ class GameWindow(pyglet.window.Window):
             f"FPS {fps:5.1f}  Frame {frame_time_ms:5.2f} ms\n"
             f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
             f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
+            f"\nFaces {self.world_renderer.mesh.face_count}  "
+            f"Triangles {self.world_renderer.mesh.triangle_count}  Draws 1"
         )
         self.debug_label.y = self.height - 10
         self.debug_label.draw()
@@ -239,6 +250,11 @@ def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
     if smoke_test:
         window.switch_to()
         window.dispatch_events()
+        window.dispatch_event("on_draw")
+        window.flip()
+        from voxel_sandbox.render.ui.menu import Screen
+
+        window.menu.screen = Screen.GAME
         window.dispatch_event("on_draw")
         window.flip()
         window.close()
