@@ -5,10 +5,13 @@ import pytest
 from voxel_sandbox.__main__ import build_parser, main
 
 
-def test_cli_requires_a_command() -> None:
+def test_cli_defaults_to_client() -> None:
     parser = build_parser()
-    with pytest.raises(SystemExit):
-        parser.parse_args([])
+    assert parser.parse_args([]).command is None
+
+
+def test_default_application_smoke_command() -> None:
+    assert main(["--smoke-test"]) == 0
 
 
 @pytest.mark.parametrize("command", ["client", "server", "host"])

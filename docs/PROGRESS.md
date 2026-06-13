@@ -51,6 +51,25 @@ None recorded.
 
 None recorded.
 
+## Phase 17 - UI polish and settings (foundation pulled forward)
+
+### Completed
+
+- [x] `uv run python -m voxel_sandbox` is the player-facing entry point.
+- [x] Main Menu exposes Singleplayer, Multiplayer, Settings, and Exit.
+- [x] Singleplayer exposes Create World and Load World prototype actions.
+- [x] Multiplayer exposes Join LAN World and Direct Connect placeholders.
+- [x] Gameplay `Escape` opens a Pause Menu with Open to LAN.
+- [x] Menu transitions are covered by unit tests.
+
+### In progress
+
+- [ ] Real world creation/loading, settings controls, and networking remain in their phases.
+
+### Known bugs
+
+None recorded.
+
 ### Performance notes
 
 Automatic shader timestamp checks run twice per second and do no source reads when unchanged.

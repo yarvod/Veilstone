@@ -7,6 +7,14 @@ Veilstone is an original Python voxel sandbox engine prototype. It uses Python 3
 
 ```bash
 uv sync
+uv run python -m voxel_sandbox
+```
+
+This is the player-facing entry point. It opens the Main Menu with Singleplayer,
+Multiplayer, Settings, and Exit. The technical commands remain available for development
+and dedicated server use:
+
+```bash
 uv run python -m voxel_sandbox --help
 uv run python -m voxel_sandbox client
 uv run python -m voxel_sandbox server
@@ -27,11 +35,11 @@ Runtime settings live in `config/settings.toml`.
 
 Client controls:
 
+- Arrow keys or `W/S` and `Enter`: navigate menus.
 - `W/A/S/D`: move horizontally.
 - `Space` / `Shift`: move up / down in the free camera.
 - Mouse: look around.
-- `Escape`: release or recapture the mouse.
-- Left click: recapture a released mouse.
+- `Escape`: open the Pause Menu while playing, or go back in menus.
 - `F5`: force shader reload.
 
 ## Architecture

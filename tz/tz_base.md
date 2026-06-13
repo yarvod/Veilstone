@@ -440,6 +440,29 @@ EntityRenderSystem
 
 ## 5. Entry points
 
+Основной player-facing entry point должен быть один:
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+Он открывает игровой Main Menu:
+
+```text
+Main Menu
+  ├── Singleplayer
+  │    └── Create/Load World
+  │         └── Pause Menu
+  │              └── Open to LAN
+  ├── Multiplayer
+  │    ├── Join LAN World
+  │    └── Direct Connect
+  ├── Settings
+  └── Exit
+```
+
+Технические entry points остаются для разработки, dedicated server и benchmark-сценариев:
+
 Нужны понятные entry points:
 
 ```bash
@@ -1637,24 +1660,24 @@ chunk upload to GPU:            amortized, not all at once
 
 Checklist:
 
-- [ ] Create Python package `voxel_sandbox`.
-- [ ] Configure `pyproject.toml`.
-- [ ] Add Ruff.
-- [ ] Add Pyright or mypy.
-- [ ] Add pytest.
-- [ ] Add CLI entry point.
-- [ ] Add logging.
-- [ ] Add config loading.
-- [ ] Add `client`, `server`, `host` commands.
-- [ ] Add dev README.
-- [ ] Add architecture decision records folder.
+- [x] Create Python package `voxel_sandbox`.
+- [x] Configure `pyproject.toml`.
+- [x] Add Ruff.
+- [x] Add Pyright or mypy.
+- [x] Add pytest.
+- [x] Add CLI entry point.
+- [x] Add logging.
+- [x] Add config loading.
+- [x] Add `client`, `server`, `host` commands.
+- [x] Add dev README.
+- [x] Add architecture decision records folder.
 
 Done when:
 
-- [ ] `python -m voxel_sandbox --help` works.
-- [ ] Tests run.
-- [ ] Linter passes.
-- [ ] Empty client window can open.
+- [x] `python -m voxel_sandbox --help` works.
+- [x] Tests run.
+- [x] Linter passes.
+- [x] Empty client window can open.
 
 ---
 
@@ -1662,21 +1685,21 @@ Done when:
 
 Checklist:
 
-- [ ] Create pyglet window.
-- [ ] Create ModernGL context.
-- [ ] Render clear color.
-- [ ] Implement camera.
-- [ ] Implement input system.
-- [ ] Implement fixed update loop + variable render loop.
-- [ ] Add debug overlay FPS/frame time.
-- [ ] Add shader loading.
-- [ ] Add hot reload shaders in dev mode.
+- [x] Create pyglet window.
+- [x] Create ModernGL context.
+- [x] Render clear color.
+- [x] Implement camera.
+- [x] Implement input system.
+- [x] Implement fixed update loop + variable render loop.
+- [x] Add debug overlay FPS/frame time.
+- [x] Add shader loading.
+- [x] Add hot reload shaders in dev mode.
 
 Done when:
 
 - [ ] Empty 3D scene runs at stable FPS.
-- [ ] Camera moves.
-- [ ] Debug overlay shows FPS.
+- [x] Camera moves.
+- [x] Debug overlay shows FPS.
 
 ---
 
@@ -2028,7 +2051,7 @@ Done when:
 
 Checklist:
 
-- [ ] Main menu.
+- [x] Main menu.
 - [ ] Create world menu.
 - [ ] Load world menu.
 - [ ] Host LAN menu.
@@ -2037,8 +2060,8 @@ Checklist:
 - [ ] Controls menu.
 - [ ] Inventory UI.
 - [ ] Crafting UI.
-- [ ] Pause menu.
-- [ ] Debug overlay.
+- [x] Pause menu.
+- [x] Debug overlay.
 - [ ] Key rebinding.
 - [ ] Persist settings.
 
@@ -2879,18 +2902,18 @@ Start with this exact first task:
 
 Acceptance criteria:
 
-- [ ] `python -m voxel_sandbox client` opens a window.
-- [ ] Mouse look and WASD camera movement work.
-- [ ] FPS is displayed.
-- [ ] `python -m voxel_sandbox server` starts a placeholder server loop.
-- [ ] `python -m voxel_sandbox host` starts placeholder host mode.
-- [ ] `pytest` passes.
-- [ ] `ruff check .` passes.
-- [ ] README explains how to run.
-- [ ] Git repository is initialized if it did not exist.
-- [ ] `.gitignore` exists and excludes caches, `.venv`, logs, saves and build artifacts.
-- [ ] Each completed checklist group is committed with `phase-01.item-XX` messages.
-- [ ] `docs/PROGRESS.md` and `docs/NEXT_STEPS.md` exist.
+- [x] `python -m voxel_sandbox client` opens a window.
+- [x] Mouse look and WASD camera movement work.
+- [x] FPS is displayed.
+- [x] `python -m voxel_sandbox server` starts a placeholder server loop.
+- [x] `python -m voxel_sandbox host` starts placeholder host mode.
+- [x] `pytest` passes.
+- [x] `ruff check .` passes.
+- [x] README explains how to run.
+- [x] Git repository is initialized if it did not exist.
+- [x] `.gitignore` exists and excludes caches, `.venv`, logs, saves and build artifacts.
+- [x] Each completed checklist group is committed with `phase-01.item-XX` messages.
+- [x] `docs/PROGRESS.md` and `docs/NEXT_STEPS.md` exist.
 
 ---
 

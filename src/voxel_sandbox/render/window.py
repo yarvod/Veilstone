@@ -13,6 +13,7 @@ from pyglet.window import key, mouse
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.render.camera import FirstPersonCamera, MovementIntent
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
+from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
 
 LOGGER = logging.getLogger(__name__)
 FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
@@ -46,10 +47,9 @@ class GameWindow(pyglet.window.Window):
             ShaderFiles.from_directory(shader_root, "debug"),
         )
         self.camera = FirstPersonCamera()
+        self.menu = MenuController()
         self.held_keys: set[int] = set()
-        self.mouse_captured = visible
-        if visible:
-            self.set_exclusive_mouse(True)
+        self.mouse_captured = False
         self.fps_display = pyglet.window.FPSDisplay(self)
         self.debug_label = pyglet.text.Label(
             "",
@@ -61,6 +61,32 @@ class GameWindow(pyglet.window.Window):
             font_size=11,
             color=(225, 235, 255, 255),
         )
+        self.menu_title = pyglet.text.Label(
+            "",
+            anchor_x="center",
+            anchor_y="center",
+            font_name="Menlo",
+            font_size=30,
+            color=(220, 230, 255, 255),
+        )
+        self.menu_status = pyglet.text.Label(
+            "",
+            anchor_x="center",
+            anchor_y="center",
+            font_name="Menlo",
+            font_size=10,
+            color=(160, 180, 215, 255),
+        )
+        self.menu_labels = [
+            pyglet.text.Label(
+                "",
+                anchor_x="center",
+                anchor_y="center",
+                font_name="Menlo",
+                font_size=16,
+            )
+            for _ in range(6)
+        ]
         pyglet.clock.schedule_interval(self.fixed_update, FIXED_UPDATE_SECONDS)
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
@@ -77,6 +103,8 @@ class GameWindow(pyglet.window.Window):
         self.debug_shader.reload_if_changed()
 
     def fixed_update(self, delta_time: float) -> None:
+        if not self.menu.in_game:
+            return
         forward = float(key.W in self.held_keys) - float(key.S in self.held_keys)
         right = float(key.D in self.held_keys) - float(key.A in self.held_keys)
         up = float(key.SPACE in self.held_keys) - float(
@@ -90,8 +118,14 @@ class GameWindow(pyglet.window.Window):
 
     def on_draw(self) -> None:
         self.mgl_context.clear(0.025, 0.04, 0.075, 1.0, depth=1.0)
+        if not self.menu.in_game:
+            self._draw_menu()
+            return
         x, y, z = self.camera.position
+        fps = pyglet.clock.get_frequency()
+        frame_time_ms = 1000.0 / fps if fps > 0.0 else 0.0
         self.debug_label.text = (
+            f"FPS {fps:5.1f}  Frame {frame_time_ms:5.2f} ms\n"
             f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
             f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
         )
@@ -101,9 +135,20 @@ class GameWindow(pyglet.window.Window):
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
+        if not self.menu.in_game:
+            if symbol in {key.UP, key.W}:
+                self.menu.move_selection(-1)
+            elif symbol in {key.DOWN, key.S}:
+                self.menu.move_selection(1)
+            elif symbol in {key.ENTER, key.RETURN, key.SPACE}:
+                self._handle_menu_command(self.menu.activate())
+            elif symbol == key.ESCAPE:
+                self.menu.back()
+            self._sync_mouse_capture()
+            return
         if symbol == key.ESCAPE:
-            self.mouse_captured = not self.mouse_captured
-            self.set_exclusive_mouse(self.mouse_captured)
+            self.menu.back()
+            self._sync_mouse_capture()
             return
         if symbol == key.F5:
             self.debug_shader.reload(force=True)
@@ -115,19 +160,78 @@ class GameWindow(pyglet.window.Window):
         self.held_keys.discard(symbol)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
-        del x, y, modifiers
-        if button == mouse.LEFT and not self.mouse_captured:
-            self.mouse_captured = True
-            self.set_exclusive_mouse(True)
+        del modifiers
+        if button == mouse.LEFT and not self.menu.in_game:
+            index = self._menu_index_at(x, y)
+            if index is not None:
+                self.menu.select(index)
+                self._handle_menu_command(self.menu.activate())
+                self._sync_mouse_capture()
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
-        del x, y
+        if not self.menu.in_game:
+            index = self._menu_index_at(x, y)
+            if index is not None:
+                self.menu.select(index)
+            return
         if self.mouse_captured:
             self.camera.rotate(
                 float(dx),
                 float(dy),
                 self.settings.camera.mouse_sensitivity,
             )
+
+    def _draw_menu(self) -> None:
+        center_x = self.width // 2
+        self.menu_title.text = self.menu.title
+        self.menu_title.x = center_x
+        self.menu_title.y = self.height * 3 // 4
+        self.menu_title.draw()
+
+        for index, label in enumerate(self.menu_labels):
+            if index >= len(self.menu.items):
+                label.text = ""
+                continue
+            label.text = self.menu.items[index].label
+            label.x = center_x
+            label.y = self._menu_item_y(index)
+            label.color = (
+                (245, 220, 140, 255)
+                if index == self.menu.selected_index
+                else (
+                    205,
+                    215,
+                    235,
+                    255,
+                )
+            )
+            label.draw()
+
+        self.menu_status.text = self.menu.status
+        self.menu_status.x = center_x
+        self.menu_status.y = self.height // 4
+        self.menu_status.draw()
+
+    def _menu_item_y(self, index: int) -> int:
+        return self.height // 2 + 45 - index * 48
+
+    def _menu_index_at(self, x: int, y: int) -> int | None:
+        if abs(x - self.width // 2) > 180:
+            return None
+        for index in range(len(self.menu.items)):
+            if abs(y - self._menu_item_y(index)) <= 20:
+                return index
+        return None
+
+    def _handle_menu_command(self, command: MenuCommand) -> None:
+        if command is MenuCommand.CLOSE:
+            self.close()
+
+    def _sync_mouse_capture(self) -> None:
+        should_capture = self.menu.in_game
+        if should_capture != self.mouse_captured:
+            self.mouse_captured = should_capture
+            self.set_exclusive_mouse(should_capture)
 
 
 def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
