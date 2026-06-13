@@ -53,8 +53,9 @@ def run_command(args: argparse.Namespace) -> int:
 
         return run_benchmark(settings)
     if command == "benchmark-network":
-        LOGGER.error("Network benchmark is not available before Phase 13")
-        return 2
+        from voxel_sandbox.tools.benchmark_network import run_benchmark
+
+        return run_benchmark()
     raise ValueError(f"Unsupported command: {command}")
 
 

@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 12 - Save/load: complete and ready for manual testing.
+Phase 13 - Local multiplayer MVP: in progress.
 
 ## Completed checklist
 
@@ -137,6 +137,19 @@ Phase 12 - Save/load: complete and ready for manual testing.
 - commit: `fc18e1e`.
 - tag: `phase-12-complete`.
 
+### Phase 13 - Local multiplayer MVP (in progress)
+
+- [x] 4 MiB-bounded length-prefixed frames with msgpack maps and binary payloads.
+- [x] Threaded TCP server and client with protocol-version handshake and join.
+- [x] Player input/state updates and broadcast entity snapshots.
+- [x] Chunk request/response with binary voxel payload.
+- [x] Block delta and chat broadcast replication.
+- [x] Two-client integration test covers join, visibility, input, chunk, block, and chat.
+- [x] Dedicated server command now starts the real TCP transport.
+- [x] Network benchmark serializes/transfers/decodes 1000 frames at about `0.002 ms/frame`.
+- [ ] Connect remote chunk payloads to the graphical client's world/renderer.
+- [ ] Wire `client --connect` and in-game Direct Connect UI to `LanClient`.
+
 ## Failed checks
 
 None recorded.
@@ -169,4 +182,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Test Phase 12 persistence, then continue with Phase 13 local multiplayer.
+Continue Phase 13 by feeding remote chunks and snapshots into the graphical client.

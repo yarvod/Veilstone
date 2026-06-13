@@ -12,6 +12,7 @@ license = { text = "Proprietary" }
 authors = [{ name = "Voxel Sandbox Contributors" }]
 dependencies = [
     "moderngl>=5.12.0,<6",
+    "msgpack>=1.1,<2",
     "numpy>=2.2.0,<3",
     "pillow>=11.0.0,<12",
     "pyglet>=2.1.0,<3",

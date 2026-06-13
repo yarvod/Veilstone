@@ -2002,27 +2002,27 @@ Done when:
 
 Checklist:
 
-- [ ] Implement protocol frame.
-- [ ] Implement msgpack payloads.
-- [ ] Implement TCP server.
-- [ ] Implement TCP client.
-- [ ] Implement handshake.
-- [ ] Implement join.
-- [ ] Server sends chunks.
+- [x] Implement protocol frame.
+- [x] Implement msgpack payloads.
+- [x] Implement TCP server.
+- [x] Implement TCP client.
+- [x] Implement handshake.
+- [x] Implement join.
+- [x] Server sends chunks.
 - [ ] Client renders received chunks.
-- [ ] Client sends input.
-- [ ] Server updates player state.
-- [ ] Server sends entity snapshots.
-- [ ] Implement block action replication.
-- [ ] Implement chat.
-- [ ] Add integration test for client/server.
+- [x] Client sends input.
+- [x] Server updates player state.
+- [x] Server sends entity snapshots.
+- [x] Implement block action replication.
+- [x] Implement chat.
+- [x] Add integration test for client/server.
 
 Done when:
 
-- [ ] Two clients can join LAN server.
-- [ ] Players see each other.
-- [ ] Block changes replicate.
-- [ ] Chat works.
+- [x] Two clients can join LAN server.
+- [x] Players see each other.
+- [x] Block changes replicate.
+- [x] Chat works.
 
 ---
 

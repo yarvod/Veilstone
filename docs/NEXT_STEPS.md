@@ -1,12 +1,13 @@
 # Next steps
 
-Phase 12 is ready for manual testing. Development continues with Phase 13 after this gate.
+Phase 13 transport is implemented; graphical remote-world integration remains.
 
 1. Run `uv run python -m voxel_sandbox`.
-2. Break/place a distinctive block, change inventory/hotbar selection, and move elsewhere.
-3. Exit normally, rerun the game, choose Load World, and verify block/player/inventory state.
-4. Move far enough to unload an edited chunk, return, and verify the edit remains.
-5. Inspect `saves/dev_world/level.toml`, `players/`, and compressed files under `regions/`.
-6. Leave the game running beyond five seconds and verify autosave timestamps/files update.
-7. Run `uv run pytest -q tests/integration/test_world_persistence.py`.
-8. Run `uv run python -m voxel_sandbox benchmark-frame-streaming`.
+2. Decode received chunk payloads into client-side chunk objects.
+3. Add a remote-world source to the existing streamer/renderer boundary.
+4. Render server entity snapshots as remote players.
+5. Pass `client --connect HOST:PORT` through bootstrap into the graphical client.
+6. Connect Direct Connect menu input to the same client path.
+7. Route local block actions and chat UI through `LanClient`.
+8. Run `uv run pytest -q tests/integration/test_lan_client_server.py`.
+9. Run `uv run python -m voxel_sandbox benchmark-network`.
