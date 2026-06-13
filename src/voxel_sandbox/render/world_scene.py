@@ -8,15 +8,19 @@ from typing import cast
 import moderngl
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
-from voxel_sandbox.engine.chunks import ChunkSection
+from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkSection, SectionCoord
 from voxel_sandbox.render.camera import FirstPersonCamera
+from voxel_sandbox.render.frustum import aabb_intersects_frustum
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.meshes import MeshData, build_visible_face_mesh
+from voxel_sandbox.render.meshes.gpu_cache import SectionMeshCache
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.texture_atlas import create_block_atlas
 
 
 class DemoWorldRenderer:
+    SECTION_KEY = SectionCoord(0, 0, 0)
+
     def __init__(self, context: moderngl.Context) -> None:
         self.context = context
         shader_root = Path(__file__).parent / "shaders" / "glsl"
@@ -28,21 +32,22 @@ class DemoWorldRenderer:
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.texture.build_mipmaps()
         section = _create_demo_section()
-        self.mesh: MeshData = build_visible_face_mesh(
+        mesh = build_visible_face_mesh(
             section,
             create_core_block_registry(),
             atlas.uvs,
         )
-        self.vertex_buffer = context.buffer(self.mesh.vertices.tobytes())
-        self.index_buffer = context.buffer(self.mesh.indices.tobytes())
         if self.shader.program is None:
             raise RuntimeError("Chunk shader failed to compile")
-        self.vertex_array = context.vertex_array(
-            self.shader.program,
-            [(self.vertex_buffer, "3f 2f 3f", "in_position", "in_uv", "in_normal")],
-            self.index_buffer,
-            index_element_size=4,
-        )
+        self.mesh_cache = SectionMeshCache(context, self.shader.program)
+        self.mesh_cache.upload(self.SECTION_KEY, mesh)
+
+    @property
+    def mesh(self) -> MeshData:
+        gpu_mesh = self.mesh_cache.get(self.SECTION_KEY)
+        if gpu_mesh is None:
+            raise RuntimeError("Demo section mesh is not uploaded")
+        return gpu_mesh.data
 
     def render(self, camera: FirstPersonCamera, width: int, height: int, fov: float) -> None:
         if self.shader.program is None:
@@ -53,12 +58,28 @@ class DemoWorldRenderer:
         camera_uniform.write(matrix.T.astype("f4").tobytes())
         self.texture.use(0)
         texture_uniform.value = 0
-        self.vertex_array.render(moderngl.TRIANGLES)
+        gpu_mesh = self.mesh_cache.get(self.SECTION_KEY)
+        if gpu_mesh is None:
+            return
+        origin = (
+            self.SECTION_KEY.x * SECTION_SIZE,
+            self.SECTION_KEY.y * SECTION_SIZE,
+            self.SECTION_KEY.z * SECTION_SIZE,
+        )
+        minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
+        maximum = (
+            float(origin[0] + SECTION_SIZE),
+            float(origin[1] + SECTION_SIZE),
+            float(origin[2] + SECTION_SIZE),
+        )
+        if not aabb_intersects_frustum(matrix, minimum, maximum):
+            return
+        origin_uniform = cast("moderngl.Uniform", self.shader.program["section_origin"])
+        origin_uniform.value = origin
+        gpu_mesh.vertex_array.render(moderngl.TRIANGLES)
 
     def release(self) -> None:
-        self.vertex_array.release()
-        self.index_buffer.release()
-        self.vertex_buffer.release()
+        self.mesh_cache.release()
         self.texture.release()
         self.shader.release()
 
