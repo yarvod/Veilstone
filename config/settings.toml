@@ -1,0 +1,15 @@
+[window]
+title = "Veilstone"
+width = 1280
+height = 720
+vsync = true
+fullscreen = false
+
+[camera]
+field_of_view = 70.0
+movement_speed = 8.0
+mouse_sensitivity = 0.12
+
+[logging]
+level = "INFO"
+

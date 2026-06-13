@@ -1,0 +1,20 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from voxel_sandbox.app.settings import AppSettings, load_settings
+
+
+def test_missing_settings_file_uses_defaults(tmp_path: Path) -> None:
+    assert load_settings(tmp_path / "missing.toml") == AppSettings()
+
+
+def test_settings_are_loaded_from_toml(tmp_path: Path) -> None:
+    config_path = tmp_path / "settings.toml"
+    config_path.write_text('[window]\ntitle = "Test World"\nwidth = 800\n', encoding="utf-8")
+
+    settings = load_settings(config_path)
+
+    assert settings.window.title == "Test World"
+    assert settings.window.width == 800
+    assert settings.window.height == 720

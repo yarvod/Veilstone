@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "voxel-sandbox"
+version = "0.1.0"
+description = "An original Python voxel sandbox engine prototype"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "Proprietary" }
+authors = [{ name = "Voxel Sandbox Contributors" }]
+dependencies = [
+    "moderngl>=5.12.0,<6",
+    "numpy>=2.2.0,<3",
+    "pillow>=11.0.0,<12",
+    "pyglet>=2.1.0,<3",
+]
+
+[project.scripts]
+voxel = "voxel_sandbox.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.400,<2",
+    "pytest>=8.3.0,<9",
+    "ruff>=0.11.0,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/voxel_sandbox"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+

@@ -16,10 +16,7 @@ venv/
 env/
 ENV/
 
-# uv
-uv.lock
-# Если хочешь фиксировать зависимости для воспроизводимости, УДАЛИ строку uv.lock выше.
-# Для игры/приложения обычно лучше коммитить uv.lock.
+# uv lock files are committed for reproducible application builds.
 
 # Test / lint / typecheck caches
 .pytest_cache/
