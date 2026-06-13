@@ -15,3 +15,9 @@ level = "INFO"
 
 [development]
 shader_hot_reload = true
+
+[world]
+seed = "veilstone-dev"
+render_distance = 2
+generation_workers = 2
+chunk_uploads_per_frame = 2

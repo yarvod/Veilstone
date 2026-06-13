@@ -33,11 +33,20 @@ class DevelopmentSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class WorldSettings:
+    seed: str = "veilstone-dev"
+    render_distance: int = 2
+    generation_workers: int = 2
+    chunk_uploads_per_frame: int = 2
+
+
+@dataclass(frozen=True, slots=True)
 class AppSettings:
     window: WindowSettings = WindowSettings()
     camera: CameraSettings = CameraSettings()
     logging: LoggingSettings = LoggingSettings()
     development: DevelopmentSettings = DevelopmentSettings()
+    world: WorldSettings = WorldSettings()
 
 
 def _section(data: dict[str, Any], key: str) -> dict[str, Any]:
@@ -60,4 +69,5 @@ def load_settings(path: Path | None = None) -> AppSettings:
         camera=CameraSettings(**_section(data, "camera")),
         logging=LoggingSettings(**_section(data, "logging")),
         development=DevelopmentSettings(**_section(data, "development")),
+        world=WorldSettings(**_section(data, "world")),
     )

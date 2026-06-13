@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import moderngl
@@ -43,6 +44,9 @@ class SectionMeshCache:
 
     def get(self, key: SectionCoord) -> GpuSectionMesh | None:
         return self._meshes.get(key)
+
+    def items(self) -> Iterator[tuple[SectionCoord, GpuSectionMesh]]:
+        return iter(self._meshes.items())
 
     def remove(self, key: SectionCoord) -> None:
         previous = self._meshes.pop(key, None)

@@ -47,8 +47,14 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context,
             ShaderFiles.from_directory(shader_root, "debug"),
         )
-        self.world_renderer = DemoWorldRenderer(self.mgl_context)
         self.camera = FirstPersonCamera()
+        self.world_renderer = DemoWorldRenderer(
+            self.mgl_context,
+            seed=settings.world.seed,
+            render_distance=settings.world.render_distance,
+            generation_workers=settings.world.generation_workers,
+            uploads_per_frame=settings.world.chunk_uploads_per_frame,
+        )
         self.menu = MenuController()
         self.held_keys: set[int] = set()
         self.mouse_captured = False
@@ -137,8 +143,12 @@ class GameWindow(pyglet.window.Window):
             f"FPS {fps:5.1f}  Frame {frame_time_ms:5.2f} ms\n"
             f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
             f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
-            f"\nFaces {self.world_renderer.mesh.face_count}  "
-            f"Triangles {self.world_renderer.mesh.triangle_count}  Draws 1"
+            f"\nChunks {self.world_renderer.loaded_chunks}  "
+            f"Pending {self.world_renderer.pending_chunks}  "
+            f"Visible sections {self.world_renderer.visible_sections}\n"
+            f"Faces {self.world_renderer.face_count}  "
+            f"Triangles {self.world_renderer.triangle_count}  "
+            f"Draws {self.world_renderer.draw_calls}"
         )
         self.debug_label.y = self.height - 10
         self.debug_label.draw()
