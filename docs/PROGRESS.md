@@ -41,10 +41,11 @@ None recorded.
 - [x] Development hot reload checks timestamps and keeps the previous program on failure.
 - [x] `F5` forces a shader reload.
 - [x] Client smoke test compiles the debug shader on macOS OpenGL 4.1 Metal.
+- [x] Shader layer committed as `39abdea phase-02.items-01-03`.
 
 ### In progress
 
-- [ ] Commit Phase 2 and begin block/chunk data structures.
+- [ ] Phase 3 block registry and chunk storage.
 
 ### Failed checks
 
