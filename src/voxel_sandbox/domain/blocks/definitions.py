@@ -10,6 +10,7 @@ class Material(Enum):
     EARTH = "earth"
     WOOD = "wood"
     PLANT = "plant"
+    LIGHT = "light"
     GLASS = "glass"
     FLUID = "fluid"
 

@@ -14,7 +14,7 @@ class GeneratedAtlas:
 
 
 def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
-    columns = 4
+    columns = 5
     rows = 2
     image = Image.new("RGBA", (tile_size * columns, tile_size * rows))
     draw = ImageDraw.Draw(image)
@@ -27,6 +27,7 @@ def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
         "veilwood_bark": (64, 55, 72, 255),
         "veilwood_leaves": (48, 85, 76, 255),
         "dusk_crystal_ore": (90, 72, 122, 255),
+        "gloam_lantern": (226, 154, 72, 255),
     }
     positions = {
         "stone": (0, 0),
@@ -37,6 +38,7 @@ def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
         "veilwood_bark": (3, 0),
         "veilwood_leaves": (2, 1),
         "dusk_crystal_ore": (3, 1),
+        "gloam_lantern": (4, 0),
     }
     uvs: dict[str, tuple[float, float, float, float]] = {}
     for name, (tile_x, tile_y) in positions.items():

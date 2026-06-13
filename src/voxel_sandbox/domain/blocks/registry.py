@@ -114,5 +114,19 @@ def create_core_block_registry() -> BlockRegistry:
                 texture_side="dusk_crystal_ore",
                 texture_bottom="dusk_crystal_ore",
             ),
+            BlockDef(
+                7,
+                "gloam_lantern",
+                "Gloam Lantern",
+                Material.LIGHT,
+                0.1,
+                is_solid=False,
+                is_opaque=False,
+                is_transparent=True,
+                emits_light=14,
+                texture_top="gloam_lantern",
+                texture_side="gloam_lantern",
+                texture_bottom="gloam_lantern",
+            ),
         )
     )
