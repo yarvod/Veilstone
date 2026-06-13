@@ -149,6 +149,7 @@ Phase 13 - Local multiplayer MVP: in progress.
 - [x] Network benchmark serializes/transfers/decodes 1000 frames at about `0.002 ms/frame`.
 - [ ] Connect remote chunk payloads to the graphical client's world/renderer.
 - [ ] Wire `client --connect` and in-game Direct Connect UI to `LanClient`.
+- commit: `456053d` (partial phase; no completion tag yet).
 
 ## Failed checks
 
