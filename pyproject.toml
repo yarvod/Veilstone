@@ -22,6 +22,7 @@ voxel = "voxel_sandbox.__main__:main"
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.0,<7",
     "pyright>=1.1.400,<2",
     "pytest>=8.3.0,<9",
     "ruff>=0.11.0,<1",
@@ -31,8 +32,13 @@ dev = [
 packages = ["src/voxel_sandbox"]
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "-ra --strict-markers"
 testpaths = ["tests"]
+markers = [
+    "unit: isolated deterministic tests without window or service composition",
+    "integration: tests that compose multiple engine/application subsystems",
+    "smoke: tests that start a real application entry point and runtime resources",
+]
 
 [tool.ruff]
 line-length = 100
@@ -47,4 +53,3 @@ pythonVersion = "3.13"
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
-

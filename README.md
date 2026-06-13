@@ -34,10 +34,18 @@ Quality checks:
 
 ```bash
 uv run pytest
+uv run pytest -m unit
+uv run pytest -m integration
+uv run pytest -m smoke
 uv run ruff check .
 uv run ruff format --check .
 uv run pyright
 ```
+
+Pytest markers separate isolated unit tests from subsystem integration and real application
+smoke tests. Hypothesis covers broad coordinate invariants and automatically shrinks failing
+examples. The smoke suite creates the actual OpenGL context, compiles shaders, renders the
+menu and world once, and starts the dedicated server entry point.
 
 The committed `.python-version` and `pyproject.toml` keep the project on Python 3.13.
 Runtime settings live in `config/settings.toml`.
