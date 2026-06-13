@@ -1,0 +1,24 @@
+from __future__ import annotations
+
+from voxel_sandbox.engine.generation import find_safe_spawn
+
+
+def test_safe_spawn_moves_away_from_tree_at_preferred_position() -> None:
+    def get_block(x: int, y: int, z: int) -> int:
+        if y == 9:
+            return 1
+        if x == 8 and z == 8 and y in {10, 11}:
+            return 4
+        return 0
+
+    spawn = find_safe_spawn(
+        get_block,
+        lambda x, z: 10,
+        lambda block_id: block_id != 0,
+    )
+
+    assert spawn != (8.5, 10.0, 8.5)
+    x, y, z = int(spawn[0]), int(spawn[1]), int(spawn[2])
+    assert get_block(x, y - 1, z) != 0
+    assert get_block(x, y, z) == 0
+    assert get_block(x, y + 1, z) == 0

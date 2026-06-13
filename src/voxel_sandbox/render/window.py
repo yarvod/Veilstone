@@ -13,6 +13,7 @@ from pyglet.window import key, mouse
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.render.camera import FirstPersonCamera
+from voxel_sandbox.render.input_state import KeyState
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
@@ -66,7 +67,7 @@ class GameWindow(pyglet.window.Window):
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
-        self.held_keys: set[int] = set()
+        self.key_state = KeyState()
         self.place_block_id = 3
         self.mouse_captured = False
         self.fps_display = pyglet.window.FPSDisplay(self)
@@ -134,17 +135,17 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             return
         self.world_renderer.update(delta_time)
-        forward = float(key.W in self.held_keys) - float(key.S in self.held_keys)
-        right = float(key.D in self.held_keys) - float(key.A in self.held_keys)
+        forward = float(self.key_state.is_pressed(key.W)) - float(self.key_state.is_pressed(key.S))
+        right = float(self.key_state.is_pressed(key.D)) - float(self.key_state.is_pressed(key.A))
         self.player.update(
             PlayerInput(
                 forward=forward,
                 right=right,
-                jump=key.SPACE in self.held_keys,
+                jump=self.key_state.is_pressed(key.SPACE),
             ),
             self.camera.yaw_degrees,
             delta_time,
-            self.world_renderer.get_block,
+            self.world_renderer.is_solid_block,
         )
         self._sync_camera_to_player()
 
@@ -227,11 +228,20 @@ class GameWindow(pyglet.window.Window):
         if symbol == ord("2"):
             self.place_block_id = 7
             return
-        self.held_keys.add(symbol)
+        self.key_state.press(symbol)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
-        self.held_keys.discard(symbol)
+        self.key_state.release(symbol)
+
+    def on_deactivate(self) -> None:
+        self.key_state.clear()
+        if self.mouse_captured:
+            self.mouse_captured = False
+            self.set_exclusive_mouse(False)
+
+    def on_activate(self) -> None:
+        self._sync_mouse_capture()
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         del modifiers
@@ -313,6 +323,8 @@ class GameWindow(pyglet.window.Window):
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game
+        if not should_capture:
+            self.key_state.clear()
         if should_capture != self.mouse_captured:
             self.mouse_captured = should_capture
             self.set_exclusive_mouse(should_capture)

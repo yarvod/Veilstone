@@ -17,7 +17,12 @@ from voxel_sandbox.engine.chunks import (
     ChunkSection,
     SectionCoord,
 )
-from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
+from voxel_sandbox.engine.generation import (
+    ChunkStreamer,
+    TerrainGenerator,
+    WorldSeed,
+    find_safe_spawn,
+)
 from voxel_sandbox.engine.lighting import relight_chunk
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
 from voxel_sandbox.render.atmosphere import daylight_factor, sky_color
@@ -93,8 +98,11 @@ class DemoWorldRenderer:
 
     @property
     def spawn_position(self) -> tuple[float, float, float]:
-        x, z = 8.5, 8.5
-        return x, float(self.generator.height_at(8, 8) + 2), z
+        return find_safe_spawn(
+            self.get_block,
+            self.generator.height_at,
+            lambda block_id: self.registry.by_id(block_id).is_solid,
+        )
 
     @property
     def loaded_chunks(self) -> int:
@@ -106,6 +114,9 @@ class DemoWorldRenderer:
 
     def get_block(self, x: int, y: int, z: int) -> int:
         return self.streamer.get_block(x, y, z)
+
+    def is_solid_block(self, x: int, y: int, z: int) -> bool:
+        return self.registry.by_id(self.get_block(x, y, z)).is_solid
 
     def raycast(
         self,
