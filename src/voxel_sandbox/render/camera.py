@@ -14,10 +14,10 @@ class MovementIntent:
 @dataclass(slots=True)
 class FirstPersonCamera:
     x: float = 8.0
-    y: float = 64.0
+    y: float = 58.0
     z: float = 8.0
     yaw_degrees: float = -90.0
-    pitch_degrees: float = -15.0
+    pitch_degrees: float = -35.0
 
     @property
     def position(self) -> tuple[float, float, float]:

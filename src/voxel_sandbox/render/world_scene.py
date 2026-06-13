@@ -9,7 +9,7 @@ import moderngl
 import numpy as np
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
-from voxel_sandbox.engine.chunks import SECTION_SIZE, Chunk, ChunkCoord, SectionCoord
+from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, SECTION_SIZE, Chunk, ChunkCoord, SectionCoord
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.frustum import aabb_intersects_frustum
@@ -122,5 +122,5 @@ class DemoWorldRenderer:
                 self.mesh_cache.upload(key, mesh)
 
     def _remove_chunk(self, coord: ChunkCoord) -> None:
-        for section_y in range(8):
+        for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
             self.mesh_cache.remove(SectionCoord(coord.x, section_y, coord.z))

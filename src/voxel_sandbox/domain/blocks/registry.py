@@ -88,7 +88,7 @@ def create_core_block_registry() -> BlockRegistry:
                 4,
                 "veilwood_log",
                 "Veilwood Log",
-                Material.STONE,
+                Material.WOOD,
                 1.8,
                 texture_top="veilwood_cut",
                 texture_side="veilwood_bark",
