@@ -28,10 +28,16 @@ class LoggingSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class DevelopmentSettings:
+    shader_hot_reload: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class AppSettings:
     window: WindowSettings = WindowSettings()
     camera: CameraSettings = CameraSettings()
     logging: LoggingSettings = LoggingSettings()
+    development: DevelopmentSettings = DevelopmentSettings()
 
 
 def _section(data: dict[str, Any], key: str) -> dict[str, Any]:
@@ -53,4 +59,5 @@ def load_settings(path: Path | None = None) -> AppSettings:
         window=WindowSettings(**_section(data, "window")),
         camera=CameraSettings(**_section(data, "camera")),
         logging=LoggingSettings(**_section(data, "logging")),
+        development=DevelopmentSettings(**_section(data, "development")),
     )

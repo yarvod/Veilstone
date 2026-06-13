@@ -15,10 +15,6 @@
 - [x] Client, server, and host smoke paths pass on macOS with OpenGL 4.1 Metal.
 - [x] Phase gate passes: 9 tests, Ruff, Ruff format check, and Pyright.
 
-### In progress
-
-- [ ] Phase 2 shader loading and hot reload.
-
 ### Failed checks
 
 None recorded.
@@ -34,5 +30,30 @@ None recorded.
 
 ### Next recommended tasks
 
-- Add shader loading and development hot reload.
 - Start block registry, coordinate types, and chunk storage.
+
+## Phase 02 - OpenGL client shell
+
+### Completed
+
+- [x] Shader files load from package resources.
+- [x] GLSL programs compile through the active ModernGL context.
+- [x] Development hot reload checks timestamps and keeps the previous program on failure.
+- [x] `F5` forces a shader reload.
+- [x] Client smoke test compiles the debug shader on macOS OpenGL 4.1 Metal.
+
+### In progress
+
+- [ ] Commit Phase 2 and begin block/chunk data structures.
+
+### Failed checks
+
+None recorded.
+
+### Performance notes
+
+Automatic shader timestamp checks run twice per second and do no source reads when unchanged.
+
+### Known bugs
+
+None recorded.

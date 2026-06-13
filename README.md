@@ -32,6 +32,7 @@ Client controls:
 - Mouse: look around.
 - `Escape`: release or recapture the mouse.
 - Left click: recapture a released mouse.
+- `F5`: force shader reload.
 
 ## Architecture
 

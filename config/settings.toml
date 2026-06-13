@@ -13,3 +13,5 @@ mouse_sensitivity = 0.12
 [logging]
 level = "INFO"
 
+[development]
+shader_hot_reload = true

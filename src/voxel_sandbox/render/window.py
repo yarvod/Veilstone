@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Final
 
 import moderngl
@@ -11,6 +12,7 @@ from pyglet.window import key, mouse
 
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.render.camera import FirstPersonCamera, MovementIntent
+from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 
 LOGGER = logging.getLogger(__name__)
 FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
@@ -38,6 +40,11 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context = moderngl.create_context(require=330)
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
+        shader_root = Path(__file__).parent / "shaders" / "glsl"
+        self.debug_shader = ShaderProgram(
+            self.mgl_context,
+            ShaderFiles.from_directory(shader_root, "debug"),
+        )
         self.camera = FirstPersonCamera()
         self.held_keys: set[int] = set()
         self.mouse_captured = visible
@@ -55,11 +62,19 @@ class GameWindow(pyglet.window.Window):
             color=(225, 235, 255, 255),
         )
         pyglet.clock.schedule_interval(self.fixed_update, FIXED_UPDATE_SECONDS)
+        if settings.development.shader_hot_reload:
+            pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
         LOGGER.info("ModernGL context: %s", self.mgl_context.info.get("GL_VERSION", "unknown"))
 
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
+        pyglet.clock.unschedule(self.reload_shaders)
+        self.debug_shader.release()
         super().close()
+
+    def reload_shaders(self, delta_time: float) -> None:
+        del delta_time
+        self.debug_shader.reload_if_changed()
 
     def fixed_update(self, delta_time: float) -> None:
         forward = float(key.W in self.held_keys) - float(key.S in self.held_keys)
@@ -89,6 +104,9 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.ESCAPE:
             self.mouse_captured = not self.mouse_captured
             self.set_exclusive_mouse(self.mouse_captured)
+            return
+        if symbol == key.F5:
+            self.debug_shader.reload(force=True)
             return
         self.held_keys.add(symbol)
 
