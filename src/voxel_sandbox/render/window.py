@@ -11,7 +11,8 @@ import pyglet
 from pyglet.window import key, mouse
 
 from voxel_sandbox.app.settings import AppSettings
-from voxel_sandbox.render.camera import FirstPersonCamera, MovementIntent
+from voxel_sandbox.engine.physics import PlayerController, PlayerInput
+from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
@@ -56,6 +57,9 @@ class GameWindow(pyglet.window.Window):
             uploads_per_frame=settings.world.chunk_uploads_per_frame,
         )
         self.menu = MenuController()
+        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
+        self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
+        self._sync_camera_to_player()
         self.held_keys: set[int] = set()
         self.mouse_captured = False
         self.fps_display = pyglet.window.FPSDisplay(self)
@@ -68,6 +72,14 @@ class GameWindow(pyglet.window.Window):
             font_name="Menlo",
             font_size=11,
             color=(225, 235, 255, 255),
+        )
+        self.crosshair = pyglet.text.Label(
+            "+",
+            anchor_x="center",
+            anchor_y="center",
+            font_name="Menlo",
+            font_size=18,
+            color=(245, 235, 190, 255),
         )
         self.menu_title = pyglet.text.Label(
             "",
@@ -116,14 +128,17 @@ class GameWindow(pyglet.window.Window):
             return
         forward = float(key.W in self.held_keys) - float(key.S in self.held_keys)
         right = float(key.D in self.held_keys) - float(key.A in self.held_keys)
-        up = float(key.SPACE in self.held_keys) - float(
-            key.LSHIFT in self.held_keys or key.RSHIFT in self.held_keys
-        )
-        self.camera.move(
-            MovementIntent(forward=forward, right=right, up=up),
-            self.settings.camera.movement_speed,
+        self.player.update(
+            PlayerInput(
+                forward=forward,
+                right=right,
+                jump=key.SPACE in self.held_keys,
+            ),
+            self.camera.yaw_degrees,
             delta_time,
+            self.world_renderer.get_block,
         )
+        self._sync_camera_to_player()
 
     def on_draw(self) -> None:
         self.mgl_context.clear(0.025, 0.04, 0.075, 1.0, depth=1.0)
@@ -142,6 +157,7 @@ class GameWindow(pyglet.window.Window):
         self.debug_label.text = (
             f"FPS {fps:5.1f}  Frame {frame_time_ms:5.2f} ms\n"
             f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
+            f"Grounded {self.player.on_ground}  VelocityY {self.player.velocity_y:5.2f}\n"
             f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
             f"\nChunks {self.world_renderer.loaded_chunks}  "
             f"Pending {self.world_renderer.pending_chunks}  "
@@ -150,8 +166,13 @@ class GameWindow(pyglet.window.Window):
             f"Triangles {self.world_renderer.triangle_count}  "
             f"Draws {self.world_renderer.draw_calls}"
         )
+        if self.world_renderer.selection is not None:
+            self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
         self.debug_label.y = self.height - 10
         self.debug_label.draw()
+        self.crosshair.x = self.width // 2
+        self.crosshair.y = self.height // 2
+        self.crosshair.draw()
         self.fps_display.draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -188,6 +209,16 @@ class GameWindow(pyglet.window.Window):
                 self.menu.select(index)
                 self._handle_menu_command(self.menu.activate())
                 self._sync_mouse_capture()
+            return
+        if not self.menu.in_game or not self.mouse_captured:
+            return
+        hit = self.world_renderer.raycast(self.camera.position, self.camera.direction)
+        if hit is None:
+            return
+        if button == mouse.LEFT:
+            self.world_renderer.set_block(hit.block, 0)
+        elif button == mouse.RIGHT and not self.player.intersects_block(hit.previous):
+            self.world_renderer.set_block(hit.previous, 3)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         if not self.menu.in_game:
@@ -253,6 +284,9 @@ class GameWindow(pyglet.window.Window):
         if should_capture != self.mouse_captured:
             self.mouse_captured = should_capture
             self.set_exclusive_mouse(should_capture)
+
+    def _sync_camera_to_player(self) -> None:
+        self.camera.x, self.camera.y, self.camera.z = self.player.eye_position
 
 
 def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:

@@ -41,3 +41,25 @@ def test_streamer_generates_surrounding_chunks_off_thread_and_unloads() -> None:
         assert streamer.pending_count > 0
     finally:
         streamer.close()
+
+
+def test_streamer_exposes_loaded_world_blocks_and_mutation() -> None:
+    streamer = ChunkStreamer(
+        TerrainGenerator(WorldSeed.parse("mutation-test")),
+        render_distance=0,
+        workers=1,
+    )
+    try:
+        streamer.prime(ChunkCoord(0, 0))
+        original = streamer.get_block(8, 1, 8)
+        assert original != 0
+        assert streamer.set_block(8, 1, 8, 0)
+        assert streamer.get_block(8, 1, 8) == 0
+        assert not streamer.set_block(32, 1, 32, 1)
+
+        streamer.update(ChunkCoord(4, 0), max_completed=0)
+        assert streamer.get_chunk(ChunkCoord(0, 0)) is None
+        reloaded = streamer.prime(ChunkCoord(0, 0))
+        assert reloaded.get_block(8, 1, 8) == 0
+    finally:
+        streamer.close()

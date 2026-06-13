@@ -3,7 +3,13 @@ from __future__ import annotations
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 
-from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
+from voxel_sandbox.engine.chunks import (
+    CHUNK_HEIGHT,
+    SECTION_SIZE,
+    Chunk,
+    ChunkCoord,
+    split_world_axis,
+)
 from voxel_sandbox.engine.generation.terrain import TerrainGenerator
 
 
@@ -31,6 +37,7 @@ class ChunkStreamer:
         self._loaded: dict[ChunkCoord, Chunk] = {}
         self._pending: dict[ChunkCoord, Future[Chunk]] = {}
         self._desired: set[ChunkCoord] = set()
+        self._overrides: dict[tuple[int, int, int], int] = {}
 
     @property
     def loaded_count(self) -> int:
@@ -44,8 +51,35 @@ class ChunkStreamer:
         chunk = self._loaded.get(coord)
         if chunk is None:
             chunk = self.generator.generate_chunk(coord)
+            self._apply_overrides(chunk)
             self._loaded[coord] = chunk
         return chunk
+
+    def get_chunk(self, coord: ChunkCoord) -> Chunk | None:
+        return self._loaded.get(coord)
+
+    def get_block(self, x: int, y: int, z: int) -> int:
+        if not 0 <= y < CHUNK_HEIGHT:
+            return 0
+        chunk_x, local_x = split_world_axis(x)
+        chunk_z, local_z = split_world_axis(z)
+        chunk = self.get_chunk(ChunkCoord(chunk_x, chunk_z))
+        if chunk is None:
+            return 0
+        return chunk.get_block(local_x, y, local_z)
+
+    def set_block(self, x: int, y: int, z: int, block_id: int) -> bool:
+        if not 0 <= y < CHUNK_HEIGHT:
+            return False
+        chunk_x, local_x = split_world_axis(x)
+        chunk_z, local_z = split_world_axis(z)
+        chunk = self.get_chunk(ChunkCoord(chunk_x, chunk_z))
+        if chunk is None:
+            return False
+        changed = chunk.set_block(local_x, y, local_z, block_id)
+        if changed:
+            self._overrides[(x, y, z)] = block_id
+        return changed
 
     def update(self, center: ChunkCoord, *, max_completed: int) -> StreamBatch:
         self._desired = self._desired_coords(center)
@@ -68,6 +102,7 @@ class ChunkStreamer:
             del self._pending[coord]
             chunk = future.result()
             if coord in self._desired:
+                self._apply_overrides(chunk)
                 self._loaded[coord] = chunk
                 completed.append(chunk)
         return StreamBatch(tuple(completed), unloaded)
@@ -78,6 +113,7 @@ class ChunkStreamer:
         self._executor.shutdown(wait=True, cancel_futures=True)
         self._pending.clear()
         self._loaded.clear()
+        self._overrides.clear()
 
     def _desired_coords(self, center: ChunkCoord) -> set[ChunkCoord]:
         radius = self.render_distance
@@ -86,6 +122,13 @@ class ChunkStreamer:
             for dx in range(-radius, radius + 1)
             for dz in range(-radius, radius + 1)
         }
+
+    def _apply_overrides(self, chunk: Chunk) -> None:
+        min_x = chunk.coord.x * SECTION_SIZE
+        min_z = chunk.coord.z * SECTION_SIZE
+        for (x, y, z), block_id in self._overrides.items():
+            if min_x <= x < min_x + SECTION_SIZE and min_z <= z < min_z + SECTION_SIZE:
+                chunk.set_block(x - min_x, y, z - min_z, block_id)
 
 
 def _distance_squared(first: ChunkCoord, second: ChunkCoord) -> int:
