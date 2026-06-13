@@ -8,10 +8,13 @@
 - [x] Ruff, pytest, and Pyright are configured.
 - [x] Modular package, settings, logging, and CLI commands are present.
 - [x] Placeholder server and host modes have automated smoke paths.
+- [x] Base project skeleton committed as `3e51c4b phase-01.items-01-03`.
+- [x] Pyglet window creates a ModernGL 3.3 context and clears the frame.
+- [x] Fixed-rate camera movement, mouse look, and FPS/debug overlays are implemented.
 
 ### In progress
 
-- [ ] Add the pyglet/ModernGL client shell, camera controls, and FPS overlay.
+- [ ] Complete Phase 1 verification and create the stable phase tag.
 
 ### Failed checks
 
@@ -23,10 +26,9 @@ Not applicable before rendering and chunk meshing.
 
 ### Known bugs
 
-- Interactive client mode is intentionally unavailable until the next Phase 1 item.
+None recorded.
 
 ### Next recommended tasks
 
-- Implement the graphical client shell.
 - Verify client, server, and host smoke paths.
-
+- Start block registry and chunk storage work.

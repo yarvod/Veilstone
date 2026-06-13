@@ -25,6 +25,14 @@ uv run pyright
 The committed `.python-version` and `pyproject.toml` keep the project on Python 3.13.
 Runtime settings live in `config/settings.toml`.
 
+Client controls:
+
+- `W/A/S/D`: move horizontally.
+- `Space` / `Shift`: move up / down in the free camera.
+- Mouse: look around.
+- `Escape`: release or recapture the mouse.
+- Left click: recapture a released mouse.
+
 ## Architecture
 
 - `app`: composition root, settings, and executable modes.
@@ -35,4 +43,3 @@ Runtime settings live in `config/settings.toml`.
 - `tests`: unit, integration, and performance coverage.
 
 Architecture decisions are recorded in `docs/adr`.
-

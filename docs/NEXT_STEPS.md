@@ -1,8 +1,7 @@
 # Next steps
 
-1. `phase-01.item-04`: create a pyglet window and ModernGL context.
-2. `phase-01.item-05`: add first-person camera and input controls.
-3. `phase-01.item-06`: add FPS overlay and fixed update loop.
-4. `phase-01.item-07`: run all checks and client/server/host smoke tests.
-5. `phase-02.item-01`: add shader loading and development hot reload.
-
+1. `phase-01.item-07`: run all checks and client/server/host smoke tests.
+2. `phase-02.item-01`: add shader loading and development hot reload.
+3. `phase-03.item-01`: add block definitions and registry.
+4. `phase-03.item-02`: add chunk and section coordinate conversion.
+5. `phase-03.item-03`: add NumPy-backed section storage and dirty flags.
