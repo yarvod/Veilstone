@@ -29,8 +29,9 @@ def run_command(args: argparse.Namespace) -> int:
             smoke_test=bool(args.smoke_test),
         )
     if command == "benchmark-mesher":
-        LOGGER.error("Mesher benchmark is not available before Phase 4")
-        return 2
+        from voxel_sandbox.tools.benchmark_mesher import run_benchmark
+
+        return run_benchmark()
     if command == "benchmark-worldgen":
         LOGGER.error("World generation benchmark is not available before Phase 5")
         return 2
