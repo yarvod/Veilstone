@@ -116,6 +116,34 @@ None recorded.
 
 None recorded.
 
+## Phase 05 - Terrain generation
+
+### Completed
+
+- [x] Stable numeric and text world seeds.
+- [x] Deterministic smooth heightmap and climate sampling.
+- [x] Four MVP biome identities: Calm Plains, Old Forest, Ash Swamp, Moonlit Highlands.
+- [x] Layered stone, dirt, and grass chunk generation.
+- [x] Deterministic generation tests and 100-chunk benchmark.
+  - commit: `a5ede0a phase-05.items-01-03`
+
+### In progress
+
+- [ ] Trees, ores, caves, background workers, and chunk streaming.
+
+### Failed checks
+
+None recorded.
+
+### Performance notes
+
+World generation benchmark: approximately 1.34 ms per chunk for 100 chunks on the current
+Apple Silicon development machine, before trees, ores, and caves are added.
+
+### Known bugs
+
+None recorded.
+
 ### Performance notes
 
 After vectorizing face masks and quad buffer construction with NumPy, the visible-face

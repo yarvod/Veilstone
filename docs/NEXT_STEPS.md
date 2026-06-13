@@ -1,7 +1,7 @@
 # Next steps
 
-1. `phase-05.item-01`: add deterministic world seed handling.
-2. `phase-05.item-02`: generate a noise-based heightmap and biome sample.
-3. `phase-05.item-03`: generate stone, dirt, grass, trees, ores, and caves.
-4. `phase-05.item-04`: generate chunks around the camera in a background worker.
-5. `phase-05.item-05`: add chunk load/unload queues and deterministic tests.
+1. `phase-05.item-04`: add deterministic trees and ore veins.
+2. `phase-05.item-05`: add deterministic cave carving.
+3. `phase-05.item-06`: move chunk generation to a background worker.
+4. `phase-05.item-07`: add camera-centered chunk load/unload queues.
+5. `phase-05.item-08`: render streamed generated chunks and extend golden tests.
