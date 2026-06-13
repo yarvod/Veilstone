@@ -1,12 +1,12 @@
 # Next steps
 
-Phase 10 is ready for manual testing. Development continues with Phase 11 after this gate.
+Phase 11 is ready for manual testing. Development continues with Phase 12 after this gate.
 
 1. Run `uv run python -m voxel_sandbox`.
-2. Use `1-4` and the mouse wheel to switch hotbar slots; place blocks with right click.
-3. Break a log, approach the drop until `Drops` decreases, and inspect the collected stack.
-4. Press `E`; test left-click move/swap, right-click split/place-one, and Shift-click quick move.
-5. Press `C` with a collected log to craft planks, then craft and place a Runecraft Table.
-6. Right-click the table to open 3x3 crafting and craft a Gloam Lantern when materials exist.
-7. Press `Q` to drop one selected item and walk over it to collect it again.
+2. Find the blue-gray passive mobs and confirm they wander without chasing the player.
+3. Approach a crimson hostile mob and verify it chases, attacks, and reduces `Health`.
+4. Aim at a mob and left-click repeatedly; verify death creates a small gold item entity.
+5. Walk over the item entity and verify it enters inventory and disappears from the world.
+6. Press `Q` and confirm the selected item appears as a rotating/bobbing entity.
+7. Move far from mobs and verify population despawns/replenishes around the player.
 8. Run `uv run python -m voxel_sandbox benchmark-frame-streaming`.

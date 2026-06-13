@@ -14,9 +14,10 @@ from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
-from voxel_sandbox.engine.item_drops import ItemDropStore
+from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.render.camera import FirstPersonCamera
+from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
@@ -87,7 +88,15 @@ class GameWindow(pyglet.window.Window):
         self.inventory.set(3, ItemStack(4, 4), self.item_registry)
         recipes_path = Path(__file__).parents[3] / "config" / "recipes.toml"
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
-        self.item_drops = ItemDropStore()
+        self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
+        self.entities.maintain_population(
+            (spawn_x, spawn_y, spawn_z),
+            self.world_renderer.generator.height_at,
+            self._is_entity_hazard,
+        )
+        self.entity_renderer = EntityRenderer(self.mgl_context)
+        self.player_health = 20.0
+        self._population_accumulator = 0.0
         self.inventory_open = False
         self.crafting_grid_size = 2
         self.inventory_status = ""
@@ -187,6 +196,7 @@ class GameWindow(pyglet.window.Window):
         pyglet.clock.unschedule(self.fixed_update)
         pyglet.clock.unschedule(self.reload_shaders)
         self.debug_shader.release()
+        self.entity_renderer.release()
         self.world_renderer.release()
         super().close()
 
@@ -198,7 +208,27 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             return
         self.world_renderer.update(delta_time)
-        picked_up = self.item_drops.pickup_near(
+        self._population_accumulator += delta_time
+        if self._population_accumulator >= 1.0:
+            self._population_accumulator %= 1.0
+            self.entities.maintain_population(
+                (self.player.x, self.player.y, self.player.z),
+                self.world_renderer.generator.height_at,
+                self._is_entity_hazard,
+            )
+        self.player_health -= self.entities.update(
+            delta_time,
+            (self.player.x, self.player.y, self.player.z),
+            self.world_renderer.generator.height_at,
+            self._is_entity_hazard,
+        )
+        if self.player_health <= 0.0:
+            spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
+            self.player.x, self.player.y, self.player.z = spawn_x, spawn_y, spawn_z
+            self.player.velocity_y = 0.0
+            self.player_health = 20.0
+            self.inventory_status = "Respawned"
+        picked_up = self.entities.pickup_items(
             (self.player.x, self.player.y + 0.5, self.player.z),
             1.5,
             self.inventory,
@@ -239,6 +269,14 @@ class GameWindow(pyglet.window.Window):
             self.height,
             self.settings.camera.field_of_view,
         )
+        entity_draws = self.entity_renderer.render(
+            self.entities.world,
+            self.camera,
+            self.width,
+            self.height,
+            self.settings.camera.field_of_view,
+            self.world_renderer.animation_time,
+        )
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
         frame_time_ms = 1000.0 / fps if fps > 0.0 else 0.0
@@ -259,7 +297,10 @@ class GameWindow(pyglet.window.Window):
             f"AO {self.world_renderer.ambient_occlusion}  "
             f"Fog {self.world_renderer.fog_enabled}  "
             f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
-            f"Drops {len(self.item_drops)}  "
+            f"Health {self.player_health:4.1f}  "
+            f"Entities {len(self.entities.world.alive)}  "
+            f"Mobs {len(self.entities.world.mob_ai)}  "
+            f"Drops {len(self.entities.world.items)}  Entity draws {entity_draws}\n"
             f"Selected {self._selected_item_name()}  "
             "[1-9 hotbar, E inventory, C craft, Q drop]"
         )
@@ -366,6 +407,12 @@ class GameWindow(pyglet.window.Window):
             return
         if not self.menu.in_game or not self.mouse_captured or self.inventory_open:
             return
+        if button == mouse.LEFT:
+            target = self.entities.target_mob(self.camera.position, self.camera.direction)
+            if target is not None:
+                drops = self.entities.damage(target, 4.0)
+                self.inventory_status = "Mob defeated" if drops else "Hit mob"
+                return
         hit = self.world_renderer.raycast(self.camera.position, self.camera.direction)
         if hit is None:
             return
@@ -374,7 +421,7 @@ class GameWindow(pyglet.window.Window):
             if self.world_renderer.set_block(hit.block, 0):
                 drop = self.item_registry.drop_for_block(block_id)
                 if drop is not None:
-                    self.item_drops.spawn(
+                    self.entities.spawn_item(
                         (
                             float(hit.block[0]) + 0.5,
                             float(hit.block[1]) + 0.5,
@@ -492,7 +539,7 @@ class GameWindow(pyglet.window.Window):
             self.camera.position[1] + direction[1] * 1.5,
             self.camera.position[2] + direction[2] * 1.5,
         )
-        self.item_drops.spawn(position, stack)
+        self.entities.spawn_item(position, stack)
         self.inventory_status = f"Dropped {self.item_registry.by_id(stack.item_id).name}"
 
     def _craft_first_available(self) -> None:
@@ -629,13 +676,17 @@ class GameWindow(pyglet.window.Window):
         if self.cursor_stack is not None:
             remainder = self.inventory.add(self.cursor_stack, self.item_registry)
             if remainder is not None:
-                self.item_drops.spawn(
+                self.entities.spawn_item(
                     (self.player.x, self.player.y + 0.5, self.player.z),
                     remainder,
                 )
             self.cursor_stack = None
         self.inventory_open = False
         self.inventory_status = ""
+
+    def _is_entity_hazard(self, x: int, y: int, z: int) -> bool:
+        block_id = self.world_renderer.get_block(x, y, z)
+        return self.world_renderer.registry.by_id(block_id).is_fluid
 
 
 def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:

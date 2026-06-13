@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 10 - Inventory, items, and crafting: complete and ready for manual testing.
+Phase 11 - Entities and mobs: complete and ready for manual testing.
 
 ## Completed checklist
 
@@ -107,6 +107,19 @@ Phase 10 - Inventory, items, and crafting: complete and ready for manual testing
 - commit: `f8d4feb`.
 - tag: `phase-10-complete`.
 
+### Phase 11 - Entities and mobs
+
+- [x] Integer EntityId allocation and typed dense-dict component stores.
+- [x] Transform, Velocity, Collider, Health, RenderModel, MobAI, Lifetime, and ItemEntity.
+- [x] Shared cube renderer and shader for visible item, passive, and hostile entities.
+- [x] Passive wander and hostile chase/attack state transitions with deterministic steering.
+- [x] Water avoidance, distance despawn, and local population replenishment around the player.
+- [x] Player health, hostile contact damage, death, and respawn loop.
+- [x] View-direction mob targeting, damage, death, and ECS item drops.
+- [x] ECS item pickup replaces the temporary invisible drop store in gameplay.
+- [x] Unit coverage for storage cleanup, health, AI transitions, spawn rules, death, and pickup.
+- [x] Final gate: 92 tests, Ruff, Pyright, entity shader/application smoke, and benchmarks.
+
 ## Failed checks
 
 None recorded.
@@ -122,8 +135,8 @@ None recorded.
 - Vectorized `18^3` section halo snapshot is approximately 0.02 ms.
 - Streaming with opaque and water meshes remains approximately `0.84 ms` average,
   `1.64 ms` p95, and `9.93 ms` maximum after process-pool warmup.
-- Process pools now warm before gameplay; cold-run streaming integration measures approximately
-  `1.35 ms` average, `2.70 ms` p95, and `3.36 ms` maximum.
+- Process pools warm before gameplay; streaming with the Phase 11 entity scene measures
+  approximately `1.25 ms` average, `2.53 ms` p95, and `3.36 ms` maximum.
 
 ## Known bugs
 
@@ -132,9 +145,9 @@ None recorded.
   mesh halo sampling itself does cross loaded section/chunk boundaries.
 - Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
 - Water Vessel can place a source but does not yet scoop an existing source back up.
-- World drops have inventory/pickup behavior but no dedicated 3D item model yet; visual item
-  entities are part of Phase 11.
+- Mob navigation is intentionally local steering over terrain height, not global pathfinding.
+- Entity models are colored prototype cuboids pending later art/model polish.
 
 ## Next recommended tasks
 
-Test Phase 10 inventory/crafting, then continue with Phase 11 entities and mobs.
+Test Phase 11 entities/mobs, then continue with Phase 12 save/load.

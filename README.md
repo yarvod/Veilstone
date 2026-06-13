@@ -61,6 +61,7 @@ Client controls:
 - `Space`: jump.
 - Mouse: look around.
 - Left mouse: break the highlighted block.
+- Left mouse while aiming at a mob: damage the mob; death produces an item entity.
 - `1-9` or mouse wheel: select a hotbar slot.
 - `E`: open the 9x4 inventory and player 2x2 crafting view.
 - Left click / right click in inventory: transfer or split stacks.
@@ -130,6 +131,18 @@ uv run python -m voxel_sandbox
 4. Press `C` to turn a log into four planks, then craft a Runecraft Table from four planks.
 5. Place and right-click the Runecraft Table to activate 3x3 recipes.
 6. Press `Q` to drop one selected item and collect it again by walking nearby.
+
+## Test Phase 11
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Observe blue-gray passive mobs wandering and crimson hostile mobs chasing nearby players.
+2. Let a hostile reach melee range and verify the debug `Health` value decreases.
+3. Aim at either mob and left-click until it dies and creates a small gold item entity.
+4. Walk over the drop to collect it, or press `Q` to create another visible item entity.
+5. Move far enough to trigger despawn and verify the local population replenishes near the player.
 
 ## Test Phase 6
 

@@ -1948,30 +1948,30 @@ Done when:
 
 Checklist:
 
-- [ ] Implement EntityId.
-- [ ] Implement ECS-lite component storage.
-- [ ] Implement Transform component.
-- [ ] Implement Velocity component.
-- [ ] Implement Collider component.
-- [ ] Implement Health component.
-- [ ] Implement RenderModel component.
-- [ ] Implement MobAI component.
-- [ ] Implement item entities.
-- [ ] Implement passive mob.
-- [ ] Implement hostile mob.
-- [ ] Implement basic AI.
-- [ ] Implement spawn/despawn rules.
-- [ ] Implement damage.
-- [ ] Implement death/drops.
-- [ ] Add tests for ECS storage.
-- [ ] Add tests for mob state transitions.
+- [x] Implement EntityId.
+- [x] Implement ECS-lite component storage.
+- [x] Implement Transform component.
+- [x] Implement Velocity component.
+- [x] Implement Collider component.
+- [x] Implement Health component.
+- [x] Implement RenderModel component.
+- [x] Implement MobAI component.
+- [x] Implement item entities.
+- [x] Implement passive mob.
+- [x] Implement hostile mob.
+- [x] Implement basic AI.
+- [x] Implement spawn/despawn rules.
+- [x] Implement damage.
+- [x] Implement death/drops.
+- [x] Add tests for ECS storage.
+- [x] Add tests for mob state transitions.
 
 Done when:
 
-- [ ] Items exist as entities.
-- [ ] Passive mob wanders.
-- [ ] Hostile mob chases player.
-- [ ] Mobs can die and drop items.
+- [x] Items exist as entities.
+- [x] Passive mob wanders.
+- [x] Hostile mob chases player.
+- [x] Mobs can die and drop items.
 
 ---
 
