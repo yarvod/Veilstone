@@ -11,6 +11,10 @@ import pyglet
 from pyglet.window import key, mouse
 
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.domain.crafting import RecipeBook
+from voxel_sandbox.domain.inventory import Hotbar, Inventory
+from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
+from voxel_sandbox.engine.item_drops import ItemDropStore
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
@@ -74,7 +78,22 @@ class GameWindow(pyglet.window.Window):
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
         self.key_state = KeyState()
-        self.place_block_id = 3
+        self.item_registry = create_core_item_registry()
+        self.inventory = Inventory()
+        self.hotbar = Hotbar(self.inventory)
+        self.inventory.set(0, ItemStack(3, 32), self.item_registry)
+        self.inventory.set(1, ItemStack(7, 8), self.item_registry)
+        self.inventory.set(2, ItemStack(8, 1), self.item_registry)
+        self.inventory.set(3, ItemStack(4, 4), self.item_registry)
+        recipes_path = Path(__file__).parents[3] / "config" / "recipes.toml"
+        self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
+        self.item_drops = ItemDropStore()
+        self.inventory_open = False
+        self.crafting_grid_size = 2
+        self.inventory_status = ""
+        self.cursor_stack: ItemStack | None = None
+        self.mouse_x = 0
+        self.mouse_y = 0
         self.mouse_captured = False
         self.fps_display = pyglet.window.FPSDisplay(self)
         self.debug_label = pyglet.text.Label(
@@ -94,6 +113,44 @@ class GameWindow(pyglet.window.Window):
             font_name="Menlo",
             font_size=18,
             color=(245, 235, 190, 255),
+        )
+        self.hotbar_labels = [
+            pyglet.text.Label(
+                "",
+                anchor_x="center",
+                anchor_y="center",
+                font_name="Menlo",
+                font_size=9,
+                color=(225, 230, 240, 255),
+            )
+            for _ in range(9)
+        ]
+        self.inventory_title = pyglet.text.Label(
+            "",
+            anchor_x="center",
+            anchor_y="center",
+            font_name="Menlo",
+            font_size=16,
+            color=(245, 220, 140, 255),
+        )
+        self.inventory_labels = [
+            pyglet.text.Label(
+                "",
+                anchor_x="center",
+                anchor_y="center",
+                font_name="Menlo",
+                font_size=8,
+                color=(215, 220, 235, 255),
+            )
+            for _ in range(len(self.inventory))
+        ]
+        self.cursor_item_label = pyglet.text.Label(
+            "",
+            anchor_x="left",
+            anchor_y="bottom",
+            font_name="Menlo",
+            font_size=9,
+            color=(245, 220, 140, 255),
         )
         self.menu_title = pyglet.text.Label(
             "",
@@ -141,6 +198,19 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             return
         self.world_renderer.update(delta_time)
+        picked_up = self.item_drops.pickup_near(
+            (self.player.x, self.player.y + 0.5, self.player.z),
+            1.5,
+            self.inventory,
+            self.item_registry,
+        )
+        if picked_up:
+            self.inventory_status = "Picked up " + ", ".join(
+                f"{self.item_registry.by_id(stack.item_id).name} x{stack.count}"
+                for stack in picked_up
+            )
+        if self.inventory_open:
+            return
         forward = float(self.key_state.is_pressed(key.W)) - float(self.key_state.is_pressed(key.S))
         right = float(self.key_state.is_pressed(key.D)) - float(self.key_state.is_pressed(key.A))
         self.player.update(
@@ -189,8 +259,9 @@ class GameWindow(pyglet.window.Window):
             f"AO {self.world_renderer.ambient_occlusion}  "
             f"Fog {self.world_renderer.fog_enabled}  "
             f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
-            f"Place {self.world_renderer.registry.by_id(self.place_block_id).name}  "
-            "[1 grass, 2 lantern, 3 water; F6 smooth, F7 AO, F8 fog, F9 mesher]"
+            f"Drops {len(self.item_drops)}  "
+            f"Selected {self._selected_item_name()}  "
+            "[1-9 hotbar, E inventory, C craft, Q drop]"
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
@@ -199,6 +270,9 @@ class GameWindow(pyglet.window.Window):
         self.crosshair.x = self.width // 2
         self.crosshair.y = self.height // 2
         self.crosshair.draw()
+        self._draw_hotbar()
+        if self.inventory_open:
+            self._draw_inventory()
         self.fps_display.draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -213,6 +287,25 @@ class GameWindow(pyglet.window.Window):
             elif symbol == key.ESCAPE:
                 self.menu.back()
             self._sync_mouse_capture()
+            return
+        if symbol == key.E:
+            if self.inventory_open:
+                self._close_inventory()
+            else:
+                self.inventory_open = True
+                self.crafting_grid_size = 2
+                self.inventory_status = "Player crafting: 2x2"
+            self.key_state.clear()
+            self._sync_mouse_capture()
+            return
+        if self.inventory_open:
+            if symbol == key.ESCAPE:
+                self._close_inventory()
+                self._sync_mouse_capture()
+            elif symbol == key.C:
+                self._craft_first_available()
+            elif ord("1") <= symbol <= ord("9"):
+                self.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.ESCAPE:
             self.menu.back()
@@ -233,14 +326,11 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.F9:
             self.world_renderer.toggle_mesher()
             return
-        if symbol == ord("1"):
-            self.place_block_id = 3
+        if ord("1") <= symbol <= ord("9"):
+            self.hotbar.select(symbol - ord("1"))
             return
-        if symbol == ord("2"):
-            self.place_block_id = 7
-            return
-        if symbol == ord("3"):
-            self.place_block_id = 8
+        if symbol == key.Q:
+            self._drop_selected_item()
             return
         self.key_state.press(symbol)
 
@@ -258,7 +348,6 @@ class GameWindow(pyglet.window.Window):
         self._sync_mouse_capture()
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
-        del modifiers
         if button == mouse.LEFT and not self.menu.in_game:
             index = self._menu_index_at(x, y)
             if index is not None:
@@ -266,17 +355,57 @@ class GameWindow(pyglet.window.Window):
                 self._handle_menu_command(self.menu.activate())
                 self._sync_mouse_capture()
             return
-        if not self.menu.in_game or not self.mouse_captured:
+        if self.menu.in_game and self.inventory_open:
+            slot = self._inventory_slot_at(x, y)
+            if slot is not None:
+                self._handle_inventory_click(
+                    slot,
+                    button,
+                    quick_move=bool(modifiers & key.MOD_SHIFT),
+                )
+            return
+        if not self.menu.in_game or not self.mouse_captured or self.inventory_open:
             return
         hit = self.world_renderer.raycast(self.camera.position, self.camera.direction)
         if hit is None:
             return
         if button == mouse.LEFT:
-            self.world_renderer.set_block(hit.block, 0)
-        elif button == mouse.RIGHT and not self.player.intersects_block(hit.previous):
-            self.world_renderer.set_block(hit.previous, self.place_block_id)
+            block_id = self.world_renderer.get_block(*hit.block)
+            if self.world_renderer.set_block(hit.block, 0):
+                drop = self.item_registry.drop_for_block(block_id)
+                if drop is not None:
+                    self.item_drops.spawn(
+                        (
+                            float(hit.block[0]) + 0.5,
+                            float(hit.block[1]) + 0.5,
+                            float(hit.block[2]) + 0.5,
+                        ),
+                        drop,
+                    )
+        elif button == mouse.RIGHT:
+            if self.world_renderer.get_block(*hit.block) == 10:
+                self.inventory_open = True
+                self.crafting_grid_size = 3
+                self.inventory_status = "Runecraft Table: 3x3 crafting"
+                self._sync_mouse_capture()
+                return
+            selected = self.hotbar.selected
+            if selected is None or self.player.intersects_block(hit.previous):
+                return
+            definition = self.item_registry.by_id(selected.item_id)
+            if definition.block_id is None:
+                return
+            if self.world_renderer.set_block(hit.previous, definition.block_id):
+                self.inventory.take_from_slot(self.hotbar.selected_index)
+
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
+        del x, y, scroll_x
+        if self.menu.in_game and not self.inventory_open and scroll_y:
+            self.hotbar.cycle(-1 if scroll_y > 0 else 1)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
+        self.mouse_x = x
+        self.mouse_y = y
         if not self.menu.in_game:
             index = self._menu_index_at(x, y)
             if index is not None:
@@ -336,7 +465,7 @@ class GameWindow(pyglet.window.Window):
             self.close()
 
     def _sync_mouse_capture(self) -> None:
-        should_capture = self.menu.in_game
+        should_capture = self.menu.in_game and not self.inventory_open
         if not should_capture:
             self.key_state.clear()
         if should_capture != self.mouse_captured:
@@ -345,6 +474,168 @@ class GameWindow(pyglet.window.Window):
 
     def _sync_camera_to_player(self) -> None:
         self.camera.x, self.camera.y, self.camera.z = self.player.eye_position
+
+    def _selected_item_name(self) -> str:
+        selected = self.hotbar.selected
+        if selected is None:
+            return "empty"
+        definition = self.item_registry.by_id(selected.item_id)
+        return f"{definition.name} x{selected.count}"
+
+    def _drop_selected_item(self) -> None:
+        stack = self.inventory.take_from_slot(self.hotbar.selected_index)
+        if stack is None:
+            return
+        direction = self.camera.direction
+        position = (
+            self.camera.position[0] + direction[0] * 1.5,
+            self.camera.position[1] + direction[1] * 1.5,
+            self.camera.position[2] + direction[2] * 1.5,
+        )
+        self.item_drops.spawn(position, stack)
+        self.inventory_status = f"Dropped {self.item_registry.by_id(stack.item_id).name}"
+
+    def _craft_first_available(self) -> None:
+        for recipe in reversed(self.recipe_book.recipes):
+            if self.recipe_book.craft_from_inventory(
+                recipe.key,
+                self.inventory,
+                self.item_registry,
+                grid_size=self.crafting_grid_size,
+            ):
+                result = self.item_registry.by_id(recipe.result.item_id)
+                self.inventory_status = f"Crafted {result.name} x{recipe.result.count}"
+                return
+        self.inventory_status = "No available recipe for this crafting grid"
+
+    def _draw_hotbar(self) -> None:
+        slot_width = 105
+        start_x = self.width // 2 - slot_width * 4
+        for index, label in enumerate(self.hotbar_labels):
+            stack = self.inventory[index]
+            marker = ">" if index == self.hotbar.selected_index else " "
+            if stack is None:
+                text = "empty"
+            else:
+                text = f"{self.item_registry.by_id(stack.item_id).name[:10]} x{stack.count}"
+            label.text = f"{marker}{index + 1}:{text}"
+            label.x = start_x + index * slot_width
+            label.y = 26
+            label.color = (
+                (245, 220, 140, 255)
+                if index == self.hotbar.selected_index
+                else (205, 215, 235, 255)
+            )
+            label.draw()
+
+    def _draw_inventory(self) -> None:
+        self.inventory_title.text = (
+            f"Inventory / {self.crafting_grid_size}x{self.crafting_grid_size} crafting - "
+            "C: craft first available, E/Esc: close"
+        )
+        self.inventory_title.x = self.width // 2
+        self.inventory_title.y = self.height * 3 // 4
+        self.inventory_title.draw()
+        start_x = self.width // 2 - 4 * 120
+        start_y = self.height * 2 // 3
+        for index, label in enumerate(self.inventory_labels):
+            stack = self.inventory[index]
+            label.text = (
+                f"{index + 1}: empty"
+                if stack is None
+                else f"{index + 1}: {self.item_registry.by_id(stack.item_id).name} x{stack.count}"
+            )
+            label.x = start_x + (index % self.inventory.width) * 120
+            label.y = start_y - (index // self.inventory.width) * 42
+            label.draw()
+        self.menu_status.text = self.inventory_status
+        self.menu_status.x = self.width // 2
+        self.menu_status.y = self.height // 3
+        self.menu_status.draw()
+        if self.cursor_stack is not None:
+            definition = self.item_registry.by_id(self.cursor_stack.item_id)
+            self.cursor_item_label.text = f"{definition.name} x{self.cursor_stack.count}"
+            self.cursor_item_label.x = self.mouse_x + 12
+            self.cursor_item_label.y = self.mouse_y + 12
+            self.cursor_item_label.draw()
+
+    def _inventory_slot_at(self, x: int, y: int) -> int | None:
+        start_x = self.width // 2 - 4 * 120
+        start_y = self.height * 2 // 3
+        for index in range(len(self.inventory)):
+            slot_x = start_x + (index % self.inventory.width) * 120
+            slot_y = start_y - (index // self.inventory.width) * 42
+            if abs(x - slot_x) <= 56 and abs(y - slot_y) <= 16:
+                return index
+        return None
+
+    def _handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
+        if quick_move and button == mouse.LEFT and self.cursor_stack is None:
+            target_range = range(9, len(self.inventory)) if index < 9 else range(9)
+            for target in target_range:
+                self.inventory.move(index, target, self.item_registry)
+                if self.inventory[index] is None:
+                    break
+            return
+        current = self.inventory[index]
+        if button == mouse.LEFT:
+            if self.cursor_stack is None:
+                if current is not None:
+                    self.cursor_stack = self.inventory.take_from_slot(index, current.count)
+                return
+            if current is None:
+                self.inventory.set(index, self.cursor_stack, self.item_registry)
+                self.cursor_stack = None
+                return
+            if current.item_id != self.cursor_stack.item_id:
+                self.inventory.set(index, self.cursor_stack, self.item_registry)
+                self.cursor_stack = current
+                return
+            maximum = self.item_registry.by_id(current.item_id).max_stack
+            moved = min(maximum - current.count, self.cursor_stack.count)
+            if moved:
+                self.inventory.set(
+                    index,
+                    current.with_count(current.count + moved),
+                    self.item_registry,
+                )
+                remaining = self.cursor_stack.count - moved
+                self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
+        elif button == mouse.RIGHT:
+            if self.cursor_stack is None:
+                self.cursor_stack = self.inventory.split(index)
+                return
+            if current is None:
+                self.inventory.set(
+                    index,
+                    self.cursor_stack.with_count(1),
+                    self.item_registry,
+                )
+            elif (
+                current.item_id == self.cursor_stack.item_id
+                and current.count < self.item_registry.by_id(current.item_id).max_stack
+            ):
+                self.inventory.set(
+                    index,
+                    current.with_count(current.count + 1),
+                    self.item_registry,
+                )
+            else:
+                return
+            remaining = self.cursor_stack.count - 1
+            self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
+
+    def _close_inventory(self) -> None:
+        if self.cursor_stack is not None:
+            remainder = self.inventory.add(self.cursor_stack, self.item_registry)
+            if remainder is not None:
+                self.item_drops.spawn(
+                    (self.player.x, self.player.y + 0.5, self.player.z),
+                    remainder,
+                )
+            self.cursor_stack = None
+        self.inventory_open = False
+        self.inventory_status = ""
 
 
 def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
@@ -357,6 +648,10 @@ def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
         from voxel_sandbox.render.ui.menu import Screen
 
         window.menu.screen = Screen.GAME
+        window.dispatch_event("on_draw")
+        window.flip()
+        window.dispatch_event("on_key_press", key.E, 0)
+        window.dispatch_event("on_key_press", key.C, 0)
         window.dispatch_event("on_draw")
         window.flip()
         window.close()

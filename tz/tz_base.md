@@ -1906,7 +1906,7 @@ Checklist:
 - [x] Add underwater fog.
 - [x] Add fluid levels.
 - [x] Add simple fluid propagation.
-- [ ] Add bucket-like item optional.
+- [x] Add bucket-like item optional.
 - [x] Add tests for fluid propagation.
 
 Done when:
@@ -1921,26 +1921,26 @@ Done when:
 
 Checklist:
 
-- [ ] Implement ItemDef.
-- [ ] Implement ItemRegistry.
-- [ ] Implement ItemStack.
-- [ ] Implement inventory grid.
-- [ ] Implement hotbar.
-- [ ] Implement item pickup.
-- [ ] Implement item drop.
-- [ ] Implement block drops.
-- [ ] Implement 2x2 crafting.
-- [ ] Implement 3x3 crafting.
-- [ ] Implement workbench block.
-- [ ] Implement recipes config.
-- [ ] Add tests for inventory.
-- [ ] Add tests for crafting.
+- [x] Implement ItemDef.
+- [x] Implement ItemRegistry.
+- [x] Implement ItemStack.
+- [x] Implement inventory grid.
+- [x] Implement hotbar.
+- [x] Implement item pickup.
+- [x] Implement item drop.
+- [x] Implement block drops.
+- [x] Implement 2x2 crafting.
+- [x] Implement 3x3 crafting.
+- [x] Implement workbench block.
+- [x] Implement recipes config.
+- [x] Add tests for inventory.
+- [x] Add tests for crafting.
 
 Done when:
 
-- [ ] Player can collect drops.
-- [ ] Player can switch hotbar slot.
-- [ ] Player can craft basic items.
+- [x] Player can collect drops.
+- [x] Player can switch hotbar slot.
+- [x] Player can craft basic items.
 
 ---
 

@@ -51,6 +51,7 @@ class ChunkStreamer:
             if postprocess is not None:
                 raise ValueError("Process worldgen uses prepare_lighting instead of postprocess")
             self._executor = ProcessPoolExecutor(max_workers=workers)
+            _warm_process_pool(self._executor, workers)
         else:
             self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="worldgen")
         self._loaded: dict[ChunkCoord, Chunk] = {}
@@ -289,3 +290,13 @@ def _generate_chunk_task(
 
 def _distance_squared(first: ChunkCoord, second: ChunkCoord) -> int:
     return (first.x - second.x) ** 2 + (first.z - second.z) ** 2
+
+
+def _warm_process_pool(executor: Executor, workers: int) -> None:
+    futures = [executor.submit(_process_ready) for _ in range(workers)]
+    for future in futures:
+        future.result()
+
+
+def _process_ready() -> bool:
+    return True

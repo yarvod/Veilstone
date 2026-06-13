@@ -44,6 +44,7 @@ class SectionMeshWorker:
                 initializer=_initialize_process_worker,
                 initargs=(tuple(registry), texture_uvs),
             )
+            _warm_process_pool(self._executor, workers)
         else:
             self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="meshing")
         self._pending: dict[SectionCoord, Future[CompletedMesh]] = {}
@@ -174,3 +175,13 @@ def _build_process_mesh(
         _process_texture_uvs,
     )
     return CompletedMesh(key, revision, mesh, transparent_mesh)
+
+
+def _warm_process_pool(executor: Executor, workers: int) -> None:
+    futures = [executor.submit(_process_ready) for _ in range(workers)]
+    for future in futures:
+        future.result()
+
+
+def _process_ready() -> bool:
+    return True

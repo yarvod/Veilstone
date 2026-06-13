@@ -1,0 +1,20 @@
+[[recipes]]
+key = "veilwood_planks"
+kind = "shapeless"
+ingredients = ["veilwood_log"]
+result = "veilwood_planks"
+count = 4
+
+[[recipes]]
+key = "workbench"
+kind = "shaped"
+pattern = ["PP", "PP"]
+keys = { P = "veilwood_planks" }
+result = "workbench"
+
+[[recipes]]
+key = "gloam_lantern"
+kind = "shaped"
+pattern = [" C ", "PPP", " P "]
+keys = { C = "dusk_crystal", P = "veilwood_planks" }
+result = "gloam_lantern"

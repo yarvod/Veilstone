@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 09 - Water: complete and ready for manual testing.
+Phase 10 - Inventory, items, and crafting: complete and ready for manual testing.
 
 ## Completed checklist
 
@@ -89,6 +89,20 @@ Phase 09 - Water: complete and ready for manual testing.
 - [x] `3` selects a debug water source for placement.
 - [x] Final gate: 73 tests, Ruff, Pyright, client/server smoke, and all core benchmarks.
 
+### Phase 10 - Inventory, items, and crafting
+
+- [x] Immutable item definitions, registry, stack limits, block-item mapping, and block drops.
+- [x] 9-slot hotbar plus 27-slot backpack with merge, split, swap, and quick-move operations.
+- [x] Mouse inventory interactions: left transfer/swap, right split/place-one, Shift-click quick move.
+- [x] Session world-drop store with radius pickup, partial pickup, and `Q` drop action.
+- [x] Shaped and shapeless recipe engine with trimmed patterns and atomic inventory crafting.
+- [x] Player 2x2 crafting and Runecraft Table 3x3 crafting access.
+- [x] TOML recipes for Veilwood Planks, Runecraft Table, and Gloam Lantern.
+- [x] Placeable Veilwood Planks and Runecraft Table blocks with generated original textures.
+- [x] Water Vessel item provides the optional bucket-like water-source placement path.
+- [x] Property-based inventory count invariant and drop-to-crafting integration coverage.
+- [x] Final gate: 86 tests, Ruff, Pyright, OpenGL inventory/crafting smoke, and benchmarks.
+
 ## Failed checks
 
 None recorded.
@@ -96,14 +110,16 @@ None recorded.
 ## Performance notes
 
 - Player physics benchmark, 20,000 ticks: approximately 3.9 microseconds per tick.
-- Full featured terrain generation with lakes remains approximately 9.86 ms per chunk off-thread.
-- Lit visible-face meshing with smooth light and AO is approximately 1.39 ms per section.
-- Greedy meshing is approximately 2.46 ms and reduces the flat benchmark from 2048 to 12
+- Full featured terrain generation with lakes remains approximately 10.16 ms per chunk off-thread.
+- Lit visible-face meshing with smooth light and AO is approximately 1.33 ms per section.
+- Greedy meshing is approximately 2.49 ms and reduces the flat benchmark from 2048 to 12
   triangles.
-- Full `16x64x16` chunk relighting with four sources is approximately 1.54 ms.
+- Full `16x64x16` chunk relighting with four sources is approximately 1.50 ms.
 - Vectorized `18^3` section halo snapshot is approximately 0.02 ms.
 - Streaming with opaque and water meshes remains approximately `0.84 ms` average,
   `1.64 ms` p95, and `9.93 ms` maximum after process-pool warmup.
+- Process pools now warm before gameplay; cold-run streaming integration measures approximately
+  `1.35 ms` average, `2.70 ms` p95, and `3.36 ms` maximum.
 
 ## Known bugs
 
@@ -111,8 +127,10 @@ None recorded.
 - Emissive block-light propagation does not yet transfer energy across chunk boundaries;
   mesh halo sampling itself does cross loaded section/chunk boundaries.
 - Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
-- Water has a debug placement key; bucket behavior belongs to the Phase 10 item system.
+- Water Vessel can place a source but does not yet scoop an existing source back up.
+- World drops have inventory/pickup behavior but no dedicated 3D item model yet; visual item
+  entities are part of Phase 11.
 
 ## Next recommended tasks
 
-Test Phase 09 water, then continue with Phase 10 inventory, items, and crafting.
+Test Phase 10 inventory/crafting, then continue with Phase 11 entities and mobs.

@@ -61,7 +61,12 @@ Client controls:
 - `Space`: jump.
 - Mouse: look around.
 - Left mouse: break the highlighted block.
-- `1` / `2` / `3`: select grass, a Gloam Lantern, or a water source for placement.
+- `1-9` or mouse wheel: select a hotbar slot.
+- `E`: open the 9x4 inventory and player 2x2 crafting view.
+- Left click / right click in inventory: transfer or split stacks.
+- `Shift` + left click in inventory: quick-move between hotbar and backpack.
+- `C`: craft the highest-priority available recipe for the active 2x2/3x3 grid.
+- `Q`: drop one item from the selected hotbar stack.
 - Right mouse: place the selected block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - `F5`: force shader reload.
@@ -112,6 +117,19 @@ uv run python -m voxel_sandbox
 3. Press `3`, then place water over a ledge and verify downward then sideways flow.
 4. Enter water and verify the view changes to short-range blue underwater fog.
 5. Cross chunk boundaries near water and watch the frame-time overlay for streaming spikes.
+
+## Test Phase 10
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Switch hotbar slots with `1-9` or the mouse wheel and place a selected block.
+2. Break Veilwood logs and approach their positions until the `Drops` counter decreases.
+3. Press `E` and test stack transfer, splitting, and Shift-click quick move.
+4. Press `C` to turn a log into four planks, then craft a Runecraft Table from four planks.
+5. Place and right-click the Runecraft Table to activate 3x3 recipes.
+6. Press `Q` to drop one selected item and collect it again by walking nearby.
 
 ## Test Phase 6
 

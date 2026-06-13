@@ -24,7 +24,8 @@ def test_core_registry_reserves_zero_for_air() -> None:
     assert registry.by_key("gloam_lantern").emits_light == 14
     assert registry.by_key("water").is_fluid
     assert not registry.by_key("water").is_solid
-    assert len(registry) == 9
+    assert registry.by_key("workbench").id == 10
+    assert len(registry) == 11
 
 
 def test_registry_rejects_duplicate_ids_and_keys() -> None:

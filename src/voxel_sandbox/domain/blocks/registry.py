@@ -142,5 +142,25 @@ def create_core_block_registry() -> BlockRegistry:
                 texture_side="water",
                 texture_bottom="water",
             ),
+            BlockDef(
+                9,
+                "veilwood_planks",
+                "Veilwood Planks",
+                Material.WOOD,
+                1.2,
+                texture_top="veilwood_planks",
+                texture_side="veilwood_planks",
+                texture_bottom="veilwood_planks",
+            ),
+            BlockDef(
+                10,
+                "workbench",
+                "Runecraft Table",
+                Material.WOOD,
+                1.8,
+                texture_top="runecraft_top",
+                texture_side="runecraft_side",
+                texture_bottom="veilwood_planks",
+            ),
         )
     )
