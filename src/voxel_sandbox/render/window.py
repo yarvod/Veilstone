@@ -150,9 +150,7 @@ class GameWindow(pyglet.window.Window):
 
     def on_draw(self) -> None:
         clear_color = (
-            self.world_renderer.clear_color
-            if self.menu.in_game
-            else (0.025, 0.04, 0.075, 1.0)
+            self.world_renderer.clear_color if self.menu.in_game else (0.025, 0.04, 0.075, 1.0)
         )
         self.mgl_context.clear(*clear_color, depth=1.0)
         if not self.menu.in_game:

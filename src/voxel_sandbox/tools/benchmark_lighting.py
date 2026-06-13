@@ -28,8 +28,5 @@ def run_benchmark(iterations: int = 25) -> int:
         start = perf_counter()
         relight_chunk(chunk, registry)
         timings.append((perf_counter() - start) * 1000.0)
-    print(
-        f"lighting 16x64x16: avg={mean(timings):.3f} ms "
-        f"min={min(timings):.3f} ms sources=4"
-    )
+    print(f"lighting 16x64x16: avg={mean(timings):.3f} ms min={min(timings):.3f} ms sources=4")
     return 0
