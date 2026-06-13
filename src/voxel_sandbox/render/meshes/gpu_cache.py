@@ -36,7 +36,17 @@ class SectionMeshCache:
         index_buffer = self.context.buffer(mesh.indices.tobytes())
         vertex_array = self.context.vertex_array(
             self.program,
-            [(vertex_buffer, "3f 2f 3f", "in_position", "in_uv", "in_normal")],
+            [
+                (
+                    vertex_buffer,
+                    "3f 2f 3f 1f 1f",
+                    "in_position",
+                    "in_uv",
+                    "in_normal",
+                    "in_light",
+                    "in_ao",
+                )
+            ],
             index_buffer,
             index_element_size=4,
         )

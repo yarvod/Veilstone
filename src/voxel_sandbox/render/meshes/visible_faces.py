@@ -31,6 +31,9 @@ def build_visible_face_mesh(
     section: ChunkSection,
     registry: BlockRegistry,
     texture_uvs: dict[str, tuple[float, float, float, float]],
+    *,
+    smooth_lighting: bool = True,
+    ambient_occlusion: bool = True,
 ) -> MeshData:
     blocks = section.blocks
     max_block_id = max((definition.id for definition in registry), default=0)
@@ -48,6 +51,9 @@ def build_visible_face_mesh(
 
     opaque = opaque_lookup[blocks]
     padded = np.pad(opaque, 1, constant_values=False)
+    combined_light = np.maximum(section.sky_light, section.block_light).astype(np.float32) / 15.0
+    padded_light = np.pad(combined_light, 2, constant_values=0.0)
+    padded_opaque = np.pad(opaque, 2, constant_values=False)
     vertex_batches: list[NDArray[np.float32]] = []
     index_batches: list[NDArray[np.uint32]] = []
     vertex_offset = 0
@@ -78,11 +84,22 @@ def build_visible_face_mesh(
             + (rectangles[:, 3, None] - rectangles[:, 1, None]) * local_uvs[None, :, 1]
         )
 
-        vertices = np.empty((face_count, 4, 8), dtype=np.float32)
+        lights, ao = _vertex_lighting(
+            coordinates,
+            (dx, dy, dz),
+            corners,
+            padded_light,
+            padded_opaque,
+            smooth_lighting=smooth_lighting,
+            ambient_occlusion=ambient_occlusion,
+        )
+        vertices = np.empty((face_count, 4, 10), dtype=np.float32)
         vertices[:, :, :3] = positions
         vertices[:, :, 3:5] = uvs
-        vertices[:, :, 5:] = np.asarray(normal, dtype=np.float32)
-        vertex_batches.append(vertices.reshape((-1, 8)))
+        vertices[:, :, 5:8] = np.asarray(normal, dtype=np.float32)
+        vertices[:, :, 8] = lights
+        vertices[:, :, 9] = ao
+        vertex_batches.append(vertices.reshape((-1, 10)))
 
         bases = np.arange(face_count, dtype=np.uint32) * 4 + vertex_offset
         pattern = np.asarray((0, 1, 2, 0, 2, 3), dtype=np.uint32)
@@ -91,7 +108,62 @@ def build_visible_face_mesh(
 
     if not vertex_batches:
         return MeshData(
-            np.empty((0, 8), dtype=np.float32),
+            np.empty((0, 10), dtype=np.float32),
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
+
+
+def _vertex_lighting(
+    coordinates: NDArray[np.int64],
+    direction: tuple[int, int, int],
+    corners: tuple[tuple[int, int, int], ...],
+    padded_light: NDArray[np.float32],
+    padded_opaque: NDArray[np.bool_],
+    *,
+    smooth_lighting: bool,
+    ambient_occlusion: bool,
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+    face_count = coordinates.shape[0]
+    lights = np.empty((face_count, 4), dtype=np.float32)
+    ao = np.ones((face_count, 4), dtype=np.float32)
+    normal_axis = next(axis for axis, value in enumerate(direction) if value != 0)
+    tangent_axes = tuple(axis for axis in range(3) if axis != normal_axis)
+    base = coordinates + np.asarray(direction, dtype=np.int64)
+
+    for vertex_index, corner in enumerate(corners):
+        offsets: list[NDArray[np.int64]] = [np.zeros(3, dtype=np.int64)]
+        side_offsets: list[NDArray[np.int64]] = []
+        for axis in tangent_axes:
+            offset = np.zeros(3, dtype=np.int64)
+            offset[axis] = -1 if corner[axis] == 0 else 1
+            side_offsets.append(offset)
+        corner_offset = side_offsets[0] + side_offsets[1]
+        if smooth_lighting:
+            offsets.extend((*side_offsets, corner_offset))
+        samples = [_sample_float(padded_light, base + offset) for offset in offsets]
+        lights[:, vertex_index] = np.mean(np.stack(samples), axis=0)
+
+        if ambient_occlusion:
+            side_one = _sample_bool(padded_opaque, base + side_offsets[0]).astype(np.float32)
+            side_two = _sample_bool(padded_opaque, base + side_offsets[1]).astype(np.float32)
+            corner_block = _sample_bool(padded_opaque, base + corner_offset).astype(np.float32)
+            occlusion = np.where(
+                (side_one > 0.0) & (side_two > 0.0),
+                3.0,
+                side_one + side_two + corner_block,
+            )
+            ao[:, vertex_index] = 1.0 - occlusion * 0.18
+    return lights, ao
+
+
+def _sample_float(
+    array: NDArray[np.float32], coordinates: NDArray[np.int64]
+) -> NDArray[np.float32]:
+    indices = np.clip(coordinates + 2, 0, SECTION_SIZE + 3)
+    return array[indices[:, 0], indices[:, 1], indices[:, 2]]
+
+
+def _sample_bool(array: NDArray[np.bool_], coordinates: NDArray[np.int64]) -> NDArray[np.bool_]:
+    indices = np.clip(coordinates + 2, 0, SECTION_SIZE + 3)
+    return array[indices[:, 0], indices[:, 1], indices[:, 2]]
