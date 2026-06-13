@@ -1803,24 +1803,24 @@ Done when:
 
 Checklist:
 
-- [ ] Implement player transform.
-- [ ] Implement gravity.
-- [ ] Implement AABB collision against blocks.
-- [ ] Implement walking.
-- [ ] Implement jumping.
-- [ ] Implement mouse look.
-- [ ] Implement DDA block raycast.
-- [ ] Implement block highlight.
-- [ ] Implement break block.
-- [ ] Implement place block.
-- [ ] Add tests for DDA.
-- [ ] Add tests for AABB collision.
+- [x] Implement player transform.
+- [x] Implement gravity.
+- [x] Implement AABB collision against blocks.
+- [x] Implement walking.
+- [x] Implement jumping.
+- [x] Implement mouse look.
+- [x] Implement DDA block raycast.
+- [x] Implement block highlight.
+- [x] Implement break block.
+- [x] Implement place block.
+- [x] Add tests for DDA.
+- [x] Add tests for AABB collision.
 
 Done when:
 
-- [ ] Player walks on terrain.
-- [ ] Player cannot pass through blocks.
-- [ ] Player can break/place blocks.
+- [x] Player walks on terrain.
+- [x] Player cannot pass through blocks.
+- [x] Player can break/place blocks.
 
 ---
 

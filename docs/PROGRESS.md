@@ -2,52 +2,31 @@
 
 ## Current phase
 
-Phase 05 - Terrain generation: complete and ready for manual testing.
+Phase 06 - First-person player and collision: complete and ready for manual testing.
 
 ## Completed checklist
 
-### Phase 01 - Project skeleton
+### Phases 01-05
 
-- [x] Python 3.13 `uv` project, Ruff, pytest, Pyright, logging, config, and CLI.
-- [x] Player-facing no-argument entry point and developer server/client commands.
-- [x] Pyglet window, ModernGL context, camera input, FPS/frame-time overlay.
-- commits: `3e51c4b`, `5e0ee3c`, `e4dc47e`; tag: `phase-01-complete`.
+- [x] Project/window/shader foundation (`phase-01-complete`, `phase-02-complete`).
+- [x] NumPy blocks and chunks (`phase-03-complete`).
+- [x] Visible-face rendering, atlas, cache, and culling (`phase-04-complete`).
+- [x] Deterministic terrain, features, background streaming (`phase-05-complete`).
 
-### Phase 02 - OpenGL client shell
+### Phase 06 - First-person player and collision
 
-- [x] GLSL loading, compilation, timestamp hot reload, and manual `F5` reload.
-- commit: `39abdea`; tag: `phase-02-complete`.
-
-### Phase 03 - Blocks and chunks
-
-- [x] Immutable block definitions and validated registry.
-- [x] Chunk/section coordinates, negative coordinate conversion, NumPy storage.
-- [x] Dirty flags, revisions, World protocol, and in-memory world access.
-- commits: `a846ccb`, `b93c292`; tag: `phase-03-complete`.
-
-### Phase 04 - Basic meshing and rendering
-
-- [x] Vectorized visible-face meshing with indexed position/UV/normal buffers.
-- [x] Original generated texture atlas, ModernGL VBO/IBO upload, chunk shader.
-- [x] Section mesh cache, frustum culling, and mesh debug statistics.
-- commits: `6c9da62`, `757a957`, `7ff01f2`, `c52faa9`; tag: `phase-04-complete`.
-
-### Phase 05 - Terrain generation
-
-- [x] Stable numeric/text seeds, smooth heightmap, and four MVP biomes.
-- [x] Stone/dirt/grass layers, veilwood trees, dusk crystal ore, and caves.
-- [x] Camera-centered chunk requests and deterministic generation tests.
-- [x] Background worldgen workers, completed upload queue, and chunk unloading.
-- [x] Streamed section rendering and loaded/pending/visible debug statistics.
-- [x] Final gate: 43 tests, Ruff, Pyright, client/server smoke tests, and both benchmarks.
-- commits: `a5ede0a`, `dc6b92f`, `211346b`, `5bb4332`.
-- tag: `phase-05-complete`.
-
-### UI foundation pulled forward from Phase 17
-
-- [x] Main Menu, Singleplayer/Multiplayer shells, Pause Menu, and Open to LAN placeholder.
-- [x] One player-facing entry point; no separate player-facing `host` command.
-- commits: `27fa351`, `8a46ce0`.
+- [x] Player transform, eye position, gravity, walking, and jumping.
+- [x] Axis-separated voxel AABB collision with movement substeps.
+- [x] Camera mouse look synchronized to the player eye.
+- [x] Voxel DDA raycast with hit block, previous placement cell, normal, and distance.
+- [x] Gold wireframe block highlight and center crosshair.
+- [x] Left-click break and right-click grass placement with player-overlap validation.
+- [x] Changed blocks trigger local section remeshing.
+- [x] Session-local block deltas survive chunk unload/reload.
+- [x] Unit tests for DDA/AABB and integration test against generated terrain.
+- [x] Final gate: 52 tests, Ruff, Pyright, client/server smoke, and all benchmarks.
+- commits: `76673af`, `3217f56`, `5ca881f`.
+- tag: `phase-06-complete`.
 
 ## Failed checks
 
@@ -55,17 +34,16 @@ None recorded.
 
 ## Performance notes
 
-- Visible-face meshing, half-solid `16^3`: approximately 0.24 ms average.
-- Full terrain generation with features: approximately 8.3 ms per chunk.
-- World generation runs outside the render thread; GPU uploads are capped per frame.
-- Voxel storage uses `uint16` block IDs and `uint8` auxiliary NumPy arrays.
+- Player physics benchmark, 20,000 ticks: approximately 3.7 microseconds per tick.
+- Visible-face meshing remains approximately 0.24 ms for the benchmark section.
+- Full featured terrain generation remains approximately 8.3 ms per chunk off-thread.
 
 ## Known bugs
 
-- Section meshing currently treats neighboring sections/chunks as air, producing hidden duplicate
-  boundary faces. Cross-section world views will remove these during later meshing work.
-- Create/Load World currently enters the configured development seed; save selection belongs to Phase 12.
+- Block edits persist only for the running session; disk persistence belongs to Phase 12.
+- Section meshing still treats neighboring sections/chunks as air, leaving hidden boundary faces.
+- Placing currently uses a fixed grass block because inventory/hotbar arrives in Phase 10.
 
 ## Next recommended tasks
 
-Stop after Phase 05 for manual testing. Begin Phase 06 only after the milestone is accepted.
+Stop after Phase 06 for manual testing. Begin Phase 07 only after acceptance.

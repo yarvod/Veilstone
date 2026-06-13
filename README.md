@@ -44,9 +44,11 @@ Runtime settings live in `config/settings.toml`.
 Client controls:
 
 - Arrow keys or `W/S` and `Enter`: navigate menus.
-- `W/A/S/D`: move horizontally.
-- `Space` / `Shift`: move up / down in the free camera.
+- `W/A/S/D`: walk.
+- `Space`: jump.
 - Mouse: look around.
+- Left mouse: break the highlighted block.
+- Right mouse: place a grass block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - `F5`: force shader reload.
 
@@ -79,3 +81,22 @@ uv run python -m voxel_sandbox
 
 The prototype render distance, seed, generation worker count, and upload budget can be
 changed under `[world]` in `config/settings.toml`.
+
+## Test Phase 6
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Select `Singleplayer -> Create World` and wait for the player to land.
+2. Walk with `W/A/S/D`; confirm terrain and trees block movement.
+3. Jump with `Space`; confirm jumping is unavailable while airborne.
+4. Aim with the crosshair and confirm the target block receives a gold outline.
+5. Break blocks with left mouse and place grass blocks with right mouse.
+6. Walk away until chunks unload, then return and confirm edits remain for the session.
+
+Player physics benchmark:
+
+```bash
+uv run python -m voxel_sandbox benchmark-physics
+```
