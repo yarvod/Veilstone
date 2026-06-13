@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 07 - Lighting MVP: complete and ready for manual testing.
+Phase 08 - Greedy meshing: complete and ready for manual testing.
 
 ## Completed checklist
 
@@ -53,6 +53,20 @@ Phase 07 - Lighting MVP: complete and ready for manual testing.
 - [x] Select voxel AO quad diagonals from vertex brightness to remove cross-shaped shading artifacts.
 - commits: `44079e4`, `f159afc`.
 
+### Phase 08 - Greedy meshing
+
+- [x] Halo-aware meshing reads neighboring block, skylight, and block-light data.
+- [x] Greedy opaque meshing preserves material, vertex light, and AO signatures.
+- [x] Atlas textures repeat per block across merged quads with deterministic variation.
+- [x] `F9` switches to the visible-face fallback for visual comparison.
+- [x] Debug overlay reports active mesher, quads/faces, and triangle count.
+- [x] Skylight spreads laterally below roofs/canopies with bounded NumPy propagation.
+- [x] Offscreen framebuffer QA compared greedy and fallback rendering.
+- [x] Final gate: 65 tests, Ruff, Pyright, client/server smoke, offscreen OpenGL render, and
+  all benchmarks.
+- commit: `cb3239f`.
+- tag: `phase-08-complete` after final documentation commit.
+
 ## Failed checks
 
 None recorded.
@@ -61,16 +75,18 @@ None recorded.
 
 - Player physics benchmark, 20,000 ticks: approximately 3.9 microseconds per tick.
 - Full featured terrain generation remains approximately 8.5 ms per chunk off-thread.
-- Lit visible-face meshing with smooth light and AO is approximately 1.90 ms per section.
-- Full `16x64x16` chunk relighting with four sources is approximately 5.70 ms.
+- Lit visible-face meshing with smooth light and AO is approximately 1.39 ms per section.
+- Greedy meshing is approximately 2.46 ms and reduces the flat benchmark from 2048 to 12
+  triangles.
+- Full `16x64x16` chunk relighting with four sources is approximately 1.54 ms.
 
 ## Known bugs
 
 - Block edits persist only for the running session; disk persistence belongs to Phase 12.
-- Section meshing still treats neighboring sections/chunks as air, leaving hidden boundary faces.
-- Lighting propagation and smooth-light sampling do not yet cross chunk boundaries.
+- Emissive block-light propagation does not yet transfer energy across chunk boundaries;
+  mesh halo sampling itself does cross loaded section/chunk boundaries.
 - Placement has only two debug selections because inventory/hotbar arrives in Phase 10.
 
 ## Next recommended tasks
 
-Stop after Phase 07 for manual testing. Begin Phase 08 only after acceptance.
+Stop after Phase 08 for manual testing. Begin Phase 09 only after acceptance.

@@ -634,6 +634,19 @@ MVP:
 - cascaded shadow maps опционально;
 - water caustics/fake reflections опционально.
 
+Требования к voxel lighting implementation:
+
+- block light распространяется инкрементальным flood fill/BFS по voxel grid, а не CPU raycast
+  от источника к каждому fragment/block;
+- skylight хранится в voxel light data и должен корректно продолжаться через границы
+  chunk/section;
+- smooth lighting и AO на вершинах обязаны брать halo соседних section/chunk, а не считать
+  отсутствующие локальные данные нулевым светом;
+- triangulation quad должна выбирать диагональ по vertex light/AO или иным способом исключать
+  заметные диагональные и крестообразные градиенты;
+- изменение блока/источника света должно инвалидировать только затронутые lighting regions и
+  meshes; полный пересчёт всего мира каждый кадр запрещён.
+
 ### 8.4 Тени
 
 Реализовать в этапах:
@@ -641,6 +654,11 @@ MVP:
 1. Fake contact shadow / ambient occlusion.
 2. Simple shadow map для nearby chunks/entities.
 3. Cascaded shadow maps, если FPS нормальный.
+
+Солнечные тени реализуются на GPU через depth shadow map: один depth pass для видимых nearby
+casters, затем lookup/PCF в world shader. Не трассировать отдельные CPU rays от солнца или
+каждого источника света к блокам/fragment'ам. Локальные block lights в MVP не отбрасывают
+динамические shadow maps: их затенение обеспечивается voxel propagation и AO.
 
 Настройки:
 
@@ -1853,19 +1871,22 @@ Done when:
 
 Checklist:
 
-- [ ] Implement greedy meshing for opaque blocks.
-- [ ] Keep fallback visible-face meshing.
-- [ ] Add benchmark comparison.
-- [ ] Ensure textures tile correctly.
-- [ ] Ensure lighting/AO constraints are respected.
-- [ ] Add debug mode to show mesh stats.
-- [ ] Add chunk mesh triangle count overlay.
+- [x] Implement greedy meshing for opaque blocks.
+- [x] Keep fallback visible-face meshing (`F9`).
+- [x] Add benchmark comparison.
+- [x] Ensure textures tile correctly.
+- [x] Ensure lighting/AO constraints are respected.
+- [x] Sample light/AO through neighboring section/chunk halo data.
+- [x] Remove visible diagonal/cross-shaped smooth-light and AO artifacts.
+- [x] Add debug mode to show mesh stats and active mesher.
+- [x] Add chunk mesh triangle count overlay.
 
 Done when:
 
-- [ ] Triangle count drops significantly.
-- [ ] FPS improves.
-- [ ] Visual artifacts are acceptable.
+- [x] Triangle count drops significantly (`2048 -> 12` in the flat benchmark section).
+- [x] Meshing stays inside the performance budget.
+- [x] Visual artifacts are acceptable for the generated-texture prototype.
+- [x] Section/chunk halo sampling does not create false zero-light borders.
 
 ---
 
@@ -2036,6 +2057,7 @@ Checklist:
 - [ ] Add entity shadows.
 - [ ] Add shadow bias tuning.
 - [ ] Add PCF filtering.
+- [ ] Keep the shadow depth pass and filtering inside the GPU frame budget.
 - [ ] Add shadow quality settings.
 - [ ] Add water shader polish.
 - [ ] Add skybox/sun/moon.
@@ -2046,6 +2068,7 @@ Done when:
 
 - [ ] Shadows can be enabled.
 - [ ] FPS remains acceptable on medium.
+- [ ] Medium shadow settings keep GPU frame at or below the `<= 12 ms` target scene budget.
 - [ ] Low settings can disable shadows.
 
 ---

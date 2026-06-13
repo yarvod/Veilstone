@@ -64,6 +64,7 @@ Client controls:
 - `F6`: toggle smooth lighting.
 - `F7`: toggle ambient occlusion.
 - `F8`: toggle fog.
+- `F9`: toggle greedy/visible-face meshing for visual comparison.
 
 ## Architecture
 
@@ -136,3 +137,24 @@ uv run python -m voxel_sandbox benchmark-lighting
 
 The cycle duration and graphics defaults can be changed under `[graphics]` in
 `config/settings.toml`. Set `day_cycle_seconds = 30.0` for a faster manual check.
+
+## Test Phase 8
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Enter `Singleplayer -> Create World` and inspect flat terrain, slopes, trees, and caves.
+2. Press `F9` to switch between `greedy` and `visible` in the debug overlay.
+3. Confirm textures keep their block-sized scale and lighting does not gain border seams.
+4. Compare `Triangles` in both modes; greedy mode should be substantially lower.
+5. Toggle `F6`/`F7` in both mesh modes and confirm smooth light/AO remain coherent.
+
+```bash
+uv run python -m voxel_sandbox benchmark-mesher
+uv run python -m voxel_sandbox benchmark-lighting
+```
+
+Block and sky light use bounded voxel propagation, not per-light ray tracing. Sun cast
+shadows are planned as a GPU shadow-map pass in Phase 15; see
+`docs/adr/0002-voxel-lighting-and-shadows.md`.
