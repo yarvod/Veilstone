@@ -1728,23 +1728,23 @@ Done when:
 
 Checklist:
 
-- [ ] Implement BlockDef.
-- [ ] Implement BlockRegistry.
-- [ ] Implement ChunkCoord.
-- [ ] Implement SectionCoord.
-- [ ] Implement ChunkSection array storage.
-- [ ] Implement World interface.
-- [ ] Implement get/set block.
-- [ ] Implement dirty flags.
-- [ ] Add tests for coordinate conversion.
-- [ ] Add tests for block registry.
-- [ ] Add tests for chunk storage.
+- [x] Implement BlockDef.
+- [x] Implement BlockRegistry.
+- [x] Implement ChunkCoord.
+- [x] Implement SectionCoord.
+- [x] Implement ChunkSection array storage.
+- [x] Implement World interface.
+- [x] Implement get/set block.
+- [x] Implement dirty flags.
+- [x] Add tests for coordinate conversion.
+- [x] Add tests for block registry.
+- [x] Add tests for chunk storage.
 
 Done when:
 
-- [ ] Can create chunk.
-- [ ] Can set/get blocks.
-- [ ] Tests pass.
+- [x] Can create chunk.
+- [x] Can set/get blocks.
+- [x] Tests pass.
 
 ---
 

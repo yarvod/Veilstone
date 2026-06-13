@@ -74,6 +74,35 @@ None recorded.
 
 None recorded.
 
+## Phase 03 - Blocks and chunks
+
+### Completed
+
+- [x] Immutable `BlockDef` and validated read-only `BlockRegistry`.
+  - commit: `a846ccb phase-03.items-01-02`
+- [x] `ChunkCoord`, `SectionCoord`, and negative world coordinate conversion.
+- [x] NumPy-backed `ChunkSection` arrays for blocks, lighting, and metadata.
+- [x] Dirty flags, revision tracking, `Chunk`, `World` protocol, and `InMemoryWorld`.
+  - commit: `b93c292 phase-03.items-03-08`
+- [x] Block registry, coordinate, chunk storage, and world get/set tests.
+
+### In progress
+
+- [ ] Phase 4 visible-face meshing and first rendered section.
+
+### Failed checks
+
+None recorded.
+
+### Performance notes
+
+Voxel storage uses dense NumPy arrays: `uint16` block IDs and `uint8` auxiliary fields.
+No Python object is created per voxel.
+
+### Known bugs
+
+None recorded.
+
 ### Performance notes
 
 Automatic shader timestamp checks run twice per second and do no source reads when unchanged.
