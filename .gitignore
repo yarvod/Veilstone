@@ -1,0 +1,134 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# uv
+uv.lock
+# Если хочешь фиксировать зависимости для воспроизводимости, УДАЛИ строку uv.lock выше.
+# Для игры/приложения обычно лучше коммитить uv.lock.
+
+# Test / lint / typecheck caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+.pyright/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+crash.log
+debug.log
+
+# Local config
+.env
+.env.*
+*.local.toml
+*.local.json
+*.local.yaml
+settings.local.*
+config.local.*
+
+# Game saves / local runtime data
+saves/
+worlds/
+local_worlds/
+playerdata/
+screenshots/
+captures/
+replays/
+
+# Generated assets / caches
+.cache/
+asset_cache/
+generated/
+generated_assets/
+packed_assets/
+texture_atlas_cache/
+shader_cache/
+
+# Profiling / benchmarks output
+profiles/
+profiler/
+*.prof
+*.pstats
+*.trace
+*.speedscope.json
+benchmark_results/
+perf_results/
+
+# Native / compiled artifacts
+*.so
+*.pyd
+*.dll
+*.dylib
+*.a
+*.lib
+
+# Cython / Numba / compiled cache
+*.c
+*.cpp
+*.html
+__pycache__/
+*.nbc
+*.nbi
+
+# Packaging
+*.spec
+installer/
+release/
+artifacts/
+
+# OS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# Do not ignore source assets by default
+!assets/
+!assets/**
+
+# Keep empty folders when needed
+!.gitkeep
