@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 11 - Entities and mobs: complete and ready for manual testing.
+Phase 12 - Save/load: complete and ready for manual testing.
 
 ## Completed checklist
 
@@ -122,6 +122,19 @@ Phase 11 - Entities and mobs: complete and ready for manual testing.
 - commit: `26f4d17`.
 - tag: `phase-11-complete`.
 
+### Phase 12 - Save/load
+
+- [x] Versioned `level.toml` metadata with stable world seed and update timestamp.
+- [x] Atomic zlib-compressed binary chunk files with magic, version, and coordinates.
+- [x] Blocks, metadata, skylight, and block light round-trip for every chunk section.
+- [x] Player position, health, selected hotbar slot, and full inventory persistence.
+- [x] Dirty SAVE flag integration at autosave, chunk unload, and application close.
+- [x] Process worldgen loads saved chunks before deterministic generation fallback.
+- [x] Five-second autosave plus atomic temporary-file replacement.
+- [x] Explicit migration dispatch stub rejects unsupported versions.
+- [x] Smoke and benchmark runs use temporary worlds instead of modifying player saves.
+- [x] Final gate: 96 tests, Ruff, Pyright, persistence restart test, smoke, and benchmarks.
+
 ## Failed checks
 
 None recorded.
@@ -137,8 +150,8 @@ None recorded.
 - Vectorized `18^3` section halo snapshot is approximately 0.02 ms.
 - Streaming with opaque and water meshes remains approximately `0.84 ms` average,
   `1.64 ms` p95, and `9.93 ms` maximum after process-pool warmup.
-- Process pools warm before gameplay; streaming with the Phase 11 entity scene measures
-  approximately `1.25 ms` average, `2.53 ms` p95, and `3.36 ms` maximum.
+- Process pools warm before gameplay; streaming with persistence enabled measures approximately
+  `1.27 ms` average, `2.49 ms` p95, and `3.07 ms` maximum.
 
 ## Known bugs
 
@@ -149,7 +162,9 @@ None recorded.
 - Water Vessel can place a source but does not yet scoop an existing source back up.
 - Mob navigation is intentionally local steering over terrain height, not global pathfinding.
 - Entity models are colored prototype cuboids pending later art/model polish.
+- Create World and Load World currently target the same `saves/dev_world`; world selection UI is
+  still a later menu polish task.
 
 ## Next recommended tasks
 
-Test Phase 11 entities/mobs, then continue with Phase 12 save/load.
+Test Phase 12 persistence, then continue with Phase 13 local multiplayer.

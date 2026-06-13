@@ -53,6 +53,8 @@ The committed `.python-version` and `pyproject.toml` keep the project on Python 
 Runtime settings live in `config/settings.toml`.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
+Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed
+chunk files, and the local player's position, health, hotbar, and inventory.
 
 Client controls:
 
@@ -143,6 +145,17 @@ uv run python -m voxel_sandbox
 3. Aim at either mob and left-click until it dies and creates a small gold item entity.
 4. Walk over the drop to collect it, or press `Q` to create another visible item entity.
 5. Move far enough to trigger despawn and verify the local population replenishes near the player.
+
+## Test Phase 12
+
+```bash
+uv run python -m voxel_sandbox
+```
+
+1. Edit terrain, change inventory and selected hotbar slot, move, then exit normally.
+2. Restart and choose `Singleplayer -> Load World`; verify world and player state are restored.
+3. Cross chunk boundaries after an edit and return to verify unload/reload persistence.
+4. Inspect `saves/dev_world/level.toml`, `players/local_player.json`, and `regions/*.vchk`.
 
 ## Test Phase 6
 

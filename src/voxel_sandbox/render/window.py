@@ -16,6 +16,7 @@ from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
+from voxel_sandbox.infrastructure.storage import PlayerSnapshot
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
@@ -28,7 +29,13 @@ FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
 
 
 class GameWindow(pyglet.window.Window):
-    def __init__(self, settings: AppSettings, *, visible: bool = True) -> None:
+    def __init__(
+        self,
+        settings: AppSettings,
+        *,
+        visible: bool = True,
+        save_root: Path | None = None,
+    ) -> None:
         configure_layout_independent_game_keys()
         config = pyglet.gl.Config(
             major_version=3,
@@ -73,6 +80,7 @@ class GameWindow(pyglet.window.Window):
             fog_start=settings.graphics.fog_start,
             fog_end=settings.graphics.fog_end,
             day_cycle_seconds=settings.graphics.day_cycle_seconds,
+            save_root=save_root or Path(__file__).parents[3] / "saves" / "dev_world",
         )
         self.menu = MenuController()
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
@@ -86,6 +94,18 @@ class GameWindow(pyglet.window.Window):
         self.inventory.set(1, ItemStack(7, 8), self.item_registry)
         self.inventory.set(2, ItemStack(8, 1), self.item_registry)
         self.inventory.set(3, ItemStack(4, 4), self.item_registry)
+        self.player_health = 20.0
+        saved_player = self.world_renderer.storage.load_player(self.item_registry)
+        if saved_player is not None:
+            self.world_renderer.storage.restore_inventory(
+                saved_player,
+                self.inventory,
+                self.item_registry,
+            )
+            self.player.x, self.player.y, self.player.z = saved_player.position
+            self.player_health = saved_player.health
+            self.hotbar.select(saved_player.selected_slot)
+            self._sync_camera_to_player()
         recipes_path = Path(__file__).parents[3] / "config" / "recipes.toml"
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
@@ -95,8 +115,8 @@ class GameWindow(pyglet.window.Window):
             self._is_entity_hazard,
         )
         self.entity_renderer = EntityRenderer(self.mgl_context)
-        self.player_health = 20.0
         self._population_accumulator = 0.0
+        self._autosave_accumulator = 0.0
         self.inventory_open = False
         self.crafting_grid_size = 2
         self.inventory_status = ""
@@ -195,6 +215,8 @@ class GameWindow(pyglet.window.Window):
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
         pyglet.clock.unschedule(self.reload_shaders)
+        self._save_player()
+        self.world_renderer.autosave()
         self.debug_shader.release()
         self.entity_renderer.release()
         self.world_renderer.release()
@@ -208,6 +230,11 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             return
         self.world_renderer.update(delta_time)
+        self._autosave_accumulator += delta_time
+        if self._autosave_accumulator >= 5.0:
+            self._autosave_accumulator %= 5.0
+            self._save_player()
+            self.world_renderer.autosave()
         self._population_accumulator += delta_time
         if self._population_accumulator >= 1.0:
             self._population_accumulator %= 1.0
@@ -688,9 +715,28 @@ class GameWindow(pyglet.window.Window):
         block_id = self.world_renderer.get_block(x, y, z)
         return self.world_renderer.registry.by_id(block_id).is_fluid
 
+    def _save_player(self) -> None:
+        self.world_renderer.storage.save_player(
+            PlayerSnapshot(
+                (self.player.x, self.player.y, self.player.z),
+                self.player_health,
+                self.hotbar.selected_index,
+                tuple(self.inventory),
+            )
+        )
+
 
 def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
-    window = GameWindow(settings, visible=not smoke_test)
+    temporary_save = None
+    if smoke_test:
+        import tempfile
+
+        temporary_save = tempfile.TemporaryDirectory(prefix="veilstone-smoke-")
+    window = GameWindow(
+        settings,
+        visible=not smoke_test,
+        save_root=Path(temporary_save.name) if temporary_save is not None else None,
+    )
     if smoke_test:
         window.switch_to()
         window.dispatch_events()
@@ -706,5 +752,7 @@ def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
         window.dispatch_event("on_draw")
         window.flip()
         window.close()
+        assert temporary_save is not None
+        temporary_save.cleanup()
         return
     pyglet.app.run(1.0 / 120.0)

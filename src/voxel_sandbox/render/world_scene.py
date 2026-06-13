@@ -26,6 +26,7 @@ from voxel_sandbox.engine.generation import (
 )
 from voxel_sandbox.engine.lighting import relight_chunk
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
+from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.render.atmosphere import daylight_factor, sky_color
 from voxel_sandbox.render.block_highlight import BlockHighlightRenderer
 from voxel_sandbox.render.camera import FirstPersonCamera
@@ -65,6 +66,7 @@ class DemoWorldRenderer:
         fog_start: float,
         fog_end: float,
         day_cycle_seconds: float,
+        save_root: Path,
     ) -> None:
         self.context = context
         shader_root = Path(__file__).parent / "shaders" / "glsl"
@@ -91,13 +93,19 @@ class DemoWorldRenderer:
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
         self._fluid_chunk_cursor = 0
-        self.generator = TerrainGenerator(WorldSeed.parse(seed))
+        self.storage = WorldStorage(save_root)
+        metadata = self.storage.load_metadata()
+        active_seed = metadata.seed if metadata is not None else seed
+        self.seed_text = active_seed
+        self.storage.ensure_world(name="Development World", seed=active_seed)
+        self.generator = TerrainGenerator(WorldSeed.parse(active_seed))
         self.streamer = ChunkStreamer(
             self.generator,
             render_distance=render_distance,
             workers=generation_workers,
             backend=cast(Literal["thread", "process"], generation_backend),
             prepare_lighting=True,
+            storage=self.storage,
         )
         if self.shader.program is None or self.water_shader.program is None:
             raise RuntimeError("World shaders failed to compile")
@@ -302,6 +310,10 @@ class DemoWorldRenderer:
         self.texture.release()
         self.shader.release()
         self.water_shader.release()
+
+    def autosave(self) -> int:
+        self.storage.ensure_world(name="Development World", seed=self.seed_text)
+        return self.streamer.save_dirty()
 
     def _upload_chunk_sync(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):

@@ -13,9 +13,11 @@ from voxel_sandbox.engine.chunks import (
     SECTION_SIZE,
     Chunk,
     ChunkCoord,
+    DirtyFlag,
     split_world_axis,
 )
 from voxel_sandbox.engine.generation.terrain import TerrainGenerator
+from voxel_sandbox.infrastructure.storage import WorldStorage
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +36,7 @@ class ChunkStreamer:
         postprocess: Callable[[Chunk], None] | None = None,
         backend: Literal["thread", "process"] = "thread",
         prepare_lighting: bool = False,
+        storage: WorldStorage | None = None,
     ) -> None:
         if render_distance < 0:
             raise ValueError("Render distance cannot be negative")
@@ -46,6 +49,7 @@ class ChunkStreamer:
         self._postprocess = postprocess
         self._prepare_lighting = prepare_lighting
         self._backend = backend
+        self._storage = storage
         self._executor: Executor
         if backend == "process":
             if postprocess is not None:
@@ -205,6 +209,8 @@ class ChunkStreamer:
         self._desired = self._desired_coords(center)
         unloaded = tuple(coord for coord in self._loaded if coord not in self._desired)
         for coord in unloaded:
+            if self._storage is not None:
+                self._save_chunk_if_dirty(self._loaded[coord])
             del self._loaded[coord]
 
         for coord, future in tuple(self._pending.items()):
@@ -219,6 +225,7 @@ class ChunkStreamer:
                     self.generator,
                     coord,
                     self._prepare_lighting,
+                    self._storage,
                 )
             else:
                 self._pending[coord] = self._executor.submit(self._generate_chunk, coord)
@@ -236,6 +243,7 @@ class ChunkStreamer:
         return StreamBatch(tuple(completed), unloaded)
 
     def close(self) -> None:
+        self.save_dirty()
         for future in self._pending.values():
             future.cancel()
         self._executor.shutdown(wait=True, cancel_futures=True)
@@ -243,6 +251,15 @@ class ChunkStreamer:
         self._loaded.clear()
         self._overrides.clear()
         self._metadata_overrides.clear()
+
+    def save_dirty(self) -> int:
+        if self._storage is None:
+            return 0
+        saved = 0
+        for chunk in self._loaded.values():
+            if self._save_chunk_if_dirty(chunk):
+                saved += 1
+        return saved
 
     def _desired_coords(self, center: ChunkCoord) -> set[ChunkCoord]:
         radius = self.render_distance
@@ -263,6 +280,10 @@ class ChunkStreamer:
                     chunk.set_metadata(x - min_x, y, z - min_z, metadata)
 
     def _generate_chunk(self, coord: ChunkCoord) -> Chunk:
+        if self._storage is not None:
+            saved = self._storage.load_chunk(coord)
+            if saved is not None:
+                return saved
         chunk = self.generator.generate_chunk(coord)
         if self._prepare_lighting:
             from voxel_sandbox.domain.blocks import create_core_block_registry
@@ -273,12 +294,25 @@ class ChunkStreamer:
             self._postprocess(chunk)
         return chunk
 
+    def _save_chunk_if_dirty(self, chunk: Chunk) -> bool:
+        if self._storage is None or not any(
+            section.dirty & DirtyFlag.SAVE for section in chunk.sections
+        ):
+            return False
+        self._storage.save_chunk(chunk)
+        return True
+
 
 def _generate_chunk_task(
     generator: TerrainGenerator,
     coord: ChunkCoord,
     prepare_lighting: bool,
+    storage: WorldStorage | None,
 ) -> Chunk:
+    if storage is not None:
+        saved = storage.load_chunk(coord)
+        if saved is not None:
+            return saved
     chunk = generator.generate_chunk(coord)
     if prepare_lighting:
         from voxel_sandbox.domain.blocks import create_core_block_registry

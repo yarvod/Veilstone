@@ -1979,22 +1979,22 @@ Done when:
 
 Checklist:
 
-- [ ] Implement world metadata save.
-- [ ] Implement player save.
-- [ ] Implement chunk save.
-- [ ] Implement chunk load.
-- [ ] Add autosave.
-- [ ] Add dirty chunk tracking.
-- [ ] Add compression.
-- [ ] Add versioned format.
-- [ ] Add migration stub.
-- [ ] Add save/load tests.
+- [x] Implement world metadata save.
+- [x] Implement player save.
+- [x] Implement chunk save.
+- [x] Implement chunk load.
+- [x] Add autosave.
+- [x] Add dirty chunk tracking.
+- [x] Add compression.
+- [x] Add versioned format.
+- [x] Add migration stub.
+- [x] Add save/load tests.
 
 Done when:
 
-- [ ] Modified world persists after restart.
-- [ ] Player inventory persists.
-- [ ] Save format version is stored.
+- [x] Modified world persists after restart.
+- [x] Player inventory persists.
+- [x] Save format version is stored.
 
 ---
 
