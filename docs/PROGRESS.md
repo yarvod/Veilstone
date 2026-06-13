@@ -134,6 +134,8 @@ Phase 12 - Save/load: complete and ready for manual testing.
 - [x] Explicit migration dispatch stub rejects unsupported versions.
 - [x] Smoke and benchmark runs use temporary worlds instead of modifying player saves.
 - [x] Final gate: 96 tests, Ruff, Pyright, persistence restart test, smoke, and benchmarks.
+- commit: `fc18e1e`.
+- tag: `phase-12-complete`.
 
 ## Failed checks
 
