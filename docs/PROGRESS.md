@@ -64,8 +64,8 @@ Phase 08 - Greedy meshing: complete and ready for manual testing.
 - [x] Offscreen framebuffer QA compared greedy and fallback rendering.
 - [x] Final gate: 65 tests, Ruff, Pyright, client/server smoke, offscreen OpenGL render, and
   all benchmarks.
-- commit: `cb3239f`.
-- tag: `phase-08-complete` after final documentation commit.
+- commits: `cb3239f`, `fc165f7`.
+- tag: `phase-08-complete`.
 
 ## Failed checks
 
