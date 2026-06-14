@@ -126,6 +126,7 @@ temp/
 # Do not ignore source assets by default
 !assets/
 !assets/**
+assets/**/.DS_Store
 
 # Keep empty folders when needed
 !.gitkeep
