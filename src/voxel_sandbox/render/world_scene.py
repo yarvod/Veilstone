@@ -93,6 +93,7 @@ class DemoWorldRenderer:
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
         self._fluid_chunk_cursor = 0
+        self.remote_mode = False
         self.storage = WorldStorage(save_root)
         metadata = self.storage.load_metadata()
         active_seed = metadata.seed if metadata is not None else seed
@@ -218,12 +219,13 @@ class DemoWorldRenderer:
             int(np.floor(camera.x / SECTION_SIZE)),
             int(np.floor(camera.z / SECTION_SIZE)),
         )
-        batch = self.streamer.update(center, max_completed=self.uploads_per_frame)
-        for coord in batch.unloaded:
-            self._remove_chunk(coord)
-        for chunk in batch.loaded:
-            self._schedule_chunk(chunk)
-            self._schedule_horizontal_neighbors(chunk.coord)
+        if not self.remote_mode:
+            batch = self.streamer.update(center, max_completed=self.uploads_per_frame)
+            for coord in batch.unloaded:
+                self._remove_chunk(coord)
+            for chunk in batch.loaded:
+                self._schedule_chunk(chunk)
+                self._schedule_horizontal_neighbors(chunk.coord)
         for completed in self.mesh_worker.poll(self.mesh_uploads_per_frame):
             if self.streamer.get_chunk(completed.key.chunk) is None:
                 continue
@@ -318,7 +320,10 @@ class DemoWorldRenderer:
     def install_remote_chunk(self, chunk: Chunk) -> None:
         relight_chunk(chunk, self.registry)
         self.streamer.install_chunk(chunk)
-        self._upload_chunk_sync(chunk)
+        self._schedule_chunk(chunk)
+
+    def enable_remote_mode(self) -> None:
+        self.remote_mode = True
 
     def _upload_chunk_sync(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):

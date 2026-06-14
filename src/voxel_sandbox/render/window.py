@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 from typing import Final, cast
 
@@ -19,6 +20,7 @@ from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot
 from voxel_sandbox.network import ClientSession, Message, decode_chunk_blocks
+from voxel_sandbox.network.interpolation import SnapshotInterpolator, reconcile_position
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
@@ -123,7 +125,9 @@ class GameWindow(pyglet.window.Window):
         self._network_accumulator = 0.0
         self.network_session: ClientSession | None = None
         self.remote_player_entities: dict[int, int] = {}
+        self.remote_player_interpolation: dict[int, SnapshotInterpolator] = {}
         self.remote_chunks_received = 0
+        self.requested_remote_chunks: set[ChunkCoord] = set()
         self.inventory_open = False
         self.crafting_grid_size = 2
         self.inventory_status = ""
@@ -244,6 +248,7 @@ class GameWindow(pyglet.window.Window):
         self._network_accumulator += delta_time
         if self.network_session is not None:
             self._process_network_messages()
+            self._update_remote_players()
             if self._network_accumulator >= 0.05:
                 self._network_accumulator %= 0.05
                 self.network_session.send(
@@ -252,6 +257,7 @@ class GameWindow(pyglet.window.Window):
                         "position": [self.player.x, self.player.y, self.player.z],
                     }
                 )
+                self._request_remote_chunk()
         self._autosave_accumulator += delta_time
         if self._autosave_accumulator >= 5.0:
             self._autosave_accumulator %= 5.0
@@ -756,8 +762,10 @@ class GameWindow(pyglet.window.Window):
         session = ClientSession()
         joined = session.connect(host, int(raw_port), name="Player")
         self.network_session = session
+        self.world_renderer.enable_remote_mode()
         self.inventory_status = f"Connected as player {joined['player_id']}"
         session.send({"type": "request_chunk", "coord": [0, 0]})
+        self.requested_remote_chunks.add(ChunkCoord(0, 0))
         from voxel_sandbox.render.ui.menu import Screen
 
         self.menu.screen = Screen.GAME
@@ -806,11 +814,7 @@ class GameWindow(pyglet.window.Window):
         local_id = self.network_session.player_id if self.network_session is not None else None
         visible_ids: set[int] = set()
         for raw_id, raw_player in players.items():
-            if (
-                not isinstance(raw_id, int)
-                or raw_id == local_id
-                or not isinstance(raw_player, dict)
-            ):
+            if not isinstance(raw_id, int) or not isinstance(raw_player, dict):
                 continue
             player = cast(dict[object, object], raw_player)
             position = player.get("position")
@@ -820,27 +824,74 @@ class GameWindow(pyglet.window.Window):
             if not all(isinstance(value, int | float) for value in values):
                 continue
             coordinates = cast(list[int | float], values)
+            position_tuple = (
+                float(coordinates[0]),
+                float(coordinates[1]),
+                float(coordinates[2]),
+            )
+            if raw_id == local_id:
+                corrected = reconcile_position(
+                    (self.player.x, self.player.y, self.player.z),
+                    position_tuple,
+                )
+                self.player.x, self.player.y, self.player.z = corrected
+                self._sync_camera_to_player()
+                continue
             entity = self.remote_player_entities.get(raw_id)
             if entity is None:
                 entity = self.entities.world.create()
                 self.remote_player_entities[raw_id] = entity
+                self.remote_player_interpolation[raw_id] = SnapshotInterpolator()
                 self.entities.world.render_models.set(
                     entity,
                     RenderModel("remote_player", (0.72, 0.58, 0.88), (0.65, 1.8, 0.65)),
                 )
-            self.entities.world.transforms.set(
-                entity,
-                Transform(float(coordinates[0]), float(coordinates[1]), float(coordinates[2])),
+                self.entities.world.transforms.set(
+                    entity,
+                    Transform(float(coordinates[0]), float(coordinates[1]), float(coordinates[2])),
+                )
+            self.remote_player_interpolation[raw_id].push(
+                time.monotonic(),
+                position_tuple,
             )
             visible_ids.add(raw_id)
         for player_id in set(self.remote_player_entities) - visible_ids:
             self.entities.world.destroy(self.remote_player_entities.pop(player_id))
+            self.remote_player_interpolation.pop(player_id, None)
+
+    def _update_remote_players(self) -> None:
+        now = time.monotonic()
+        for player_id, interpolation in self.remote_player_interpolation.items():
+            position = interpolation.sample(now)
+            entity = self.remote_player_entities.get(player_id)
+            if position is None or entity is None:
+                continue
+            transform = self.entities.world.transforms.get(entity)
+            if transform is not None:
+                transform.x, transform.y, transform.z = position
 
     def _send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
         if self.network_session is not None:
             self.network_session.send(
                 {"type": "block_action", "position": list(block), "block_id": block_id}
             )
+
+    def _request_remote_chunk(self) -> None:
+        if self.network_session is None:
+            return
+        center = ChunkCoord(int(self.player.x) // 16, int(self.player.z) // 16)
+        desired = [
+            ChunkCoord(center.x + dx, center.z + dz) for dx in range(-2, 3) for dz in range(-2, 3)
+        ]
+        for coord in sorted(
+            desired,
+            key=lambda item: (item.x - center.x) ** 2 + (item.z - center.z) ** 2,
+        ):
+            if coord in self.requested_remote_chunks:
+                continue
+            self.requested_remote_chunks.add(coord)
+            self.network_session.send({"type": "request_chunk", "coord": [coord.x, coord.z]})
+            return
 
 
 def run_window(

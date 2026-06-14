@@ -10,6 +10,7 @@ from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
 from voxel_sandbox.network.chunks import encode_chunk_blocks
 from voxel_sandbox.network.protocol import PROTOCOL_VERSION, Message, receive_frame, send_frame
+from voxel_sandbox.network.rate_limit import TokenBucket
 
 
 @dataclass(slots=True)
@@ -20,6 +21,7 @@ class ServerState:
     clients: dict[int, socket.socket] = field(default_factory=lambda: {})
     players: dict[int, dict[str, object]] = field(default_factory=lambda: {})
     blocks: dict[tuple[int, int, int], int] = field(default_factory=lambda: {})
+    rate_limits: dict[int, TokenBucket] = field(default_factory=lambda: {})
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -31,6 +33,29 @@ class ServerState:
         for connection in clients:
             try:
                 send_frame(connection, message)
+            except OSError:
+                continue
+
+    def send_entity_snapshots(self) -> None:
+        with self.lock:
+            clients = tuple(self.clients.items())
+            players = dict(self.players)
+        for player_id, connection in clients:
+            own = players.get(player_id)
+            if own is None:
+                continue
+            own_position = cast(list[float], own["position"])
+            visible = {
+                other_id: player
+                for other_id, player in players.items()
+                if _distance_squared(
+                    own_position,
+                    cast(list[float], player["position"]),
+                )
+                <= 64.0**2
+            }
+            try:
+                send_frame(connection, {"type": "entity_snapshot", "players": visible})
             except OSError:
                 continue
 
@@ -58,6 +83,7 @@ class _Handler(socketserver.BaseRequestHandler):
                 state.next_player_id += 1
                 state.clients[player_id] = connection
                 state.players[player_id] = {"name": name, "position": [0.5, 40.0, 0.5]}
+                state.rate_limits[player_id] = TokenBucket(rate=40.0, capacity=80.0)
                 players = dict(state.players)
             send_frame(
                 connection,
@@ -68,7 +94,7 @@ class _Handler(socketserver.BaseRequestHandler):
                     "players": players,
                 },
             )
-            state.broadcast({"type": "entity_snapshot", "players": players})
+            state.send_entity_snapshots()
             while True:
                 message = receive_frame(connection)
                 self._handle_message(player_id, message)
@@ -81,20 +107,22 @@ class _Handler(socketserver.BaseRequestHandler):
                 with state.lock:
                     state.clients.pop(player_id, None)
                     state.players.pop(player_id, None)
-                    players = dict(state.players)
-                state.broadcast({"type": "entity_snapshot", "players": players})
+                    state.rate_limits.pop(player_id, None)
+                state.send_entity_snapshots()
 
     def _handle_message(self, player_id: int, message: Message) -> None:
         server = cast(_ThreadingServer, self.server)
         state = server.state
+        limiter = state.rate_limits.get(player_id)
+        if limiter is not None and not limiter.allow():
+            return
         message_type = message.get("type")
         if message_type == "input":
             position = message.get("position")
             if isinstance(position, list) and len(cast(list[object], position)) == 3:
                 with state.lock:
                     state.players[player_id]["position"] = position
-                    players = dict(state.players)
-                state.broadcast({"type": "entity_snapshot", "players": players})
+                state.send_entity_snapshots()
         elif message_type == "block_action":
             position = message.get("position")
             block_id = message.get("block_id")
@@ -129,6 +157,21 @@ class _Handler(socketserver.BaseRequestHandler):
                 if not all(isinstance(value, int) for value in raw_coord):
                     return
                 chunk_coord = ChunkCoord(*cast(list[int], raw_coord))
+                player = state.players.get(player_id)
+                if player is None:
+                    return
+                player_position = cast(list[float], player["position"])
+                player_chunk = ChunkCoord(
+                    int(player_position[0]) // 16, int(player_position[2]) // 16
+                )
+                if (
+                    max(
+                        abs(chunk_coord.x - player_chunk.x),
+                        abs(chunk_coord.z - player_chunk.z),
+                    )
+                    > 4
+                ):
+                    return
                 chunk = state.generator.generate_chunk(chunk_coord)
                 send_frame(
                     connection,
@@ -158,6 +201,11 @@ class LanServer:
         host, port = address[0], address[1]
         return str(host), int(port)
 
+    @property
+    def player_count(self) -> int:
+        with self._server.state.lock:
+            return len(self._server.state.players)
+
     def start(self) -> None:
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
@@ -167,3 +215,7 @@ class LanServer:
         self._server.server_close()
         if self._thread is not None:
             self._thread.join(timeout=2.0)
+
+
+def _distance_squared(first: list[float], second: list[float]) -> float:
+    return sum((first[index] - second[index]) ** 2 for index in range(3))

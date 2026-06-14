@@ -2038,15 +2038,15 @@ Done when:
 
 Checklist:
 
-- [ ] Add client prediction.
-- [ ] Add interpolation.
-- [ ] Add server reconciliation.
+- [x] Add client prediction.
+- [x] Add interpolation.
+- [x] Add server reconciliation.
 - [ ] Add delta snapshots.
-- [ ] Add chunk interest management.
-- [ ] Add entity interest management.
-- [ ] Add rate limiting.
+- [x] Add chunk interest management.
+- [x] Add entity interest management.
+- [x] Add rate limiting.
 - [ ] Add disconnect/reconnect handling.
-- [ ] Add LAN discovery.
+- [x] Add LAN discovery.
 - [ ] Add Open to LAN flow in the singleplayer Pause Menu.
 - [ ] Add join LAN menu.
 - [ ] Add nickname selection.

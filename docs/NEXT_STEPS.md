@@ -1,16 +1,16 @@
 # Next steps
 
-Phase 13 local multiplayer MVP is ready for manual two-process testing.
+Phase 14 multiplayer polish is in progress.
 
 Mob visual note: current colored cuboids are Phase 11 gameplay proxies. Original textured,
 articulated mobs with independently animated body parts are an explicit Phase 20 gate.
 
 1. Run `uv run python -m voxel_sandbox`.
-2. In terminal one run `uv run python -m voxel_sandbox server --port 25565`.
-3. In terminal two run `uv run python -m voxel_sandbox client --connect 127.0.0.1:25565`.
-4. Start a second client and verify remote player proxies and block replication.
-5. Phase 14: add interpolation/reconciliation and chunk/entity interest management.
-6. Phase 14: connect Direct Connect and LAN discovery menus to the working client path.
-7. Phase 14: add nickname input, chat UI, reconnect, and rate limiting.
+2. Add sequence IDs and delta entity snapshots with periodic full baselines.
+3. Add disconnect state, bounded reconnect attempts, and clean return to Multiplayer menu.
+4. Connect Direct Connect and discovered LAN worlds to the existing `ClientSession` path.
+5. Add nickname and chat text input UI.
+6. Make Open to LAN expose the current in-process singleplayer authority, not a second world.
+7. Add an 8-client/200-entity server benchmark and enforce the 20 TPS budget.
 8. Run `uv run pytest -q tests/integration/test_lan_client_server.py`.
 9. Run `uv run python -m voxel_sandbox benchmark-network`.

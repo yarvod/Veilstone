@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 13 - Local multiplayer MVP: complete and ready for manual testing.
+Phase 14 - Multiplayer polish: in progress.
 
 ## Completed checklist
 
@@ -156,6 +156,18 @@ Phase 13 - Local multiplayer MVP: complete and ready for manual testing.
 - commits: `456053d`, `d1b58ff`.
 - tag: `phase-13-complete`.
 
+### Phase 14 - Multiplayer polish (in progress)
+
+- [x] Delayed snapshot interpolation smooths remote-player transforms.
+- [x] Local prediction remains immediate and bounded reconciliation corrects authoritative error.
+- [x] Remote mode disables local terrain generation to prevent mixed client/server worlds.
+- [x] Client requests nearby server chunks incrementally by distance and request budget.
+- [x] Server rejects chunk requests outside the configured interest radius.
+- [x] Entity snapshots are filtered per client to a 64-block visibility radius.
+- [x] Per-client token buckets limit input/action/chat/request traffic.
+- [x] UDP LAN discovery advertises world name, game port, and current player count.
+- [ ] Delta snapshots, reconnect, menu flows, nickname input, and true Open to LAN remain.
+
 ## Failed checks
 
 None recorded.
@@ -190,4 +202,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Test Phase 13 with two processes, then continue with Phase 14 multiplayer polish.
+Continue Phase 14 with delta snapshots, reconnect, menu flows, nickname, and Open to LAN.
