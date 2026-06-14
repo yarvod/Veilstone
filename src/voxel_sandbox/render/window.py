@@ -372,6 +372,11 @@ class GameWindow(pyglet.window.Window):
             self.width,
             self.height,
             self.settings.camera.field_of_view,
+            shadow_caster=lambda light_matrix: self.entity_renderer.render_shadow(
+                self.entities.world,
+                light_matrix,
+                self.world_renderer.animation_time,
+            ),
         )
         entity_draws = self.entity_renderer.render(
             self.entities.world,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -250,7 +251,14 @@ class DemoWorldRenderer:
         self.greedy_meshing = not self.greedy_meshing
         self._remesh_all()
 
-    def render(self, camera: FirstPersonCamera, width: int, height: int, fov: float) -> None:
+    def render(
+        self,
+        camera: FirstPersonCamera,
+        width: int,
+        height: int,
+        fov: float,
+        shadow_caster: Callable[[np.ndarray], object] | None = None,
+    ) -> None:
         if self.shader.program is None:
             return
         matrix = camera_matrix(camera, max(width, 1) / max(height, 1), fov)
@@ -283,7 +291,7 @@ class DemoWorldRenderer:
             else np.identity(4, dtype=np.float32)
         )
         if self.shadow_map is not None:
-            self._render_shadow_depth(light_matrix, width, height)
+            self._render_shadow_depth(light_matrix, width, height, shadow_caster)
 
         camera_uniform = cast("moderngl.Uniform", self.shader.program["camera_matrix"])
         texture_uniform = cast("moderngl.Uniform", self.shader.program["texture_atlas"])
@@ -532,6 +540,7 @@ class DemoWorldRenderer:
         light_matrix: np.ndarray,
         width: int,
         height: int,
+        shadow_caster: Callable[[np.ndarray], object] | None,
     ) -> None:
         shadow_map = self.shadow_map
         program = self.shadow_shader.program
@@ -554,6 +563,8 @@ class DemoWorldRenderer:
                 key.z * SECTION_SIZE,
             )
             gpu_mesh.depth_vertex_array.render(moderngl.TRIANGLES)
+        if shadow_caster is not None:
+            shadow_caster(light_matrix)
         self.context.cull_face = "back"
         self.context.screen.use()
         self.context.viewport = (0, 0, max(width, 1), max(height, 1))
