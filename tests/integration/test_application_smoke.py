@@ -91,3 +91,29 @@ def test_optional_postprocess_renders_and_resizes() -> None:
             assert window.postprocess_renderer.size == (window.width, window.height)
         finally:
             window.close()
+
+
+@pytest.mark.parametrize("quality", ["off", "low"])
+def test_shadow_quality_modes_render(quality: str) -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    settings = AppSettings()
+    settings = replace(
+        settings,
+        graphics=replace(settings.graphics, shadow_quality=quality),
+    )
+    with tempfile.TemporaryDirectory(prefix=f"veilstone-shadow-{quality}-") as directory:
+        window = GameWindow(settings, visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+            assert (window.world_renderer.shadow_map is None) is (quality == "off")
+        finally:
+            window.close()
