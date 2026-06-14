@@ -153,8 +153,8 @@ Phase 13 - Local multiplayer MVP: complete and ready for manual testing.
 - [x] Remote player snapshots render through ECS as distinct player proxies.
 - [x] Graphical remote-client smoke verifies a server chunk is installed and a frame renders.
 - [x] Final gate: 100 tests, Ruff, Pyright, client/server/remote-render smoke, and benchmarks.
-- commits: `456053d`, pending graphical integration commit.
-- tag: `phase-13-complete` after the graphical integration commit.
+- commits: `456053d`, `d1b58ff`.
+- tag: `phase-13-complete`.
 
 ## Failed checks
 
