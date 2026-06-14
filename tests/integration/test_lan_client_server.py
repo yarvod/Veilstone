@@ -110,3 +110,42 @@ def test_join_accepts_initial_position_and_runtime_rename() -> None:
     finally:
         client.close()
         server.stop()
+
+
+def test_structure_state_is_authoritative_and_replicated(tmp_path: Path) -> None:
+    storage = WorldStorage(tmp_path / "world")
+    server = LanServer("127.0.0.1", 0, seed="structures", storage=storage)
+    server.start()
+    first = LanClient()
+    second = LanClient()
+    try:
+        first_join = first.connect(*server.address, name="First")
+        assert first_join["structures"] == []
+        second.connect(*server.address, name="Second")
+
+        structure = server.spawn_structure("altar", (4, 40, 4))
+        server.toggle_structure(structure.entity_id)
+        snapshot = receive_type(second, "structure_snapshot")
+        while not (
+            snapshot["structures"]  # type: ignore[truthy-bool]
+            and snapshot["structures"][0]["active"] is True  # type: ignore[index]
+        ):
+            snapshot = receive_type(second, "structure_snapshot")
+
+        raw = snapshot["structures"][0]  # type: ignore[index]
+        assert raw["id"] == structure.entity_id
+        assert raw["key"] == "altar"
+        assert raw["active"] is True
+
+        second.send({"type": "structure_toggle", "id": structure.entity_id})
+        toggled = receive_type(second, "structure_snapshot")
+        while toggled["structures"][0]["active"] is not False:  # type: ignore[index]
+            toggled = receive_type(second, "structure_snapshot")
+        assert server.structure_world.entities[structure.entity_id].active is False
+    finally:
+        first.close()
+        second.close()
+        server.stop()
+
+    restored = storage.load_structure_world()
+    assert restored.entities[structure.entity_id].active is False

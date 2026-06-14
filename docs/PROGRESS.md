@@ -2,8 +2,8 @@
 
 ## Current phase
 
-Phase 20.2 - Gameplay presentation quality recovery: implementation complete and ready for manual
-verification. Phase 21 moving structures is next.
+Phase 21 - Moving structures and magical machines: implementation complete and ready for manual
+verification. Phase 22 story progression foundation is next.
 
 ## Completed checklist
 
@@ -310,8 +310,22 @@ verification. Phase 21 moving structures is next.
 - [x] Procedural SFX were regenerated with normalized peaks and semantic cow/zombie variants.
 - [x] Audio resources use per-sound gain staging with quieter defaults.
 - [x] Final gate: 170 tests, Ruff, Pyright and hidden-window OpenGL smoke pass.
+- [x] Implemented listener-oriented 3D positional audio and original restrained ambient music.
+- [x] Removed forced macOS window activation while preserving layout-independent movement input.
+- [x] Replaced generic item drops with minified 1x1 voxel block textures using atlas UVs.
 - [x] Medium shadows with articulated entity pivots remain `0.40 ms` p95 vs `12 ms` budget.
-- commit: `f39cd8d`.
+
+### Phase 21 - Moving structures and magical machines
+
+- [x] Typed BlockEntity registry plus data-driven MultiBlockStructure definitions.
+- [x] Authoritative StructureEntity state with gate, rotating altar, and moving bridge controllers.
+- [x] Render-time part transforms reuse shared cube geometry and avoid chunk remeshing.
+- [x] Collision proxies follow moving parts and are cached by structure-world revision.
+- [x] Structure state is persisted separately and restored for the current save format.
+- [x] Initial join, reconnect, runtime snapshots, and range-validated toggles replicate over LAN.
+- [x] Right-click interaction plus `/structure spawn|toggle|list` developer commands.
+- [x] Unit, storage, LAN, and hidden-window OpenGL coverage for all three structures.
+- [x] Final gate: 180 tests, Ruff, Pyright, and OpenGL smoke pass.
 
 ## Failed checks
 
@@ -345,4 +359,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Begin Phase 21 with BlockEntity storage and transform-driven moving structures.
+Begin Phase 22 with typed quest definitions, world flags, and multiplayer-safe progression events.

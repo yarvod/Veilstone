@@ -21,8 +21,13 @@ class AudioBus:
     def emit(self, event: AudioEvent) -> None:
         self._events.append(event)
 
-    def update(self, listener: tuple[float, float, float]) -> None:
-        self.backend.set_listener(listener)
+    def update(
+        self,
+        listener: tuple[float, float, float],
+        forward: tuple[float, float, float] = (0.0, 0.0, -1.0),
+        up: tuple[float, float, float] = (0.0, 1.0, 0.0),
+    ) -> None:
+        self.backend.set_listener(listener, forward, up)
         while self._events:
             event = self._events.popleft()
             if event.kind is AudioEventKind.STOP_MUSIC:

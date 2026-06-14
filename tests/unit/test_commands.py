@@ -5,8 +5,11 @@ import pytest
 from voxel_sandbox.app.commands import (
     CommandError,
     HelpCommand,
+    ListStructuresCommand,
     SetDifficultyCommand,
     SetTimeCommand,
+    SpawnStructureCommand,
+    ToggleStructureCommand,
     parse_command,
 )
 
@@ -21,6 +24,12 @@ def test_time_command_accepts_minecraft_names_and_ticks() -> None:
 def test_difficulty_and_help_commands_parse() -> None:
     assert parse_command("/difficulty peaceful") == SetDifficultyCommand("peaceful")
     assert parse_command("help") == HelpCommand()
+
+
+def test_structure_debug_commands_parse() -> None:
+    assert parse_command("/structure spawn gate") == SpawnStructureCommand("gate")
+    assert parse_command("/structure toggle 7") == ToggleStructureCommand(7)
+    assert parse_command("/structure list") == ListStructuresCommand()
 
 
 @pytest.mark.parametrize(

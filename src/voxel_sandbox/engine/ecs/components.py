@@ -65,6 +65,7 @@ class MobState(Enum):
     ATTACK = "attack"
     HURT = "hurt"
     DEATH = "death"
+    GRAZE = "graze"
 
 
 @dataclass(slots=True)

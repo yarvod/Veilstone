@@ -17,14 +17,18 @@ from pyglet.window import key, mouse
 
 from voxel_sandbox.app.commands import (
     CommandError,
+    ListStructuresCommand,
     SetDifficultyCommand,
     SetTimeCommand,
+    SpawnStructureCommand,
+    ToggleStructureCommand,
     parse_command,
 )
 from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import create_audio_bus, volume_map
+from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureWorld
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
@@ -47,6 +51,7 @@ from voxel_sandbox.render.input_state import KeyState, configure_layout_independ
 from voxel_sandbox.render.postprocess import PostProcessRenderer
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
+from voxel_sandbox.render.structure_renderer import StructureRenderer
 from voxel_sandbox.render.ui.item_icons import ICON_SIZE, create_item_icons
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
@@ -137,6 +142,12 @@ class GameWindow(pyglet.window.Window):
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
         self._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
+        self.structure_world = self.world_renderer.storage.load_structure_world()
+        self.structure_renderer = StructureRenderer(
+            self.mgl_context,
+            self.world_renderer.registry,
+        )
+        self.last_structure_revision = self.structure_world.revision
         self._population_accumulator = 0.0
         self._autosave_accumulator = 0.0
         self._network_accumulator = 0.0
@@ -172,7 +183,7 @@ class GameWindow(pyglet.window.Window):
             y=self.height - 10,
             anchor_x="left",
             anchor_y="top",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=11,
             color=(225, 235, 255, 255),
         )
@@ -180,22 +191,20 @@ class GameWindow(pyglet.window.Window):
             "+",
             anchor_x="center",
             anchor_y="center",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=18,
             color=(245, 235, 190, 255),
         )
         self.item_icon_images = create_item_icons(self.item_registry, self.world_renderer.registry)
         default_icon = self.item_icon_images[1]
-        self.hotbar_slots = [
-            pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3) for _ in range(9)
-        ]
+        self.hotbar_slots = [pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3) for _ in range(9)]
         self.hotbar_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
         self.hotbar_count_labels = [
             pyglet.text.Label(
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name="Menlo",
+                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -206,7 +215,7 @@ class GameWindow(pyglet.window.Window):
                 str(index + 1),
                 anchor_x="left",
                 anchor_y="top",
-                font_name="Menlo",
+                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=8,
                 color=(190, 200, 215, 255),
             )
@@ -216,7 +225,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=22,
             color=(245, 220, 140, 255),
         )
@@ -234,22 +243,20 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name="Menlo",
+                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
             for _ in range(len(self.inventory))
         ]
-        self.crafting_slots = [
-            pyglet.shapes.BorderedRectangle(0, 0, 48, 48, 2) for _ in range(9)
-        ]
+        self.crafting_slots = [pyglet.shapes.BorderedRectangle(0, 0, 48, 48, 2) for _ in range(9)]
         self.crafting_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
         self.crafting_count_labels = [
             pyglet.text.Label(
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name="Menlo",
+                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -258,24 +265,32 @@ class GameWindow(pyglet.window.Window):
         self.crafting_result_slot = pyglet.shapes.BorderedRectangle(0, 0, 56, 56, 3)
         self.crafting_result_icon = pyglet.sprite.Sprite(default_icon)
         self.crafting_result_count = pyglet.text.Label(
-            "", anchor_x="right", anchor_y="bottom", font_name="Menlo", font_size=12
+            "",
+            anchor_x="right",
+            anchor_y="bottom",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_size=12,
         )
         self.crafting_label = pyglet.text.Label(
             "CRAFTING",
             anchor_x="left",
             anchor_y="bottom",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(205, 215, 230, 255),
         )
         self.crafting_arrow = pyglet.text.Label(
-            ">", anchor_x="center", anchor_y="center", font_name="Menlo", font_size=26
+            ">",
+            anchor_x="center",
+            anchor_y="center",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_size=26,
         )
         self.cursor_item_label = pyglet.text.Label(
             "",
             anchor_x="left",
             anchor_y="bottom",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(245, 220, 140, 255),
         )
@@ -284,7 +299,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="left",
             anchor_y="bottom",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(245, 235, 210, 255),
         )
@@ -292,7 +307,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=38,
             color=(220, 230, 255, 255),
         )
@@ -300,7 +315,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(160, 180, 215, 255),
         )
@@ -311,7 +326,7 @@ class GameWindow(pyglet.window.Window):
             align="center",
             multiline=True,
             width=600,
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=17,
             color=(245, 220, 140, 255),
         )
@@ -322,7 +337,7 @@ class GameWindow(pyglet.window.Window):
             align="left",
             multiline=True,
             width=760,
-            font_name="Menlo",
+            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=17,
             color=(245, 220, 140, 255),
         )
@@ -331,7 +346,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="center",
                 anchor_y="center",
-                font_name="Menlo",
+                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=20,
             )
             for _ in range(8)
@@ -357,6 +372,7 @@ class GameWindow(pyglet.window.Window):
         self.sky_renderer.release()
         self.postprocess_renderer.release()
         self.entity_renderer.release()
+        self.structure_renderer.release()
         self.world_renderer.release()
         self.audio.close()
         super().close()
@@ -365,12 +381,20 @@ class GameWindow(pyglet.window.Window):
         del delta_time
         self.debug_shader.reload_if_changed()
 
+    def _is_solid_combined(self, x: int, y: int, z: int) -> bool:
+        return self.world_renderer.is_solid_block(x, y, z) or self.structure_world.is_solid_cell(
+            x, y, z
+        )
+
     def fixed_update(self, delta_time: float) -> None:
         self._apply_lan_block_actions()
         if not self.menu.in_game:
             self.audio_director.set_game_state("menu")
             self.audio_director.set_biome("")
-            self.audio.update(self.camera.position)
+            self.audio.update(
+                self.camera.position,
+                self.camera.direction,
+            )
             return
         self.audio_director.set_game_state(
             "night" if self.world_renderer.daylight < 0.25 else "exploration"
@@ -379,7 +403,10 @@ class GameWindow(pyglet.window.Window):
             math.floor(self.player.x), math.floor(self.player.z)
         )
         self.audio_director.set_biome("cave" if self.player.y < terrain_height - 3 else "surface")
-        self.audio.update(self.camera.position)
+        self.audio.update(
+            self.camera.position,
+            self.camera.direction,
+        )
         if not self._player_position_within_world():
             self._move_player_to_spawn()
             self.inventory_status = "Recovered from outside the world"
@@ -415,7 +442,7 @@ class GameWindow(pyglet.window.Window):
             (self.player.x, self.player.y, self.player.z),
             self.world_renderer.generator.height_at,
             self._is_entity_hazard,
-            self.world_renderer.is_solid_block,
+            self._is_solid_combined,
         )
         if self.player_health <= 0.0:
             spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
@@ -450,7 +477,7 @@ class GameWindow(pyglet.window.Window):
             ),
             self.camera.yaw_degrees,
             delta_time,
-            self.world_renderer.is_solid_block,
+            self._is_solid_combined,
         )
         moving = abs(forward) + abs(right) > 0.0
         if moving and self.player.on_ground:
@@ -495,6 +522,9 @@ class GameWindow(pyglet.window.Window):
 
         def render_entities() -> None:
             nonlocal entity_draws
+            texture = getattr(self.world_renderer, "texture", None)
+            registry = getattr(self.world_renderer, "registry", None)
+            atlas_uvs = getattr(self.world_renderer, "atlas_uvs", None)
             entity_draws = self.entity_renderer.render(
                 self.entities.world,
                 self.camera,
@@ -502,6 +532,19 @@ class GameWindow(pyglet.window.Window):
                 self.height,
                 self.settings.camera.field_of_view,
                 self.world_renderer.animation_time,
+                self.item_registry,
+                registry,
+                texture,
+                atlas_uvs,
+            )
+            entity_draws += self.structure_renderer.render(
+                self.structure_world,
+                self.camera,
+                self.width,
+                self.height,
+                self.settings.camera.field_of_view,
+                self.world_renderer.texture,
+                self.world_renderer.atlas_uvs,
             )
 
         self.world_renderer.render(
@@ -717,12 +760,23 @@ class GameWindow(pyglet.window.Window):
                     AudioEvent(
                         AudioEventKind.SOUND,
                         f"mob.{kind}_{'death' if drops else 'hurt'}",
-                        self.camera.position,
+                        self.entities.world.transforms[target].position,
                     )
                 )
                 self.inventory_status = "Mob defeated" if drops else "Hit mob"
                 return
         hit = self.world_renderer.raycast(self.camera.position, self.camera.direction)
+        structure_hit = self.structure_world.raycast_entity(
+            self.camera.position,
+            self.camera.direction,
+        )
+        if (
+            button == mouse.RIGHT
+            and structure_hit is not None
+            and (hit is None or structure_hit[1] < hit.distance)
+        ):
+            self._toggle_structure(structure_hit[0])
+            return
         if hit is None:
             return
         if button == mouse.LEFT:
@@ -1151,10 +1205,44 @@ class GameWindow(pyglet.window.Window):
         elif isinstance(command, SetDifficultyCommand):
             self._set_difficulty(command.difficulty)
             self.inventory_status = f"Difficulty set to {command.difficulty}."
+        elif isinstance(command, SpawnStructureCommand):
+            if self.lan_server is None or self.world_renderer.remote_mode:
+                self.inventory_status = "Structure commands require a local authoritative world."
+                return
+            distance = 5.0
+            origin = (
+                math.floor(self.player.x + self.camera.direction[0] * distance),
+                math.floor(self.player.y),
+                math.floor(self.player.z + self.camera.direction[2] * distance),
+            )
+            entity = self.lan_server.spawn_structure(command.key, origin)
+            self.structure_world = self.lan_server.structure_world
+            self.inventory_status = f"Spawned {command.key} structure #{entity.entity_id}."
+        elif isinstance(command, ToggleStructureCommand):
+            if self.lan_server is None or self.world_renderer.remote_mode:
+                self.inventory_status = "Structure commands require a local authoritative world."
+                return
+            try:
+                entity = self.lan_server.toggle_structure(command.entity_id)
+            except KeyError:
+                self.inventory_status = f"Unknown structure #{command.entity_id}."
+                return
+            self.inventory_status = (
+                f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+            )
+        elif isinstance(command, ListStructuresCommand):
+            structures = sorted(
+                self.structure_world.entities.values(),
+                key=lambda item: item.entity_id,
+            )
+            self.inventory_status = (
+                ", ".join(f"#{item.entity_id} {item.key}" for item in structures)
+                if structures
+                else "No runtime structures."
+            )
         else:
             self.inventory_status = (
-                "/time set <day|noon|night|midnight|ticks>; "
-                "/difficulty <peaceful|normal>"
+                "/time set <...>; /difficulty <...>; /structure <spawn|toggle|list>"
             )
 
     def _set_difficulty(self, difficulty: str) -> None:
@@ -1566,6 +1654,8 @@ class GameWindow(pyglet.window.Window):
                 tuple(self.inventory),
             )
         )
+        if self.lan_server is not None:
+            self.lan_server.save()
 
     def _connect_remote(self, target: str, player_name: str) -> None:
         host, separator, raw_port = target.rpartition(":")
@@ -1576,6 +1666,11 @@ class GameWindow(pyglet.window.Window):
         self._stop_network_services()
         self.network_session = session
         self.world_renderer.enable_remote_mode()
+        self.last_structure_revision = -1
+        self._replace_structure_snapshots(
+            joined.get("structures", []),
+            joined.get("structure_revision", 0),
+        )
         self.inventory_status = f"Connected as player {joined['player_id']}"
         session.send({"type": "request_chunk", "coord": [0, 0]})
         self.requested_remote_chunks.add(ChunkCoord(0, 0))
@@ -1633,6 +1728,11 @@ class GameWindow(pyglet.window.Window):
                         for player_id in cast(list[object], removed):
                             self.network_players.pop(player_id, None)
                 self._sync_remote_players(self.network_players)
+        elif message_type == "structure_snapshot":
+            self._replace_structure_snapshots(
+                message.get("structures", []),
+                message.get("revision", 0),
+            )
         elif message_type == "chat":
             self.inventory_status = f"Chat: {message.get('text', '')}"
         elif message_type == "session_reconnecting":
@@ -1641,6 +1741,13 @@ class GameWindow(pyglet.window.Window):
             self.last_snapshot_sequence = 0
             self.network_players.clear()
             self.requested_remote_chunks.clear()
+            joined = message.get("joined")
+            if isinstance(joined, dict):
+                self.last_structure_revision = -1
+                self._replace_structure_snapshots(
+                    joined.get("structures", []),
+                    joined.get("structure_revision", 0),
+                )
             self.inventory_status = "Reconnected to server"
             self._request_remote_chunk()
         elif message_type == "session_disconnected":
@@ -1732,6 +1839,21 @@ class GameWindow(pyglet.window.Window):
         elif self.lan_server is not None:
             self.lan_server.apply_block_action(block, block_id)
 
+    def _toggle_structure(self, entity_id: int) -> None:
+        if self.world_renderer.remote_mode and self.network_session is not None:
+            try:
+                self.network_session.send({"type": "structure_toggle", "id": entity_id})
+                self.inventory_status = f"Requested structure #{entity_id} toggle."
+            except (ConnectionError, OSError):
+                self.inventory_status = "Structure interaction pending reconnect."
+            return
+        if self.lan_server is None:
+            return
+        entity = self.lan_server.toggle_structure(entity_id)
+        self.inventory_status = (
+            f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+        )
+
     def open_to_lan(self) -> None:
         if self.lan_server is None:
             self.menu.status = "Open to LAN is available only for a singleplayer world."
@@ -1775,6 +1897,8 @@ class GameWindow(pyglet.window.Window):
             ),
         )
         server.start()
+        self.structure_world = server.structure_world
+        self.last_structure_revision = self.structure_world.revision
         session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
         try:
             session.connect(
@@ -1788,6 +1912,22 @@ class GameWindow(pyglet.window.Window):
             raise
         self.lan_server = server
         self.network_session = session
+
+    def _replace_structure_snapshots(self, raw_snapshots: object, raw_revision: object) -> None:
+        if not isinstance(raw_snapshots, list) or not isinstance(raw_revision, int):
+            return
+        if raw_revision < self.last_structure_revision:
+            return
+        snapshots: list[StructureSnapshot] = []
+        for raw in cast("list[object]", raw_snapshots):
+            if not isinstance(raw, dict):
+                return
+            snapshots.append(cast("StructureSnapshot", raw))
+        world = StructureWorld()
+        world.replace_from_snapshots(snapshots)
+        world.revision = raw_revision
+        self.structure_world = world
+        self.last_structure_revision = raw_revision
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
@@ -1861,6 +2001,8 @@ class GameWindow(pyglet.window.Window):
         self.remote_player_interpolation.clear()
         self.requested_remote_chunks.clear()
         self.last_snapshot_sequence = 0
+        self.structure_world = self.world_renderer.storage.load_structure_world()
+        self.last_structure_revision = self.structure_world.revision
         self._start_local_authority()
         self.menu.screen = Screen.GAME
         self.menu.status = ""

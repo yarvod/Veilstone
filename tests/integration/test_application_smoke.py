@@ -146,7 +146,37 @@ def test_articulated_mobs_render_multiple_textured_parts() -> None:
             )
             window.mgl_context.finish()
 
-            assert draws >= 18
+            assert draws >= 16
+        finally:
+            window.close()
+
+
+def test_runtime_structures_render_from_authoritative_state() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-runtime-structures-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            assert window.lan_server is not None
+            for index, key_name in enumerate(("gate", "altar", "bridge")):
+                entity = window.lan_server.spawn_structure(key_name, (index * 8, 40, 0))
+                window.lan_server.toggle_structure(entity.entity_id)
+            draws = window.structure_renderer.render(
+                window.structure_world,
+                window.camera,
+                window.width,
+                window.height,
+                window.settings.camera.field_of_view,
+                window.world_renderer.texture,
+                window.world_renderer.atlas_uvs,
+            )
+            window.mgl_context.finish()
+
+            assert draws == 29
         finally:
             window.close()
 
@@ -166,9 +196,7 @@ def test_game_commands_change_time_and_remove_hostile_mobs(
 
     monkeypatch.setattr(window_module, "save_user_settings", discard_settings)
     with tempfile.TemporaryDirectory(prefix="veilstone-command-test-") as directory:
-        window = window_module.GameWindow(
-            AppSettings(), visible=False, save_root=Path(directory)
-        )
+        window = window_module.GameWindow(AppSettings(), visible=False, save_root=Path(directory))
         try:
             hostile = window.entities.spawn_mob(MobKind.HOSTILE, window.camera.position)
             window.execute_command("/time set midnight")

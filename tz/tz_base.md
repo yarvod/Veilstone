@@ -2295,24 +2295,24 @@ Done when:
 
 Checklist:
 
-- [ ] Add BlockEntity system.
-- [ ] Add MultiBlockStructure definition.
-- [ ] Add StructureEntity runtime state.
-- [ ] Add animated render parts.
-- [ ] Add collision phase updates.
-- [ ] Add save/load for structure state.
-- [ ] Add network replication for structure state.
-- [ ] Implement opening stone gate.
-- [ ] Implement rotating altar.
-- [ ] Implement moving platform or bridge.
-- [ ] Add debug commands for spawning structures.
-- [ ] Add tests for structure state machines.
+- [x] Add BlockEntity system.
+- [x] Add MultiBlockStructure definition.
+- [x] Add StructureEntity runtime state.
+- [x] Add animated render parts.
+- [x] Add collision phase updates.
+- [x] Add save/load for structure state.
+- [x] Add network replication for structure state.
+- [x] Implement opening stone gate.
+- [x] Implement rotating altar.
+- [x] Implement moving platform or bridge.
+- [x] Add debug commands for spawning structures.
+- [x] Add tests for structure state machines.
 
 Done when:
 
-- [ ] At least 3 interactive structures work.
-- [ ] Structures animate without rebuilding thousands of blocks each frame.
-- [ ] Structure state persists and replicates over LAN.
+- [x] At least 3 interactive structures work.
+- [x] Structures animate without rebuilding thousands of blocks each frame.
+- [x] Structure state persists and replicates over LAN.
 
 ### Phase 22 — Story progression foundation
 

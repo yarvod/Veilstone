@@ -7,6 +7,7 @@ from typing import cast
 
 type Vec3 = tuple[float, float, float]
 type Vec4 = tuple[float, float, float, float]
+type FaceUVs = tuple[Vec4, Vec4, Vec4, Vec4, Vec4, Vec4]
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +19,7 @@ class ModelPart:
     pivot: Vec3 = (0.0, 0.0, 0.0)
     material: str = "skin"
     uv: Vec4 = (0.0, 0.0, 1.0, 1.0)
+    face_uvs: FaceUVs | None = None
     tint: Vec3 = (1.0, 1.0, 1.0)
 
 
@@ -73,6 +75,11 @@ def _parse_part(raw: object) -> ModelPart:
     if not isinstance(raw, dict):
         raise ValueError("Model parts must be TOML tables")
     values = cast("dict[str, object]", raw)
+    uv = _vec4(values.get("uv", [0.0, 0.0, 1.0, 1.0]))
+    face_uvs = tuple(
+        _vec4(values.get(f"uv_{face}", list(uv)))
+        for face in ("front", "back", "left", "right", "top", "bottom")
+    )
     return ModelPart(
         name=str(values["name"]),
         parent=str(parent) if (parent := values.get("parent")) is not None else None,
@@ -80,7 +87,8 @@ def _parse_part(raw: object) -> ModelPart:
         size=_vec3(values["size"]),
         pivot=_vec3(values.get("pivot", [0.0, 0.0, 0.0])),
         material=str(values.get("material", "skin")),
-        uv=_vec4(values.get("uv", [0.0, 0.0, 1.0, 1.0])),
+        uv=uv,
+        face_uvs=cast("FaceUVs", face_uvs),
         tint=_vec3(values.get("tint", [1.0, 1.0, 1.0])),
     )
 

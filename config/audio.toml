@@ -30,25 +30,25 @@ gain = 0.48
 
 [[audio]]
 key = "mob.passive_hurt"
-path = "audio/cow_hurt.wav"
+paths = ["audio/cow/hurt_1.wav", "audio/cow/hurt_2.wav"]
 group = "effects"
 gain = 0.58
 
 [[audio]]
 key = "mob.passive_death"
-path = "audio/cow_death.wav"
+paths = ["audio/cow/death_1.wav", "audio/cow/death_2.wav"]
 group = "effects"
 gain = 0.62
 
 [[audio]]
 key = "mob.hostile_hurt"
-path = "audio/zombie_hurt.wav"
+paths = ["audio/zombie/hurt_1.wav", "audio/zombie/hurt_2.wav"]
 group = "effects"
 gain = 0.66
 
 [[audio]]
 key = "mob.hostile_death"
-path = "audio/zombie_death.wav"
+paths = ["audio/zombie/death_1.wav", "audio/zombie/death_2.wav"]
 group = "effects"
 gain = 0.70
 

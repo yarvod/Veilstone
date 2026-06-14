@@ -11,12 +11,14 @@ from voxel_sandbox.audio.events import VolumeGroup
 @dataclass(frozen=True, slots=True)
 class AudioResource:
     key: str
-    path: Path
+    paths: tuple[Path, ...]
     group: VolumeGroup
     loop: bool = False
     gain: float = 1.0
 
     def __post_init__(self) -> None:
+        if not self.paths:
+            raise ValueError("Audio resource must contain at least one path")
         if not 0.0 <= self.gain <= 2.0:
             raise ValueError("Audio resource gain must be between 0 and 2")
 
@@ -39,17 +41,28 @@ class AudioRegistry:
             if not isinstance(raw_entry, dict):
                 raise ValueError("audio.toml entries must be tables")
             entries.append(cast("dict[str, object]", raw_entry))
-        resources = tuple(
-            AudioResource(
-                key=str(entry["key"]),
-                path=asset_root / str(entry["path"]),
-                group=VolumeGroup(str(entry["group"])),
-                loop=bool(entry.get("loop", False)),
-                gain=_gain(entry),
+        resources: list[AudioResource] = []
+        for entry in entries:
+            raw_path = entry.get("path")
+            if raw_path is not None:
+                paths = (asset_root / str(raw_path),)
+            elif "paths" in entry:
+                raw_paths = entry["paths"]
+                if not isinstance(raw_paths, list):
+                    raise ValueError("Audio resource paths must be an array")
+                paths = tuple(asset_root / str(item) for item in cast("list[object]", raw_paths))
+            else:
+                raise ValueError("Audio resource must specify path or paths")
+            resources.append(
+                AudioResource(
+                    key=str(entry["key"]),
+                    paths=paths,
+                    group=VolumeGroup(str(entry["group"])),
+                    loop=bool(entry.get("loop", False)),
+                    gain=_gain(entry),
+                )
             )
-            for entry in entries
-        )
-        return cls(resources)
+        return cls(tuple(resources))
 
     def get(self, key: str) -> AudioResource:
         try:

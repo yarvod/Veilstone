@@ -62,6 +62,34 @@ def _chord(frequencies: tuple[float, ...], pulse: float) -> Sample:
     return sample
 
 
+def _ambient_score(
+    chord: tuple[float, ...],
+    melody: tuple[float, ...],
+    *,
+    beat_seconds: float,
+) -> Sample:
+    def sample(time: float, duration: float) -> float:
+        loop_fade = min(1.0, time / 1.2, (duration - time) / 1.2)
+        breathing = 0.82 + math.sin(time * math.tau / 7.0) * 0.08
+        pad = sum(
+            math.sin(math.tau * frequency * time)
+            + math.sin(math.tau * frequency * 2.0 * time) * 0.08
+            for frequency in chord
+        ) / len(chord)
+        beat = int(time / beat_seconds)
+        note_time = time - beat * beat_seconds
+        note = melody[beat % len(melody)]
+        note_envelope = min(1.0, note_time / 0.035) * math.exp(-2.8 * note_time)
+        piano = (
+            math.sin(math.tau * note * note_time) * 0.72
+            + math.sin(math.tau * note * 2.0 * note_time) * 0.18
+            + math.sin(math.tau * note * 3.0 * note_time) * 0.06
+        )
+        return (pad * 0.17 * breathing + piano * note_envelope * 0.13) * loop_fade
+
+    return sample
+
+
 def _mix(*samples: tuple[Sample, float]) -> Sample:
     def sample(time: float, duration: float) -> float:
         return sum(generator(time, duration) * weight for generator, weight in samples)
@@ -98,11 +126,59 @@ def main() -> None:
     _write(root / "cow_death.wav", 0.52, _creature_voice(125.0, -70.0, 47), peak=0.45)
     _write(root / "zombie_hurt.wav", 0.25, _creature_voice(185.0, -80.0, 53), peak=0.48)
     _write(root / "zombie_death.wav", 0.48, _creature_voice(150.0, -110.0, 59), peak=0.50)
-    _write(root / "ambience_surface.wav", 4.0, _chord((110.0, 164.8, 220.0), 0.7), peak=0.16)
-    _write(root / "ambience_cave.wav", 4.0, _chord((82.4, 123.5, 185.0), 0.35), peak=0.13)
-    _write(root / "music_menu.wav", 6.0, _chord((146.8, 220.0, 293.7), 0.5), peak=0.18)
-    _write(root / "music_exploration.wav", 6.0, _chord((130.8, 196.0, 261.6), 0.8), peak=0.16)
-    _write(root / "music_night.wav", 6.0, _chord((110.0, 164.8, 220.0), 0.3), peak=0.15)
+    for path, duration, voice, peak in (
+        ("cow/hurt_1.wav", 0.34, _creature_voice(145.0, -35.0, 43), 0.42),
+        ("cow/hurt_2.wav", 0.38, _creature_voice(132.0, -28.0, 44), 0.40),
+        ("cow/death_1.wav", 0.52, _creature_voice(125.0, -70.0, 47), 0.45),
+        ("cow/death_2.wav", 0.58, _creature_voice(116.0, -62.0, 48), 0.43),
+        ("zombie/hurt_1.wav", 0.25, _creature_voice(185.0, -80.0, 53), 0.48),
+        ("zombie/hurt_2.wav", 0.29, _creature_voice(168.0, -68.0, 54), 0.46),
+        ("zombie/death_1.wav", 0.48, _creature_voice(150.0, -110.0, 59), 0.50),
+        ("zombie/death_2.wav", 0.55, _creature_voice(137.0, -96.0, 60), 0.48),
+    ):
+        _write(root / path, duration, voice, peak=peak)
+    _write(
+        root / "ambience_surface.wav",
+        12.0,
+        _ambient_score((82.41, 123.47, 164.81), (329.63, 392.0, 493.88, 392.0), beat_seconds=3.0),
+        peak=0.14,
+    )
+    _write(
+        root / "ambience_cave.wav",
+        12.0,
+        _ambient_score((55.0, 82.41, 110.0), (220.0, 246.94, 196.0, 164.81), beat_seconds=3.0),
+        peak=0.11,
+    )
+    _write(
+        root / "music_menu.wav",
+        16.0,
+        _ambient_score(
+            (73.42, 110.0, 146.83),
+            (293.66, 349.23, 440.0, 392.0, 329.63, 293.66, 246.94, 293.66),
+            beat_seconds=2.0,
+        ),
+        peak=0.16,
+    )
+    _write(
+        root / "music_exploration.wav",
+        16.0,
+        _ambient_score(
+            (65.41, 98.0, 130.81),
+            (261.63, 329.63, 392.0, 329.63, 293.66, 261.63, 220.0, 246.94),
+            beat_seconds=2.0,
+        ),
+        peak=0.14,
+    )
+    _write(
+        root / "music_night.wav",
+        16.0,
+        _ambient_score(
+            (55.0, 82.41, 123.47),
+            (220.0, 246.94, 293.66, 246.94, 196.0, 164.81, 196.0, 220.0),
+            beat_seconds=2.0,
+        ),
+        peak=0.13,
+    )
 
 
 if __name__ == "__main__":

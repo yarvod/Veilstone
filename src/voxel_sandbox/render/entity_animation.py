@@ -72,6 +72,7 @@ class AnimationGraph:
             MobState.ATTACK: "attack",
             MobState.HURT: "hurt",
             MobState.DEATH: "death",
+            MobState.GRAZE: "graze",
         }.get(state, "walk" if speed > 0.05 else "idle")
         clip = self.clips.clips[clip_key]
         clip_time = phase % clip.duration if clip.loop else min(phase, clip.duration)
@@ -113,9 +114,24 @@ def animated_pose(
     pose: Pose = {}
     cycle = animation_time * (2.2 + speed * 1.2)
     swing = math.sin(cycle) * min(0.48, 0.10 + speed * 0.14)
-    bob = math.sin(animation_time * 1.7) * 0.012
-    pose["body"] = PartPose(offset=(0.0, bob, 0.0))
-    pose["head"] = PartPose(rotation=(math.sin(animation_time * 1.1) * 0.06, look_yaw, 0.0))
+    step_lift = (1.0 - math.cos(cycle * 2.0)) * min(0.018, speed * 0.012)
+    weight_shift = math.sin(cycle) * min(0.035, speed * 0.025)
+    bob = math.sin(animation_time * 1.7) * 0.006 + step_lift
+    pose["body"] = PartPose(
+        offset=(0.0, bob, 0.0),
+        rotation=(weight_shift * 0.35, 0.0, weight_shift),
+    )
+    head_pitch = math.sin(animation_time * 1.1) * 0.045
+    if state is MobState.GRAZE:
+        chewing = math.sin(animation_time * 5.2)
+        pose["body"] = PartPose(offset=(0.0, 0.0, 0.0))
+        pose["head"] = PartPose(
+            offset=(0.0, -0.38 + chewing * 0.015, -0.08),
+            rotation=(0.72 + chewing * 0.08, look_yaw, 0.0),
+        )
+        pose["jaw"] = PartPose(rotation=(0.12 + abs(chewing) * 0.14, 0.0, 0.0))
+    else:
+        pose["head"] = PartPose(rotation=(head_pitch, look_yaw, 0.0))
     for name, phase in (
         ("leg_front_left", swing),
         ("leg_back_right", swing),

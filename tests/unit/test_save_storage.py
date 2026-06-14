@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from voxel_sandbox.domain.blocks.structures import StructureWorld
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, DirtyFlag
@@ -62,3 +63,16 @@ def test_player_inventory_position_and_selection_roundtrip(tmp_path: Path) -> No
 def test_migration_stub_rejects_unknown_chunk_version() -> None:
     with pytest.raises(ValueError, match="No chunk migration"):
         migrate_chunk(b"old", 0, SAVE_VERSION)
+
+
+def test_structure_world_roundtrip(tmp_path: Path) -> None:
+    storage = WorldStorage(tmp_path / "world")
+    world = StructureWorld()
+    gate = world.spawn("gate", (4, 20, -3))
+    world.toggle(gate.entity_id)
+    world.update(0.75)
+
+    storage.save_structure_world(world)
+    restored = storage.load_structure_world()
+
+    assert restored.snapshots() == world.snapshots()

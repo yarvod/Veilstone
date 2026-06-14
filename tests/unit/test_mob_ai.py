@@ -27,7 +27,11 @@ def test_passive_mob_wanders_and_hostile_transitions_to_chase_and_attack() -> No
 
     simulation.update(0.5, (0.0, 10.0, 0.0), flat_ground, no_hazard)
 
-    assert simulation.world.mob_ai[passive].state is MobState.WANDER
+    assert simulation.world.mob_ai[passive].state in {
+        MobState.IDLE,
+        MobState.GRAZE,
+        MobState.WANDER,
+    }
     assert simulation.world.mob_ai[hostile].state is MobState.CHASE
     assert simulation.world.transforms[hostile].x < 8.0
 
@@ -150,6 +154,7 @@ def test_mob_yaw_faces_its_actual_movement_direction() -> None:
     simulation = EntitySimulation(seed=2)
     mob = simulation.spawn_mob(MobKind.HOSTILE, (0.0, 10.0, 0.0))
 
-    simulation.update(0.1, (0.0, 10.0, 8.0), flat_ground, no_hazard)
+    for _ in range(12):
+        simulation.update(0.1, (0.0, 10.0, 8.0), flat_ground, no_hazard)
 
     assert abs(abs(simulation.world.transforms[mob].yaw) - 3.14159) < 0.001

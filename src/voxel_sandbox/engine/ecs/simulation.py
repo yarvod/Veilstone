@@ -156,11 +156,24 @@ class EntitySimulation:
                 speed = 2.2
             else:
                 if ai.state_time <= 0.0 or ai.state in {MobState.CHASE, MobState.ATTACK}:
-                    ai.state = MobState.WANDER
-                    angle = self._random.random() * math.tau
-                    ai.direction_x, ai.direction_z = math.cos(angle), math.sin(angle)
-                    ai.state_time = 1.5 + self._random.random() * 3.0
-                speed = 1.1 if ai.kind is MobKind.PASSIVE else 1.4
+                    choice = self._random.random()
+                    if choice < 0.34:
+                        ai.state = MobState.IDLE
+                        ai.direction_x = ai.direction_z = 0.0
+                        ai.state_time = 2.0 + self._random.random() * 3.0
+                    elif choice < 0.68 and ai.kind is MobKind.PASSIVE:
+                        ai.state = MobState.GRAZE
+                        ai.direction_x = ai.direction_z = 0.0
+                        ai.state_time = 3.5 + self._random.random() * 3.5
+                    else:
+                        ai.state = MobState.WANDER
+                        angle = self._random.random() * math.tau
+                        ai.direction_x, ai.direction_z = math.cos(angle), math.sin(angle)
+                        ai.state_time = 2.5 + self._random.random() * 4.0
+                if ai.state in {MobState.IDLE, MobState.GRAZE}:
+                    speed = 0.0
+                else:
+                    speed = 0.72 if ai.kind is MobKind.PASSIVE else 1.05
             next_x = transform.x + ai.direction_x * speed * delta_time
             next_z = transform.z + ai.direction_z * speed * delta_time
             ground = ground_height(math.floor(next_x), math.floor(next_z))
@@ -191,7 +204,8 @@ class EntitySimulation:
             animation.speed = speed
             _advance_animation_state(animation, ai.state, delta_time)
             if speed > 0.0:
-                transform.yaw = math.atan2(ai.direction_x, -ai.direction_z)
+                target_yaw = math.atan2(ai.direction_x, -ai.direction_z)
+                transform.yaw = _approach_angle(transform.yaw, target_yaw, delta_time * 3.8)
         return player_damage
 
     def damage(self, entity: EntityId, amount: float) -> tuple[ItemStack, ...]:
@@ -277,6 +291,12 @@ def _normalized(x: float, z: float) -> tuple[float, float]:
     if length <= 1e-9:
         return 0.0, 0.0
     return x / length, z / length
+
+
+def _approach_angle(current: float, target: float, maximum_delta: float) -> float:
+    difference = (target - current + math.pi) % math.tau - math.pi
+    difference = max(-maximum_delta, min(maximum_delta, difference))
+    return current + difference
 
 
 def _advance_animation_state(

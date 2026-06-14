@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Final
 
+from voxel_sandbox.domain.blocks.entities import BlockEntity
 from voxel_sandbox.engine.chunks.coordinates import SECTION_SIZE, ChunkCoord
 from voxel_sandbox.engine.chunks.section import ChunkSection
 
@@ -10,11 +11,12 @@ SECTION_COUNT: Final = CHUNK_HEIGHT // SECTION_SIZE
 
 
 class Chunk:
-    __slots__ = ("coord", "sections")
+    __slots__ = ("block_entities", "coord", "sections")
 
     def __init__(self, coord: ChunkCoord) -> None:
         self.coord = coord
         self.sections = tuple(ChunkSection() for _ in range(SECTION_COUNT))
+        self.block_entities: dict[tuple[int, int, int], BlockEntity] = {}
 
     def get_block(self, x: int, y: int, z: int) -> int:
         section, local_y = self._split_y(y)

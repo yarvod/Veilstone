@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import cast
 
 from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
+from voxel_sandbox.domain.blocks.structures import StructureEntity, StructureWorld, Vec3i
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, Chunk, ChunkCoord, split_world_axis
 from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
 from voxel_sandbox.infrastructure.storage import WorldStorage
@@ -33,11 +34,15 @@ class ServerState:
     snapshot_sequences: dict[int, int] = field(default_factory=lambda: {})
     snapshot_baselines: dict[int, dict[int, dict[str, object]]] = field(default_factory=lambda: {})
     chunks: dict[ChunkCoord, Chunk] = field(default_factory=lambda: {})
+    structure_world: StructureWorld = field(init=False)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
         self.generator = TerrainGenerator(WorldSeed.parse(self.seed))
         self.block_registry = create_core_block_registry()
+        self.structure_world = (
+            self.storage.load_structure_world() if self.storage is not None else StructureWorld()
+        )
 
     def allows_player_block_action(
         self,
@@ -115,6 +120,54 @@ class ServerState:
             }
         for coord in changed_coords:
             self.storage.save_chunk(self.chunk_at(coord))
+        with self.lock:
+            self.storage.save_structure_world(self.structure_world)
+
+    def structure_snapshots(self) -> list[dict[str, object]]:
+        with self.lock:
+            return self.structure_world.snapshots()
+
+    def tick_structures(self, delta_time: float) -> None:
+        with self.lock:
+            changed = self.structure_world.update(delta_time)
+            revision = self.structure_world.revision
+            snapshots = self.structure_world.snapshots() if changed else []
+        if changed:
+            self.broadcast(
+                {
+                    "type": "structure_snapshot",
+                    "revision": revision,
+                    "structures": snapshots,
+                }
+            )
+
+    def spawn_structure(self, key: str, origin: Vec3i) -> StructureEntity:
+        with self.lock:
+            entity = self.structure_world.spawn(key, origin)
+            revision = self.structure_world.revision
+            snapshots = self.structure_world.snapshots()
+        self.broadcast(
+            {
+                "type": "structure_snapshot",
+                "revision": revision,
+                "structures": snapshots,
+            }
+        )
+        return entity
+
+    def toggle_structure(self, entity_id: int) -> StructureEntity:
+        with self.lock:
+            entity = self.structure_world.toggle(entity_id)
+            revision = self.structure_world.revision
+            snapshots = self.structure_world.snapshots()
+        self.broadcast(
+            {
+                "type": "structure_snapshot",
+                "revision": revision,
+                "structures": snapshots,
+            }
+        )
+        return entity
 
     def send_entity_snapshots(self, *, force_full: bool = False) -> None:
         with self.lock:
@@ -210,6 +263,8 @@ class _Handler(socketserver.BaseRequestHandler):
                     "player_id": player_id,
                     "seed": state.seed,
                     "players": players,
+                    "structure_revision": state.structure_world.revision,
+                    "structures": state.structure_snapshots(),
                 },
             )
             state.send_entity_snapshots(force_full=True)
@@ -320,6 +375,20 @@ class _Handler(socketserver.BaseRequestHandler):
                         "blocks": encode_chunk_blocks(chunk),
                     },
                 )
+        elif message_type == "structure_toggle":
+            entity_id = message.get("id")
+            if not isinstance(entity_id, int):
+                return
+            with state.lock:
+                player = state.players.get(player_id)
+                entity = state.structure_world.entities.get(entity_id)
+                if player is None or entity is None:
+                    return
+                player_position = list(cast("list[float]", player["position"]))
+                structure_position = [float(value) + 0.5 for value in entity.origin]
+            if _distance_squared(player_position, structure_position) > 8.0**2:
+                return
+            state.toggle_structure(entity_id)
 
 
 class _ThreadingServer(socketserver.ThreadingTCPServer):
@@ -341,6 +410,8 @@ class LanServer:
         self._server = _ThreadingServer((host, port), _Handler)
         self._server.state = ServerState(seed, storage, block_action_sink)
         self._thread: threading.Thread | None = None
+        self._simulation_thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
 
     @property
     def address(self) -> tuple[str, int]:
@@ -356,16 +427,42 @@ class LanServer:
     def start(self) -> None:
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
+        self._stop_event.clear()
+        self._simulation_thread = threading.Thread(target=self._run_simulation, daemon=True)
+        self._simulation_thread.start()
 
     def apply_block_action(self, position: tuple[int, int, int], block_id: int) -> None:
         self._server.state.apply_block_action(position, block_id, notify_sink=False)
 
+    @property
+    def structure_world(self) -> StructureWorld:
+        return self._server.state.structure_world
+
+    def spawn_structure(self, key: str, origin: Vec3i) -> StructureEntity:
+        return self._server.state.spawn_structure(key, origin)
+
+    def toggle_structure(self, entity_id: int) -> StructureEntity:
+        return self._server.state.toggle_structure(entity_id)
+
     def stop(self) -> None:
+        self._stop_event.set()
         self._server.shutdown()
         self._server.server_close()
         if self._thread is not None:
             self._thread.join(timeout=2.0)
+        if self._simulation_thread is not None:
+            self._simulation_thread.join(timeout=2.0)
         self._server.state.save()
+
+    def save(self) -> None:
+        self._server.state.save()
+
+    def _run_simulation(self) -> None:
+        previous = time.monotonic()
+        while not self._stop_event.wait(0.05):
+            current = time.monotonic()
+            self._server.state.tick_structures(min(current - previous, 0.1))
+            previous = current
 
 
 def _distance_squared(first: list[float], second: list[float]) -> float:

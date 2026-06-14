@@ -23,7 +23,29 @@ class HelpCommand:
     pass
 
 
-type GameCommand = SetTimeCommand | SetDifficultyCommand | HelpCommand
+@dataclass(frozen=True, slots=True)
+class SpawnStructureCommand:
+    key: str
+
+
+@dataclass(frozen=True, slots=True)
+class ToggleStructureCommand:
+    entity_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class ListStructuresCommand:
+    pass
+
+
+type GameCommand = (
+    SetTimeCommand
+    | SetDifficultyCommand
+    | HelpCommand
+    | SpawnStructureCommand
+    | ToggleStructureCommand
+    | ListStructuresCommand
+)
 
 _NAMED_TIMES = {
     "sunrise": 0,
@@ -50,6 +72,19 @@ def parse_command(source: str) -> GameCommand:
         if difficulty not in {"peaceful", "normal"}:
             raise CommandError("Difficulty must be peaceful or normal.")
         return SetDifficultyCommand(difficulty)
+    if command == "structure" and arguments[:1] == ["spawn"] and len(arguments) == 2:
+        key = arguments[1]
+        if key not in {"gate", "altar", "bridge"}:
+            raise CommandError("Structure must be gate, altar or bridge.")
+        return SpawnStructureCommand(key)
+    if command == "structure" and arguments[:1] == ["toggle"] and len(arguments) == 2:
+        try:
+            entity_id = int(arguments[1])
+        except ValueError as error:
+            raise CommandError("Structure id must be an integer.") from error
+        return ToggleStructureCommand(entity_id)
+    if command == "structure" and arguments == ["list"]:
+        return ListStructuresCommand()
     raise CommandError(f"Unknown command: {source.strip()}. Use /help.")
 
 

@@ -13,6 +13,7 @@ from voxel_sandbox.audio import (
     NullAudioBackend,
     VolumeGroup,
 )
+from voxel_sandbox.audio.backend import listener_space
 from voxel_sandbox.audio.runtime import create_audio_bus, create_server_audio_bus
 
 
@@ -69,10 +70,10 @@ def test_gameplay_effects_are_normalized_without_clipping() -> None:
         "block_earth.wav",
         "block_wood.wav",
         "footstep.wav",
-        "cow_hurt.wav",
-        "cow_death.wav",
-        "zombie_hurt.wav",
-        "zombie_death.wav",
+        "cow/hurt_1.wav",
+        "cow/death_1.wav",
+        "zombie/hurt_1.wav",
+        "zombie/death_1.wav",
     )
     for name in names:
         with wave.open(str(resource_path(f"assets/audio/{name}")), "rb") as source:
@@ -81,3 +82,18 @@ def test_gameplay_effects_are_normalized_without_clipping() -> None:
         rms = math.sqrt(sum(sample * sample for sample in samples) / len(samples)) / 32767.0
         assert 0.25 <= peak <= 0.55
         assert 0.025 <= rms <= 0.30
+
+
+def test_listener_space_tracks_camera_position_and_orientation() -> None:
+    assert listener_space(
+        (12.0, 4.0, 5.0),
+        (10.0, 4.0, 5.0),
+        (0.0, 0.0, -1.0),
+        (0.0, 1.0, 0.0),
+    ) == (2.0, 0.0, 0.0)
+    assert listener_space(
+        (10.0, 4.0, 3.0),
+        (10.0, 4.0, 5.0),
+        (0.0, 0.0, -1.0),
+        (0.0, 1.0, 0.0),
+    ) == (0.0, 0.0, -2.0)

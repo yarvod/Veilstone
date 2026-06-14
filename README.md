@@ -74,7 +74,9 @@ off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;
 the developer preview command prints their validated block layers and loot tables.
 Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed
-chunk files, and the local player's position, health, hotbar, and inventory.
+chunk files, active runtime structures, and the local player's position, health, hotbar, and
+inventory. Runtime gates, altars, and bridges animate through render transforms instead of chunk
+remeshing; their collision and state are server-authoritative and replicated over LAN.
 
 ## Packaging
 
@@ -117,8 +119,10 @@ Client controls:
 - `Q`: drop one item from the selected hotbar stack.
 - `T`: enter and send a multiplayer chat message.
 - `/`: open the command line. Use `/help`, `/time set day|noon|night|midnight|<ticks>`, or
-  `/difficulty peaceful|normal`.
-- Right mouse: place the selected block on the highlighted face.
+  `/difficulty peaceful|normal`. Developer structure commands are `/structure spawn
+  gate|altar|bridge`, `/structure toggle ID`, and `/structure list`.
+- Right mouse: toggle an aimed runtime structure, otherwise place the selected block on the
+  highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - Pause Menu -> `Open to LAN`: advertise the running singleplayer server on the LAN.
 - `F3`: toggle the detailed debug overlay.

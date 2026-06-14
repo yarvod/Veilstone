@@ -11,6 +11,8 @@ import numpy as np
 from PIL import Image
 
 from voxel_sandbox.app.paths import resource_path
+from voxel_sandbox.domain.blocks import BlockRegistry
+from voxel_sandbox.domain.items import ItemRegistry
 from voxel_sandbox.engine.ecs import EntityWorld, MobState, RenderModel
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_animation import (
@@ -18,7 +20,12 @@ from voxel_sandbox.render.entity_animation import (
     AnimationGraph,
     resolved_part_transform,
 )
-from voxel_sandbox.render.entity_models import EntityModelDef, EntityModelRegistry
+from voxel_sandbox.render.entity_models import (
+    EntityModelDef,
+    EntityModelRegistry,
+    FaceUVs,
+    ModelPart,
+)
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 
@@ -37,11 +44,11 @@ class EntityRenderer:
         self.vertex_buffer = context.buffer(vertices.tobytes())
         self.vertex_array = context.vertex_array(
             self.shader.program,
-            [(self.vertex_buffer, "3f 2f", "in_position", "in_uv")],
+            [(self.vertex_buffer, "3f 2f 1f", "in_position", "in_uv", "in_face")],
         )
         self.shadow_vertex_array = context.vertex_array(
             self.shadow_shader.program,
-            [(self.vertex_buffer, "3f 2x4", "in_position")],
+            [(self.vertex_buffer, "3f 3x4", "in_position")],
         )
         self.models = EntityModelRegistry.from_toml(
             resource_path("config/entity_models.toml"), resource_path("assets")
@@ -62,6 +69,10 @@ class EntityRenderer:
         height: int,
         field_of_view: float,
         animation_time: float,
+        item_registry: ItemRegistry | None = None,
+        block_registry: BlockRegistry | None = None,
+        block_texture: moderngl.Texture | None = None,
+        atlas_uvs: dict[str, tuple[float, float, float, float]] | None = None,
     ) -> int:
         program = self.shader.program
         if program is None:
@@ -76,9 +87,32 @@ class EntityRenderer:
                 continue
             model = self._model(render_model.key)
             if model is None:
-                draws += self._render_fallback(
-                    program, transform.position, render_model, animation_time
-                )
+                texture_rect = None
+                if (
+                    block_texture is not None
+                    and atlas_uvs is not None
+                    and item_registry is not None
+                    and block_registry is not None
+                ):
+                    item_entity = world.items.get(entity)
+                    if item_entity is not None:
+                        item_def = item_registry.by_id(item_entity.stack.item_id)
+                        if item_def.block_id is not None:
+                            texture_name = block_registry.by_id(item_def.block_id).texture_top
+                            atlas_rect = atlas_uvs.get(texture_name)
+                            if atlas_rect is not None:
+                                texture_rect = _atlas_bounds_to_rect(atlas_rect)
+
+                if texture_rect is not None and block_texture is not None:
+                    block_texture.use(0)
+                    draws += self._render_fallback(
+                        program, transform.position, render_model, animation_time, texture_rect
+                    )
+                    self.texture.use(0)
+                else:
+                    draws += self._render_fallback(
+                        program, transform.position, render_model, animation_time, None
+                    )
                 continue
             distance = math.dist(camera.position, transform.position)
             if distance > 56.0:
@@ -112,9 +146,7 @@ class EntityRenderer:
                 cast("moderngl.Uniform", program["part_scale"]).value = part.size
                 cast("moderngl.Uniform", program["part_pivot"]).value = part.pivot
                 cast("moderngl.Uniform", program["part_rotation"]).value = rotation
-                cast("moderngl.Uniform", program["texture_rect"]).value = _part_texture_rect(
-                    self.texture_rects[model.key], part.uv
-                )
+                self._set_face_uvs(program, self.texture_rects[model.key], part)
                 cast("moderngl.Uniform", program["entity_color"]).value = (
                     model.base_color[0] * part.tint[0],
                     model.base_color[1] * part.tint[1],
@@ -185,6 +217,7 @@ class EntityRenderer:
         position: tuple[float, float, float],
         model: RenderModel,
         time: float,
+        texture_rect: tuple[float, float, float, float] | None = None,
     ) -> int:
         scale = model.scale
         color = model.color
@@ -200,10 +233,39 @@ class EntityRenderer:
         cast("moderngl.Uniform", program["part_pivot"]).value = (0.0, 0.0, 0.0)
         cast("moderngl.Uniform", program["part_rotation"]).value = (0.0, 0.0, 0.0)
         cast("moderngl.Uniform", program["entity_color"]).value = color
-        cast("moderngl.Uniform", program["use_texture"]).value = 0
-        cast("moderngl.Uniform", program["texture_rect"]).value = (0.0, 0.0, 1.0, 1.0)
+        if texture_rect is not None:
+            cast("moderngl.Uniform", program["use_texture"]).value = 1
+            self._set_uniform_face_uvs(program, cast("FaceUVs", (texture_rect,) * 6))
+        else:
+            cast("moderngl.Uniform", program["use_texture"]).value = 0
+            self._set_uniform_face_uvs(
+                program,
+                cast("FaceUVs", ((0.0, 0.0, 1.0, 1.0),) * 6),
+            )
         self.vertex_array.render(moderngl.TRIANGLES)
         return 1
+
+    def _set_face_uvs(
+        self,
+        program: moderngl.Program,
+        model_rect: tuple[float, float, float, float],
+        part: ModelPart,
+    ) -> None:
+        local_uvs = part.face_uvs or (part.uv,) * 6
+        rectangles = tuple(_part_texture_rect(model_rect, rect) for rect in local_uvs)
+        self._set_uniform_face_uvs(program, cast("FaceUVs", rectangles))
+
+    @staticmethod
+    def _set_uniform_face_uvs(
+        program: moderngl.Program,
+        rectangles: FaceUVs,
+    ) -> None:
+        for face, rectangle in zip(
+            ("front", "back", "left", "right", "top", "bottom"),
+            rectangles,
+            strict=True,
+        ):
+            cast("moderngl.Uniform", program[f"texture_rect_{face}"]).value = rectangle
 
     def _render_fallback_shadow(
         self,
@@ -265,7 +327,13 @@ def _part_texture_rect(
     )
 
 
-def _cube_vertices() -> tuple[tuple[float, float, float, float, float], ...]:
+def _atlas_bounds_to_rect(
+    bounds: tuple[float, float, float, float],
+) -> tuple[float, float, float, float]:
+    return bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]
+
+
+def _cube_vertices() -> tuple[tuple[float, float, float, float, float, float], ...]:
     corners = (
         (-0.5, -0.5, -0.5),
         (0.5, -0.5, -0.5),
@@ -279,14 +347,14 @@ def _cube_vertices() -> tuple[tuple[float, float, float, float, float], ...]:
     faces = ((0, 1, 2, 3), (5, 4, 7, 6), (4, 0, 3, 7), (1, 5, 6, 2), (3, 2, 6, 7), (4, 5, 1, 0))
     uvs = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
     return tuple(
-        (*corners[index], *uvs[uv_index])
-        for face in faces
+        (*corners[index], *uvs[uv_index], float(face_index))
+        for face_index, face in enumerate(faces)
         for index, uv_index in (
             (face[0], 0),
+            (face[2], 2),
             (face[1], 1),
-            (face[2], 2),
             (face[0], 0),
-            (face[2], 2),
             (face[3], 3),
+            (face[2], 2),
         )
     )

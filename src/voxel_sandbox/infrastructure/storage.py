@@ -10,6 +10,7 @@ from typing import cast
 
 import numpy as np
 
+from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureWorld
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, DirtyFlag
@@ -40,6 +41,7 @@ class WorldStorage:
         self.root = root
         self.regions = root / "regions"
         self.players = root / "players"
+        self.structures = root / "structures"
 
     def ensure_world(self, *, name: str, seed: str) -> WorldMetadata:
         self.regions.mkdir(parents=True, exist_ok=True)
@@ -171,6 +173,43 @@ class WorldStorage:
             raise ValueError("Player inventory dimensions changed")
         for index, stack in enumerate(snapshot.slots):
             inventory.set(index, stack, registry)
+
+    def save_structure_world(self, world: StructureWorld) -> None:
+        payload = {
+            "version": SAVE_VERSION,
+            "revision": world.revision,
+            "structures": world.snapshots(),
+        }
+        self.structures.mkdir(parents=True, exist_ok=True)
+        self._atomic_write_text(
+            self.structures / "structures.json",
+            json.dumps(payload, separators=(",", ":"), sort_keys=True),
+        )
+
+    def load_structure_world(self) -> StructureWorld:
+        world = StructureWorld()
+        path = self.structures / "structures.json"
+        if not path.exists():
+            return world
+        payload = cast("dict[str, object]", json.loads(path.read_text(encoding="utf-8")))
+        if payload.get("version") != SAVE_VERSION:
+            raise ValueError(f"Unsupported structure save version: {payload.get('version')}")
+        raw_structures = payload.get("structures", [])
+        if not isinstance(raw_structures, list):
+            raise ValueError("Structure save must contain a structures array")
+        snapshots: list[StructureSnapshot] = []
+        for raw in cast("list[object]", raw_structures):
+            if not isinstance(raw, dict):
+                raise ValueError("Structure snapshots must be maps")
+            snapshots.append(cast("StructureSnapshot", raw))
+        try:
+            world.replace_from_snapshots(snapshots)
+        except (KeyError, TypeError, ValueError):
+            return StructureWorld()
+        saved_revision = payload.get("revision", world.revision)
+        if isinstance(saved_revision, int):
+            world.revision = max(world.revision, saved_revision)
+        return world
 
     def _chunk_path(self, coord: ChunkCoord) -> Path:
         return self.regions / f"c.{coord.x}.{coord.z}.vchk"
