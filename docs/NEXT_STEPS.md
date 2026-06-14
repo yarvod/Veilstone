@@ -1,6 +1,7 @@
 # Next steps
 
-Phase 20 articulated mobs is complete. Phase 21 moving structures and magical machines is next.
+Phase 20.2 presentation quality recovery is complete. Phase 21 moving structures and magical
+machines is next after manual gameplay verification of mobs, inventory, audio and cave lighting.
 
 1. Define persistent BlockEntity and MultiBlockStructure state.
 2. Add transform hierarchies and animated render parts without chunk remeshing.

@@ -2,7 +2,8 @@
 
 ## Current phase
 
-Phase 20 - Articulated mobs and procedural animation: complete. Phase 21 moving structures is next.
+Phase 20.2 - Gameplay presentation quality recovery: implementation complete and ready for manual
+verification. Phase 21 moving structures is next.
 
 ## Completed checklist
 
@@ -294,6 +295,23 @@ Phase 20 - Articulated mobs and procedural animation: complete. Phase 21 moving 
 - [x] Hidden-window integration verifies time changes and peaceful hostile removal.
 - [x] Final gate: 164 tests, Ruff and Pyright pass.
 - commit: `11b3ce0`.
+
+### Phase 20.2 - Gameplay presentation quality recovery
+
+- [x] Replaced noisy mob skins with original generated cow/zombie 4x4 material sheets.
+- [x] Added intentional per-part UVs, joint pivots, inherited rotations and corrected facing yaw.
+- [x] Mobs now use gravity, voxel collision landing and water buoyancy.
+- [x] Entity render pass runs before transparent water, which is lighter and less opaque.
+- [x] Hotbar and inventory use large slots, icons and lower-right stack counts.
+- [x] Crafting uses interactive 2x2/3x3 inputs and a recipe output slot.
+- [x] Command/chat input and command feedback render in the lower-left HUD.
+- [x] Detailed debug text is hidden by default and available with `F3`.
+- [x] Cave ambient light, terrain shadows and AO preserve readable geometry.
+- [x] Procedural SFX were regenerated with normalized peaks and semantic cow/zombie variants.
+- [x] Audio resources use per-sound gain staging with quieter defaults.
+- [x] Final gate: 170 tests, Ruff, Pyright and hidden-window OpenGL smoke pass.
+- [x] Medium shadows with articulated entity pivots remain `0.40 ms` p95 vs `12 ms` budget.
+- commit: `f39cd8d`.
 
 ## Failed checks
 

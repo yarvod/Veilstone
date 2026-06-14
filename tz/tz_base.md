@@ -2255,6 +2255,42 @@ Done when:
 - [x] Normal mode can spawn an aggressive mob in darkness or at night.
 - [x] Time and difficulty can be changed without leaving the world.
 
+### Phase 20.2 — Gameplay presentation quality recovery
+
+This corrective phase is mandatory before Phase 21. Broad visual references may guide readability
+and interaction conventions, but textures, sounds, models and code must remain original and must
+not copy Minecraft, shader-pack or mod assets.
+
+Checklist:
+
+- [x] Replace noisy full-image mob texturing with original per-part 4x4 material sheets.
+- [x] Use a readable blocky cow silhouette for the passive mob and zombie silhouette for hostile.
+- [x] Add per-part UV regions so faces, bodies, limbs and feet use intentional materials.
+- [x] Add joint pivots and inherited parent rotation for stable limb/head/tail animation.
+- [x] Correct entity yaw so models face their actual movement direction.
+- [x] Add mob vertical velocity, gravity, voxel-floor landing and water buoyancy.
+- [x] Render entities between opaque terrain and transparent water.
+- [x] Reduce water opacity and improve underwater visibility.
+- [x] Replace text-list hotbar/inventory with large square slots, icons and corner stack counts.
+- [x] Add interactive 2x2/3x3 crafting grids and a dedicated recipe output slot.
+- [x] Return remaining crafting/cursor items safely when inventory closes.
+- [x] Move chat/command entry and visible command responses to the lower-left HUD.
+- [x] Keep the detailed debug overlay hidden by default and toggle it with `F3`.
+- [x] Raise cave ambient floor and soften shadow/AO darkness without removing light gameplay.
+- [x] Replace single-tone mob effects with distinct normalized cow/zombie sounds.
+- [x] Add per-resource audio gain staging and quieter default effects/music/ambience balance.
+- [x] Add unit, hidden-window OpenGL and waveform normalization coverage.
+
+Done when:
+
+- [x] Cow and zombie materials are recognizable and no body part samples the full texture sheet.
+- [x] Mobs fall from ledges, land on blocks and rise rather than disappear when submerged.
+- [x] Water transparently overlays visible entities instead of masking them through depth writes.
+- [x] Inventory and crafting can be understood from slots/icons without reading item-list strings.
+- [x] `/help` and other command responses are visible while the inventory is closed.
+- [x] Unlit caves remain dark but geometry is still readable.
+- [x] Gameplay effects remain below clipping and are gain-balanced by semantic category.
+
 ### Phase 21 — Moving structures and magical machines
 
 Checklist:
@@ -2262,7 +2298,6 @@ Checklist:
 - [ ] Add BlockEntity system.
 - [ ] Add MultiBlockStructure definition.
 - [ ] Add StructureEntity runtime state.
-- [ ] Add local transform hierarchy for structure parts.
 - [ ] Add animated render parts.
 - [ ] Add collision phase updates.
 - [ ] Add save/load for structure state.
