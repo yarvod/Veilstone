@@ -1946,6 +1946,14 @@ Done when:
 
 ## Phase 11 — Entities and mobs
 
+Visual scope note:
+
+- Phase 11 validates ECS, gameplay, AI, combat and entity rendering only.
+- Single-color cuboids are temporary proxy models, not finished mob art.
+- Finished creature models, textures and moving body parts are mandatory in Phase 20.
+- Visual references may guide quality and readability, but models, skins, silhouettes,
+  animation clips and names must remain original and must not copy Minecraft or mod assets.
+
 Checklist:
 
 - [x] Implement EntityId.
@@ -2009,7 +2017,7 @@ Checklist:
 - [x] Implement handshake.
 - [x] Implement join.
 - [x] Server sends chunks.
-- [ ] Client renders received chunks.
+- [x] Client renders received chunks.
 - [x] Client sends input.
 - [x] Server updates player state.
 - [x] Server sends entity snapshots.
@@ -2184,6 +2192,8 @@ Done when:
 
 Checklist:
 
+- [ ] Add original mob texture/skin format and texture atlas support.
+- [ ] Add per-model-part UV/material definitions.
 - [ ] Add model part/skeleton definition format.
 - [ ] Add AnimationClip format.
 - [ ] Add AnimationGraph.
@@ -2197,11 +2207,20 @@ Checklist:
 - [ ] Add animation network replication state.
 - [ ] Convert passive mob to articulated model.
 - [ ] Convert hostile mob to articulated model.
+- [ ] Give passive and hostile mobs distinct original silhouettes, palettes and proportions.
+- [ ] Add idle breathing/bobbing and speed-synchronized walk/run cycles.
+- [ ] Add attack wind-up/release/recover, hurt reaction and death animation.
+- [ ] Animate head, torso and limbs independently instead of moving one rigid cuboid.
+- [ ] Add entity animation culling/LOD or batching to stay inside the entity frame budget.
+- [ ] Add rendered animation smoke/visual regression coverage.
 - [ ] Add animation debug overlay.
 
 Done when:
 
 - [ ] Mobs have moving body parts.
+- [ ] Passive and hostile mobs no longer use single-color proxy cuboids.
+- [ ] Both mobs have original textured articulated models readable at gameplay distance.
+- [ ] Walk, attack, hurt and death states have visibly different poses/motion.
 - [ ] New movement style can be added without rewriting renderer.
 - [ ] Multiplayer clients see consistent animation phases.
 

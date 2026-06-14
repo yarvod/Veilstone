@@ -56,6 +56,16 @@ off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed
 chunk files, and the local player's position, health, hotbar, and inventory.
 
+Local multiplayer developer run:
+
+```bash
+uv run python -m voxel_sandbox server --port 25565
+uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
+```
+
+The remote client receives server chunks, player snapshots, block deltas, and chat protocol
+messages. LAN discovery and menu-based Direct Connect are Phase 14 polish.
+
 Client controls:
 
 - Arrow keys or `W/S` and `Enter`: navigate menus.

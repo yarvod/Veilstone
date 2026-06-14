@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 13 - Local multiplayer MVP: in progress.
+Phase 13 - Local multiplayer MVP: complete and ready for manual testing.
 
 ## Completed checklist
 
@@ -137,7 +137,7 @@ Phase 13 - Local multiplayer MVP: in progress.
 - commit: `fc18e1e`.
 - tag: `phase-12-complete`.
 
-### Phase 13 - Local multiplayer MVP (in progress)
+### Phase 13 - Local multiplayer MVP
 
 - [x] 4 MiB-bounded length-prefixed frames with msgpack maps and binary payloads.
 - [x] Threaded TCP server and client with protocol-version handshake and join.
@@ -147,9 +147,14 @@ Phase 13 - Local multiplayer MVP: in progress.
 - [x] Two-client integration test covers join, visibility, input, chunk, block, and chat.
 - [x] Dedicated server command now starts the real TCP transport.
 - [x] Network benchmark serializes/transfers/decodes 1000 frames at about `0.002 ms/frame`.
-- [ ] Connect remote chunk payloads to the graphical client's world/renderer.
-- [ ] Wire `client --connect` and in-game Direct Connect UI to `LanClient`.
-- commit: `456053d` (partial phase; no completion tag yet).
+- [x] Compressed server chunks decode into client `Chunk` objects and render through the existing
+  lighting, meshing, cache, and GPU pipeline.
+- [x] `client --connect HOST:PORT` starts a remote graphical session on a temporary local cache.
+- [x] Remote player snapshots render through ECS as distinct player proxies.
+- [x] Graphical remote-client smoke verifies a server chunk is installed and a frame renders.
+- [x] Final gate: 100 tests, Ruff, Pyright, client/server/remote-render smoke, and benchmarks.
+- commits: `456053d`, pending graphical integration commit.
+- tag: `phase-13-complete` after the graphical integration commit.
 
 ## Failed checks
 
@@ -178,9 +183,11 @@ None recorded.
 - Water Vessel can place a source but does not yet scoop an existing source back up.
 - Mob navigation is intentionally local steering over terrain height, not global pathfinding.
 - Entity models are colored prototype cuboids pending later art/model polish.
+- Phase 20 now explicitly requires original textured articulated models, independently animated
+  body parts, walk/attack/hurt/death states, and removal of the Phase 11 proxy cuboids.
 - Create World and Load World currently target the same `saves/dev_world`; world selection UI is
   still a later menu polish task.
 
 ## Next recommended tasks
 
-Continue Phase 13 by feeding remote chunks and snapshots into the graphical client.
+Test Phase 13 with two processes, then continue with Phase 14 multiplayer polish.

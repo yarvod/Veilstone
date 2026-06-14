@@ -86,6 +86,13 @@ class ChunkStreamer:
     def loaded_chunks(self) -> tuple[Chunk, ...]:
         return tuple(self._loaded.values())
 
+    def install_chunk(self, chunk: Chunk) -> None:
+        pending = self._pending.pop(chunk.coord, None)
+        if pending is not None:
+            pending.cancel()
+        self._apply_overrides(chunk)
+        self._loaded[chunk.coord] = chunk
+
     def get_block(self, x: int, y: int, z: int) -> int:
         if not 0 <= y < CHUNK_HEIGHT:
             return 0

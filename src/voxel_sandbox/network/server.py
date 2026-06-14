@@ -6,17 +6,24 @@ import threading
 from dataclasses import dataclass, field
 from typing import cast
 
+from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
+from voxel_sandbox.network.chunks import encode_chunk_blocks
 from voxel_sandbox.network.protocol import PROTOCOL_VERSION, Message, receive_frame, send_frame
 
 
 @dataclass(slots=True)
 class ServerState:
     seed: str
+    generator: TerrainGenerator = field(init=False)
     next_player_id: int = 1
     clients: dict[int, socket.socket] = field(default_factory=lambda: {})
     players: dict[int, dict[str, object]] = field(default_factory=lambda: {})
     blocks: dict[tuple[int, int, int], int] = field(default_factory=lambda: {})
     lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def __post_init__(self) -> None:
+        self.generator = TerrainGenerator(WorldSeed.parse(self.seed))
 
     def broadcast(self, message: Message) -> None:
         with self.lock:
@@ -113,13 +120,22 @@ class _Handler(socketserver.BaseRequestHandler):
         elif message_type == "request_chunk":
             coord = message.get("coord", [0, 0])
             connection = state.clients.get(player_id)
-            if connection is not None:
+            if (
+                connection is not None
+                and isinstance(coord, list)
+                and len(cast(list[object], coord)) == 2
+            ):
+                raw_coord = cast(list[object], coord)
+                if not all(isinstance(value, int) for value in raw_coord):
+                    return
+                chunk_coord = ChunkCoord(*cast(list[int], raw_coord))
+                chunk = state.generator.generate_chunk(chunk_coord)
                 send_frame(
                     connection,
                     {
                         "type": "chunk",
-                        "coord": coord,
-                        "blocks": bytes(16 * 128 * 16 * 2),
+                        "coord": [chunk_coord.x, chunk_coord.z],
+                        "blocks": encode_chunk_blocks(chunk),
                     },
                 )
 

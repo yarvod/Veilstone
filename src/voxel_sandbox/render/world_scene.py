@@ -315,6 +315,11 @@ class DemoWorldRenderer:
         self.storage.ensure_world(name="Development World", seed=self.seed_text)
         return self.streamer.save_dirty()
 
+    def install_remote_chunk(self, chunk: Chunk) -> None:
+        relight_chunk(chunk, self.registry)
+        self.streamer.install_chunk(chunk)
+        self._upload_chunk_sync(chunk)
+
     def _upload_chunk_sync(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)

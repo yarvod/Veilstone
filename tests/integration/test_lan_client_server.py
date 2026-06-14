@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from voxel_sandbox.network import LanClient, LanServer, Message
+from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.network import LanClient, LanServer, Message, decode_chunk_blocks
 
 
 def receive_type(client: LanClient, expected: str) -> Message:
@@ -41,7 +42,8 @@ def test_two_clients_join_and_receive_entities_blocks_and_chat() -> None:
         second.send({"type": "request_chunk", "coord": [0, 0]})
         chunk = receive_type(second, "chunk")
         assert chunk["coord"] == [0, 0]
-        assert len(chunk["blocks"]) == 16 * 128 * 16 * 2  # type: ignore[arg-type]
+        decoded = decode_chunk_blocks(ChunkCoord(0, 0), chunk["blocks"])  # type: ignore[arg-type]
+        assert decoded.get_block(8, 1, 8) != 0
 
         first.send({"type": "block_action", "position": [1, 20, 3], "block_id": 10})
         delta = receive_type(second, "block_delta")

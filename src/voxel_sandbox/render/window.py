@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 
 import moderngl
 import pyglet
@@ -14,9 +14,11 @@ from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
-from voxel_sandbox.engine.ecs import EntitySimulation
+from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot
+from voxel_sandbox.network import ClientSession, Message, decode_chunk_blocks
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
@@ -35,6 +37,7 @@ class GameWindow(pyglet.window.Window):
         *,
         visible: bool = True,
         save_root: Path | None = None,
+        connect: str | None = None,
     ) -> None:
         configure_layout_independent_game_keys()
         config = pyglet.gl.Config(
@@ -117,6 +120,10 @@ class GameWindow(pyglet.window.Window):
         self.entity_renderer = EntityRenderer(self.mgl_context)
         self._population_accumulator = 0.0
         self._autosave_accumulator = 0.0
+        self._network_accumulator = 0.0
+        self.network_session: ClientSession | None = None
+        self.remote_player_entities: dict[int, int] = {}
+        self.remote_chunks_received = 0
         self.inventory_open = False
         self.crafting_grid_size = 2
         self.inventory_status = ""
@@ -207,6 +214,8 @@ class GameWindow(pyglet.window.Window):
             )
             for _ in range(6)
         ]
+        if connect is not None:
+            self._connect_remote(connect)
         pyglet.clock.schedule_interval(self.fixed_update, FIXED_UPDATE_SECONDS)
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
@@ -215,6 +224,8 @@ class GameWindow(pyglet.window.Window):
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
         pyglet.clock.unschedule(self.reload_shaders)
+        if self.network_session is not None:
+            self.network_session.close()
         self._save_player()
         self.world_renderer.autosave()
         self.debug_shader.release()
@@ -230,6 +241,17 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             return
         self.world_renderer.update(delta_time)
+        self._network_accumulator += delta_time
+        if self.network_session is not None:
+            self._process_network_messages()
+            if self._network_accumulator >= 0.05:
+                self._network_accumulator %= 0.05
+                self.network_session.send(
+                    {
+                        "type": "input",
+                        "position": [self.player.x, self.player.y, self.player.z],
+                    }
+                )
         self._autosave_accumulator += delta_time
         if self._autosave_accumulator >= 5.0:
             self._autosave_accumulator %= 5.0
@@ -446,6 +468,7 @@ class GameWindow(pyglet.window.Window):
         if button == mouse.LEFT:
             block_id = self.world_renderer.get_block(*hit.block)
             if self.world_renderer.set_block(hit.block, 0):
+                self._send_block_action(hit.block, 0)
                 drop = self.item_registry.drop_for_block(block_id)
                 if drop is not None:
                     self.entities.spawn_item(
@@ -470,6 +493,7 @@ class GameWindow(pyglet.window.Window):
             if definition.block_id is None:
                 return
             if self.world_renderer.set_block(hit.previous, definition.block_id):
+                self._send_block_action(hit.previous, definition.block_id)
                 self.inventory.take_from_slot(self.hotbar.selected_index)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
@@ -725,10 +749,108 @@ class GameWindow(pyglet.window.Window):
             )
         )
 
+    def _connect_remote(self, target: str) -> None:
+        host, separator, raw_port = target.rpartition(":")
+        if not separator or not host:
+            raise ValueError("Connect address must use HOST:PORT")
+        session = ClientSession()
+        joined = session.connect(host, int(raw_port), name="Player")
+        self.network_session = session
+        self.inventory_status = f"Connected as player {joined['player_id']}"
+        session.send({"type": "request_chunk", "coord": [0, 0]})
+        from voxel_sandbox.render.ui.menu import Screen
 
-def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
+        self.menu.screen = Screen.GAME
+        self._sync_mouse_capture()
+
+    def _process_network_messages(self) -> None:
+        assert self.network_session is not None
+        for message in self.network_session.poll():
+            self._apply_network_message(message)
+
+    def _apply_network_message(self, message: Message) -> None:
+        message_type = message.get("type")
+        if message_type == "chunk":
+            coord = message.get("coord")
+            payload = message.get("blocks")
+            if (
+                isinstance(coord, list)
+                and len(cast(list[object], coord)) == 2
+                and all(isinstance(value, int) for value in cast(list[object], coord))
+                and isinstance(payload, bytes)
+            ):
+                values = cast(list[int], coord)
+                self.world_renderer.install_remote_chunk(
+                    decode_chunk_blocks(ChunkCoord(values[0], values[1]), payload)
+                )
+                self.remote_chunks_received += 1
+        elif message_type == "block_delta":
+            position = message.get("position")
+            block_id = message.get("block_id")
+            if (
+                isinstance(position, list)
+                and len(cast(list[object], position)) == 3
+                and all(isinstance(value, int) for value in cast(list[object], position))
+                and isinstance(block_id, int)
+            ):
+                values = cast(list[int], position)
+                self.world_renderer.set_block((values[0], values[1], values[2]), block_id)
+        elif message_type == "entity_snapshot":
+            players = message.get("players")
+            if isinstance(players, dict):
+                self._sync_remote_players(cast(dict[object, object], players))
+        elif message_type == "chat":
+            self.inventory_status = f"Chat: {message.get('text', '')}"
+
+    def _sync_remote_players(self, players: dict[object, object]) -> None:
+        local_id = self.network_session.player_id if self.network_session is not None else None
+        visible_ids: set[int] = set()
+        for raw_id, raw_player in players.items():
+            if (
+                not isinstance(raw_id, int)
+                or raw_id == local_id
+                or not isinstance(raw_player, dict)
+            ):
+                continue
+            player = cast(dict[object, object], raw_player)
+            position = player.get("position")
+            if not isinstance(position, list) or len(cast(list[object], position)) != 3:
+                continue
+            values = cast(list[object], position)
+            if not all(isinstance(value, int | float) for value in values):
+                continue
+            coordinates = cast(list[int | float], values)
+            entity = self.remote_player_entities.get(raw_id)
+            if entity is None:
+                entity = self.entities.world.create()
+                self.remote_player_entities[raw_id] = entity
+                self.entities.world.render_models.set(
+                    entity,
+                    RenderModel("remote_player", (0.72, 0.58, 0.88), (0.65, 1.8, 0.65)),
+                )
+            self.entities.world.transforms.set(
+                entity,
+                Transform(float(coordinates[0]), float(coordinates[1]), float(coordinates[2])),
+            )
+            visible_ids.add(raw_id)
+        for player_id in set(self.remote_player_entities) - visible_ids:
+            self.entities.world.destroy(self.remote_player_entities.pop(player_id))
+
+    def _send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
+        if self.network_session is not None:
+            self.network_session.send(
+                {"type": "block_action", "position": list(block), "block_id": block_id}
+            )
+
+
+def run_window(
+    settings: AppSettings,
+    *,
+    smoke_test: bool = False,
+    connect: str | None = None,
+) -> None:
     temporary_save = None
-    if smoke_test:
+    if smoke_test or connect is not None:
         import tempfile
 
         temporary_save = tempfile.TemporaryDirectory(prefix="veilstone-smoke-")
@@ -736,6 +858,7 @@ def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
         settings,
         visible=not smoke_test,
         save_root=Path(temporary_save.name) if temporary_save is not None else None,
+        connect=connect,
     )
     if smoke_test:
         window.switch_to()
@@ -755,4 +878,8 @@ def run_window(settings: AppSettings, *, smoke_test: bool = False) -> None:
         assert temporary_save is not None
         temporary_save.cleanup()
         return
-    pyglet.app.run(1.0 / 120.0)
+    try:
+        pyglet.app.run(1.0 / 120.0)
+    finally:
+        if temporary_save is not None:
+            temporary_save.cleanup()
