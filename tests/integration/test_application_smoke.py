@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 import pytest
 
 from voxel_sandbox.__main__ import main
+from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.domain.inventory import Inventory
+from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
+from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
 
 pytestmark = pytest.mark.smoke
 
@@ -17,3 +24,39 @@ def test_primary_player_entry_starts_and_stops() -> None:
 
 def test_dedicated_server_starts_and_stops() -> None:
     assert main(["server", "--smoke-test"]) == 0
+
+
+def test_invalid_saved_position_recovers_without_losing_inventory() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.window import GameWindow
+
+    registry = create_core_item_registry()
+    inventory = Inventory()
+    inventory.set(5, ItemStack(3, 7), registry)
+    with tempfile.TemporaryDirectory(prefix="veilstone-position-recovery-") as directory:
+        save_root = Path(directory)
+        storage = WorldStorage(save_root)
+        storage.ensure_world(name="Recovery Test", seed="veilstone-dev")
+        storage.save_player(
+            PlayerSnapshot(
+                position=(-37.0, -2354.0, 130.0),
+                health=12.0,
+                selected_slot=5,
+                slots=tuple(inventory),
+            )
+        )
+
+        window = GameWindow(AppSettings(), visible=False, save_root=save_root)
+        try:
+            assert window.player.y >= 0.0
+            assert window.inventory[5] == ItemStack(3, 7)
+            assert window.player_health == 12.0
+            assert window.hotbar.selected_index == 5
+            corrected = storage.load_player(registry)
+            assert corrected is not None
+            assert corrected.position == (window.player.x, window.player.y, window.player.z)
+        finally:
+            window.close()

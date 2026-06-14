@@ -44,3 +44,8 @@ def test_player_intersection_prevents_placing_inside_body() -> None:
     player = PlayerController(x=0.5, y=1.0, z=0.5)
     assert player.intersects_block((0, 1, 0))
     assert not player.intersects_block((2, 1, 0))
+
+
+def test_player_reports_collision_at_current_position() -> None:
+    player = PlayerController(x=0.5, y=0.5, z=0.5)
+    assert player.collides(flat_world)

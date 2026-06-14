@@ -74,6 +74,9 @@ class PlayerController:
             and self.z - half < bz + 1
         )
 
+    def collides(self, get_block: BlockGetter) -> bool:
+        return self._collides(get_block)
+
     def _move_axis(self, axis: str, displacement: float, get_block: BlockGetter) -> bool:
         if displacement == 0.0:
             return False

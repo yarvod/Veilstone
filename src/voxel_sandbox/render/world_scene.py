@@ -16,6 +16,7 @@ from voxel_sandbox.engine.chunks import (
     ChunkCoord,
     ChunkSection,
     SectionCoord,
+    split_world_axis,
 )
 from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
 from voxel_sandbox.engine.generation import (
@@ -160,7 +161,27 @@ class DemoWorldRenderer:
         return self.streamer.get_block(x, y, z)
 
     def is_solid_block(self, x: int, y: int, z: int) -> bool:
+        if y < 0:
+            return True
+        if y >= CHUNK_HEIGHT:
+            return False
+        chunk_x, _ = split_world_axis(x)
+        chunk_z, _ = split_world_axis(z)
+        if self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z)) is None:
+            return True
         return self.registry.by_id(self.get_block(x, y, z)).is_solid
+
+    def ensure_collision_area_loaded(self, x: float, z: float, radius: float) -> None:
+        min_chunk_x, _ = split_world_axis(int(np.floor(x - radius)))
+        max_chunk_x, _ = split_world_axis(int(np.floor(x + radius)))
+        min_chunk_z, _ = split_world_axis(int(np.floor(z - radius)))
+        max_chunk_z, _ = split_world_axis(int(np.floor(z + radius)))
+        for chunk_x in range(min_chunk_x, max_chunk_x + 1):
+            for chunk_z in range(min_chunk_z, max_chunk_z + 1):
+                coord = ChunkCoord(chunk_x, chunk_z)
+                if self.streamer.get_chunk(coord) is not None:
+                    continue
+                self._upload_chunk_sync(self.streamer.prime(coord))
 
     def raycast(
         self,

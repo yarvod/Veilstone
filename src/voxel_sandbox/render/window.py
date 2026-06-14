@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
 from pathlib import Path
 from typing import Final, cast
@@ -15,7 +16,7 @@ from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
-from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, ChunkCoord
 from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot
@@ -101,6 +102,7 @@ class GameWindow(pyglet.window.Window):
         self.inventory.set(2, ItemStack(8, 1), self.item_registry)
         self.inventory.set(3, ItemStack(4, 4), self.item_registry)
         self.player_health = 20.0
+        recovered_saved_position: tuple[float, float, float] | None = None
         saved_player = self.world_renderer.storage.load_player(self.item_registry)
         if saved_player is not None:
             self.world_renderer.storage.restore_inventory(
@@ -108,9 +110,10 @@ class GameWindow(pyglet.window.Window):
                 self.inventory,
                 self.item_registry,
             )
-            self.player.x, self.player.y, self.player.z = saved_player.position
             self.player_health = saved_player.health
             self.hotbar.select(saved_player.selected_slot)
+            if not self._restore_player_position(saved_player.position):
+                recovered_saved_position = saved_player.position
             self._sync_camera_to_player()
         recipes_path = Path(__file__).parents[3] / "config" / "recipes.toml"
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
@@ -134,7 +137,9 @@ class GameWindow(pyglet.window.Window):
         self.player_name = player_name[:32] or "Player"
         self.inventory_open = False
         self.crafting_grid_size = 2
-        self.inventory_status = ""
+        self.inventory_status = (
+            "Recovered invalid saved position" if recovered_saved_position is not None else ""
+        )
         self.cursor_stack: ItemStack | None = None
         self.mouse_x = 0
         self.mouse_y = 0
@@ -224,6 +229,9 @@ class GameWindow(pyglet.window.Window):
         ]
         if connect is not None:
             self._connect_remote(connect, player_name)
+        if recovered_saved_position is not None:
+            LOGGER.warning("Recovered invalid saved player position: %s", recovered_saved_position)
+            self._save_player()
         pyglet.clock.schedule_interval(self.fixed_update, FIXED_UPDATE_SECONDS)
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
@@ -248,6 +256,9 @@ class GameWindow(pyglet.window.Window):
     def fixed_update(self, delta_time: float) -> None:
         if not self.menu.in_game:
             return
+        if not self._player_position_within_world():
+            self._move_player_to_spawn()
+            self.inventory_status = "Recovered from outside the world"
         self.world_renderer.update(delta_time)
         self._network_accumulator += delta_time
         if self.network_session is not None:
@@ -758,6 +769,38 @@ class GameWindow(pyglet.window.Window):
     def _is_entity_hazard(self, x: int, y: int, z: int) -> bool:
         block_id = self.world_renderer.get_block(x, y, z)
         return self.world_renderer.registry.by_id(block_id).is_fluid
+
+    def _restore_player_position(self, position: tuple[float, float, float]) -> bool:
+        if not self._position_within_world(position):
+            self._move_player_to_spawn()
+            return False
+        x, y, z = position
+        self.world_renderer.ensure_collision_area_loaded(x, z, self.player.width / 2.0)
+        self.player.x, self.player.y, self.player.z = x, y, z
+        self.player.velocity_y = 0.0
+        self.player.on_ground = False
+        if self.player.collides(self.world_renderer.is_solid_block):
+            self._move_player_to_spawn()
+            return False
+        return True
+
+    def _player_position_within_world(self) -> bool:
+        return self._position_within_world((self.player.x, self.player.y, self.player.z))
+
+    def _position_within_world(self, position: tuple[float, float, float]) -> bool:
+        x, y, z = position
+        return (
+            all(math.isfinite(value) for value in position)
+            and 0.0 <= y <= CHUNK_HEIGHT - self.player.height
+            and abs(x) <= 30_000_000.0
+            and abs(z) <= 30_000_000.0
+        )
+
+    def _move_player_to_spawn(self) -> None:
+        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
+        self.player.x, self.player.y, self.player.z = spawn_x, spawn_y, spawn_z
+        self.player.velocity_y = 0.0
+        self.player.on_ground = False
 
     def _save_player(self) -> None:
         self.world_renderer.storage.save_player(
