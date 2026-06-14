@@ -27,6 +27,7 @@ uv run python -m voxel_sandbox benchmark-frame-streaming
 uv run python -m voxel_sandbox benchmark-network
 uv run python -m voxel_sandbox benchmark-server
 uv run python -m voxel_sandbox benchmark-shadows
+uv run python -m voxel_sandbox structure-preview veilstone_ruin
 ```
 
 Singleplayer uses the same server-authoritative transport as multiplayer:
@@ -59,6 +60,8 @@ controls terrain shadow acne correction.
 tone-mapping/vignette framebuffer pass.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
+Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;
+the developer preview command prints their validated block layers and loot tables.
 Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed
 chunk files, and the local player's position, health, hotbar, and inventory.
 

@@ -2096,21 +2096,21 @@ Done when:
 
 Checklist:
 
-- [ ] Add structure template format.
-- [ ] Add deterministic placement.
-- [ ] Add collision with terrain.
-- [ ] Add structure loot tables.
-- [ ] Add ruins.
-- [ ] Add camps.
-- [ ] Add caves with resources.
-- [ ] Add rare landmarks.
-- [ ] Add debug structure viewer.
-- [ ] Add tests for deterministic placement.
+- [x] Add structure template format.
+- [x] Add deterministic placement.
+- [x] Add collision with terrain.
+- [x] Add structure loot tables.
+- [x] Add ruins.
+- [x] Add camps.
+- [x] Add caves with resources.
+- [x] Add rare landmarks.
+- [x] Add debug structure viewer.
+- [x] Add tests for deterministic placement.
 
 Done when:
 
-- [ ] World contains interesting generated structures.
-- [ ] Same seed places same structures.
+- [x] World contains interesting generated structures.
+- [x] Same seed places same structures.
 
 ---
 

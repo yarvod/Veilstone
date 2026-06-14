@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 16 - Structures and world richness: ready to start.
+Phase 17 - UI polish and settings: ready to start.
 
 ## Completed checklist
 
@@ -206,6 +206,21 @@ Phase 16 - Structures and world richness: ready to start.
 - [x] Medium shadow p95 is `0.31 ms` against the `12 ms` budget; full streaming p95 is `2.74 ms`.
 - commits: `4742e88`, `0111f90`, `af67cb1`, `bfc2516`, `4be9097`, `3a13d95`.
 
+### Phase 16 - Structures and world richness
+
+- [x] Versioned TOML templates validate dimensions, coordinates, block IDs, rarity, and loot.
+- [x] Seeded region placement is deterministic and independent of chunk generation order.
+- [x] Terrain suitability rejects water footprints and slopes above three blocks.
+- [x] Cross-chunk placement applies the same anchor and template to every intersecting chunk.
+- [x] Original veilstone ruin, veilwood camp, and rare dusk spire templates.
+- [x] Deterministic weighted loot-roll API for future structure containers.
+- [x] Existing caves and dusk crystal resources remain integrated before structures.
+- [x] `structure-preview TEMPLATE` prints validated templates by layer with loot metadata.
+- [x] Golden tests cover all structure types, actual generated blocks, loot, and determinism.
+- [x] Final gate: 129 tests, Ruff, Pyright, client smoke, and wheel data verification pass.
+- [x] Worldgen remains approximately `9.90 ms/chunk` over 100 chunks.
+- commit: `00a0dbf`.
+
 ## Failed checks
 
 None recorded.
@@ -243,4 +258,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Start Phase 16 with a data-driven structure template format and deterministic placement tests.
+Start Phase 17 with real create/load world selection and persisted user settings.
