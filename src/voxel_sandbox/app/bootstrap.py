@@ -61,6 +61,10 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.benchmark_network import run_benchmark
 
         return run_benchmark()
+    if command == "benchmark-server":
+        from voxel_sandbox.tools.benchmark_server import run_benchmark
+
+        return run_benchmark()
     raise ValueError(f"Unsupported command: {command}")
 
 

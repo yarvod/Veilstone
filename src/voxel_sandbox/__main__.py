@@ -30,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
         "benchmark-frame-streaming", help="Run the rendered chunk streaming benchmark"
     )
     subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
+    subparsers.add_parser("benchmark-server", help="Run the multiplayer server tick benchmark")
     return parser
 
 
