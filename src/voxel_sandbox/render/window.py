@@ -15,6 +15,7 @@ import moderngl
 import pyglet
 from pyglet.window import key, mouse
 
+from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
@@ -79,7 +80,7 @@ class GameWindow(pyglet.window.Window):
         self.settings = settings
         self.control_bindings = self._control_symbols()
         self.rebinding_action: str | None = None
-        self.active_save_root = save_root or Path(__file__).parents[3] / "saves" / "dev_world"
+        self.active_save_root = save_root or application_data_root() / "dev_world"
         self.pending_world_name = ""
         shader_root = Path(__file__).parent / "shaders" / "glsl"
         self.debug_shader = ShaderProgram(
@@ -119,7 +120,7 @@ class GameWindow(pyglet.window.Window):
             if not self._restore_player_position(saved_player.position):
                 recovered_saved_position = saved_player.position
             self._sync_camera_to_player()
-        recipes_path = Path(__file__).parents[3] / "config" / "recipes.toml"
+        recipes_path = resource_path("config/recipes.toml")
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
         self.entities.maintain_population(
@@ -1344,7 +1345,7 @@ class GameWindow(pyglet.window.Window):
         )
 
     def create_world(self, name: str, seed: str) -> None:
-        root = Path("saves") / self._world_slug(name)
+        root = application_data_root() / self._world_slug(name)
         WorldStorage(root).ensure_world(name=name, seed=seed)
         self._switch_world(root)
 
@@ -1403,7 +1404,7 @@ class GameWindow(pyglet.window.Window):
 
     @staticmethod
     def _saved_worlds() -> tuple[tuple[str, Path], ...]:
-        saves_root = Path("saves")
+        saves_root = application_data_root()
         if not saves_root.exists():
             return ()
         worlds: list[tuple[str, Path]] = []

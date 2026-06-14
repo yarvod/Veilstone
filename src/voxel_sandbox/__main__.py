@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 from collections.abc import Sequence
 
+from voxel_sandbox import __version__
 from voxel_sandbox.app.bootstrap import run_command
+from voxel_sandbox.app.crash_reporting import install_crash_reporting
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="voxel", description="Voxel Sandbox engine")
+    parser.add_argument("--version", action="version", version=f"Veilstone {__version__}")
     parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
     subparsers = parser.add_subparsers(dest="command")
 
@@ -40,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    install_crash_reporting()
     args = build_parser().parse_args(argv)
     if args.command is None:
         args.command = "client"
@@ -47,4 +52,5 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     raise SystemExit(main())

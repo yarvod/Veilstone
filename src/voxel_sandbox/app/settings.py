@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+from voxel_sandbox.app.paths import resource_path, user_settings_path
+
 
 @dataclass(frozen=True, slots=True)
 class WindowSettings:
@@ -87,14 +89,14 @@ def _section(data: dict[str, Any], key: str) -> dict[str, Any]:
 
 
 def load_settings(path: Path | None = None) -> AppSettings:
-    config_path = path or Path("config/settings.toml")
+    config_path = path or resource_path("config/settings.toml")
     if not config_path.exists():
         return AppSettings()
 
     with config_path.open("rb") as config_file:
         data = tomllib.load(config_file)
     if path is None:
-        user_path = Path("saves/settings.toml")
+        user_path = user_settings_path()
         if user_path.exists():
             with user_path.open("rb") as user_file:
                 user_data = tomllib.load(user_file)
@@ -114,7 +116,7 @@ def load_settings(path: Path | None = None) -> AppSettings:
 
 
 def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
-    target = path or Path("saves/settings.toml")
+    target = path or user_settings_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     content = (
         "[window]\n"

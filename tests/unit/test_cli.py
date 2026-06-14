@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from voxel_sandbox import __version__
 from voxel_sandbox.__main__ import build_parser
 
 
 def test_cli_defaults_to_client() -> None:
     parser = build_parser()
     assert parser.parse_args([]).command is None
+
+
+def test_package_exposes_version() -> None:
+    assert __version__ == "0.1.0"
 
 
 def test_developer_benchmark_commands_are_registered() -> None:

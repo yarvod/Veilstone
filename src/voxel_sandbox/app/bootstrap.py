@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
 
-from voxel_sandbox.app.settings import AppSettings, load_settings
+from voxel_sandbox.app.paths import user_settings_path
+from voxel_sandbox.app.settings import AppSettings, load_settings, save_user_settings
 from voxel_sandbox.infrastructure.logging import configure_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -11,6 +13,8 @@ LOGGER = logging.getLogger(__name__)
 
 def run_command(args: argparse.Namespace) -> int:
     settings = load_settings()
+    if getattr(sys, "frozen", False) and not user_settings_path().exists():
+        save_user_settings(settings)
     configure_logging(settings.logging.level)
     LOGGER.debug("Loaded settings: %s", settings)
 
