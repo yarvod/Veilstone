@@ -51,7 +51,11 @@ Phase 14 - Multiplayer polish: in progress.
 - [x] Use block `is_solid` metadata for player collision.
 - [x] Bind physical macOS `W/A/S/D` positions independently of the active keyboard layout.
 - [x] Select voxel AO quad diagonals from vertex brightness to remove cross-shaped shading artifacts.
-- commits: `44079e4`, `f159afc`.
+- [x] Treat unloaded chunks and the lower world boundary as collision barriers.
+- [x] Preload collision chunks before restoring a saved position.
+- [x] Recover invalid/out-of-world saved positions at safe spawn without losing player state.
+- [x] Add unit and OpenGL smoke regressions for saved-position recovery.
+- commits: `44079e4`, `f159afc`, `79249a1`.
 
 ### Phase 08 - Greedy meshing
 

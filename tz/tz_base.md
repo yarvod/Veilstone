@@ -1837,6 +1837,9 @@ Checklist:
 - [x] Implement place block.
 - [x] Add tests for DDA.
 - [x] Add tests for AABB collision.
+- [x] Treat unloaded chunks and the lower world boundary as collision barriers.
+- [x] Validate saved player positions and recover invalid positions at a safe spawn.
+- [x] Add a smoke regression test for invalid-position recovery without inventory loss.
 
 Done when:
 
