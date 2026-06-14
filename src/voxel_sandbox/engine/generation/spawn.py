@@ -5,6 +5,7 @@ from collections.abc import Callable
 BlockGetter = Callable[[int, int, int], int]
 HeightGetter = Callable[[int, int], int]
 SolidPredicate = Callable[[int], bool]
+ColumnPreparer = Callable[[int, int], None]
 
 
 def find_safe_spawn(
@@ -14,7 +15,8 @@ def find_safe_spawn(
     *,
     preferred_x: int = 8,
     preferred_z: int = 8,
-    search_radius: int = 7,
+    search_radius: int = 31,
+    prepare_column: ColumnPreparer | None = None,
 ) -> tuple[float, float, float]:
     candidates = (
         (x, z)
@@ -30,6 +32,8 @@ def find_safe_spawn(
         ),
     )
     for x, z in ordered:
+        if prepare_column is not None:
+            prepare_column(x, z)
         y = surface_height(x, z)
         if not is_solid(get_block(x, y - 1, z)):
             continue

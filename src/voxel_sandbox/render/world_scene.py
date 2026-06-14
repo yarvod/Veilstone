@@ -156,13 +156,21 @@ class DemoWorldRenderer:
 
     @property
     def spawn_position(self) -> tuple[float, float, float]:
-        return find_safe_spawn(
-            self.get_block,
-            self.generator.height_at,
-            lambda block_id: (
-                self.registry.by_id(block_id).is_solid or self.registry.by_id(block_id).is_fluid
-            ),
-        )
+        try:
+            return find_safe_spawn(
+                self.get_block,
+                self.generator.height_at,
+                lambda block_id: (
+                    self.registry.by_id(block_id).is_solid or self.registry.by_id(block_id).is_fluid
+                ),
+                prepare_column=lambda x, z: self.ensure_collision_area_loaded(
+                    float(x) + 0.5,
+                    float(z) + 0.5,
+                    0.0,
+                ),
+            )
+        except RuntimeError:
+            return self._create_emergency_spawn(8, 8)
 
     @property
     def loaded_chunks(self) -> int:
@@ -201,6 +209,24 @@ class DemoWorldRenderer:
                 if self.streamer.get_chunk(coord) is not None:
                     continue
                 self._upload_chunk_sync(self.streamer.prime(coord))
+
+    def _create_emergency_spawn(self, x: int, z: int) -> tuple[float, float, float]:
+        self.ensure_collision_area_loaded(float(x) + 0.5, float(z) + 0.5, 0.0)
+        surface = min(max(self.generator.height_at(x, z), 2), CHUNK_HEIGHT - 2)
+        support_y = next(
+            (
+                y
+                for y in range(surface - 1, -1, -1)
+                if self.registry.by_id(self.get_block(x, y, z)).is_solid
+            ),
+            0,
+        )
+        if not self.registry.by_id(self.get_block(x, support_y, z)).is_solid:
+            self.set_block((x, support_y, z), 1)
+        spawn_y = min(support_y + 1, CHUNK_HEIGHT - 2)
+        self.set_block((x, spawn_y, z), 0)
+        self.set_block((x, spawn_y + 1, z), 0)
+        return float(x) + 0.5, float(spawn_y), float(z) + 0.5
 
     def raycast(
         self,
