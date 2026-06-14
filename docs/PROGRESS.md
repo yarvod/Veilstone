@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 15 - Shadows and shader polish: in progress.
+Phase 16 - Structures and world richness: ready to start.
 
 ## Completed checklist
 
@@ -186,7 +186,7 @@ Phase 15 - Shadows and shader polish: in progress.
   headless shell after passing targeted runs earlier; Ruff, Pyright, server smoke, and benchmarks pass.
 - commits: `92e833d`, `995afd8`, `e2fb4b9`, `5932913`, `5f06b17`, `219338c`, `d2b4b2e`.
 
-### Phase 15 - Shadows and shader polish (in progress)
+### Phase 15 - Shadows and shader polish
 
 - [x] Configurable `off`, `low` (1024), and `medium` (2048) shadow-map quality.
 - [x] Stable texel-snapped directional sun view-projection matrix.
@@ -197,8 +197,14 @@ Phase 15 - Shadows and shader polish: in progress.
 - [x] Sun shadowing leaves emissive block-light contribution unshadowed.
 - [x] Unit coverage for quality mapping and stable finite sun matrices.
 - [x] `benchmark-shadows` forces GPU completion and enforces a 12 ms medium-shadow p95 budget.
-- [ ] GPU budget measurement and visual OpenGL smoke remain.
-- commits: `4742e88`, `0111f90`, `af67cb1`.
+- [x] Water uses two animated wave layers, sky Fresnel tint, and surface/side transparency.
+- [x] One-pass procedural sky renders day/night gradients, synchronized sun/moon, and clouds.
+- [x] Optional resize-safe postprocess provides tone mapping and vignette after world rendering.
+- [x] GPU smoke covers medium, low, off, postprocess resize, and framebuffer restoration.
+- [x] Guaranteed respawn expands across prepared chunks and creates an emergency safe column.
+- [x] Final gate: 124 tests, Ruff, Pyright, client/server smoke, and all Phase 15 benchmarks pass.
+- [x] Medium shadow p95 is `0.31 ms` against the `12 ms` budget; full streaming p95 is `2.74 ms`.
+- commits: `4742e88`, `0111f90`, `af67cb1`, `bfc2516`, `4be9097`, `3a13d95`.
 
 ## Failed checks
 
@@ -219,6 +225,8 @@ None recorded.
   `1.27 ms` average, `2.49 ms` p95, and `3.07 ms` maximum.
 - Multiplayer server tick with 8 players and 200 mobs measures approximately `0.98 ms` p95
   against the `50 ms` 20 TPS budget.
+- Medium shadows measure approximately `0.31 ms` p95; the full streaming render path measures
+  approximately `2.74 ms` p95 with a `10.23 ms` observed maximum.
 
 ## Known bugs
 
@@ -235,4 +243,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Continue Phase 15 with entity depth rendering, visual bias tuning, and the GPU frame-budget gate.
+Start Phase 16 with a data-driven structure template format and deterministic placement tests.

@@ -55,6 +55,8 @@ The committed `.python-version` and `pyproject.toml` keep the project on Python 
 Runtime settings live in `config/settings.toml`.
 `graphics.shadow_quality` accepts `off`, `low`, or `medium`; `graphics.shadow_bias`
 controls terrain shadow acne correction.
+`graphics.clouds` toggles procedural clouds and `graphics.postprocess` enables the optional
+tone-mapping/vignette framebuffer pass.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed

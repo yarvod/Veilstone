@@ -2076,18 +2076,18 @@ Checklist:
 - [x] Add entity shadows.
 - [x] Add shadow bias tuning.
 - [x] Add PCF filtering.
-- [ ] Keep the shadow depth pass and filtering inside the GPU frame budget.
+- [x] Keep the shadow depth pass and filtering inside the GPU frame budget.
 - [x] Add shadow quality settings.
-- [ ] Add water shader polish.
-- [ ] Add skybox/sun/moon.
-- [ ] Add clouds.
-- [ ] Add postprocess optional.
+- [x] Add water shader polish.
+- [x] Add skybox/sun/moon.
+- [x] Add clouds.
+- [x] Add postprocess optional.
 
 Done when:
 
 - [x] Shadows can be enabled.
-- [ ] FPS remains acceptable on medium.
-- [ ] Medium shadow settings keep GPU frame at or below the `<= 12 ms` target scene budget.
+- [x] FPS remains acceptable on medium.
+- [x] Medium shadow settings keep GPU frame at or below the `<= 12 ms` target scene budget.
 - [x] Low settings can disable shadows.
 
 ---
