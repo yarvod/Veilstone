@@ -66,10 +66,14 @@ class EntitySimulation:
         is_hazard: Callable[[int, int, int], bool],
         *,
         passive_count: int = 3,
-        hostile_count: int = 2,
+        hostile_count: int = 1,
+        hostile_spawn_allowed: Callable[[int, int, int], bool] | None = None,
     ) -> None:
         counts = {MobKind.PASSIVE: 0, MobKind.HOSTILE: 0}
-        for _entity, ai in self.world.mob_ai.items():
+        for entity, ai in tuple(self.world.mob_ai.items()):
+            if ai.kind is MobKind.HOSTILE and hostile_count <= 0:
+                self.world.destroy(entity)
+                continue
             counts[ai.kind] += 1
         for kind, desired in (
             (MobKind.PASSIVE, passive_count),
@@ -83,8 +87,16 @@ class EntitySimulation:
                 radius = 6.0 + self._random.random() * 6.0
                 x = center[0] + math.cos(angle) * radius
                 z = center[2] + math.sin(angle) * radius
-                ground = ground_height(math.floor(x), math.floor(z))
-                if is_hazard(math.floor(x), ground, math.floor(z)):
+                block_x = math.floor(x)
+                block_z = math.floor(z)
+                ground = ground_height(block_x, block_z)
+                if is_hazard(block_x, ground, block_z):
+                    continue
+                if (
+                    kind is MobKind.HOSTILE
+                    and hostile_spawn_allowed is not None
+                    and not hostile_spawn_allowed(block_x, ground, block_z)
+                ):
                     continue
                 self.spawn_mob(kind, (x, float(ground), z))
                 missing -= 1

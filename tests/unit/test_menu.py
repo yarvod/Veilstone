@@ -53,7 +53,7 @@ def test_audio_back_does_not_replace_settings_return_screen() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(4)
+    menu.select(5)
     menu.activate()
     assert menu.screen is Screen.AUDIO
     menu.select(len(menu.items) - 1)
@@ -71,6 +71,7 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
         "Clouds",
         "Postprocess",
         "VSync",
+        "Difficulty",
         "Audio",
         "Controls",
         "Back",
@@ -80,6 +81,8 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert menu.activate() is MenuCommand.CYCLE_SHADOWS
     menu.select(1)
     assert menu.activate() is MenuCommand.TOGGLE_CLOUDS
+    menu.select(4)
+    assert menu.activate() is MenuCommand.CYCLE_DIFFICULTY
 
 
 def test_controls_menu_exposes_rebinding_actions() -> None:

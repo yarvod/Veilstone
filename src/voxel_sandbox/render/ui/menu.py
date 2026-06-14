@@ -26,6 +26,7 @@ class MenuCommand(Enum):
     TOGGLE_CLOUDS = auto()
     TOGGLE_POSTPROCESS = auto()
     TOGGLE_VSYNC = auto()
+    CYCLE_DIFFICULTY = auto()
     CREATE_WORLD = auto()
     LOAD_WORLD = auto()
     REBIND_FORWARD = auto()
@@ -69,6 +70,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Clouds", action="toggle_clouds"),
         MenuItem("Postprocess", action="toggle_postprocess"),
         MenuItem("VSync", action="toggle_vsync"),
+        MenuItem("Difficulty", action="cycle_difficulty"),
         MenuItem("Audio", target=Screen.AUDIO),
         MenuItem("Controls", target=Screen.CONTROLS),
         MenuItem("Back", action="settings_back"),
@@ -188,6 +190,8 @@ class MenuController:
             return MenuCommand.TOGGLE_POSTPROCESS
         elif action == "toggle_vsync":
             return MenuCommand.TOGGLE_VSYNC
+        elif action == "cycle_difficulty":
+            return MenuCommand.CYCLE_DIFFICULTY
         elif action == "rebind_forward":
             return MenuCommand.REBIND_FORWARD
         elif action == "rebind_backward":

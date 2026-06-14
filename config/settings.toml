@@ -33,6 +33,10 @@ meshing_workers = 2
 meshing_backend = "process"
 mesh_uploads_per_frame = 2
 
+[gameplay]
+difficulty = "normal"
+hostile_spawn_light_limit = 7
+
 [graphics]
 greedy_meshing = true
 smooth_lighting = true

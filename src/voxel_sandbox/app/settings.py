@@ -56,6 +56,18 @@ class WorldSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class GameplaySettings:
+    difficulty: str = "normal"
+    hostile_spawn_light_limit: int = 7
+
+    def __post_init__(self) -> None:
+        if self.difficulty not in {"peaceful", "normal"}:
+            raise ValueError("Gameplay difficulty must be peaceful or normal")
+        if not 0 <= self.hostile_spawn_light_limit <= 15:
+            raise ValueError("Hostile spawn light limit must be between 0 and 15")
+
+
+@dataclass(frozen=True, slots=True)
 class GraphicsSettings:
     greedy_meshing: bool = True
     smooth_lighting: bool = True
@@ -85,6 +97,7 @@ class AppSettings:
     logging: LoggingSettings = LoggingSettings()
     development: DevelopmentSettings = DevelopmentSettings()
     world: WorldSettings = WorldSettings()
+    gameplay: GameplaySettings = GameplaySettings()
     graphics: GraphicsSettings = GraphicsSettings()
     audio: AudioSettings = AudioSettings()
     controls: ControlsSettings = ControlsSettings()
@@ -119,6 +132,7 @@ def load_settings(path: Path | None = None) -> AppSettings:
         logging=LoggingSettings(**_section(data, "logging")),
         development=DevelopmentSettings(**_section(data, "development")),
         world=WorldSettings(**_section(data, "world")),
+        gameplay=GameplaySettings(**_section(data, "gameplay")),
         graphics=GraphicsSettings(**_section(data, "graphics")),
         audio=AudioSettings(**_section(data, "audio")),
         controls=ControlsSettings(**_section(data, "controls")),
@@ -140,6 +154,9 @@ def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
         f"clouds = {str(settings.graphics.clouds).lower()}\n"
         f"postprocess = {str(settings.graphics.postprocess).lower()}\n"
         f"fog = {str(settings.graphics.fog).lower()}\n"
+        "\n[gameplay]\n"
+        f'difficulty = "{settings.gameplay.difficulty}"\n'
+        f"hostile_spawn_light_limit = {settings.gameplay.hostile_spawn_light_limit}\n"
         "\n[audio]\n"
         f"master = {settings.audio.master}\n"
         f"effects = {settings.audio.effects}\n"

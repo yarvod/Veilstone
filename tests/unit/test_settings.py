@@ -32,6 +32,7 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
             postprocess=True,
         ),
         window=replace(settings.window, vsync=False),
+        gameplay=replace(settings.gameplay, difficulty="peaceful", hostile_spawn_light_limit=5),
         audio=replace(settings.audio, master=0.3, music=0.2, ambience=0.4),
         controls=replace(settings.controls, forward="UP", jump="RSHIFT"),
     )
@@ -44,6 +45,8 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
     assert not loaded.graphics.clouds
     assert loaded.graphics.postprocess
     assert not loaded.window.vsync
+    assert loaded.gameplay.difficulty == "peaceful"
+    assert loaded.gameplay.hostile_spawn_light_limit == 5
     assert loaded.audio.master == 0.3
     assert loaded.audio.music == 0.2
     assert loaded.audio.ambience == 0.4

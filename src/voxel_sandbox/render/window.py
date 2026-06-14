@@ -15,6 +15,12 @@ import moderngl
 import pyglet
 from pyglet.window import key, mouse
 
+from voxel_sandbox.app.commands import (
+    CommandError,
+    SetDifficultyCommand,
+    SetTimeCommand,
+    parse_command,
+)
 from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
@@ -128,11 +134,7 @@ class GameWindow(pyglet.window.Window):
         recipes_path = resource_path("config/recipes.toml")
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
-        self.entities.maintain_population(
-            (spawn_x, spawn_y, spawn_z),
-            self.world_renderer.generator.height_at,
-            self._is_entity_hazard,
-        )
+        self._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
         self._population_accumulator = 0.0
         self._autosave_accumulator = 0.0
@@ -325,13 +327,9 @@ class GameWindow(pyglet.window.Window):
             self._save_player()
             self.world_renderer.autosave()
         self._population_accumulator += delta_time
-        if self._population_accumulator >= 1.0:
-            self._population_accumulator %= 1.0
-            self.entities.maintain_population(
-                (self.player.x, self.player.y, self.player.z),
-                self.world_renderer.generator.height_at,
-                self._is_entity_hazard,
-            )
+        if self._population_accumulator >= 5.0:
+            self._population_accumulator %= 5.0
+            self._maintain_population((self.player.x, self.player.y, self.player.z))
         self.player_health -= self.entities.update(
             delta_time,
             (self.player.x, self.player.y, self.player.z),
@@ -557,10 +555,24 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.T:
             self._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
             return
+        if symbol == key.SLASH:
+            self._begin_text_input(
+                TextPurpose.COMMAND,
+                "Command (/help)",
+                initial="/",
+                maximum_length=256,
+            )
+            return
         self.key_state.press(symbol)
 
     def on_text(self, text: str) -> None:
         if self.text_input is not None:
+            if (
+                self.text_input.purpose is TextPurpose.COMMAND
+                and self.text_input.value == "/"
+                and text == "/"
+            ):
+                return
             self.text_input.append(text)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
@@ -726,6 +738,7 @@ class GameWindow(pyglet.window.Window):
             "toggle_clouds": "on" if self.settings.graphics.clouds else "off",
             "toggle_postprocess": "on" if self.settings.graphics.postprocess else "off",
             "toggle_vsync": "on" if self.settings.window.vsync else "off",
+            "cycle_difficulty": self.settings.gameplay.difficulty,
             "rebind_forward": self.settings.controls.forward,
             "rebind_backward": self.settings.controls.backward,
             "rebind_left": self.settings.controls.left,
@@ -841,6 +854,10 @@ class GameWindow(pyglet.window.Window):
             )
             self.set_vsync(enabled)
             save_user_settings(self.settings)
+        elif command is MenuCommand.CYCLE_DIFFICULTY:
+            difficulty = "peaceful" if self.settings.gameplay.difficulty == "normal" else "normal"
+            self._set_difficulty(difficulty)
+            self.menu.status = f"Difficulty saved as {difficulty}."
         elif command in {
             MenuCommand.CYCLE_MASTER_VOLUME,
             MenuCommand.CYCLE_EFFECTS_VOLUME,
@@ -987,6 +1004,9 @@ class GameWindow(pyglet.window.Window):
             elif value:
                 self.inventory_status = "Chat is available in multiplayer."
             self.text_input = None
+        elif field.purpose is TextPurpose.COMMAND:
+            self.execute_command(value)
+            self.text_input = None
         elif field.purpose is TextPurpose.WORLD_NAME:
             if not value:
                 self.menu.status = "World name is required."
@@ -1009,6 +1029,49 @@ class GameWindow(pyglet.window.Window):
                 return
             self.text_input = None
         self._sync_mouse_capture()
+
+    def execute_command(self, source: str) -> None:
+        try:
+            command = parse_command(source)
+        except CommandError as error:
+            self.inventory_status = str(error)
+            return
+        if isinstance(command, SetTimeCommand):
+            self.world_renderer.time_of_day = command.time_of_day
+            self.inventory_status = f"Time set to {command.label}."
+        elif isinstance(command, SetDifficultyCommand):
+            self._set_difficulty(command.difficulty)
+            self.inventory_status = f"Difficulty set to {command.difficulty}."
+        else:
+            self.inventory_status = (
+                "/time set <day|noon|night|midnight|ticks>; "
+                "/difficulty <peaceful|normal>"
+            )
+
+    def _set_difficulty(self, difficulty: str) -> None:
+        self.settings = replace(
+            self.settings,
+            gameplay=replace(self.settings.gameplay, difficulty=difficulty),
+        )
+        self._maintain_population((self.player.x, self.player.y, self.player.z))
+        save_user_settings(self.settings)
+
+    def _maintain_population(self, center: tuple[float, float, float]) -> None:
+        hostile_count = 0 if self.settings.gameplay.difficulty == "peaceful" else 1
+        self.entities.maintain_population(
+            center,
+            self.world_renderer.generator.height_at,
+            self._is_entity_hazard,
+            hostile_count=hostile_count,
+            hostile_spawn_allowed=self._hostile_spawn_allowed,
+        )
+
+    def _hostile_spawn_allowed(self, x: int, y: int, z: int) -> bool:
+        light_level = self.world_renderer.spawn_light_level(x, y, z)
+        return (
+            light_level is not None
+            and light_level <= self.settings.gameplay.hostile_spawn_light_limit
+        )
 
     def _drop_selected_item(self) -> None:
         stack = self.inventory.take_from_slot(self.hotbar.selected_index)
@@ -1499,11 +1562,7 @@ class GameWindow(pyglet.window.Window):
             self.hotbar.select(saved.selected_slot)
             self._restore_player_position(saved.position)
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
-        self.entities.maintain_population(
-            (self.player.x, self.player.y, self.player.z),
-            self.world_renderer.generator.height_at,
-            self._is_entity_hazard,
-        )
+        self._maintain_population((self.player.x, self.player.y, self.player.z))
         self.network_players.clear()
         self.remote_player_entities.clear()
         self.remote_player_interpolation.clear()

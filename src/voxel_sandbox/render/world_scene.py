@@ -26,7 +26,7 @@ from voxel_sandbox.engine.generation import (
     WorldSeed,
     find_safe_spawn,
 )
-from voxel_sandbox.engine.lighting import relight_chunk
+from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.render.atmosphere import (
@@ -159,6 +159,17 @@ class DemoWorldRenderer:
     @property
     def clear_color(self) -> tuple[float, float, float, float]:
         return sky_color(self.daylight)
+
+    def spawn_light_level(self, x: int, y: int, z: int) -> int | None:
+        chunk_x, _local_x = split_world_axis(x)
+        chunk_z, _local_z = split_world_axis(z)
+        if self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z)) is None:
+            return None
+        samples = (self.streamer.get_light(x, y, z), self.streamer.get_light(x, y + 1, z))
+        return max(
+            effective_light_level(sky_light, block_light, self.daylight)
+            for sky_light, block_light in samples
+        )
 
     @property
     def spawn_position(self) -> tuple[float, float, float]:

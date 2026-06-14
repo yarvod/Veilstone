@@ -58,8 +58,10 @@ Runtime settings live in `config/settings.toml`.
 controls terrain shadow acne correction.
 `graphics.clouds` toggles procedural clouds and `graphics.postprocess` enables the optional
 tone-mapping/vignette framebuffer pass.
-Player overrides are written atomically to `saves/settings.toml`. The Settings and Controls
-screens expose graphics toggles, VSync, and conflict-checked movement/jump rebinding.
+Player overrides are written atomically to `saves/settings.toml`. The Settings screen exposes
+graphics toggles, VSync, and `peaceful`/`normal` difficulty; Controls supports conflict-checked
+movement/jump rebinding. Peaceful removes hostile mobs. Normal allows one nearby hostile mob only
+where effective skylight/block light is level 7 or lower.
 The Audio screen persists master, effects, music, and ambience volume groups. Positional block
 sounds, material footsteps, mob feedback, biome ambience, and state-driven music are routed
 through a backend-independent event bus; dedicated servers use a silent backend.
@@ -113,6 +115,8 @@ Client controls:
 - `C`: craft the highest-priority available recipe for the active 2x2/3x3 grid.
 - `Q`: drop one item from the selected hotbar stack.
 - `T`: enter and send a multiplayer chat message.
+- `/`: open the command line. Use `/help`, `/time set day|noon|night|midnight|<ticks>`, or
+  `/difficulty peaceful|normal`.
 - Right mouse: place the selected block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - Pause Menu -> `Open to LAN`: advertise the running singleplayer server on the LAN.

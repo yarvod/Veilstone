@@ -8,6 +8,7 @@ class TextPurpose(Enum):
     DIRECT_CONNECT = auto()
     NICKNAME = auto()
     CHAT = auto()
+    COMMAND = auto()
     WORLD_NAME = auto()
     WORLD_SEED = auto()
     LOAD_WORLD = auto()

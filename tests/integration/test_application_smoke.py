@@ -149,3 +149,33 @@ def test_articulated_mobs_render_multiple_textured_parts() -> None:
             assert draws >= 18
         finally:
             window.close()
+
+
+def test_game_commands_change_time_and_remove_hostile_mobs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.engine.ecs import MobKind
+    from voxel_sandbox.render import window as window_module
+
+    def discard_settings(_settings: AppSettings) -> None:
+        pass
+
+    monkeypatch.setattr(window_module, "save_user_settings", discard_settings)
+    with tempfile.TemporaryDirectory(prefix="veilstone-command-test-") as directory:
+        window = window_module.GameWindow(
+            AppSettings(), visible=False, save_root=Path(directory)
+        )
+        try:
+            hostile = window.entities.spawn_mob(MobKind.HOSTILE, window.camera.position)
+            window.execute_command("/time set midnight")
+            assert window.world_renderer.time_of_day == 0.75
+
+            window.execute_command("/difficulty peaceful")
+            assert window.settings.gameplay.difficulty == "peaceful"
+            assert hostile not in window.entities.world.alive
+        finally:
+            window.close()

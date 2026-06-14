@@ -74,3 +74,35 @@ def test_population_rules_spawn_requested_mob_counts() -> None:
     kinds = [ai.kind for _entity, ai in simulation.world.mob_ai.items()]
     assert kinds.count(MobKind.PASSIVE) == 3
     assert kinds.count(MobKind.HOSTILE) == 2
+
+
+def test_hostile_population_requires_an_allowed_dark_spawn() -> None:
+    simulation = EntitySimulation(seed=9)
+
+    simulation.maintain_population(
+        (0.0, 10.0, 0.0),
+        flat_ground,
+        no_hazard,
+        passive_count=0,
+        hostile_count=1,
+        hostile_spawn_allowed=lambda _x, _y, _z: False,
+    )
+
+    assert len(simulation.world.mob_ai) == 0
+
+
+def test_peaceful_population_removes_existing_hostile_mobs() -> None:
+    simulation = EntitySimulation(seed=9)
+    passive = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 10.0, 0.0))
+    hostile = simulation.spawn_mob(MobKind.HOSTILE, (2.0, 10.0, 0.0))
+
+    simulation.maintain_population(
+        (0.0, 10.0, 0.0),
+        flat_ground,
+        no_hazard,
+        passive_count=1,
+        hostile_count=0,
+    )
+
+    assert passive in simulation.world.alive
+    assert hostile not in simulation.world.alive

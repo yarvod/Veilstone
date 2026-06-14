@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
-from voxel_sandbox.engine.lighting import relight_chunk
+from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk
 
 
 def test_skylight_blocks_opaque_roof_and_spreads_below_it() -> None:
@@ -45,3 +45,9 @@ def test_removing_lantern_clears_stale_light() -> None:
     relight_chunk(chunk, registry)
 
     assert chunk.sections[0].block_light.max() == 0
+
+
+def test_effective_spawn_light_tracks_daylight_and_block_sources() -> None:
+    assert effective_light_level(15, 0, 1.0) == 15
+    assert effective_light_level(15, 0, 0.12) == 2
+    assert effective_light_level(0, 10, 0.0) == 10
