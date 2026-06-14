@@ -65,6 +65,10 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.benchmark_server import run_benchmark
 
         return run_benchmark()
+    if command == "benchmark-shadows":
+        from voxel_sandbox.tools.benchmark_shadows import run_benchmark
+
+        return run_benchmark(settings)
     raise ValueError(f"Unsupported command: {command}")
 
 

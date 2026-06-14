@@ -19,6 +19,7 @@ def test_developer_benchmark_commands_are_registered() -> None:
         "benchmark-frame-streaming",
         "benchmark-network",
         "benchmark-server",
+        "benchmark-shadows",
     ):
         assert parser.parse_args([command]).command == command
 
