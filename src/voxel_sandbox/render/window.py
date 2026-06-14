@@ -34,7 +34,7 @@ from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
-from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
+from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
@@ -297,13 +297,16 @@ class GameWindow(pyglet.window.Window):
             self._update_remote_players()
             if self._network_accumulator >= 0.05:
                 self._network_accumulator %= 0.05
-                self.network_session.send(
-                    {
-                        "type": "input",
-                        "position": [self.player.x, self.player.y, self.player.z],
-                    }
-                )
-                self._request_remote_chunk()
+                try:
+                    self.network_session.send(
+                        {
+                            "type": "input",
+                            "position": [self.player.x, self.player.y, self.player.z],
+                        }
+                    )
+                    self._request_remote_chunk()
+                except (ConnectionError, OSError):
+                    self.inventory_status = "Connection interrupted; reconnecting..."
         self._autosave_accumulator += delta_time
         if self._autosave_accumulator >= 5.0:
             self._autosave_accumulator %= 5.0
@@ -931,15 +934,16 @@ class GameWindow(pyglet.window.Window):
         host, separator, raw_port = target.rpartition(":")
         if not separator or not host:
             raise ValueError("Connect address must use HOST:PORT")
-        session = ClientSession()
+        if self.network_session is not None:
+            self.network_session.close()
+            self.network_session = None
+        session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
         joined = session.connect(host, int(raw_port), name=player_name[:32] or "Player")
         self.network_session = session
         self.world_renderer.enable_remote_mode()
         self.inventory_status = f"Connected as player {joined['player_id']}"
         session.send({"type": "request_chunk", "coord": [0, 0]})
         self.requested_remote_chunks.add(ChunkCoord(0, 0))
-        from voxel_sandbox.render.ui.menu import Screen
-
         self.menu.screen = Screen.GAME
         self._sync_mouse_capture()
 
@@ -996,6 +1000,25 @@ class GameWindow(pyglet.window.Window):
                 self._sync_remote_players(self.network_players)
         elif message_type == "chat":
             self.inventory_status = f"Chat: {message.get('text', '')}"
+        elif message_type == "session_reconnecting":
+            self.inventory_status = "Connection interrupted; reconnecting..."
+        elif message_type == "session_reconnected":
+            self.last_snapshot_sequence = 0
+            self.network_players.clear()
+            self.requested_remote_chunks.clear()
+            self.inventory_status = "Reconnected to server"
+            self._request_remote_chunk()
+        elif message_type == "session_disconnected":
+            assert self.network_session is not None
+            self.network_session.close()
+            self.network_session = None
+            for entity in self.remote_player_entities.values():
+                self.entities.world.destroy(entity)
+            self.remote_player_entities.clear()
+            self.remote_player_interpolation.clear()
+            self.menu.screen = Screen.MULTIPLAYER
+            self.menu.status = "Disconnected: reconnect attempts exhausted."
+            self._sync_mouse_capture()
 
     def _sync_remote_players(self, players: dict[object, object]) -> None:
         local_id = self.network_session.player_id if self.network_session is not None else None
@@ -1059,9 +1082,12 @@ class GameWindow(pyglet.window.Window):
 
     def _send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
         if self.network_session is not None:
-            self.network_session.send(
-                {"type": "block_action", "position": list(block), "block_id": block_id}
-            )
+            try:
+                self.network_session.send(
+                    {"type": "block_action", "position": list(block), "block_id": block_id}
+                )
+            except (ConnectionError, OSError):
+                self.inventory_status = "Block action pending reconnect"
         elif self.lan_server is not None:
             self.lan_server.apply_block_action(block, block_id)
 

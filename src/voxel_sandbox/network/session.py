@@ -9,12 +9,21 @@ from voxel_sandbox.network.protocol import Message
 
 
 class ClientSession:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        auto_reconnect: bool = False,
+        reconnect_attempts: int = 3,
+        reconnect_delay: float = 0.1,
+    ) -> None:
         self.client = LanClient()
         self._messages: queue.SimpleQueue[Message] = queue.SimpleQueue()
         self._thread: threading.Thread | None = None
         self._closed = threading.Event()
         self._target: tuple[str, int, str] | None = None
+        self._auto_reconnect = auto_reconnect
+        self._reconnect_attempts = reconnect_attempts
+        self._reconnect_delay = reconnect_delay
 
     @property
     def player_id(self) -> int | None:
@@ -71,4 +80,32 @@ class ClientSession:
             try:
                 self._messages.put(self.client.receive())
             except (EOFError, ConnectionError, OSError):
-                return
+                if self._closed.is_set() or not self._auto_reconnect:
+                    return
+                self._messages.put({"type": "session_reconnecting"})
+                joined = self._reconnect_from_receiver()
+                if joined is None:
+                    self._messages.put({"type": "session_disconnected"})
+                    return
+                self._messages.put({"type": "session_reconnected", "joined": joined})
+
+    def _reconnect_from_receiver(self) -> Message | None:
+        if self._target is None:
+            return None
+        host, port, name = self._target
+        self.client.close()
+        for _ in range(self._reconnect_attempts):
+            if self._closed.is_set():
+                return None
+            candidate = LanClient()
+            try:
+                joined = candidate.connect(host, port, name=name)
+            except OSError:
+                candidate.close()
+                time.sleep(self._reconnect_delay)
+                continue
+            assert candidate.connection is not None
+            candidate.connection.settimeout(None)
+            self.client = candidate
+            return joined
+        return None
