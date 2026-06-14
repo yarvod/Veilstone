@@ -31,6 +31,10 @@ def test_two_clients_join_and_receive_entities_blocks_and_chat() -> None:
             snapshot = receive_type(first, "entity_snapshot")
         assert snapshot["full"] is True
         assert len(snapshot["players"]) == 2  # type: ignore[arg-type]
+        assert all(
+            "animation_state" in player and "animation_phase" in player
+            for player in snapshot["players"].values()  # type: ignore[union-attr]
+        )
 
         first.send({"type": "input", "position": [3.0, 40.0, 5.0]})
         for _ in range(4):

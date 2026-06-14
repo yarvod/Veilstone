@@ -4,6 +4,7 @@ import math
 import socket
 import socketserver
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import cast
@@ -128,6 +129,8 @@ class ServerState:
                 other_id: {
                     "name": player["name"],
                     "position": list(cast(list[float], player["position"])),
+                    "animation_state": player.get("animation_state", "idle"),
+                    "animation_phase": player.get("animation_phase", 0.0),
                 }
                 for other_id, player in players.items()
                 if _distance_squared(
@@ -194,6 +197,8 @@ class _Handler(socketserver.BaseRequestHandler):
                 state.players[player_id] = {
                     "name": name,
                     "position": list(joined_position),
+                    "animation_state": "idle",
+                    "animation_phase": 0.0,
                 }
                 state.rate_limits[player_id] = TokenBucket(rate=40.0, capacity=80.0)
                 state.snapshot_sequences[player_id] = 0
@@ -237,7 +242,16 @@ class _Handler(socketserver.BaseRequestHandler):
             validated = _validated_position(position)
             if validated is not None:
                 with state.lock:
-                    state.players[player_id]["position"] = list(validated)
+                    player = state.players[player_id]
+                    previous = cast(list[float], player["position"])
+                    distance = math.dist(previous, validated)
+                    player["position"] = list(validated)
+                    player["animation_state"] = "walk" if distance > 0.002 else "idle"
+                    raw_phase = player.get("animation_phase", 0.0)
+                    previous_phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0
+                    player["animation_phase"] = (
+                        previous_phase + distance * 3.5 + time.monotonic() * 0.0001
+                    ) % math.tau
                 state.send_entity_snapshots()
         elif message_type == "block_action":
             position = message.get("position")

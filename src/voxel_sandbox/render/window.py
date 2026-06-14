@@ -23,7 +23,7 @@ from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, ChunkCoord
-from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
+from voxel_sandbox.engine.ecs import AnimationState, EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
 from voxel_sandbox.network import (
@@ -457,6 +457,7 @@ class GameWindow(pyglet.window.Window):
             f"Entities {len(self.entities.world.alive)}  "
             f"Mobs {len(self.entities.world.mob_ai)}  "
             f"Drops {len(self.entities.world.items)}  Entity draws {entity_draws}\n"
+            f"Animation states {self._animation_debug_summary()}\n"
             f"Selected {self._selected_item_name()}  "
             "[1-9 hotbar, E inventory, C craft, Q drop]"
         )
@@ -473,6 +474,12 @@ class GameWindow(pyglet.window.Window):
         if self.text_input is not None:
             self._draw_text_input()
         self.fps_display.draw()
+
+    def _animation_debug_summary(self) -> str:
+        counts: dict[str, int] = {}
+        for _entity, ai in self.entities.world.mob_ai.items():
+            counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
+        return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
@@ -1332,6 +1339,12 @@ class GameWindow(pyglet.window.Window):
                     entity,
                     Transform(float(coordinates[0]), float(coordinates[1]), float(coordinates[2])),
                 )
+                self.entities.world.animations.set(entity, AnimationState())
+            animation = self.entities.world.animations.get(entity)
+            if animation is not None:
+                raw_phase = player.get("animation_phase", 0.0)
+                animation.phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0
+                animation.speed = 1.8 if player.get("animation_state") == "walk" else 0.0
             self.remote_player_interpolation[raw_id].push(
                 time.monotonic(),
                 position_tuple,

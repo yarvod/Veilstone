@@ -1,4 +1,5 @@
 from voxel_sandbox.engine.ecs.components import (
+    AnimationState,
     Collider,
     EntityId,
     Health,
@@ -15,6 +16,7 @@ from voxel_sandbox.engine.ecs.simulation import EntitySimulation
 from voxel_sandbox.engine.ecs.world import ComponentStore, EntityWorld
 
 __all__ = [
+    "AnimationState",
     "Collider",
     "ComponentStore",
     "EntityId",

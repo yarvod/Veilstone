@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from typing import Protocol
 
 from voxel_sandbox.engine.ecs.components import (
+    AnimationState,
     Collider,
     EntityId,
     Health,
@@ -59,6 +60,7 @@ class EntityWorld:
         self.health: ComponentStore[Health] = ComponentStore()
         self.render_models: ComponentStore[RenderModel] = ComponentStore()
         self.mob_ai: ComponentStore[MobAI] = ComponentStore()
+        self.animations: ComponentStore[AnimationState] = ComponentStore()
         self.lifetimes: ComponentStore[Lifetime] = ComponentStore()
         self.items: ComponentStore[ItemEntity] = ComponentStore()
         self._stores = (
@@ -68,6 +70,7 @@ class EntityWorld:
             self.health,
             self.render_models,
             self.mob_ai,
+            self.animations,
             self.lifetimes,
             self.items,
         )

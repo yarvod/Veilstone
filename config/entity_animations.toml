@@ -1,0 +1,26 @@
+version = 1
+
+[[clips]]
+key = "idle"
+duration = 2.0
+loop = true
+
+[[clips]]
+key = "walk"
+duration = 0.8
+loop = true
+
+[[clips]]
+key = "attack"
+duration = 0.65
+loop = false
+
+[[clips]]
+key = "hurt"
+duration = 0.25
+loop = false
+
+[[clips]]
+key = "death"
+duration = 0.65
+loop = false

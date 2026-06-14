@@ -1,0 +1,157 @@
+version = 1
+
+[[models]]
+key = "passive"
+texture = "entities/veilgrazer-skin.png"
+base_color = [0.72, 0.92, 0.94]
+
+[[models.parts]]
+name = "body"
+offset = [0.0, 0.72, 0.0]
+size = [0.86, 0.62, 1.12]
+
+[[models.parts]]
+name = "head"
+parent = "body"
+offset = [0.0, 0.30, -0.68]
+size = [0.62, 0.56, 0.58]
+
+[[models.parts]]
+name = "ear_left"
+parent = "head"
+offset = [-0.30, 0.28, -0.03]
+size = [0.16, 0.34, 0.18]
+
+[[models.parts]]
+name = "ear_right"
+parent = "head"
+offset = [0.30, 0.28, -0.03]
+size = [0.16, 0.34, 0.18]
+
+[[models.parts]]
+name = "leg_front_left"
+parent = "body"
+offset = [-0.28, -0.53, -0.35]
+size = [0.20, 0.58, 0.22]
+
+[[models.parts]]
+name = "leg_front_right"
+parent = "body"
+offset = [0.28, -0.53, -0.35]
+size = [0.20, 0.58, 0.22]
+
+[[models.parts]]
+name = "leg_back_left"
+parent = "body"
+offset = [-0.28, -0.53, 0.35]
+size = [0.20, 0.58, 0.22]
+
+[[models.parts]]
+name = "leg_back_right"
+parent = "body"
+offset = [0.28, -0.53, 0.35]
+size = [0.20, 0.58, 0.22]
+
+[[models.parts]]
+name = "tail"
+parent = "body"
+offset = [0.0, 0.12, 0.68]
+size = [0.18, 0.18, 0.62]
+
+[[models]]
+key = "hostile"
+texture = "entities/gloamstalker-skin.png"
+base_color = [0.95, 0.62, 0.82]
+
+[[models.parts]]
+name = "body"
+offset = [0.0, 0.78, 0.0]
+size = [0.72, 0.90, 0.48]
+
+[[models.parts]]
+name = "head"
+parent = "body"
+offset = [0.0, 0.62, -0.06]
+size = [0.58, 0.48, 0.54]
+
+[[models.parts]]
+name = "jaw"
+parent = "head"
+offset = [0.0, -0.25, -0.18]
+size = [0.48, 0.18, 0.38]
+
+[[models.parts]]
+name = "arm_left"
+parent = "body"
+offset = [-0.48, 0.10, 0.0]
+size = [0.22, 0.82, 0.24]
+
+[[models.parts]]
+name = "arm_right"
+parent = "body"
+offset = [0.48, 0.10, 0.0]
+size = [0.22, 0.82, 0.24]
+
+[[models.parts]]
+name = "leg_left"
+parent = "body"
+offset = [-0.22, -0.66, 0.0]
+size = [0.25, 0.68, 0.28]
+
+[[models.parts]]
+name = "leg_right"
+parent = "body"
+offset = [0.22, -0.66, 0.0]
+size = [0.25, 0.68, 0.28]
+
+[[models.parts]]
+name = "horn_left"
+parent = "head"
+offset = [-0.23, 0.32, 0.0]
+size = [0.12, 0.36, 0.12]
+
+[[models.parts]]
+name = "horn_right"
+parent = "head"
+offset = [0.23, 0.32, 0.0]
+size = [0.12, 0.36, 0.12]
+
+[[models]]
+key = "remote_player"
+texture = "entities/veilgrazer-skin.png"
+base_color = [0.82, 0.76, 0.96]
+
+[[models.parts]]
+name = "body"
+offset = [0.0, 1.15, 0.0]
+size = [0.62, 0.78, 0.34]
+
+[[models.parts]]
+name = "head"
+parent = "body"
+offset = [0.0, 0.62, 0.0]
+size = [0.52, 0.52, 0.52]
+
+[[models.parts]]
+name = "arm_left"
+parent = "body"
+offset = [-0.43, 0.0, 0.0]
+size = [0.20, 0.76, 0.22]
+
+[[models.parts]]
+name = "arm_right"
+parent = "body"
+offset = [0.43, 0.0, 0.0]
+size = [0.20, 0.76, 0.22]
+
+[[models.parts]]
+name = "leg_left"
+parent = "body"
+offset = [-0.18, -0.75, 0.0]
+size = [0.24, 0.76, 0.28]
+
+[[models.parts]]
+name = "leg_right"
+parent = "body"
+offset = [0.18, -0.75, 0.0]
+size = [0.24, 0.76, 0.28]

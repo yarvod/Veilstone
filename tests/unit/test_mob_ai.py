@@ -40,8 +40,11 @@ def test_mob_death_spawns_item_entity_that_can_be_picked_up() -> None:
     mob = simulation.spawn_mob(MobKind.PASSIVE, (2.0, 10.0, 2.0))
 
     assert simulation.damage(mob, 100.0) == (ItemStack(4, 1),)
-    assert mob not in simulation.world.alive
+    assert simulation.world.mob_ai[mob].state is MobState.DEATH
     assert len(simulation.world.items) == 1
+
+    simulation.update(0.7, (2.0, 10.0, 2.0), flat_ground, no_hazard)
+    assert mob not in simulation.world.alive
 
     picked = simulation.pickup_items((2.0, 10.0, 2.0), 1.0, inventory, registry)
     assert picked == (ItemStack(4, 1),)

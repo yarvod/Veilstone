@@ -7,6 +7,7 @@ from collections.abc import Callable
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
 from voxel_sandbox.engine.ecs.components import (
+    AnimationState,
     Collider,
     EntityId,
     Health,
@@ -53,6 +54,7 @@ class EntitySimulation:
         self.world.colliders.set(entity, Collider(0.7, 1.2))
         self.world.health.set(entity, Health(10.0 if kind is MobKind.PASSIVE else 16.0, 16.0))
         self.world.mob_ai.set(entity, MobAI(kind))
+        self.world.animations.set(entity, AnimationState())
         color = (0.34, 0.58, 0.68) if kind is MobKind.PASSIVE else (0.62, 0.18, 0.28)
         self.world.render_models.set(entity, RenderModel(kind.value, color, (0.7, 1.2, 0.7)))
         return entity
@@ -102,6 +104,20 @@ class EntitySimulation:
 
         for entity, ai in tuple(self.world.mob_ai.items()):
             transform = self.world.transforms[entity]
+            animation = self.world.animations[entity]
+            animation.phase += delta_time * max(animation.speed, 0.35)
+            if animation.death_remaining > 0.0:
+                animation.death_remaining -= delta_time
+                ai.state = MobState.DEATH
+                _advance_animation_state(animation, ai.state, delta_time)
+                if animation.death_remaining <= 0.0:
+                    self.world.destroy(entity)
+                continue
+            if animation.hurt_remaining > 0.0:
+                animation.hurt_remaining -= delta_time
+                ai.state = MobState.HURT
+                _advance_animation_state(animation, ai.state, delta_time)
+                continue
             dx = player_position[0] - transform.x
             dz = player_position[2] - transform.z
             distance = math.hypot(dx, dz)
@@ -141,17 +157,34 @@ class EntitySimulation:
             velocity = self.world.velocities[entity]
             velocity.x = ai.direction_x * speed
             velocity.z = ai.direction_z * speed
+            animation.speed = speed
+            _advance_animation_state(animation, ai.state, delta_time)
+            if speed > 0.0:
+                transform.yaw = math.atan2(ai.direction_x, ai.direction_z)
         return player_damage
 
     def damage(self, entity: EntityId, amount: float) -> tuple[ItemStack, ...]:
         health = self.world.health.get(entity)
         ai = self.world.mob_ai.get(entity)
         transform = self.world.transforms.get(entity)
-        if health is None or ai is None or transform is None or not health.damage(amount):
+        animation = self.world.animations.get(entity)
+        if health is None or ai is None or transform is None or animation is None:
+            return ()
+        if health.current <= 0.0:
+            return ()
+        if not health.damage(amount):
+            animation.hurt_remaining = 0.25
+            ai.state = MobState.HURT
             return ()
         drops = (ItemStack(4, 1),) if ai.kind is MobKind.PASSIVE else (ItemStack(6, 1),)
         position = transform.position
-        self.world.destroy(entity)
+        ai.state = MobState.DEATH
+        animation.death_remaining = 0.65
+        animation.speed = 0.0
+        velocity = self.world.velocities.get(entity)
+        if velocity is not None:
+            velocity.x = 0.0
+            velocity.z = 0.0
         for stack in drops:
             self.spawn_item(position, stack)
         return drops
@@ -190,7 +223,9 @@ class EntitySimulation:
     ) -> EntityId | None:
         best: tuple[float, EntityId] | None = None
         for entity, ai in self.world.mob_ai.items():
-            del ai
+            health = self.world.health.get(entity)
+            if ai.state is MobState.DEATH or health is None or health.current <= 0.0:
+                continue
             transform = self.world.transforms[entity]
             offset = (
                 transform.x - origin[0],
@@ -211,3 +246,15 @@ def _normalized(x: float, z: float) -> tuple[float, float]:
     if length <= 1e-9:
         return 0.0, 0.0
     return x / length, z / length
+
+
+def _advance_animation_state(
+    animation: AnimationState,
+    state: MobState,
+    delta_time: float,
+) -> None:
+    if animation.state is not state:
+        animation.state = state
+        animation.state_phase = 0.0
+    else:
+        animation.state_phase += delta_time

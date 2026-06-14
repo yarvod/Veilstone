@@ -63,6 +63,18 @@ class MobState(Enum):
     FLEE = "flee"
     CHASE = "chase"
     ATTACK = "attack"
+    HURT = "hurt"
+    DEATH = "death"
+
+
+@dataclass(slots=True)
+class AnimationState:
+    phase: float = 0.0
+    speed: float = 0.0
+    state: MobState = MobState.IDLE
+    state_phase: float = 0.0
+    hurt_remaining: float = 0.0
+    death_remaining: float = 0.0
 
 
 @dataclass(slots=True)

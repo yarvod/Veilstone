@@ -117,3 +117,35 @@ def test_shadow_quality_modes_render(quality: str) -> None:
             assert (window.world_renderer.shadow_map is None) is (quality == "off")
         finally:
             window.close()
+
+
+def test_articulated_mobs_render_multiple_textured_parts() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.engine.ecs import MobKind
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-articulated-mobs-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            for entity in tuple(window.entities.world.mob_ai.entities()):
+                window.entities.world.destroy(entity)
+            window.entities.spawn_mob(MobKind.PASSIVE, window.camera.position)
+            window.entities.spawn_mob(MobKind.HOSTILE, window.camera.position)
+            window.menu.screen = Screen.GAME
+            draws = window.entity_renderer.render(
+                window.entities.world,
+                window.camera,
+                window.width,
+                window.height,
+                window.settings.camera.field_of_view,
+                0.25,
+            )
+            window.mgl_context.finish()
+
+            assert draws >= 18
+        finally:
+            window.close()
