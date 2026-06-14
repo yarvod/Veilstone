@@ -25,12 +25,13 @@ uv run python -m voxel_sandbox benchmark-lighting
 uv run python -m voxel_sandbox benchmark-streaming
 uv run python -m voxel_sandbox benchmark-frame-streaming
 uv run python -m voxel_sandbox benchmark-network
+uv run python -m voxel_sandbox benchmark-server
 ```
 
-Singleplayer uses the same server-authoritative simulation planned for multiplayer:
-the game client owns an in-process local server. `Open to LAN` exposes that server to
-other clients instead of launching a separate player-facing mode. The standalone
-`server` command is for dedicated LAN hosting and development.
+Singleplayer uses the same server-authoritative transport as multiplayer:
+the game client owns and connects to an in-process local server. `Open to LAN` exposes
+that server to other clients instead of launching a separate player-facing mode. The
+standalone `server` command is for dedicated LAN hosting and development.
 
 Quality checks:
 
@@ -64,7 +65,8 @@ uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
 ```
 
 The remote client receives server chunks, player snapshots, block deltas, and chat protocol
-messages. LAN discovery and menu-based Direct Connect are Phase 14 polish.
+messages. LAN discovery, Direct Connect, nickname editing, chat, reconnect, and Open to LAN
+are available through the game UI.
 
 Client controls:
 
@@ -80,8 +82,10 @@ Client controls:
 - `Shift` + left click in inventory: quick-move between hotbar and backpack.
 - `C`: craft the highest-priority available recipe for the active 2x2/3x3 grid.
 - `Q`: drop one item from the selected hotbar stack.
+- `T`: enter and send a multiplayer chat message.
 - Right mouse: place the selected block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
+- Pause Menu -> `Open to LAN`: advertise the running singleplayer server on the LAN.
 - `F5`: force shader reload.
 - `F6`: toggle smooth lighting.
 - `F7`: toggle ambient occlusion.

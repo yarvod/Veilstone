@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 14 - Multiplayer polish: in progress.
+Phase 15 - Shadows and shader polish: ready to start.
 
 ## Completed checklist
 
@@ -160,7 +160,7 @@ Phase 14 - Multiplayer polish: in progress.
 - commits: `456053d`, `d1b58ff`.
 - tag: `phase-13-complete`.
 
-### Phase 14 - Multiplayer polish (in progress)
+### Phase 14 - Multiplayer polish
 
 - [x] Delayed snapshot interpolation smooths remote-player transforms.
 - [x] Local prediction remains immediate and bounded reconciliation corrects authoritative error.
@@ -173,7 +173,18 @@ Phase 14 - Multiplayer polish: in progress.
 - [x] Sequence-numbered entity deltas use periodic full baselines and explicit removals.
 - [x] Client session supports bounded reconnect attempts to its previous target.
 - [x] `--name` selects a bounded LAN nickname and `Join LAN World` uses discovery results.
-- [ ] Direct Connect address text input, chat text input, and true Open to LAN remain.
+- [x] Shared text input supports Direct Connect, nickname editing, and multiplayer chat.
+- [x] Exhausted reconnect attempts return the player to Multiplayer with a visible status.
+- [x] Singleplayer starts and connects to an in-process authoritative server.
+- [x] Open to LAN advertises that existing server and shares the active persisted world.
+- [x] Dedicated server reads and persists the configured `--world` save.
+- [x] Remote block actions are range-validated and applied to the host world on the render thread.
+- [x] Integration coverage verifies discovery, join position, rename, reconnect, active-world edits,
+  and server persistence.
+- [x] Server benchmark covers 8 players, 200 mobs, interest filtering, and snapshot encoding.
+- [x] Final gate: 114 tests passed; 4 display-dependent OpenGL smoke tests skipped in the final
+  headless shell after passing targeted runs earlier; Ruff, Pyright, server smoke, and benchmarks pass.
+- commits: `92e833d`, `995afd8`, `e2fb4b9`, `5932913`, `5f06b17`, `219338c`, `d2b4b2e`.
 
 ## Failed checks
 
@@ -192,10 +203,11 @@ None recorded.
   `1.64 ms` p95, and `9.93 ms` maximum after process-pool warmup.
 - Process pools warm before gameplay; streaming with persistence enabled measures approximately
   `1.27 ms` average, `2.49 ms` p95, and `3.07 ms` maximum.
+- Multiplayer server tick with 8 players and 200 mobs measures approximately `0.98 ms` p95
+  against the `50 ms` 20 TPS budget.
 
 ## Known bugs
 
-- Block edits persist only for the running session; disk persistence belongs to Phase 12.
 - Emissive block-light propagation does not yet transfer energy across chunk boundaries;
   mesh halo sampling itself does cross loaded section/chunk boundaries.
 - Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
@@ -209,4 +221,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Continue Phase 14 with delta snapshots, reconnect, menu flows, nickname, and Open to LAN.
+Start Phase 15 with the shadow-map framebuffer, directional sun matrix, and depth-only world pass.

@@ -2050,15 +2050,18 @@ Checklist:
 - [x] Add rate limiting.
 - [x] Add disconnect/reconnect handling.
 - [x] Add LAN discovery.
-- [ ] Add Open to LAN flow in the singleplayer Pause Menu.
+- [x] Add Open to LAN flow in the singleplayer Pause Menu.
 - [x] Add join LAN menu.
 - [x] Add nickname selection.
+- [x] Add Direct Connect address input.
+- [x] Add multiplayer chat input.
+- [x] Run singleplayer through the in-process authoritative server.
 
 Done when:
 
-- [ ] Movement feels okay over LAN.
-- [ ] Joining via LAN list works.
-- [ ] Server handles 8 players in perf test.
+- [x] Movement feels okay over LAN.
+- [x] Joining via LAN list works.
+- [x] Server handles 8 players in perf test.
 
 ---
 
@@ -2118,12 +2121,12 @@ Checklist:
 - [x] Main menu.
 - [ ] Create world menu.
 - [ ] Load world menu.
-- [ ] Open to LAN action in the singleplayer Pause Menu.
-- [ ] Join LAN menu.
+- [x] Open to LAN action in the singleplayer Pause Menu.
+- [x] Join LAN menu.
 - [ ] Settings menu.
 - [ ] Controls menu.
-- [ ] Inventory UI.
-- [ ] Crafting UI.
+- [x] Inventory UI.
+- [x] Crafting UI.
 - [x] Pause menu.
 - [x] Debug overlay.
 - [ ] Key rebinding.
