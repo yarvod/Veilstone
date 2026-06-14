@@ -2,63 +2,87 @@
 key = "ui.click"
 path = "audio/ui_click.wav"
 group = "effects"
+gain = 0.55
 
 [[audio]]
 key = "block.stone"
 path = "audio/block_stone.wav"
 group = "effects"
+gain = 0.72
 
 [[audio]]
 key = "block.earth"
 path = "audio/block_earth.wav"
 group = "effects"
+gain = 0.62
 
 [[audio]]
 key = "block.wood"
 path = "audio/block_wood.wav"
 group = "effects"
+gain = 0.68
 
 [[audio]]
 key = "footstep"
 path = "audio/footstep.wav"
 group = "effects"
+gain = 0.48
 
 [[audio]]
-key = "mob.hit"
-path = "audio/mob_hit.wav"
+key = "mob.passive_hurt"
+path = "audio/cow_hurt.wav"
 group = "effects"
+gain = 0.58
 
 [[audio]]
-key = "mob.death"
-path = "audio/mob_death.wav"
+key = "mob.passive_death"
+path = "audio/cow_death.wav"
 group = "effects"
+gain = 0.62
+
+[[audio]]
+key = "mob.hostile_hurt"
+path = "audio/zombie_hurt.wav"
+group = "effects"
+gain = 0.66
+
+[[audio]]
+key = "mob.hostile_death"
+path = "audio/zombie_death.wav"
+group = "effects"
+gain = 0.70
 
 [[audio]]
 key = "ambience.surface"
 path = "audio/ambience_surface.wav"
 group = "ambience"
 loop = true
+gain = 0.32
 
 [[audio]]
 key = "ambience.cave"
 path = "audio/ambience_cave.wav"
 group = "ambience"
 loop = true
+gain = 0.28
 
 [[audio]]
 key = "music.menu"
 path = "audio/music_menu.wav"
 group = "music"
 loop = true
+gain = 0.34
 
 [[audio]]
 key = "music.exploration"
 path = "audio/music_exploration.wav"
 group = "music"
 loop = true
+gain = 0.30
 
 [[audio]]
 key = "music.night"
 path = "audio/music_night.wav"
 group = "music"
 loop = true
+gain = 0.28

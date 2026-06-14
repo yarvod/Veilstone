@@ -28,14 +28,14 @@ def test_original_mob_models_are_textured_and_articulated() -> None:
     passive = models.get("passive")
     hostile = models.get("hostile")
 
-    assert passive.texture.name == "veilgrazer-skin.png"
-    assert hostile.texture.name == "gloamstalker-skin.png"
+    assert passive.texture.name == "cow-skin.png"
+    assert hostile.texture.name == "zombie-skin.png"
     assert len(passive.parts) == 9
     assert len(hostile.parts) == 9
     assert {part.name for part in passive.parts} >= {"head", "tail", "leg_front_left"}
-    assert {part.name for part in hostile.parts} >= {"jaw", "arm_left", "horn_right"}
+    assert {part.name for part in hostile.parts} >= {"jaw", "arm_left", "ear_right"}
     assert all(part.material == "skin" for part in passive.parts)
-    assert all(part.uv == (0.0, 0.0, 1.0, 1.0) for part in hostile.parts)
+    assert all(part.uv != (0.0, 0.0, 1.0, 1.0) for part in hostile.parts)
     assert len(models.get("remote_player").parts) == 6
 
 
@@ -64,7 +64,7 @@ def test_pose_blending_hierarchy_and_extra_controllers() -> None:
     offset, _rotation = resolved_part_transform(models.get("passive"), "ear_left", blended)
 
     assert blended["head"].rotation[0] == 0.25
-    assert offset[1] > 1.0
+    assert offset[1] > 0.9
     assert head_look_controller(2.0, -2.0).rotation == (-0.6, 0.8, 0.0)
     assert wing_controller(0.3, 1.0).rotation != (0.0, 0.0, 0.0)
     assert crawling_gait_controller(0.3, -1.0).rotation != (0.0, 0.0, 0.0)

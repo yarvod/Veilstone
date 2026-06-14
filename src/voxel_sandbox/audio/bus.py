@@ -34,7 +34,7 @@ class AudioBus:
             resource = self.registry.get(event.key)
             master = self.volumes.get(VolumeGroup.MASTER, 1.0)
             group = self.volumes.get(resource.group, 1.0)
-            self.backend.play(resource, master * group, event.position)
+            self.backend.play(resource, master * group * resource.gain, event.position)
 
     def set_volumes(self, volumes: Mapping[VolumeGroup, float]) -> None:
         self.volumes = dict(volumes)

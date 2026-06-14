@@ -24,7 +24,7 @@ void main() {
         world_position.y += sin(world_position.x * 0.55 + world_position.z * 0.42 + animation_time) * 0.025;
     }
     vertex_uv = in_uv + vec2(animation_time * 0.015, animation_time * 0.009);
-    vertex_light = max(max(in_sky_light, in_block_light), 0.12) * (0.75 + in_ao * 0.25);
+    vertex_light = max(max(in_sky_light, in_block_light), 0.20) * (0.82 + in_ao * 0.18);
     vertex_world_position = world_position;
     vertex_atlas_rect = in_atlas_rect;
     vertex_normal = in_normal;

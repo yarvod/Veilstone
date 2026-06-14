@@ -177,5 +177,33 @@ def test_game_commands_change_time_and_remove_hostile_mobs(
             window.execute_command("/difficulty peaceful")
             assert window.settings.gameplay.difficulty == "peaceful"
             assert hostile not in window.entities.world.alive
+
+            window.execute_command("/help")
+            assert window.inventory_status.startswith("/time set")
+        finally:
+            window.close()
+
+
+def test_inventory_grid_and_item_icons_render() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-inventory-ui-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.inventory_open
+            assert len(window.crafting_grid) == 4
+            assert len(window.item_icon_images) == len(window.item_registry)
         finally:
             window.close()

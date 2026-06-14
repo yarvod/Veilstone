@@ -51,3 +51,14 @@ def test_inventory_crafting_is_atomic_when_inputs_or_output_space_are_missing() 
 
     assert not book.craft_from_inventory("veilwood_planks", inventory, registry, grid_size=2)
     assert list(inventory) == [None] * 9
+
+
+def test_crafting_grid_supports_cursor_style_index_take_and_replace() -> None:
+    grid = CraftingGrid(2, 2)
+    stack = ItemStack(4, 3)
+
+    grid.set_index(2, stack)
+
+    assert len(grid) == 4
+    assert grid.take(2) == stack
+    assert grid[2] is None

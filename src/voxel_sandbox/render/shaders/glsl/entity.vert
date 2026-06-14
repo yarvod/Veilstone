@@ -5,6 +5,7 @@ uniform vec3 entity_position;
 uniform float entity_yaw;
 uniform vec3 part_offset;
 uniform vec3 part_scale;
+uniform vec3 part_pivot;
 uniform vec3 part_rotation;
 uniform vec4 texture_rect;
 
@@ -25,9 +26,10 @@ vec3 rotate_part(vec3 value) {
 }
 
 void main() {
-    vec3 local = rotate_part(in_position * part_scale) + part_offset;
+    vec3 pivot = part_pivot * part_scale;
+    vec3 local = rotate_part(in_position * part_scale - pivot) + pivot + part_offset;
     local.xz = mat2(cos(entity_yaw), -sin(entity_yaw), sin(entity_yaw), cos(entity_yaw)) * local.xz;
     vertex_uv = texture_rect.xy + in_uv * texture_rect.zw;
-    vertex_shade = 0.72 + (in_position.y + 0.5) * 0.28;
+    vertex_shade = 0.82 + (in_position.y + 0.5) * 0.18;
     gl_Position = camera_matrix * vec4(entity_position + local, 1.0);
 }

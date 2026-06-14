@@ -41,8 +41,19 @@ class CraftingGrid:
     def __getitem__(self, index: int) -> ItemStack | None:
         return self._slots[index]
 
+    def __len__(self) -> int:
+        return len(self._slots)
+
     def set(self, x: int, y: int, stack: ItemStack | None) -> None:
         self._slots[self._index(x, y)] = stack
+
+    def set_index(self, index: int, stack: ItemStack | None) -> None:
+        self._slots[index] = stack
+
+    def take(self, index: int) -> ItemStack | None:
+        stack = self._slots[index]
+        self._slots[index] = None
+        return stack
 
     def pattern(self) -> tuple[tuple[int | None, ...], ...]:
         rows: list[tuple[int | None, ...]] = []

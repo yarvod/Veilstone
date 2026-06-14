@@ -301,6 +301,7 @@ class DemoWorldRenderer:
         height: int,
         fov: float,
         shadow_caster: Callable[[np.ndarray], object] | None = None,
+        transparent_underlay: Callable[[], object] | None = None,
     ) -> None:
         if self.shader.program is None:
             return
@@ -379,9 +380,9 @@ class DemoWorldRenderer:
                 int(np.floor(camera.z)),
             )
         ).is_fluid
-        active_fog_color = (0.035, 0.16, 0.24) if underwater else self.clear_color[:3]
+        active_fog_color = (0.065, 0.21, 0.29) if underwater else self.clear_color[:3]
         active_fog_start = 0.0 if underwater else self.fog_start
-        active_fog_end = 12.0 if underwater else self.fog_end
+        active_fog_end = 18.0 if underwater else self.fog_end
         fog_color_uniform.value = active_fog_color
         fog_start_uniform.value = active_fog_start
         fog_end_uniform.value = active_fog_end
@@ -407,6 +408,8 @@ class DemoWorldRenderer:
             self.draw_calls += 1
             self.face_count += gpu_mesh.data.face_count
             self.triangle_count += gpu_mesh.data.triangle_count
+        if transparent_underlay is not None:
+            transparent_underlay()
         self._render_water(
             matrix,
             camera,

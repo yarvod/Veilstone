@@ -85,9 +85,9 @@ class GraphicsSettings:
 @dataclass(frozen=True, slots=True)
 class AudioSettings:
     master: float = 0.8
-    effects: float = 0.8
-    music: float = 0.45
-    ambience: float = 0.55
+    effects: float = 0.7
+    music: float = 0.35
+    ambience: float = 0.42
 
 
 @dataclass(frozen=True, slots=True)

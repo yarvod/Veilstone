@@ -58,13 +58,14 @@ void main() {
     vec2 atlas_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, tile_uv);
     vec4 base_color = texture(texture_atlas, atlas_uv);
     float sky = vertex_sky_light * daylight;
-    float shadow = mix(0.35, 1.0, sample_shadow());
+    float shadow = mix(0.58, 1.0, sample_shadow());
     float sun_light = sky * vertex_directional * shadow;
-    float ambient_sky = sky * 0.35;
-    float light_level = max(max(sun_light, ambient_sky), max(vertex_block_light, 0.07));
+    float ambient_sky = sky * 0.50;
+    float light_level = max(max(sun_light, ambient_sky), max(vertex_block_light, 0.16));
     vec3 block_warmth = vec3(1.0, 0.66, 0.34) * vertex_block_light * 0.32;
-    vec3 lit_color = base_color.rgb * day_tint * light_level * vertex_ao;
-    lit_color += base_color.rgb * block_warmth * vertex_ao;
+    float readable_ao = mix(0.72, 1.0, vertex_ao);
+    vec3 lit_color = base_color.rgb * day_tint * light_level * readable_ao;
+    lit_color += base_color.rgb * block_warmth * readable_ao;
     float distance_to_camera = length(vertex_world_position - camera_position);
     float fog_factor = fog_enabled == 1
         ? smoothstep(fog_start, max(fog_start + 0.1, fog_end), distance_to_camera)

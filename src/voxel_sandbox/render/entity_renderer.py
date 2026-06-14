@@ -110,6 +110,7 @@ class EntityRenderer:
                 offset, rotation = resolved_part_transform(model, part.name, pose)
                 cast("moderngl.Uniform", program["part_offset"]).value = offset
                 cast("moderngl.Uniform", program["part_scale"]).value = part.size
+                cast("moderngl.Uniform", program["part_pivot"]).value = part.pivot
                 cast("moderngl.Uniform", program["part_rotation"]).value = rotation
                 cast("moderngl.Uniform", program["texture_rect"]).value = _part_texture_rect(
                     self.texture_rects[model.key], part.uv
@@ -166,6 +167,7 @@ class EntityRenderer:
                 offset, rotation = resolved_part_transform(model, part.name, pose)
                 cast("moderngl.Uniform", program["part_offset"]).value = offset
                 cast("moderngl.Uniform", program["part_scale"]).value = part.size
+                cast("moderngl.Uniform", program["part_pivot"]).value = part.pivot
                 cast("moderngl.Uniform", program["part_rotation"]).value = rotation
                 self.shadow_vertex_array.render(moderngl.TRIANGLES)
                 draws += 1
@@ -195,6 +197,7 @@ class EntityRenderer:
             0.0,
         )
         cast("moderngl.Uniform", program["part_scale"]).value = scale
+        cast("moderngl.Uniform", program["part_pivot"]).value = (0.0, 0.0, 0.0)
         cast("moderngl.Uniform", program["part_rotation"]).value = (0.0, 0.0, 0.0)
         cast("moderngl.Uniform", program["entity_color"]).value = color
         cast("moderngl.Uniform", program["use_texture"]).value = 0
@@ -215,6 +218,7 @@ class EntityRenderer:
         cast("moderngl.Uniform", program["entity_yaw"]).value = time * 1.8 if is_item else 0.0
         cast("moderngl.Uniform", program["part_offset"]).value = (0.0, scale[1] * 0.5, 0.0)
         cast("moderngl.Uniform", program["part_scale"]).value = scale
+        cast("moderngl.Uniform", program["part_pivot"]).value = (0.0, 0.0, 0.0)
         cast("moderngl.Uniform", program["part_rotation"]).value = (0.0, 0.0, 0.0)
         self.shadow_vertex_array.render(moderngl.TRIANGLES)
         return 1

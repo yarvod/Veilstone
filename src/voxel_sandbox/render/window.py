@@ -25,7 +25,7 @@ from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import create_audio_bus, volume_map
-from voxel_sandbox.domain.crafting import RecipeBook
+from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, ChunkCoord
@@ -47,6 +47,7 @@ from voxel_sandbox.render.input_state import KeyState, configure_layout_independ
 from voxel_sandbox.render.postprocess import PostProcessRenderer
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
+from voxel_sandbox.render.ui.item_icons import ICON_SIZE, create_item_icons
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
@@ -155,6 +156,7 @@ class GameWindow(pyglet.window.Window):
         self.inventory_open = False
         self.text_input: TextInput | None = None
         self.crafting_grid_size = 2
+        self.crafting_grid = CraftingGrid(2, 2)
         self.inventory_status = (
             "Recovered invalid saved position" if recovered_saved_position is not None else ""
         )
@@ -162,6 +164,7 @@ class GameWindow(pyglet.window.Window):
         self.mouse_x = 0
         self.mouse_y = 0
         self.mouse_captured = False
+        self.debug_overlay_visible = False
         self.fps_display = pyglet.window.FPSDisplay(self)
         self.debug_label = pyglet.text.Label(
             "",
@@ -181,50 +184,116 @@ class GameWindow(pyglet.window.Window):
             font_size=18,
             color=(245, 235, 190, 255),
         )
-        self.hotbar_labels = [
+        self.item_icon_images = create_item_icons(self.item_registry, self.world_renderer.registry)
+        default_icon = self.item_icon_images[1]
+        self.hotbar_slots = [
+            pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3) for _ in range(9)
+        ]
+        self.hotbar_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
+        self.hotbar_count_labels = [
             pyglet.text.Label(
                 "",
-                anchor_x="center",
-                anchor_y="center",
+                anchor_x="right",
+                anchor_y="bottom",
                 font_name="Menlo",
-                font_size=9,
-                color=(225, 230, 240, 255),
+                font_size=12,
+                color=(255, 255, 255, 255),
             )
             for _ in range(9)
+        ]
+        self.hotbar_key_labels = [
+            pyglet.text.Label(
+                str(index + 1),
+                anchor_x="left",
+                anchor_y="top",
+                font_name="Menlo",
+                font_size=8,
+                color=(190, 200, 215, 255),
+            )
+            for index in range(9)
         ]
         self.inventory_title = pyglet.text.Label(
             "",
             anchor_x="center",
             anchor_y="center",
             font_name="Menlo",
-            font_size=16,
+            font_size=22,
             color=(245, 220, 140, 255),
         )
-        self.inventory_labels = [
+        self.inventory_panel = pyglet.shapes.BorderedRectangle(
+            0, 0, 540, 500, 4, color=(34, 38, 48), border_color=(132, 142, 158)
+        )
+        self.inventory_slots = [
+            pyglet.shapes.BorderedRectangle(0, 0, 48, 48, 2) for _ in range(len(self.inventory))
+        ]
+        self.inventory_icons = [
+            pyglet.sprite.Sprite(default_icon) for _ in range(len(self.inventory))
+        ]
+        self.inventory_count_labels = [
             pyglet.text.Label(
                 "",
-                anchor_x="center",
-                anchor_y="center",
+                anchor_x="right",
+                anchor_y="bottom",
                 font_name="Menlo",
-                font_size=8,
-                color=(215, 220, 235, 255),
+                font_size=12,
+                color=(255, 255, 255, 255),
             )
             for _ in range(len(self.inventory))
         ]
+        self.crafting_slots = [
+            pyglet.shapes.BorderedRectangle(0, 0, 48, 48, 2) for _ in range(9)
+        ]
+        self.crafting_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
+        self.crafting_count_labels = [
+            pyglet.text.Label(
+                "",
+                anchor_x="right",
+                anchor_y="bottom",
+                font_name="Menlo",
+                font_size=12,
+                color=(255, 255, 255, 255),
+            )
+            for _ in range(9)
+        ]
+        self.crafting_result_slot = pyglet.shapes.BorderedRectangle(0, 0, 56, 56, 3)
+        self.crafting_result_icon = pyglet.sprite.Sprite(default_icon)
+        self.crafting_result_count = pyglet.text.Label(
+            "", anchor_x="right", anchor_y="bottom", font_name="Menlo", font_size=12
+        )
+        self.crafting_label = pyglet.text.Label(
+            "CRAFTING",
+            anchor_x="left",
+            anchor_y="bottom",
+            font_name="Menlo",
+            font_size=13,
+            color=(205, 215, 230, 255),
+        )
+        self.crafting_arrow = pyglet.text.Label(
+            ">", anchor_x="center", anchor_y="center", font_name="Menlo", font_size=26
+        )
         self.cursor_item_label = pyglet.text.Label(
             "",
             anchor_x="left",
             anchor_y="bottom",
             font_name="Menlo",
-            font_size=9,
+            font_size=13,
             color=(245, 220, 140, 255),
+        )
+        self.cursor_item_icon = pyglet.sprite.Sprite(default_icon)
+        self.hud_status_label = pyglet.text.Label(
+            "",
+            anchor_x="left",
+            anchor_y="bottom",
+            font_name="Menlo",
+            font_size=13,
+            color=(245, 235, 210, 255),
         )
         self.menu_title = pyglet.text.Label(
             "",
             anchor_x="center",
             anchor_y="center",
             font_name="Menlo",
-            font_size=30,
+            font_size=38,
             color=(220, 230, 255, 255),
         )
         self.menu_status = pyglet.text.Label(
@@ -232,7 +301,7 @@ class GameWindow(pyglet.window.Window):
             anchor_x="center",
             anchor_y="center",
             font_name="Menlo",
-            font_size=10,
+            font_size=13,
             color=(160, 180, 215, 255),
         )
         self.text_input_label = pyglet.text.Label(
@@ -243,7 +312,18 @@ class GameWindow(pyglet.window.Window):
             multiline=True,
             width=600,
             font_name="Menlo",
-            font_size=14,
+            font_size=17,
+            color=(245, 220, 140, 255),
+        )
+        self.command_input_label = pyglet.text.Label(
+            "",
+            anchor_x="left",
+            anchor_y="bottom",
+            align="left",
+            multiline=True,
+            width=760,
+            font_name="Menlo",
+            font_size=17,
             color=(245, 220, 140, 255),
         )
         self.menu_labels = [
@@ -252,7 +332,7 @@ class GameWindow(pyglet.window.Window):
                 anchor_x="center",
                 anchor_y="center",
                 font_name="Menlo",
-                font_size=16,
+                font_size=20,
             )
             for _ in range(8)
         ]
@@ -335,6 +415,7 @@ class GameWindow(pyglet.window.Window):
             (self.player.x, self.player.y, self.player.z),
             self.world_renderer.generator.height_at,
             self._is_entity_hazard,
+            self.world_renderer.is_solid_block,
         )
         if self.player_health <= 0.0:
             spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
@@ -410,6 +491,19 @@ class GameWindow(pyglet.window.Window):
             self.world_renderer.time_of_day,
             self.world_renderer.animation_time,
         )
+        entity_draws = 0
+
+        def render_entities() -> None:
+            nonlocal entity_draws
+            entity_draws = self.entity_renderer.render(
+                self.entities.world,
+                self.camera,
+                self.width,
+                self.height,
+                self.settings.camera.field_of_view,
+                self.world_renderer.animation_time,
+            )
+
         self.world_renderer.render(
             self.camera,
             self.width,
@@ -420,17 +514,11 @@ class GameWindow(pyglet.window.Window):
                 light_matrix,
                 self.world_renderer.animation_time,
             ),
-        )
-        entity_draws = self.entity_renderer.render(
-            self.entities.world,
-            self.camera,
-            self.width,
-            self.height,
-            self.settings.camera.field_of_view,
-            self.world_renderer.animation_time,
+            transparent_underlay=render_entities,
         )
         if postprocess_active:
             self.postprocess_renderer.present(self.width, self.height)
+        self.mgl_context.disable(moderngl.DEPTH_TEST)
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
         frame_time_ms = 1000.0 / fps if fps > 0.0 else 0.0
@@ -461,17 +549,24 @@ class GameWindow(pyglet.window.Window):
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
-        self.debug_label.y = self.height - 10
-        self.debug_label.draw()
+        if self.debug_overlay_visible:
+            self.debug_label.y = self.height - 10
+            self.debug_label.draw()
         self.crosshair.x = self.width // 2
         self.crosshair.y = self.height // 2
         self.crosshair.draw()
         self._draw_hotbar()
+        if self.inventory_status and not self.inventory_open:
+            self.hud_status_label.text = self.inventory_status
+            self.hud_status_label.x = 20
+            self.hud_status_label.y = 112 if self.text_input is not None else 82
+            self.hud_status_label.draw()
         if self.inventory_open:
             self._draw_inventory()
         if self.text_input is not None:
             self._draw_text_input()
         self.fps_display.draw()
+        self.mgl_context.enable(moderngl.DEPTH_TEST)
 
     def _animation_debug_summary(self) -> str:
         counts: dict[str, int] = {}
@@ -512,9 +607,7 @@ class GameWindow(pyglet.window.Window):
             if self.inventory_open:
                 self._close_inventory()
             else:
-                self.inventory_open = True
-                self.crafting_grid_size = 2
-                self.inventory_status = "Player crafting: 2x2"
+                self._open_inventory(2)
             self.key_state.clear()
             self._sync_mouse_capture()
             return
@@ -523,7 +616,7 @@ class GameWindow(pyglet.window.Window):
                 self._close_inventory()
                 self._sync_mouse_capture()
             elif symbol == key.C:
-                self._craft_first_available()
+                self._take_crafting_result()
             elif ord("1") <= symbol <= ord("9"):
                 self.hotbar.select(symbol - ord("1"))
             return
@@ -533,6 +626,9 @@ class GameWindow(pyglet.window.Window):
             return
         if symbol == key.F5:
             self.debug_shader.reload(force=True)
+            return
+        if symbol == key.F3:
+            self.debug_overlay_visible = not self.debug_overlay_visible
             return
         if symbol == key.F6:
             self.world_renderer.toggle_smooth_lighting()
@@ -598,8 +694,12 @@ class GameWindow(pyglet.window.Window):
                 self._sync_mouse_capture()
             return
         if self.menu.in_game and self.inventory_open:
-            slot = self._inventory_slot_at(x, y)
-            if slot is not None:
+            crafting_slot = self._crafting_slot_at(x, y)
+            if crafting_slot is not None:
+                self._handle_crafting_click(crafting_slot, button)
+            elif self._crafting_result_at(x, y):
+                self._take_crafting_result()
+            elif (slot := self._inventory_slot_at(x, y)) is not None:
                 self._handle_inventory_click(
                     slot,
                     button,
@@ -611,11 +711,12 @@ class GameWindow(pyglet.window.Window):
         if button == mouse.LEFT:
             target = self.entities.target_mob(self.camera.position, self.camera.direction)
             if target is not None:
+                kind = self.entities.world.mob_ai[target].kind.value
                 drops = self.entities.damage(target, 4.0)
                 self.audio.emit(
                     AudioEvent(
                         AudioEventKind.SOUND,
-                        "mob.death" if drops else "mob.hit",
+                        f"mob.{kind}_{'death' if drops else 'hurt'}",
                         self.camera.position,
                     )
                 )
@@ -644,9 +745,7 @@ class GameWindow(pyglet.window.Window):
                     )
         elif button == mouse.RIGHT:
             if self.world_renderer.get_block(*hit.block) == 10:
-                self.inventory_open = True
-                self.crafting_grid_size = 3
-                self.inventory_status = "Runecraft Table: 3x3 crafting"
+                self._open_inventory(3)
                 self._sync_mouse_capture()
                 return
             selected = self.hotbar.selected
@@ -715,10 +814,20 @@ class GameWindow(pyglet.window.Window):
 
     def _draw_text_input(self) -> None:
         assert self.text_input is not None
-        self.text_input_label.text = self.text_input.display
-        self.text_input_label.x = self.width // 2
-        self.text_input_label.y = self.height // 3
-        self.text_input_label.draw()
+        if self.menu.in_game and self.text_input.purpose in {TextPurpose.CHAT, TextPurpose.COMMAND}:
+            self.command_input_label.text = self.text_input.display
+            self.command_input_label.width = min(760, self.width - 40)
+            self.command_input_label.x = 20
+            self.command_input_label.y = 76
+            self.command_input_label.draw()
+        else:
+            self.text_input_label.text = self.text_input.display
+            self.text_input_label.anchor_x = "center"
+            self.text_input_label.anchor_y = "center"
+            self.text_input_label.width = 600
+            self.text_input_label.x = self.width // 2
+            self.text_input_label.y = self.height // 3
+            self.text_input_label.draw()
 
     def _menu_item_y(self, index: int) -> int:
         return self.height // 2 + 45 - index * 48
@@ -1086,79 +1195,256 @@ class GameWindow(pyglet.window.Window):
         self.entities.spawn_item(position, stack)
         self.inventory_status = f"Dropped {self.item_registry.by_id(stack.item_id).name}"
 
-    def _craft_first_available(self) -> None:
-        for recipe in reversed(self.recipe_book.recipes):
-            if self.recipe_book.craft_from_inventory(
-                recipe.key,
-                self.inventory,
-                self.item_registry,
-                grid_size=self.crafting_grid_size,
-            ):
-                result = self.item_registry.by_id(recipe.result.item_id)
-                self.inventory_status = f"Crafted {result.name} x{recipe.result.count}"
-                return
-        self.inventory_status = "No available recipe for this crafting grid"
-
     def _draw_hotbar(self) -> None:
-        slot_width = 105
-        start_x = self.width // 2 - slot_width * 4
-        for index, label in enumerate(self.hotbar_labels):
+        slot_size = 52
+        start_x = self.width // 2 - (slot_size * 9) // 2
+        for index, shape in enumerate(self.hotbar_slots):
             stack = self.inventory[index]
-            marker = ">" if index == self.hotbar.selected_index else " "
-            if stack is None:
-                text = "empty"
-            else:
-                text = f"{self.item_registry.by_id(stack.item_id).name[:10]} x{stack.count}"
-            label.text = f"{marker}{index + 1}:{text}"
-            label.x = start_x + index * slot_width
-            label.y = 26
-            label.color = (
-                (245, 220, 140, 255)
-                if index == self.hotbar.selected_index
-                else (205, 215, 235, 255)
+            x = start_x + index * slot_size
+            self._draw_item_slot(
+                shape,
+                self.hotbar_icons[index],
+                self.hotbar_count_labels[index],
+                stack,
+                x,
+                16,
+                slot_size,
+                selected=index == self.hotbar.selected_index,
             )
-            label.draw()
+            key_label = self.hotbar_key_labels[index]
+            key_label.x = x + 4
+            key_label.y = 64
+            key_label.draw()
 
     def _draw_inventory(self) -> None:
-        self.inventory_title.text = (
-            f"Inventory / {self.crafting_grid_size}x{self.crafting_grid_size} crafting - "
-            "C: craft first available, E/Esc: close"
-        )
+        center_x = self.width // 2
+        center_y = self.height // 2
+        self.inventory_panel.x = center_x - 270
+        self.inventory_panel.y = center_y - 270
+        self.inventory_panel.height = 540
+        self.inventory_panel.draw()
+        self.inventory_title.text = "INVENTORY"
         self.inventory_title.x = self.width // 2
-        self.inventory_title.y = self.height * 3 // 4
+        self.inventory_title.y = center_y + 218
         self.inventory_title.draw()
-        start_x = self.width // 2 - 4 * 120
-        start_y = self.height * 2 // 3
-        for index, label in enumerate(self.inventory_labels):
+        display_indices = (*range(9, len(self.inventory)), *range(9))
+        for display_index, index in enumerate(display_indices):
+            x, y = self._inventory_slot_position(display_index)
             stack = self.inventory[index]
-            label.text = (
-                f"{index + 1}: empty"
-                if stack is None
-                else f"{index + 1}: {self.item_registry.by_id(stack.item_id).name} x{stack.count}"
+            self._draw_item_slot(
+                self.inventory_slots[index],
+                self.inventory_icons[index],
+                self.inventory_count_labels[index],
+                stack,
+                x,
+                y,
+                48,
+                selected=index == self.hotbar.selected_index,
             )
-            label.x = start_x + (index % self.inventory.width) * 120
-            label.y = start_y - (index // self.inventory.width) * 42
-            label.draw()
+        craft_origin_x, craft_origin_y = self._crafting_origin()
+        self.crafting_label.text = f"CRAFTING {self.crafting_grid_size}x{self.crafting_grid_size}"
+        self.crafting_label.x = craft_origin_x
+        self.crafting_label.y = craft_origin_y + 58
+        self.crafting_label.draw()
+        for index in range(9):
+            visible = index < len(self.crafting_grid)
+            self.crafting_icons[index].visible = False
+            self.crafting_count_labels[index].text = ""
+            if not visible:
+                continue
+            x, y = self._crafting_slot_position(index)
+            self._draw_item_slot(
+                self.crafting_slots[index],
+                self.crafting_icons[index],
+                self.crafting_count_labels[index],
+                self.crafting_grid[index],
+                x,
+                y,
+                48,
+            )
+        result_x, result_y = self._crafting_result_position()
+        self._draw_item_slot(
+            self.crafting_result_slot,
+            self.crafting_result_icon,
+            self.crafting_result_count,
+            self._crafting_result_stack(),
+            result_x,
+            result_y,
+            56,
+            selected=self._crafting_result_stack() is not None,
+        )
+        self.crafting_arrow.x = result_x - 50
+        self.crafting_arrow.y = result_y + 28
+        self.crafting_arrow.draw()
         self.menu_status.text = self.inventory_status
         self.menu_status.x = self.width // 2
-        self.menu_status.y = self.height // 3
+        self.menu_status.y = center_y - 270
         self.menu_status.draw()
         if self.cursor_stack is not None:
             definition = self.item_registry.by_id(self.cursor_stack.item_id)
-            self.cursor_item_label.text = f"{definition.name} x{self.cursor_stack.count}"
-            self.cursor_item_label.x = self.mouse_x + 12
-            self.cursor_item_label.y = self.mouse_y + 12
+            self.cursor_item_icon.image = self.item_icon_images[self.cursor_stack.item_id]
+            self.cursor_item_icon.scale = 38 / ICON_SIZE
+            self.cursor_item_icon.x = self.mouse_x + 8
+            self.cursor_item_icon.y = self.mouse_y + 8
+            self.cursor_item_icon.draw()
+            self.cursor_item_label.text = (
+                f"{definition.name}  {self.cursor_stack.count}"
+                if self.cursor_stack.count > 1
+                else definition.name
+            )
+            self.cursor_item_label.x = self.mouse_x + 48
+            self.cursor_item_label.y = self.mouse_y + 10
             self.cursor_item_label.draw()
 
     def _inventory_slot_at(self, x: int, y: int) -> int | None:
-        start_x = self.width // 2 - 4 * 120
-        start_y = self.height * 2 // 3
-        for index in range(len(self.inventory)):
-            slot_x = start_x + (index % self.inventory.width) * 120
-            slot_y = start_y - (index // self.inventory.width) * 42
-            if abs(x - slot_x) <= 56 and abs(y - slot_y) <= 16:
+        display_indices = (*range(9, len(self.inventory)), *range(9))
+        for display_index, index in enumerate(display_indices):
+            slot_x, slot_y = self._inventory_slot_position(display_index)
+            if slot_x <= x <= slot_x + 48 and slot_y <= y <= slot_y + 48:
                 return index
         return None
+
+    def _inventory_slot_position(self, display_index: int) -> tuple[int, int]:
+        row, column = divmod(display_index, self.inventory.width)
+        start_x = self.width // 2 - 232
+        start_y = self.height // 2 - (15 if self.crafting_grid_size == 2 else 70)
+        y = start_y - row * 52
+        if row == 3:
+            y -= 10
+        return start_x + column * 52, y
+
+    def _crafting_origin(self) -> tuple[int, int]:
+        return self.width // 2 - 220, self.height // 2 + 90
+
+    def _crafting_slot_position(self, index: int) -> tuple[int, int]:
+        row, column = divmod(index, self.crafting_grid_size)
+        origin_x, origin_y = self._crafting_origin()
+        return origin_x + column * 52, origin_y - row * 52
+
+    def _crafting_slot_at(self, x: int, y: int) -> int | None:
+        for index in range(len(self.crafting_grid)):
+            slot_x, slot_y = self._crafting_slot_position(index)
+            if slot_x <= x <= slot_x + 48 and slot_y <= y <= slot_y + 48:
+                return index
+        return None
+
+    def _crafting_result_position(self) -> tuple[int, int]:
+        _origin_x, origin_y = self._crafting_origin()
+        return self.width // 2 + 135, origin_y - (self.crafting_grid_size - 1) * 26
+
+    def _crafting_result_at(self, x: int, y: int) -> bool:
+        slot_x, slot_y = self._crafting_result_position()
+        return slot_x <= x <= slot_x + 56 and slot_y <= y <= slot_y + 56
+
+    def _crafting_result_stack(self) -> ItemStack | None:
+        recipe = self.recipe_book.match(self.crafting_grid)
+        return recipe.result if recipe is not None else None
+
+    def _draw_item_slot(
+        self,
+        shape: pyglet.shapes.BorderedRectangle,
+        icon: pyglet.sprite.Sprite,
+        count_label: pyglet.text.Label,
+        stack: ItemStack | None,
+        x: int,
+        y: int,
+        size: int,
+        *,
+        selected: bool = False,
+    ) -> None:
+        shape.x = x
+        shape.y = y
+        shape.width = size
+        shape.height = size
+        shape.color = (58, 63, 76)
+        shape.border_color = (232, 195, 96) if selected else (125, 136, 154)
+        shape.draw()
+        if stack is None:
+            icon.visible = False
+            count_label.text = ""
+            return
+        icon.visible = True
+        icon.image = self.item_icon_images[stack.item_id]
+        icon.scale = (size - 12) / ICON_SIZE
+        icon.x = x + 6
+        icon.y = y + 6
+        icon.draw()
+        count_label.text = str(stack.count) if stack.count > 1 else ""
+        count_label.x = x + size - 4
+        count_label.y = y + 2
+        count_label.draw()
+
+    def _open_inventory(self, grid_size: int) -> None:
+        self.inventory_open = True
+        self.crafting_grid_size = grid_size
+        self.crafting_grid = CraftingGrid(grid_size, grid_size)
+        self.inventory_status = "Place ingredients in the grid; click the result to craft."
+
+    def _handle_crafting_click(self, index: int, button: int) -> None:
+        current = self.crafting_grid[index]
+        if button == mouse.LEFT:
+            if self.cursor_stack is None:
+                self.cursor_stack = self.crafting_grid.take(index)
+            elif current is None:
+                self.crafting_grid.set_index(index, self.cursor_stack)
+                self.cursor_stack = None
+            elif current.item_id == self.cursor_stack.item_id:
+                maximum = self.item_registry.by_id(current.item_id).max_stack
+                moved = min(maximum - current.count, self.cursor_stack.count)
+                if moved > 0:
+                    self.crafting_grid.set_index(index, current.with_count(current.count + moved))
+                    remaining = self.cursor_stack.count - moved
+                    self.cursor_stack = (
+                        self.cursor_stack.with_count(remaining) if remaining else None
+                    )
+            else:
+                self.crafting_grid.set_index(index, self.cursor_stack)
+                self.cursor_stack = current
+            return
+        if button != mouse.RIGHT:
+            return
+        if self.cursor_stack is None:
+            if current is None:
+                return
+            take_count = (current.count + 1) // 2
+            remaining = current.count - take_count
+            self.cursor_stack = current.with_count(take_count)
+            self.crafting_grid.set_index(
+                index, current.with_count(remaining) if remaining else None
+            )
+            return
+        maximum = self.item_registry.by_id(self.cursor_stack.item_id).max_stack
+        if current is None:
+            self.crafting_grid.set_index(index, self.cursor_stack.with_count(1))
+        elif current.item_id == self.cursor_stack.item_id and current.count < maximum:
+            self.crafting_grid.set_index(index, current.with_count(current.count + 1))
+        else:
+            return
+        remaining = self.cursor_stack.count - 1
+        self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
+
+    def _take_crafting_result(self) -> None:
+        result = self._crafting_result_stack()
+        if result is None:
+            self.inventory_status = "The current pattern has no recipe."
+            return
+        maximum = self.item_registry.by_id(result.item_id).max_stack
+        if self.cursor_stack is not None and (
+            self.cursor_stack.item_id != result.item_id
+            or self.cursor_stack.count + result.count > maximum
+        ):
+            self.inventory_status = "Clear the cursor before taking this result."
+            return
+        crafted = self.recipe_book.craft(self.crafting_grid)
+        if crafted is None:
+            return
+        self.cursor_stack = (
+            crafted
+            if self.cursor_stack is None
+            else self.cursor_stack.with_count(self.cursor_stack.count + crafted.count)
+        )
+        definition = self.item_registry.by_id(crafted.item_id)
+        self.inventory_status = f"Crafted {definition.name} x{crafted.count}."
 
     def _handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
         if quick_move and button == mouse.LEFT and self.cursor_stack is None:
@@ -1217,16 +1503,23 @@ class GameWindow(pyglet.window.Window):
             self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
 
     def _close_inventory(self) -> None:
+        for index in range(len(self.crafting_grid)):
+            stack = self.crafting_grid.take(index)
+            if stack is not None:
+                self._return_or_drop_stack(stack)
         if self.cursor_stack is not None:
-            remainder = self.inventory.add(self.cursor_stack, self.item_registry)
-            if remainder is not None:
-                self.entities.spawn_item(
-                    (self.player.x, self.player.y + 0.5, self.player.z),
-                    remainder,
-                )
+            self._return_or_drop_stack(self.cursor_stack)
             self.cursor_stack = None
         self.inventory_open = False
         self.inventory_status = ""
+
+    def _return_or_drop_stack(self, stack: ItemStack) -> None:
+        remainder = self.inventory.add(stack, self.item_registry)
+        if remainder is not None:
+            self.entities.spawn_item(
+                (self.player.x, self.player.y + 0.5, self.player.z),
+                remainder,
+            )
 
     def _is_entity_hazard(self, x: int, y: int, z: int) -> bool:
         block_id = self.world_renderer.get_block(x, y, z)

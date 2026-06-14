@@ -51,7 +51,8 @@ class EntitySimulation:
         entity = self.world.create()
         self.world.transforms.set(entity, Transform(*position))
         self.world.velocities.set(entity, Velocity())
-        self.world.colliders.set(entity, Collider(0.7, 1.2))
+        collider = Collider(0.9, 1.4) if kind is MobKind.PASSIVE else Collider(0.65, 1.85)
+        self.world.colliders.set(entity, collider)
         self.world.health.set(entity, Health(10.0 if kind is MobKind.PASSIVE else 16.0, 16.0))
         self.world.mob_ai.set(entity, MobAI(kind))
         self.world.animations.set(entity, AnimationState())
@@ -107,6 +108,7 @@ class EntitySimulation:
         player_position: tuple[float, float, float],
         ground_height: Callable[[int, int], int],
         is_hazard: Callable[[int, int, int], bool],
+        is_solid: Callable[[int, int, int], bool] | None = None,
     ) -> float:
         player_damage = 0.0
         for entity, lifetime in tuple(self.world.lifetimes.items()):
@@ -117,7 +119,11 @@ class EntitySimulation:
         for entity, ai in tuple(self.world.mob_ai.items()):
             transform = self.world.transforms[entity]
             animation = self.world.animations[entity]
-            animation.phase += delta_time * max(animation.speed, 0.35)
+            collider = self.world.colliders[entity]
+            velocity = self.world.velocities[entity]
+            if is_solid is not None:
+                _update_vertical(transform, velocity, collider, delta_time, is_solid, is_hazard)
+            animation.phase += delta_time
             if animation.death_remaining > 0.0:
                 animation.death_remaining -= delta_time
                 ai.state = MobState.DEATH
@@ -158,21 +164,34 @@ class EntitySimulation:
             next_x = transform.x + ai.direction_x * speed * delta_time
             next_z = transform.z + ai.direction_z * speed * delta_time
             ground = ground_height(math.floor(next_x), math.floor(next_z))
-            if is_hazard(math.floor(next_x), ground, math.floor(next_z)):
+            hazard_y = math.floor(transform.y) if is_solid is not None else ground
+            if is_hazard(math.floor(next_x), hazard_y, math.floor(next_z)):
                 ai.direction_x *= -1.0
                 ai.direction_z *= -1.0
                 ai.state_time = 0.5
-                continue
-            transform.x = next_x
-            transform.z = next_z
-            transform.y = float(ground)
-            velocity = self.world.velocities[entity]
+            else:
+                if is_solid is not None and _mob_collides(
+                    next_x, transform.y, next_z, collider, is_solid
+                ):
+                    if not _mob_collides(next_x, transform.y + 1.0, next_z, collider, is_solid):
+                        transform.y += 1.0
+                        transform.x = next_x
+                        transform.z = next_z
+                    else:
+                        ai.direction_x *= -1.0
+                        ai.direction_z *= -1.0
+                        ai.state_time = 0.5
+                else:
+                    transform.x = next_x
+                    transform.z = next_z
             velocity.x = ai.direction_x * speed
             velocity.z = ai.direction_z * speed
+            if is_solid is None:
+                transform.y = float(ground)
             animation.speed = speed
             _advance_animation_state(animation, ai.state, delta_time)
             if speed > 0.0:
-                transform.yaw = math.atan2(ai.direction_x, ai.direction_z)
+                transform.yaw = math.atan2(ai.direction_x, -ai.direction_z)
         return player_damage
 
     def damage(self, entity: EntityId, amount: float) -> tuple[ItemStack, ...]:
@@ -270,3 +289,49 @@ def _advance_animation_state(
         animation.state_phase = 0.0
     else:
         animation.state_phase += delta_time
+
+
+def _mob_collides(
+    x: float,
+    y: float,
+    z: float,
+    collider: Collider,
+    is_solid: Callable[[int, int, int], bool],
+) -> bool:
+    half = collider.width * 0.5
+    epsilon = 1e-6
+    return any(
+        is_solid(block_x, block_y, block_z)
+        for block_x in range(math.floor(x - half + epsilon), math.floor(x + half - epsilon) + 1)
+        for block_y in range(math.floor(y + epsilon), math.floor(y + collider.height - epsilon) + 1)
+        for block_z in range(math.floor(z - half + epsilon), math.floor(z + half - epsilon) + 1)
+    )
+
+
+def _update_vertical(
+    transform: Transform,
+    velocity: Velocity,
+    collider: Collider,
+    delta_time: float,
+    is_solid: Callable[[int, int, int], bool],
+    is_fluid: Callable[[int, int, int], bool],
+) -> None:
+    block_x = math.floor(transform.x)
+    block_z = math.floor(transform.z)
+    in_water = is_fluid(block_x, math.floor(transform.y + 0.35), block_z)
+    if in_water:
+        velocity.y = min(3.0, velocity.y + 16.0 * delta_time)
+        velocity.y *= max(0.0, 1.0 - 2.5 * delta_time)
+    else:
+        velocity.y = max(-24.0, velocity.y - 20.0 * delta_time)
+    displacement = velocity.y * delta_time
+    steps = max(1, math.ceil(abs(displacement) / 0.18))
+    step = displacement / steps
+    for _ in range(steps):
+        next_y = transform.y + step
+        if _mob_collides(transform.x, next_y, transform.z, collider, is_solid):
+            if step < 0.0:
+                transform.y = float(math.floor(next_y) + 1)
+            velocity.y = 0.0
+            return
+        transform.y = max(0.0, next_y)

@@ -15,6 +15,7 @@ class ModelPart:
     parent: str | None
     offset: Vec3
     size: Vec3
+    pivot: Vec3 = (0.0, 0.0, 0.0)
     material: str = "skin"
     uv: Vec4 = (0.0, 0.0, 1.0, 1.0)
     tint: Vec3 = (1.0, 1.0, 1.0)
@@ -77,6 +78,7 @@ def _parse_part(raw: object) -> ModelPart:
         parent=str(parent) if (parent := values.get("parent")) is not None else None,
         offset=_vec3(values["offset"]),
         size=_vec3(values["size"]),
+        pivot=_vec3(values.get("pivot", [0.0, 0.0, 0.0])),
         material=str(values.get("material", "skin")),
         uv=_vec4(values.get("uv", [0.0, 0.0, 1.0, 1.0])),
         tint=_vec3(values.get("tint", [1.0, 1.0, 1.0])),

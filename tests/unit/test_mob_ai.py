@@ -15,6 +15,11 @@ def no_hazard(x: int, y: int, z: int) -> bool:
     return False
 
 
+def solid_floor(x: int, y: int, z: int) -> bool:
+    del x, z
+    return y == 0
+
+
 def test_passive_mob_wanders_and_hostile_transitions_to_chase_and_attack() -> None:
     simulation = EntitySimulation(seed=42)
     passive = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 10.0, 0.0))
@@ -106,3 +111,45 @@ def test_peaceful_population_removes_existing_hostile_mobs() -> None:
 
     assert passive in simulation.world.alive
     assert hostile not in simulation.world.alive
+
+
+def test_mob_falls_under_gravity_and_lands_on_voxel_floor() -> None:
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 4.0, 0.0))
+
+    for _ in range(50):
+        simulation.update(
+            0.05,
+            (0.0, 4.0, 0.0),
+            flat_ground,
+            no_hazard,
+            solid_floor,
+        )
+
+    assert simulation.world.transforms[mob].y == 1.0
+    assert simulation.world.velocities[mob].y == 0.0
+
+
+def test_water_applies_buoyancy_to_falling_mob() -> None:
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 1.0, 0.0))
+    simulation.world.velocities[mob].y = -2.0
+
+    simulation.update(
+        0.1,
+        (0.0, 1.0, 0.0),
+        flat_ground,
+        lambda _x, y, _z: y == 1,
+        lambda _x, _y, _z: False,
+    )
+
+    assert simulation.world.velocities[mob].y > -2.0
+
+
+def test_mob_yaw_faces_its_actual_movement_direction() -> None:
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.HOSTILE, (0.0, 10.0, 0.0))
+
+    simulation.update(0.1, (0.0, 10.0, 8.0), flat_ground, no_hazard)
+
+    assert abs(abs(simulation.world.transforms[mob].yaw) - 3.14159) < 0.001

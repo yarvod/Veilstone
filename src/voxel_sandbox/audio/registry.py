@@ -14,6 +14,11 @@ class AudioResource:
     path: Path
     group: VolumeGroup
     loop: bool = False
+    gain: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.gain <= 2.0:
+            raise ValueError("Audio resource gain must be between 0 and 2")
 
 
 class AudioRegistry:
@@ -40,6 +45,7 @@ class AudioRegistry:
                 path=asset_root / str(entry["path"]),
                 group=VolumeGroup(str(entry["group"])),
                 loop=bool(entry.get("loop", False)),
+                gain=_gain(entry),
             )
             for entry in entries
         )
@@ -53,3 +59,10 @@ class AudioRegistry:
 
     def __contains__(self, key: str) -> bool:
         return key in self._resources
+
+
+def _gain(entry: dict[str, object]) -> float:
+    value = entry.get("gain", 1.0)
+    if not isinstance(value, int | float):
+        raise ValueError("Audio resource gain must be numeric")
+    return float(value)

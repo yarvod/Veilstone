@@ -111,9 +111,9 @@ def animated_pose(
     look_yaw: float = 0.0,
 ) -> Pose:
     pose: Pose = {}
-    cycle = animation_time * max(speed, 0.35) * 5.0
-    swing = math.sin(cycle) * min(0.75, 0.2 + speed * 0.22)
-    bob = math.sin(animation_time * 2.2) * 0.025
+    cycle = animation_time * (2.2 + speed * 1.2)
+    swing = math.sin(cycle) * min(0.48, 0.10 + speed * 0.14)
+    bob = math.sin(animation_time * 1.7) * 0.012
     pose["body"] = PartPose(offset=(0.0, bob, 0.0))
     pose["head"] = PartPose(rotation=(math.sin(animation_time * 1.1) * 0.06, look_yaw, 0.0))
     for name, phase in (
@@ -129,7 +129,7 @@ def animated_pose(
         if any(part.name == name for part in model.parts):
             pose[name] = PartPose(rotation=(phase, 0.0, 0.0))
     if any(part.name == "tail" for part in model.parts):
-        pose["tail"] = PartPose(rotation=(0.12, math.sin(animation_time * 3.0) * 0.65, 0.0))
+        pose["tail"] = PartPose(rotation=(0.08, math.sin(animation_time * 2.0) * 0.28, 0.0))
     if state is MobState.ATTACK:
         attack = math.sin(min(animation_time % 1.0, 0.65) / 0.65 * math.pi)
         pose["body"] = PartPose(
@@ -162,6 +162,7 @@ def resolved_part_transform(
         visited.add(part.parent)
         parent = parts[part.parent]
         parent_pose = pose.get(parent.name, PartPose())
+        offset = _rotate_vec(offset, parent_pose.rotation)
         offset = _add_vec(_add_vec(parent.offset, parent_pose.offset), offset)
         rotation = _add_vec(parent_pose.rotation, rotation)
         part = parent
@@ -174,3 +175,14 @@ def _mix_vec(first: Vec3, second: Vec3, amount: float) -> Vec3:
 
 def _add_vec(first: Vec3, second: Vec3) -> Vec3:
     return first[0] + second[0], first[1] + second[1], first[2] + second[2]
+
+
+def _rotate_vec(value: Vec3, rotation: Vec3) -> Vec3:
+    x, y, z = value
+    cx, sx = math.cos(rotation[0]), math.sin(rotation[0])
+    cy, sy = math.cos(rotation[1]), math.sin(rotation[1])
+    cz, sz = math.cos(rotation[2]), math.sin(rotation[2])
+    y, z = cx * y + sx * z, -sx * y + cx * z
+    x, z = cy * x - sy * z, sy * x + cy * z
+    x, y = cz * x + sz * y, -sz * x + cz * y
+    return x, y, z

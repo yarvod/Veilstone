@@ -63,11 +63,12 @@ graphics toggles, VSync, and `peaceful`/`normal` difficulty; Controls supports c
 movement/jump rebinding. Peaceful removes hostile mobs. Normal allows one nearby hostile mob only
 where effective skylight/block light is level 7 or lower.
 The Audio screen persists master, effects, music, and ambience volume groups. Positional block
-sounds, material footsteps, mob feedback, biome ambience, and state-driven music are routed
-through a backend-independent event bus; dedicated servers use a silent backend.
-Veilgrazer and Gloamstalker mobs use original atlas-backed skins and versioned articulated model
-definitions. Their heads, bodies, limbs, tail, jaw, ears, and horns animate independently across
-idle, movement, attack, hurt, and death states, with distant-part LOD and replicated phases.
+sounds, material footsteps, distinct cow/zombie feedback, biome ambience, and state-driven music
+use per-resource gain staging through a backend-independent event bus; dedicated servers use a
+silent backend.
+Cow and zombie mobs use original generated material sheets and versioned articulated model
+definitions. Per-part UV regions, joint pivots, inherited transforms, gravity, buoyancy, and
+distance LOD keep their silhouettes and movement readable without copying third-party assets.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;
@@ -109,10 +110,10 @@ Client controls:
 - Left mouse: break the highlighted block.
 - Left mouse while aiming at a mob: damage the mob; death produces an item entity.
 - `1-9` or mouse wheel: select a hotbar slot.
-- `E`: open the 9x4 inventory and player 2x2 crafting view.
+- `E`: open the 9x4 inventory and player 2x2 crafting grid.
 - Left click / right click in inventory: transfer or split stacks.
 - `Shift` + left click in inventory: quick-move between hotbar and backpack.
-- `C`: craft the highest-priority available recipe for the active 2x2/3x3 grid.
+- Click the crafting output, or press `C`, to take one matching recipe result.
 - `Q`: drop one item from the selected hotbar stack.
 - `T`: enter and send a multiplayer chat message.
 - `/`: open the command line. Use `/help`, `/time set day|noon|night|midnight|<ticks>`, or
@@ -120,6 +121,7 @@ Client controls:
 - Right mouse: place the selected block on the highlighted face.
 - `Escape`: open the Pause Menu while playing, or go back in menus.
 - Pause Menu -> `Open to LAN`: advertise the running singleplayer server on the LAN.
+- `F3`: toggle the detailed debug overlay.
 - `F5`: force shader reload.
 - `F6`: toggle smooth lighting.
 - `F7`: toggle ambient occlusion.

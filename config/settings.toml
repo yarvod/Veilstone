@@ -52,6 +52,6 @@ postprocess = false
 
 [audio]
 master = 0.8
-effects = 0.8
-music = 0.45
-ambience = 0.55
+effects = 0.7
+music = 0.35
+ambience = 0.42
