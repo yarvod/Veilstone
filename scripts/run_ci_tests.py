@@ -10,7 +10,7 @@ def _workflow_escape(value: str) -> str:
 
 def main() -> int:
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q"],
+        [sys.executable, "-m", "pytest", "-q", *sys.argv[1:]],
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,

@@ -11,3 +11,8 @@
 
 Windows packaging must run on Windows; macOS packaging must run on macOS. PyInstaller does not
 cross-compile native application bundles.
+
+GitHub's hosted Windows runner exposes an OpenGL implementation below the game's 3.3 minimum.
+CI therefore verifies the Windows executable, bundled resources, user-data writes, and dedicated
+server there. A graphical `Veilstone --smoke-test` on a Windows machine with OpenGL 3.3 or newer
+is still required before publishing a release.

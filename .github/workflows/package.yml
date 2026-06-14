@@ -18,14 +18,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Linux OpenGL dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libegl1-mesa-dev libgl1-mesa-dev
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --frozen
       - name: Run tests
-        if: runner.os != 'Linux'
+        if: runner.os == 'macOS'
         run: uv run python scripts/run_ci_tests.py
+      - name: Run platform-neutral tests
+        if: runner.os == 'Windows'
+        run: uv run python scripts/run_ci_tests.py -m "not smoke"
       - name: Run tests with virtual display
         if: runner.os == 'Linux'
         run: xvfb-run uv run python scripts/run_ci_tests.py
@@ -38,7 +46,9 @@ jobs:
         shell: pwsh
         run: |
           $env:VEILSTONE_DATA_DIR = "$env:RUNNER_TEMP\veilstone"
-          .\dist\Veilstone\Veilstone.exe --smoke-test
+          .\dist\Veilstone\Veilstone.exe --version
+          .\dist\Veilstone\Veilstone.exe --verify-package
+          .\dist\Veilstone\Veilstone.exe server --smoke-test
       - name: Smoke test Linux package
         if: runner.os == 'Linux'
         run: VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" xvfb-run dist/Veilstone/Veilstone --smoke-test

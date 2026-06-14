@@ -12,6 +12,7 @@ from voxel_sandbox.app.crash_reporting import install_crash_reporting
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="voxel", description="Voxel Sandbox engine")
     parser.add_argument("--version", action="version", version=f"Veilstone {__version__}")
+    parser.add_argument("--verify-package", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
     subparsers = parser.add_subparsers(dest="command")
 
@@ -46,6 +47,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     install_crash_reporting()
     args = build_parser().parse_args(argv)
+    if args.verify_package:
+        from voxel_sandbox.app.package_verification import verify_package
+
+        return verify_package()
     if args.command is None:
         args.command = "client"
     return run_command(args)
