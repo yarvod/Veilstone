@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+from contextlib import suppress
 
 from voxel_sandbox.network.protocol import PROTOCOL_VERSION, Message, receive_frame, send_frame
 
@@ -48,6 +49,9 @@ class LanClient:
         return receive_frame(self.connection)
 
     def close(self) -> None:
-        if self.connection is not None:
-            self.connection.close()
-            self.connection = None
+        connection = self.connection
+        self.connection = None
+        if connection is not None:
+            with suppress(OSError):
+                connection.shutdown(socket.SHUT_RDWR)
+            connection.close()

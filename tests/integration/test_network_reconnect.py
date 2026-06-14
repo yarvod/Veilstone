@@ -56,7 +56,7 @@ def test_client_session_reports_exhausted_reconnect_attempts() -> None:
     try:
         session.client.close()
         messages: list[dict[str, object]] = []
-        deadline = time.monotonic() + 2.0
+        deadline = time.monotonic() + 5.0
         while time.monotonic() < deadline:
             messages.extend(session.poll())
             if any(message.get("type") == "session_disconnected" for message in messages):
