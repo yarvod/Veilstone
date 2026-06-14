@@ -53,6 +53,7 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
         "Clouds",
         "Postprocess",
         "VSync",
+        "Audio",
         "Controls",
         "Back",
     ]

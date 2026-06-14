@@ -45,3 +45,9 @@ shadow_quality = "medium"
 shadow_bias = 0.0015
 clouds = true
 postprocess = false
+
+[audio]
+master = 0.8
+effects = 0.8
+music = 0.45
+ambience = 0.55

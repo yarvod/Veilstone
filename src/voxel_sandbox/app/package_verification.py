@@ -11,6 +11,9 @@ def missing_package_resources() -> tuple[Path, ...]:
     required = (
         resource_path("config/settings.toml"),
         resource_path("config/recipes.toml"),
+        resource_path("config/audio.toml"),
+        resource_path("assets/audio/ui_click.wav"),
+        resource_path("assets/audio/music_exploration.wav"),
         package_root / "render/shaders/glsl/chunk_opaque.vert",
         package_root / "render/shaders/glsl/chunk_opaque.frag",
         package_root / "render/shaders/glsl/entity.vert",

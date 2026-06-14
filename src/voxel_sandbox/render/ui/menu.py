@@ -12,6 +12,7 @@ class Screen(Enum):
     GAME = auto()
     PAUSE = auto()
     CONTROLS = auto()
+    AUDIO = auto()
 
 
 class MenuCommand(Enum):
@@ -32,6 +33,10 @@ class MenuCommand(Enum):
     REBIND_LEFT = auto()
     REBIND_RIGHT = auto()
     REBIND_JUMP = auto()
+    CYCLE_MASTER_VOLUME = auto()
+    CYCLE_EFFECTS_VOLUME = auto()
+    CYCLE_MUSIC_VOLUME = auto()
+    CYCLE_AMBIENCE_VOLUME = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +69,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Clouds", action="toggle_clouds"),
         MenuItem("Postprocess", action="toggle_postprocess"),
         MenuItem("VSync", action="toggle_vsync"),
+        MenuItem("Audio", target=Screen.AUDIO),
         MenuItem("Controls", target=Screen.CONTROLS),
         MenuItem("Back", action="settings_back"),
     ),
@@ -73,6 +79,13 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Left", action="rebind_left"),
         MenuItem("Right", action="rebind_right"),
         MenuItem("Jump", action="rebind_jump"),
+        MenuItem("Back", target=Screen.SETTINGS),
+    ),
+    Screen.AUDIO: (
+        MenuItem("Master", action="cycle_master_volume"),
+        MenuItem("Effects", action="cycle_effects_volume"),
+        MenuItem("Music", action="cycle_music_volume"),
+        MenuItem("Ambience", action="cycle_ambience_volume"),
         MenuItem("Back", target=Screen.SETTINGS),
     ),
     Screen.PAUSE: (
@@ -105,6 +118,7 @@ class MenuController:
             Screen.SETTINGS: "SETTINGS",
             Screen.PAUSE: "PAUSED",
             Screen.CONTROLS: "CONTROLS",
+            Screen.AUDIO: "AUDIO",
         }
         return titles.get(self.screen, "")
 
@@ -138,6 +152,7 @@ class MenuController:
             Screen.SETTINGS: self._settings_return,
             Screen.PAUSE: Screen.GAME,
             Screen.CONTROLS: Screen.SETTINGS,
+            Screen.AUDIO: Screen.SETTINGS,
             Screen.GAME: Screen.PAUSE,
         }
         target = targets.get(self.screen)
@@ -183,6 +198,14 @@ class MenuController:
             return MenuCommand.REBIND_RIGHT
         elif action == "rebind_jump":
             return MenuCommand.REBIND_JUMP
+        elif action == "cycle_master_volume":
+            return MenuCommand.CYCLE_MASTER_VOLUME
+        elif action == "cycle_effects_volume":
+            return MenuCommand.CYCLE_EFFECTS_VOLUME
+        elif action == "cycle_music_volume":
+            return MenuCommand.CYCLE_MUSIC_VOLUME
+        elif action == "cycle_ambience_volume":
+            return MenuCommand.CYCLE_AMBIENCE_VOLUME
         elif action == "settings_back":
             self._go_to(self._settings_return)
         return MenuCommand.NONE

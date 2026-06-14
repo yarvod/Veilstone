@@ -1,0 +1,64 @@
+[[audio]]
+key = "ui.click"
+path = "audio/ui_click.wav"
+group = "effects"
+
+[[audio]]
+key = "block.stone"
+path = "audio/block_stone.wav"
+group = "effects"
+
+[[audio]]
+key = "block.earth"
+path = "audio/block_earth.wav"
+group = "effects"
+
+[[audio]]
+key = "block.wood"
+path = "audio/block_wood.wav"
+group = "effects"
+
+[[audio]]
+key = "footstep"
+path = "audio/footstep.wav"
+group = "effects"
+
+[[audio]]
+key = "mob.hit"
+path = "audio/mob_hit.wav"
+group = "effects"
+
+[[audio]]
+key = "mob.death"
+path = "audio/mob_death.wav"
+group = "effects"
+
+[[audio]]
+key = "ambience.surface"
+path = "audio/ambience_surface.wav"
+group = "ambience"
+loop = true
+
+[[audio]]
+key = "ambience.cave"
+path = "audio/ambience_cave.wav"
+group = "ambience"
+loop = true
+
+[[audio]]
+key = "music.menu"
+path = "audio/music_menu.wav"
+group = "music"
+loop = true
+
+[[audio]]
+key = "music.exploration"
+path = "audio/music_exploration.wav"
+group = "music"
+loop = true
+
+[[audio]]
+key = "music.night"
+path = "audio/music_night.wav"
+group = "music"
+loop = true

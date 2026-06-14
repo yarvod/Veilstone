@@ -17,6 +17,8 @@ from pyglet.window import key, mouse
 
 from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
+from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
+from voxel_sandbox.audio.runtime import create_audio_bus, volume_map
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
@@ -78,6 +80,9 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context = moderngl.create_context(require=330)
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
+        self.audio = create_audio_bus(settings.audio)
+        self.audio_director = AudioDirector(self.audio)
+        self._footstep_accumulator = 0.0
         self.control_bindings = self._control_symbols()
         self.rebinding_action: str | None = None
         self.active_save_root = save_root or application_data_root() / "dev_world"
@@ -247,7 +252,7 @@ class GameWindow(pyglet.window.Window):
                 font_name="Menlo",
                 font_size=16,
             )
-            for _ in range(6)
+            for _ in range(8)
         ]
         self._start_local_authority()
         if connect is not None:
@@ -271,6 +276,7 @@ class GameWindow(pyglet.window.Window):
         self.postprocess_renderer.release()
         self.entity_renderer.release()
         self.world_renderer.release()
+        self.audio.close()
         super().close()
 
     def reload_shaders(self, delta_time: float) -> None:
@@ -280,7 +286,18 @@ class GameWindow(pyglet.window.Window):
     def fixed_update(self, delta_time: float) -> None:
         self._apply_lan_block_actions()
         if not self.menu.in_game:
+            self.audio_director.set_game_state("menu")
+            self.audio_director.set_biome("")
+            self.audio.update(self.camera.position)
             return
+        self.audio_director.set_game_state(
+            "night" if self.world_renderer.daylight < 0.25 else "exploration"
+        )
+        terrain_height = self.world_renderer.generator.height_at(
+            math.floor(self.player.x), math.floor(self.player.z)
+        )
+        self.audio_director.set_biome("cave" if self.player.y < terrain_height - 3 else "surface")
+        self.audio.update(self.camera.position)
         if not self._player_position_within_world():
             self._move_player_to_spawn()
             self.inventory_status = "Recovered from outside the world"
@@ -356,6 +373,22 @@ class GameWindow(pyglet.window.Window):
             delta_time,
             self.world_renderer.is_solid_block,
         )
+        moving = abs(forward) + abs(right) > 0.0
+        if moving and self.player.on_ground:
+            self._footstep_accumulator += delta_time
+            if self._footstep_accumulator >= 0.42:
+                self._footstep_accumulator %= 0.42
+                block_id = self.world_renderer.get_block(
+                    math.floor(self.player.x),
+                    math.floor(self.player.y - 0.05),
+                    math.floor(self.player.z),
+                )
+                material = self.world_renderer.registry.by_id(block_id).material.value
+                key_name = f"block.{material}"
+                key_name = key_name if key_name in self.audio.registry else "footstep"
+                self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, self.camera.position))
+        else:
+            self._footstep_accumulator = 0.0
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
@@ -458,11 +491,15 @@ class GameWindow(pyglet.window.Window):
         if not self.menu.in_game:
             if symbol in {key.UP, key.W}:
                 self.menu.move_selection(-1)
+                self._play_ui_sound()
             elif symbol in {key.DOWN, key.S}:
                 self.menu.move_selection(1)
+                self._play_ui_sound()
             elif symbol in {key.ENTER, key.RETURN, key.SPACE}:
+                self._play_ui_sound()
                 self._handle_menu_command(self.menu.activate())
             elif symbol == key.ESCAPE:
+                self._play_ui_sound()
                 self.menu.back()
             self._sync_mouse_capture()
             return
@@ -537,6 +574,7 @@ class GameWindow(pyglet.window.Window):
             index = self._menu_index_at(x, y)
             if index is not None:
                 self.menu.select(index)
+                self._play_ui_sound()
                 self._handle_menu_command(self.menu.activate())
                 self._sync_mouse_capture()
             return
@@ -555,6 +593,13 @@ class GameWindow(pyglet.window.Window):
             target = self.entities.target_mob(self.camera.position, self.camera.direction)
             if target is not None:
                 drops = self.entities.damage(target, 4.0)
+                self.audio.emit(
+                    AudioEvent(
+                        AudioEventKind.SOUND,
+                        "mob.death" if drops else "mob.hit",
+                        self.camera.position,
+                    )
+                )
                 self.inventory_status = "Mob defeated" if drops else "Hit mob"
                 return
         hit = self.world_renderer.raycast(self.camera.position, self.camera.direction)
@@ -563,6 +608,7 @@ class GameWindow(pyglet.window.Window):
         if button == mouse.LEFT:
             block_id = self.world_renderer.get_block(*hit.block)
             if self.world_renderer.set_block(hit.block, 0):
+                self._play_block_sound(block_id, hit.block)
                 self._send_block_action(hit.block, 0)
                 drop = self.item_registry.drop_for_block(block_id)
                 if drop is not None:
@@ -588,6 +634,7 @@ class GameWindow(pyglet.window.Window):
             if definition.block_id is None:
                 return
             if self.world_renderer.set_block(hit.previous, definition.block_id):
+                self._play_block_sound(definition.block_id, hit.previous)
                 self._send_block_action(hit.previous, definition.block_id)
                 self.inventory.take_from_slot(self.hotbar.selected_index)
 
@@ -674,9 +721,52 @@ class GameWindow(pyglet.window.Window):
             "rebind_left": self.settings.controls.left,
             "rebind_right": self.settings.controls.right,
             "rebind_jump": self.settings.controls.jump,
+            "cycle_master_volume": f"{self.settings.audio.master:.0%}",
+            "cycle_effects_volume": f"{self.settings.audio.effects:.0%}",
+            "cycle_music_volume": f"{self.settings.audio.music:.0%}",
+            "cycle_ambience_volume": f"{self.settings.audio.ambience:.0%}",
         }
         value = values.get(item.action or "")
         return item.label if value is None else f"{item.label}: {value}"
+
+    def _play_ui_sound(self) -> None:
+        self.audio.emit(AudioEvent(AudioEventKind.SOUND, "ui.click"))
+
+    def _play_block_sound(
+        self,
+        block_id: int,
+        position: tuple[int, int, int],
+    ) -> None:
+        material = self.world_renderer.registry.by_id(block_id).material.value
+        key_name = f"block.{material}"
+        key_name = key_name if key_name in self.audio.registry else "footstep"
+        self.audio.emit(
+            AudioEvent(
+                AudioEventKind.SOUND,
+                key_name,
+                (
+                    float(position[0]) + 0.5,
+                    float(position[1]) + 0.5,
+                    float(position[2]) + 0.5,
+                ),
+            )
+        )
+
+    def _cycle_audio_volume(self, command: MenuCommand) -> None:
+        fields = {
+            MenuCommand.CYCLE_MASTER_VOLUME: "master",
+            MenuCommand.CYCLE_EFFECTS_VOLUME: "effects",
+            MenuCommand.CYCLE_MUSIC_VOLUME: "music",
+            MenuCommand.CYCLE_AMBIENCE_VOLUME: "ambience",
+        }
+        field = fields[command]
+        current = getattr(self.settings.audio, field)
+        next_volume = 0.0 if current >= 0.99 else round(current + 0.1, 1)
+        audio_settings = replace(self.settings.audio, **{field: next_volume})
+        self.settings = replace(self.settings, audio=audio_settings)
+        self.audio.set_volumes(volume_map(audio_settings))
+        self.menu.status = f"{field.title()} volume saved as {next_volume:.0%}."
+        save_user_settings(self.settings)
 
     def _handle_menu_command(self, command: MenuCommand) -> None:
         if command is MenuCommand.CLOSE:
@@ -741,6 +831,13 @@ class GameWindow(pyglet.window.Window):
             )
             self.set_vsync(enabled)
             save_user_settings(self.settings)
+        elif command in {
+            MenuCommand.CYCLE_MASTER_VOLUME,
+            MenuCommand.CYCLE_EFFECTS_VOLUME,
+            MenuCommand.CYCLE_MUSIC_VOLUME,
+            MenuCommand.CYCLE_AMBIENCE_VOLUME,
+        }:
+            self._cycle_audio_volume(command)
         elif command is MenuCommand.CREATE_WORLD:
             self._begin_text_input(
                 TextPurpose.WORLD_NAME,

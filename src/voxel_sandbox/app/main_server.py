@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.audio.runtime import create_server_audio_bus
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import LanServer
 from voxel_sandbox.network.discovery import DiscoveryResponder
@@ -19,6 +20,7 @@ def run_server(
     port: int,
     smoke_test: bool = False,
 ) -> int:
+    audio = create_server_audio_bus(settings.audio)
     storage = WorldStorage(Path(world))
     storage.ensure_world(name="Veilstone Dedicated World", seed=settings.world.seed)
     server = LanServer(
@@ -40,6 +42,7 @@ def run_server(
     if smoke_test:
         discovery.stop()
         server.stop()
+        audio.close()
         LOGGER.info("Server smoke test complete")
         return 0
 
@@ -51,4 +54,5 @@ def run_server(
     finally:
         discovery.stop()
         server.stop()
+        audio.close()
     return 0
