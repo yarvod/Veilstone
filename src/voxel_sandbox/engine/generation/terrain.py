@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import math
 from enum import Enum
+from pathlib import Path
 
 import numpy as np
 
 from voxel_sandbox.engine.chunks import SECTION_SIZE, Chunk, ChunkCoord, DirtyFlag
 from voxel_sandbox.engine.generation.seed import WorldSeed
+from voxel_sandbox.engine.generation.structures import (
+    StructureTemplate,
+    load_structure_templates,
+    structure_placements_for_chunk,
+)
 
 
 class Biome(Enum):
@@ -21,6 +27,9 @@ class TerrainGenerator:
 
     def __init__(self, seed: WorldSeed) -> None:
         self.seed = seed
+        self.structure_templates: tuple[StructureTemplate, ...] = load_structure_templates(
+            Path(__file__).parent / "structure_templates"
+        )
 
     def height_at(self, world_x: int, world_z: int) -> int:
         broad = self._value_noise(world_x / 64.0, world_z / 64.0, 0)
@@ -64,11 +73,36 @@ class TerrainGenerator:
         self._carve_caves(chunk, coord, touched_sections)
         self._place_ores(chunk, coord, touched_sections)
         self._place_trees(chunk, coord, touched_sections)
+        self._place_structures(chunk, coord, touched_sections)
         for section_index in touched_sections:
             section = chunk.sections[section_index]
             section.dirty = DirtyFlag.MESH | DirtyFlag.LIGHTING | DirtyFlag.SAVE
             section.revision = 1
         return chunk
+
+    def _place_structures(
+        self,
+        chunk: Chunk,
+        coord: ChunkCoord,
+        touched_sections: set[int],
+    ) -> None:
+        for placement in structure_placements_for_chunk(
+            coord,
+            self.seed,
+            self.structure_templates,
+            self.height_at,
+        ):
+            origin_x, origin_y, origin_z = placement.origin
+            for block in placement.template.blocks:
+                self._set_if_inside(
+                    chunk,
+                    coord,
+                    origin_x + block.x,
+                    origin_y + block.y,
+                    origin_z + block.z,
+                    block.block_id,
+                    touched_sections,
+                )
 
     def _carve_caves(
         self,

@@ -1,0 +1,82 @@
+version = 1
+key = "veilwood_camp"
+size = [7, 4, 7]
+rarity = "common"
+
+[[blocks]]
+position = [1, 0, 1]
+block_id = 9
+[[blocks]]
+position = [2, 0, 1]
+block_id = 9
+[[blocks]]
+position = [3, 0, 1]
+block_id = 9
+[[blocks]]
+position = [4, 0, 1]
+block_id = 9
+[[blocks]]
+position = [5, 0, 1]
+block_id = 9
+[[blocks]]
+position = [1, 0, 2]
+block_id = 9
+[[blocks]]
+position = [5, 0, 2]
+block_id = 9
+[[blocks]]
+position = [1, 0, 3]
+block_id = 9
+[[blocks]]
+position = [3, 0, 3]
+block_id = 10
+[[blocks]]
+position = [5, 0, 3]
+block_id = 9
+[[blocks]]
+position = [1, 0, 4]
+block_id = 9
+[[blocks]]
+position = [5, 0, 4]
+block_id = 9
+[[blocks]]
+position = [1, 0, 5]
+block_id = 9
+[[blocks]]
+position = [2, 0, 5]
+block_id = 9
+[[blocks]]
+position = [3, 0, 5]
+block_id = 9
+[[blocks]]
+position = [4, 0, 5]
+block_id = 9
+[[blocks]]
+position = [5, 0, 5]
+block_id = 9
+[[blocks]]
+position = [1, 1, 1]
+block_id = 4
+[[blocks]]
+position = [1, 2, 1]
+block_id = 4
+[[blocks]]
+position = [5, 1, 5]
+block_id = 4
+[[blocks]]
+position = [5, 2, 5]
+block_id = 4
+[[blocks]]
+position = [3, 1, 3]
+block_id = 7
+
+[[loot]]
+item_id = 3
+minimum = 4
+maximum = 12
+weight = 5
+[[loot]]
+item_id = 7
+minimum = 1
+maximum = 2
+weight = 2

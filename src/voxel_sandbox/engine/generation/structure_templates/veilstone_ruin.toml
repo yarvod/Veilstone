@@ -1,0 +1,61 @@
+version = 1
+key = "veilstone_ruin"
+size = [5, 5, 5]
+rarity = "common"
+
+[[blocks]]
+position = [0, 0, 0]
+block_id = 1
+[[blocks]]
+position = [1, 0, 0]
+block_id = 1
+[[blocks]]
+position = [2, 0, 0]
+block_id = 1
+[[blocks]]
+position = [3, 0, 0]
+block_id = 1
+[[blocks]]
+position = [4, 0, 0]
+block_id = 1
+[[blocks]]
+position = [0, 1, 0]
+block_id = 1
+[[blocks]]
+position = [0, 2, 0]
+block_id = 1
+[[blocks]]
+position = [0, 3, 0]
+block_id = 1
+[[blocks]]
+position = [4, 1, 0]
+block_id = 1
+[[blocks]]
+position = [4, 2, 0]
+block_id = 1
+[[blocks]]
+position = [4, 3, 0]
+block_id = 1
+[[blocks]]
+position = [0, 0, 4]
+block_id = 1
+[[blocks]]
+position = [4, 0, 4]
+block_id = 1
+[[blocks]]
+position = [2, 0, 2]
+block_id = 6
+[[blocks]]
+position = [2, 1, 2]
+block_id = 7
+
+[[loot]]
+item_id = 6
+minimum = 1
+maximum = 3
+weight = 5
+[[loot]]
+item_id = 4
+minimum = 2
+maximum = 6
+weight = 3

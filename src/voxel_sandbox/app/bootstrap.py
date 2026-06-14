@@ -69,6 +69,10 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.benchmark_shadows import run_benchmark
 
         return run_benchmark(settings)
+    if command == "structure-preview":
+        from voxel_sandbox.tools.structure_preview import run_preview
+
+        return run_preview(str(args.template))
     raise ValueError(f"Unsupported command: {command}")
 
 

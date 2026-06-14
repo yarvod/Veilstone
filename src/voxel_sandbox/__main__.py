@@ -32,6 +32,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
     subparsers.add_parser("benchmark-server", help="Run the multiplayer server tick benchmark")
     subparsers.add_parser("benchmark-shadows", help="Run the medium shadow frame benchmark")
+    structure_preview = subparsers.add_parser(
+        "structure-preview", help="Print a validated structure template by layer"
+    )
+    structure_preview.add_argument("template")
     return parser
 
 

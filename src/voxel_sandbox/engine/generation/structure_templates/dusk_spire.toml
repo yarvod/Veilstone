@@ -1,0 +1,71 @@
+version = 1
+key = "dusk_spire"
+size = [5, 14, 5]
+rarity = "rare"
+
+[[blocks]]
+position = [2, 0, 2]
+block_id = 1
+[[blocks]]
+position = [1, 0, 2]
+block_id = 1
+[[blocks]]
+position = [3, 0, 2]
+block_id = 1
+[[blocks]]
+position = [2, 0, 1]
+block_id = 1
+[[blocks]]
+position = [2, 0, 3]
+block_id = 1
+[[blocks]]
+position = [2, 1, 2]
+block_id = 6
+[[blocks]]
+position = [2, 2, 2]
+block_id = 6
+[[blocks]]
+position = [2, 3, 2]
+block_id = 6
+[[blocks]]
+position = [2, 4, 2]
+block_id = 6
+[[blocks]]
+position = [2, 5, 2]
+block_id = 6
+[[blocks]]
+position = [2, 6, 2]
+block_id = 6
+[[blocks]]
+position = [2, 7, 2]
+block_id = 6
+[[blocks]]
+position = [2, 8, 2]
+block_id = 6
+[[blocks]]
+position = [2, 9, 2]
+block_id = 6
+[[blocks]]
+position = [2, 10, 2]
+block_id = 6
+[[blocks]]
+position = [2, 11, 2]
+block_id = 6
+[[blocks]]
+position = [2, 12, 2]
+block_id = 7
+[[blocks]]
+position = [1, 5, 2]
+block_id = 6
+[[blocks]]
+position = [3, 7, 2]
+block_id = 6
+[[blocks]]
+position = [2, 9, 1]
+block_id = 6
+
+[[loot]]
+item_id = 6
+minimum = 4
+maximum = 8
+weight = 8

@@ -31,3 +31,10 @@ def test_client_accepts_connect_address_and_nickname() -> None:
 
     assert args.connect == "127.0.0.1:25565"
     assert args.name == "Veilwalker"
+
+
+def test_structure_preview_accepts_template_key() -> None:
+    args = build_parser().parse_args(["structure-preview", "veilstone_ruin"])
+
+    assert args.command == "structure-preview"
+    assert args.template == "veilstone_ruin"
