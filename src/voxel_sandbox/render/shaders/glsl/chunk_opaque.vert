@@ -3,6 +3,7 @@
 uniform mat4 camera_matrix;
 uniform mat4 shadow_matrix;
 uniform vec3 section_origin;
+uniform vec3 light_direction;
 
 in vec3 in_position;
 in vec2 in_uv;
@@ -22,9 +23,8 @@ out vec4 vertex_atlas_rect;
 out vec4 vertex_shadow_position;
 
 void main() {
-    vec3 sun_direction = normalize(vec3(0.4, 0.8, 0.25));
     vertex_uv = in_uv;
-    vertex_directional = 0.48 + 0.52 * max(dot(in_normal, sun_direction), 0.0);
+    vertex_directional = 0.48 + 0.52 * max(dot(in_normal, normalize(light_direction)), 0.0);
     vertex_sky_light = in_sky_light;
     vertex_block_light = in_block_light;
     vertex_ao = in_ao;

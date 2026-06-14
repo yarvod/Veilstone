@@ -2314,6 +2314,35 @@ Done when:
 - [x] Faces still resolve to the same intentional regions as before the authoring refactor.
 - [x] No external source code or texture assets are introduced.
 
+### Phase 20.4 — Mob box UV, world lighting and cross-chunk light correction
+
+This corrective phase is mandatory before story work. Entity appearance must be deterministic and
+world lighting must not stop at chunk borders or bypass mobs.
+
+Checklist:
+
+- [x] Replace image-generated mob sheets with reproducible original orthographic pixel skins.
+- [x] Give head, torso, arm, leg and cow body parts explicit directional face regions.
+- [x] Remove the detached zombie jaw and keep a stable six-part humanoid silhouette.
+- [x] Add face normals to articulated entity and runtime-structure vertices.
+- [x] Apply skylight, block light, daylight tint, directional shading and shadow maps to entities.
+- [x] Derive terrain/entity diffuse shading and shadow maps from the same celestial direction.
+- [x] Apply the same world-light contract to runtime structure parts.
+- [x] Propagate block and skylight through loaded horizontal chunk boundaries.
+- [x] Recalculate neighboring light after chunk load, unload, block and fluid changes.
+- [x] Move mobs only along current forward after rotating toward desired AI direction.
+- [x] Keep hostile arms in a readable forward zombie pose with animated gait and attack overrides.
+- [x] Add UV isolation, cross-chunk light, movement-direction and OpenGL shader tests.
+- [x] Record external architecture references without copying code or assets.
+
+Done when:
+
+- [x] Zombie and cow faces occur only on their intended front tiles.
+- [x] A profile view cannot show a duplicated front face or detached mouth.
+- [x] Mobs become dark in unlit locations and respond to local block light and terrain shadows.
+- [x] A light source at local X/Z 15 illuminates a loaded neighboring chunk at local X/Z 0.
+- [x] Horizontal mob velocity is collinear with model forward rather than desired steering input.
+
 ### Phase 21 — Moving structures and magical machines
 
 Checklist:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.ecs import EntitySimulation, MobKind, MobState
@@ -157,4 +159,13 @@ def test_mob_yaw_faces_its_actual_movement_direction() -> None:
     for _ in range(12):
         simulation.update(0.1, (0.0, 10.0, 8.0), flat_ground, no_hazard)
 
-    assert abs(abs(simulation.world.transforms[mob].yaw) - 3.14159) < 0.001
+    transform = simulation.world.transforms[mob]
+    ai = simulation.world.mob_ai[mob]
+    velocity = simulation.world.velocities[mob]
+    movement_length = math.hypot(velocity.x, velocity.z)
+    assert movement_length > 0.0
+    target_yaw = math.atan2(ai.direction_x, -ai.direction_z)
+    yaw_error = (target_yaw - transform.yaw + math.pi) % math.tau - math.pi
+    assert abs(yaw_error) < 0.07
+    assert abs(velocity.x / movement_length - math.sin(transform.yaw)) < 1e-9
+    assert abs(velocity.z / movement_length + math.cos(transform.yaw)) < 1e-9

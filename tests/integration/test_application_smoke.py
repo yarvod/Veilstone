@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -120,6 +121,7 @@ def test_shadow_quality_modes_render(quality: str) -> None:
 
 
 def test_articulated_mobs_render_multiple_textured_parts() -> None:
+    import moderngl
     import pyglet
 
     if not pyglet.display.get_display().get_screens():
@@ -143,10 +145,19 @@ def test_articulated_mobs_render_multiple_textured_parts() -> None:
                 window.height,
                 window.settings.camera.field_of_view,
                 0.25,
+                light_sampler=lambda _position, _height: (0.0, 0.0),
+                daylight=0.0,
+                light_direction=(0.0, 1.0, 0.0),
             )
             window.mgl_context.finish()
 
-            assert draws >= 16
+            assert draws >= 15
+            assert window.entity_renderer.shader.program is not None
+            program = window.entity_renderer.shader.program
+            assert cast("moderngl.Uniform", program["entity_sky_light"]).value == 0.0
+            assert cast("moderngl.Uniform", program["entity_block_light"]).value == 0.0
+            assert cast("moderngl.Uniform", program["daylight"]).value == 0.0
+            assert cast("moderngl.Uniform", program["light_direction"]).value == (0.0, 1.0, 0.0)
         finally:
             window.close()
 

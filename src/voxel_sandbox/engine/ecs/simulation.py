@@ -174,8 +174,20 @@ class EntitySimulation:
                     speed = 0.0
                 else:
                     speed = 0.72 if ai.kind is MobKind.PASSIVE else 1.05
-            next_x = transform.x + ai.direction_x * speed * delta_time
-            next_z = transform.z + ai.direction_z * speed * delta_time
+            actual_speed = 0.0
+            move_x = 0.0
+            move_z = 0.0
+            if speed > 0.0:
+                target_yaw = math.atan2(ai.direction_x, -ai.direction_z)
+                transform.yaw = _approach_angle(transform.yaw, target_yaw, delta_time * 3.8)
+                facing_x = math.sin(transform.yaw)
+                facing_z = -math.cos(transform.yaw)
+                alignment = max(0.0, facing_x * ai.direction_x + facing_z * ai.direction_z)
+                actual_speed = speed * (0.2 + 0.8 * alignment)
+                move_x = facing_x * actual_speed
+                move_z = facing_z * actual_speed
+            next_x = transform.x + move_x * delta_time
+            next_z = transform.z + move_z * delta_time
             ground = ground_height(math.floor(next_x), math.floor(next_z))
             hazard_y = math.floor(transform.y) if is_solid is not None else ground
             if is_hazard(math.floor(next_x), hazard_y, math.floor(next_z)):
@@ -197,15 +209,12 @@ class EntitySimulation:
                 else:
                     transform.x = next_x
                     transform.z = next_z
-            velocity.x = ai.direction_x * speed
-            velocity.z = ai.direction_z * speed
+            velocity.x = move_x
+            velocity.z = move_z
             if is_solid is None:
                 transform.y = float(ground)
-            animation.speed = speed
+            animation.speed = actual_speed
             _advance_animation_state(animation, ai.state, delta_time)
-            if speed > 0.0:
-                target_yaw = math.atan2(ai.direction_x, -ai.direction_z)
-                transform.yaw = _approach_angle(transform.yaw, target_yaw, delta_time * 3.8)
         return player_damage
 
     def damage(self, entity: EntityId, amount: float) -> tuple[ItemStack, ...]:

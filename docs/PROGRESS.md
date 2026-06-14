@@ -2,8 +2,8 @@
 
 ## Current phase
 
-Phase 21 - Moving structures and magical machines: implementation complete and ready for manual
-verification. Phase 22 story progression foundation is next.
+Phase 20.4 corrective work is complete on top of Phase 21: mob UVs, movement, world lighting and
+cross-chunk light propagation are ready for manual verification. Phase 22 story progression is next.
 
 ## Completed checklist
 
@@ -324,6 +324,20 @@ verification. Phase 22 story progression foundation is next.
 - [x] Existing shared GPU atlas and articulated model renderer remain unchanged.
 - [x] Detailed findings are recorded in `docs/research/python-minecraft-clone-review.md`.
 
+### Phase 20.4 - Mob box UV, world lighting and cross-chunk light correction
+
+- [x] Replaced unstable generated sheets with deterministic original 4x4 orthographic skins.
+- [x] Removed the zombie jaw and assigned dedicated front/right/back/left tiles per body class.
+- [x] Entity and structure shaders now consume normals, skylight, block light, daylight and shadows.
+- [x] Terrain, entity diffuse lighting and shadow maps use the same moving celestial direction.
+- [x] Loaded 3x3 chunk neighborhoods share one bounded flood-fill lighting pass.
+- [x] Chunk load/unload, block edits and fluid changes relight and remesh affected neighbors.
+- [x] Mob movement follows current yaw and slows while turning instead of sliding sideways.
+- [x] Visual QA covers front/profile and fully dark entity renders.
+- [x] Nine-chunk relighting measures approximately `8.9 ms` on the development machine.
+- [x] Research notes are stored in `docs/research/mob-rendering-lighting-review.md`.
+- [x] Final gate: 185 tests, Ruff, Pyright, OpenGL smoke and rendered visual QA pass.
+
 ### Phase 21 - Moving structures and magical machines
 
 - [x] Typed BlockEntity registry plus data-driven MultiBlockStructure definitions.
@@ -360,8 +374,6 @@ None recorded.
 
 ## Known bugs
 
-- Emissive block-light propagation does not yet transfer energy across chunk boundaries;
-  mesh halo sampling itself does cross loaded section/chunk boundaries.
 - Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
 - Water Vessel can place a source but does not yet scoop an existing source back up.
 - Mob navigation is intentionally local steering over terrain height, not global pathfinding.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
-from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk
+from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk, relight_chunks
 
 
 def test_skylight_blocks_opaque_roof_and_spreads_below_it() -> None:
@@ -45,6 +45,32 @@ def test_removing_lantern_clears_stale_light() -> None:
     relight_chunk(chunk, registry)
 
     assert chunk.sections[0].block_light.max() == 0
+
+
+def test_relighting_unchanged_chunk_does_not_report_mesh_work() -> None:
+    chunk = Chunk(ChunkCoord(0, 0))
+    registry = create_core_block_registry()
+
+    assert relight_chunks((chunk,), registry) == (chunk,)
+    assert relight_chunks((chunk,), registry) == ()
+
+
+def test_block_light_propagates_across_loaded_chunk_boundary() -> None:
+    left = Chunk(ChunkCoord(0, 0))
+    right = Chunk(ChunkCoord(1, 0))
+    left.set_block(15, 8, 8, 7)
+
+    relight_chunks((left, right), create_core_block_registry())
+
+    assert left.sections[0].block_light[15, 8, 8] == 14
+    assert right.sections[0].block_light[0, 8, 8] == 13
+    assert right.sections[0].block_light[1, 8, 8] == 12
+
+    left.set_block(15, 8, 8, 0)
+    relight_chunks((left, right), create_core_block_registry())
+
+    assert left.sections[0].block_light.max() == 0
+    assert right.sections[0].block_light.max() == 0
 
 
 def test_effective_spawn_light_tracks_daylight_and_block_sources() -> None:

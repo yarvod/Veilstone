@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
@@ -40,15 +41,32 @@ class EntityRenderer:
         )
         if self.shader.program is None or self.shadow_shader.program is None:
             raise RuntimeError("Entity shader failed to compile")
+        self.neutral_shadow_texture = context.depth_texture((1, 1))
+        self.neutral_shadow_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self.neutral_shadow_texture.compare_func = "<="
+        neutral_shadow_framebuffer = context.framebuffer(
+            depth_attachment=self.neutral_shadow_texture
+        )
+        neutral_shadow_framebuffer.clear(depth=1.0)
+        neutral_shadow_framebuffer.release()
         vertices = np.asarray(_cube_vertices(), dtype=np.float32)
         self.vertex_buffer = context.buffer(vertices.tobytes())
         self.vertex_array = context.vertex_array(
             self.shader.program,
-            [(self.vertex_buffer, "3f 2f 1f", "in_position", "in_uv", "in_face")],
+            [
+                (
+                    self.vertex_buffer,
+                    "3f 2f 1f 3f",
+                    "in_position",
+                    "in_uv",
+                    "in_face",
+                    "in_normal",
+                )
+            ],
         )
         self.shadow_vertex_array = context.vertex_array(
             self.shadow_shader.program,
-            [(self.vertex_buffer, "3f 3x4", "in_position")],
+            [(self.vertex_buffer, "3f 6x4", "in_position")],
         )
         self.models = EntityModelRegistry.from_toml(
             resource_path("config/entity_models.toml"), resource_path("assets")
@@ -73,6 +91,14 @@ class EntityRenderer:
         block_registry: BlockRegistry | None = None,
         block_texture: moderngl.Texture | None = None,
         atlas_uvs: dict[str, tuple[float, float, float, float]] | None = None,
+        light_sampler: Callable[[tuple[float, float, float], float], tuple[float, float]]
+        | None = None,
+        daylight: float = 1.0,
+        day_tint: tuple[float, float, float] = (1.0, 1.0, 1.0),
+        light_matrix: np.ndarray | None = None,
+        shadow_texture: moderngl.Texture | None = None,
+        shadow_bias: float = 0.0015,
+        light_direction: tuple[float, float, float] = (0.4, 0.8, 0.25),
     ) -> int:
         program = self.shader.program
         if program is None:
@@ -80,11 +106,39 @@ class EntityRenderer:
         matrix = camera_matrix(camera, max(width, 1) / max(height, 1), field_of_view)
         cast("moderngl.Uniform", program["camera_matrix"]).write(matrix.T.astype("f4").tobytes())
         cast("moderngl.Uniform", program["entity_texture"]).value = 0
+        cast("moderngl.Uniform", program["daylight"]).value = daylight
+        cast("moderngl.Uniform", program["day_tint"]).value = day_tint
+        cast("moderngl.Uniform", program["light_direction"]).value = light_direction
+        cast("moderngl.Uniform", program["shadow_map"]).value = 1
+        cast("moderngl.Uniform", program["shadows_enabled"]).value = int(
+            shadow_texture is not None and light_matrix is not None
+        )
+        cast("moderngl.Uniform", program["shadow_bias"]).value = shadow_bias
+        active_shadow_texture = shadow_texture or self.neutral_shadow_texture
+        cast("moderngl.Uniform", program["shadow_texel_size"]).value = (
+            1.0 / active_shadow_texture.width
+        )
+        shadow_transform = (
+            light_matrix if light_matrix is not None else np.identity(4, dtype=np.float32)
+        )
+        cast("moderngl.Uniform", program["shadow_matrix"]).write(
+            shadow_transform.T.astype("f4").tobytes()
+        )
+        active_shadow_texture.use(1)
         draws = 0
         for entity, render_model in world.render_models.items():
             transform = world.transforms.get(entity)
             if transform is None:
                 continue
+            collider = world.colliders.get(entity)
+            entity_height = collider.height if collider is not None else render_model.scale[1]
+            sky_light, block_light = (
+                light_sampler(transform.position, entity_height)
+                if light_sampler is not None
+                else (1.0, 0.0)
+            )
+            cast("moderngl.Uniform", program["entity_sky_light"]).value = sky_light
+            cast("moderngl.Uniform", program["entity_block_light"]).value = block_light
             model = self._model(render_model.key)
             if model is None:
                 texture_rect = None
@@ -287,6 +341,7 @@ class EntityRenderer:
 
     def release(self) -> None:
         self.texture.release()
+        self.neutral_shadow_texture.release()
         self.shadow_vertex_array.release()
         self.vertex_array.release()
         self.vertex_buffer.release()
@@ -310,8 +365,8 @@ def _load_texture_atlas(
         cursor += image.width
     texture = context.texture(atlas.size, 3, atlas.tobytes())
     texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-    texture.repeat_x = True
-    texture.repeat_y = True
+    texture.repeat_x = False
+    texture.repeat_y = False
     return texture, rectangles
 
 
@@ -333,7 +388,7 @@ def _atlas_bounds_to_rect(
     return bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]
 
 
-def _cube_vertices() -> tuple[tuple[float, float, float, float, float, float], ...]:
+def _cube_vertices() -> tuple[tuple[float, ...], ...]:
     corners = (
         (-0.5, -0.5, -0.5),
         (0.5, -0.5, -0.5),
@@ -344,11 +399,18 @@ def _cube_vertices() -> tuple[tuple[float, float, float, float, float, float], .
         (0.5, 0.5, 0.5),
         (-0.5, 0.5, 0.5),
     )
-    faces = ((0, 1, 2, 3), (5, 4, 7, 6), (4, 0, 3, 7), (1, 5, 6, 2), (3, 2, 6, 7), (4, 5, 1, 0))
+    faces = (
+        ((0, 1, 2, 3), (0.0, 0.0, -1.0)),
+        ((5, 4, 7, 6), (0.0, 0.0, 1.0)),
+        ((4, 0, 3, 7), (-1.0, 0.0, 0.0)),
+        ((1, 5, 6, 2), (1.0, 0.0, 0.0)),
+        ((3, 2, 6, 7), (0.0, 1.0, 0.0)),
+        ((4, 5, 1, 0), (0.0, -1.0, 0.0)),
+    )
     uvs = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
     return tuple(
-        (*corners[index], *uvs[uv_index], float(face_index))
-        for face_index, face in enumerate(faces)
+        (*corners[index], *uvs[uv_index], float(face_index), *normal)
+        for face_index, (face, normal) in enumerate(faces)
         for index, uv_index in (
             (face[0], 0),
             (face[2], 2),

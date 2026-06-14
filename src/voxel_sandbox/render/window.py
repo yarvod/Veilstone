@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Final, cast
 
 import moderngl
+import numpy as np
 import pyglet
 from pyglet.window import key, mouse
 
@@ -520,7 +521,7 @@ class GameWindow(pyglet.window.Window):
         )
         entity_draws = 0
 
-        def render_entities() -> None:
+        def render_entities(light_matrix: np.ndarray) -> None:
             nonlocal entity_draws
             texture = getattr(self.world_renderer, "texture", None)
             registry = getattr(self.world_renderer, "registry", None)
@@ -536,6 +537,21 @@ class GameWindow(pyglet.window.Window):
                 registry,
                 texture,
                 atlas_uvs,
+                self.world_renderer.entity_light,
+                self.world_renderer.daylight,
+                (
+                    0.55 + 0.45 * self.world_renderer.daylight,
+                    0.62 + 0.38 * self.world_renderer.daylight,
+                    0.78 + 0.22 * self.world_renderer.daylight,
+                ),
+                light_matrix,
+                (
+                    self.world_renderer.shadow_map.texture
+                    if self.world_renderer.shadow_map is not None
+                    else None
+                ),
+                self.world_renderer.shadow_bias,
+                self.world_renderer.light_direction,
             )
             entity_draws += self.structure_renderer.render(
                 self.structure_world,
@@ -545,6 +561,21 @@ class GameWindow(pyglet.window.Window):
                 self.settings.camera.field_of_view,
                 self.world_renderer.texture,
                 self.world_renderer.atlas_uvs,
+                self.world_renderer.entity_light,
+                self.world_renderer.daylight,
+                (
+                    0.55 + 0.45 * self.world_renderer.daylight,
+                    0.62 + 0.38 * self.world_renderer.daylight,
+                    0.78 + 0.22 * self.world_renderer.daylight,
+                ),
+                light_matrix,
+                (
+                    self.world_renderer.shadow_map.texture
+                    if self.world_renderer.shadow_map is not None
+                    else None
+                ),
+                self.world_renderer.shadow_bias,
+                self.world_renderer.light_direction,
             )
 
         self.world_renderer.render(

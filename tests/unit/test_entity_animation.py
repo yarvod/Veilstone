@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.engine.ecs import MobState
@@ -35,9 +36,9 @@ def test_original_mob_models_are_textured_and_articulated() -> None:
     assert passive.texture.name == "cow-skin.png"
     assert hostile.texture.name == "zombie-skin.png"
     assert len(passive.parts) == 9
-    assert len(hostile.parts) == 7
+    assert len(hostile.parts) == 6
     assert {part.name for part in passive.parts} >= {"head", "tail", "leg_front_left"}
-    assert {part.name for part in hostile.parts} >= {"jaw", "arm_left", "leg_right"}
+    assert {part.name for part in hostile.parts} >= {"head", "arm_left", "leg_right"}
     assert all(part.material == "skin" for part in passive.parts)
     assert all(
         part.face_uvs is not None
@@ -50,7 +51,6 @@ def test_original_mob_models_are_textured_and_articulated() -> None:
     assert hostile.parts[1].face_uvs[0] != hostile.parts[1].face_uvs[3]
     assert hostile.parts[2].face_uvs is not None
     assert hostile.parts[2].face_uvs[2] != hostile.parts[2].face_uvs[3]
-    assert hostile.parts[2].face_uvs[4] != hostile.parts[2].face_uvs[5]
     assert len(models.get("remote_player").parts) == 6
 
 
@@ -121,6 +121,17 @@ uv_front = "missing"
         EntityModelRegistry.from_toml(config, tmp_path)
 
 
+def test_generated_mob_skins_keep_faces_out_of_profile_tiles() -> None:
+    with Image.open(resource_path("assets/entities/zombie-skin.png")) as zombie:
+        assert zombie.size == (256, 256)
+        assert zombie.getpixel((18, 34)) == (19, 24, 17)
+        assert zombie.getpixel((64 + 18, 34)) != (19, 24, 17)
+    with Image.open(resource_path("assets/entities/cow-skin.png")) as cow:
+        assert cow.size == (256, 256)
+        assert cow.getpixel((20, 64 + 48)) == (55, 38, 29)
+        assert cow.getpixel((64 + 20, 64 + 48)) != (55, 38, 29)
+
+
 def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() -> None:
     models, clips = _registries()
     model = models.get("hostile")
@@ -133,7 +144,8 @@ def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() ->
     graze = graph.evaluate(models.get("passive"), MobState.GRAZE, 0.5, 0.0)
 
     assert walk["leg_left"] != attack.get("leg_left")
-    assert attack["jaw"].rotation[0] > 0.0
+    assert walk["arm_left"].rotation[0] < -0.7
+    assert attack["arm_left"].rotation[0] < -0.5
     assert hurt["body"].rotation != death["body"].rotation
     assert graze["head"].offset[1] < -0.3
 

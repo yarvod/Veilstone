@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -26,7 +26,7 @@ from voxel_sandbox.engine.generation import (
     WorldSeed,
     find_safe_spawn,
 )
-from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk
+from voxel_sandbox.engine.lighting import effective_light_level, relight_chunks
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.render.atmosphere import (
@@ -157,6 +157,10 @@ class DemoWorldRenderer:
         return daylight_factor(self.time_of_day)
 
     @property
+    def light_direction(self) -> tuple[float, float, float]:
+        return celestial_light_direction(self.time_of_day)
+
+    @property
     def clear_color(self) -> tuple[float, float, float, float]:
         return sky_color(self.daylight)
 
@@ -169,6 +173,23 @@ class DemoWorldRenderer:
         return max(
             effective_light_level(sky_light, block_light, self.daylight)
             for sky_light, block_light in samples
+        )
+
+    def entity_light(
+        self,
+        position: tuple[float, float, float],
+        height: float,
+    ) -> tuple[float, float]:
+        x = int(np.floor(position[0]))
+        z = int(np.floor(position[2]))
+        sample_heights = {
+            max(0, min(CHUNK_HEIGHT - 1, int(np.floor(position[1] + height * amount))))
+            for amount in (0.15, 0.55, 0.9)
+        }
+        samples = [self.streamer.get_light(x, y, z) for y in sample_heights]
+        return (
+            max((sky for sky, _block in samples), default=0) / 15.0,
+            max((block for _sky, block in samples), default=0) / 15.0,
         )
 
     @property
@@ -276,8 +297,11 @@ class DemoWorldRenderer:
         chunk = chunks[self._fluid_chunk_cursor % len(chunks)]
         self._fluid_chunk_cursor += 1
         if simulate_water_step(chunk).changed:
-            relight_chunk(chunk, self.registry)
-            self._schedule_chunk(chunk)
+            affected_chunks = {chunk.coord: chunk}
+            for affected in self._relight_neighborhood((chunk.coord,)):
+                affected_chunks[affected.coord] = affected
+            for affected in affected_chunks.values():
+                self._schedule_chunk(affected)
 
     def toggle_smooth_lighting(self) -> None:
         self.smooth_lighting = not self.smooth_lighting
@@ -301,7 +325,7 @@ class DemoWorldRenderer:
         height: int,
         fov: float,
         shadow_caster: Callable[[np.ndarray], object] | None = None,
-        transparent_underlay: Callable[[], object] | None = None,
+        transparent_underlay: Callable[[np.ndarray], object] | None = None,
     ) -> None:
         if self.shader.program is None:
             return
@@ -314,9 +338,15 @@ class DemoWorldRenderer:
             batch = self.streamer.update(center, max_completed=self.uploads_per_frame)
             for coord in batch.unloaded:
                 self._remove_chunk(coord)
-            for chunk in batch.loaded:
+            affected_chunks = {chunk.coord: chunk for chunk in batch.loaded}
+            for loaded_chunk in batch.loaded:
+                for chunk in self._relight_neighborhood((loaded_chunk.coord,)):
+                    affected_chunks[chunk.coord] = chunk
+            for unloaded_coord in batch.unloaded:
+                for chunk in self._relight_neighborhood((unloaded_coord,)):
+                    affected_chunks[chunk.coord] = chunk
+            for chunk in affected_chunks.values():
                 self._schedule_chunk(chunk)
-                self._schedule_horizontal_neighbors(chunk.coord)
         for completed in self.mesh_worker.poll(self.mesh_uploads_per_frame):
             if self.streamer.get_chunk(completed.key.chunk) is None:
                 continue
@@ -333,7 +363,7 @@ class DemoWorldRenderer:
             sun_light_matrix(
                 camera.position,
                 map_size=self.shadow_map.size,
-                direction=celestial_light_direction(self.time_of_day),
+                direction=self.light_direction,
             )
             if self.shadow_map is not None
             else np.identity(4, dtype=np.float32)
@@ -353,6 +383,9 @@ class DemoWorldRenderer:
         cast("moderngl.Uniform", self.shader.program["shadow_matrix"]).write(
             light_matrix.T.astype("f4").tobytes()
         )
+        cast(
+            "moderngl.Uniform", self.shader.program["light_direction"]
+        ).value = self.light_direction
         cast("moderngl.Uniform", self.shader.program["shadows_enabled"]).value = int(
             self.shadow_map is not None
         )
@@ -409,7 +442,7 @@ class DemoWorldRenderer:
             self.face_count += gpu_mesh.data.face_count
             self.triangle_count += gpu_mesh.data.triangle_count
         if transparent_underlay is not None:
-            transparent_underlay()
+            transparent_underlay(light_matrix)
         self._render_water(
             matrix,
             camera,
@@ -439,9 +472,12 @@ class DemoWorldRenderer:
         return self.streamer.save_dirty()
 
     def install_remote_chunk(self, chunk: Chunk) -> None:
-        relight_chunk(chunk, self.registry)
         self.streamer.install_chunk(chunk)
-        self._schedule_chunk(chunk)
+        affected_chunks = {chunk.coord: chunk}
+        for affected in self._relight_neighborhood((chunk.coord,)):
+            affected_chunks[affected.coord] = affected
+        for affected in affected_chunks.values():
+            self._schedule_chunk(affected)
 
     def enable_remote_mode(self) -> None:
         self.remote_mode = True
@@ -484,12 +520,29 @@ class DemoWorldRenderer:
             chunk = self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z))
             if chunk is not None:
                 affected_chunks.add(chunk.coord)
-        for chunk_coord in affected_chunks:
-            chunk = self.streamer.get_chunk(chunk_coord)
-            if chunk is None:
-                continue
-            relight_chunk(chunk, self.registry)
+        chunks_to_schedule = {
+            coord: chunk
+            for coord in affected_chunks
+            if (chunk := self.streamer.get_chunk(coord)) is not None
+        }
+        for chunk in self._relight_neighborhood(affected_chunks):
+            chunks_to_schedule[chunk.coord] = chunk
+        for chunk in chunks_to_schedule.values():
             self._schedule_chunk(chunk)
+
+    def _relight_neighborhood(self, centers: Iterable[ChunkCoord]) -> tuple[Chunk, ...]:
+        coordinates = {
+            ChunkCoord(center.x + dx, center.z + dz)
+            for center in centers
+            for dx in (-1, 0, 1)
+            for dz in (-1, 0, 1)
+        }
+        chunks = tuple(
+            chunk
+            for coord in sorted(coordinates, key=lambda item: (item.x, item.z))
+            if (chunk := self.streamer.get_chunk(coord)) is not None
+        )
+        return relight_chunks(chunks, self.registry)
 
     def _schedule_chunk(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):
@@ -622,12 +675,6 @@ class DemoWorldRenderer:
         previous_framebuffer.use()
         self.context.viewport = previous_viewport
         self.context.enable(moderngl.CULL_FACE)
-
-    def _schedule_horizontal_neighbors(self, coord: ChunkCoord) -> None:
-        for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            neighbor = self.streamer.get_chunk(ChunkCoord(coord.x + dx, coord.z + dz))
-            if neighbor is not None:
-                self._schedule_chunk(neighbor)
 
     def _remesh_all(self) -> None:
         for chunk in self.streamer.loaded_chunks():

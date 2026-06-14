@@ -129,7 +129,6 @@ def animated_pose(
             offset=(0.0, -0.38 + chewing * 0.015, -0.08),
             rotation=(0.72 + chewing * 0.08, look_yaw, 0.0),
         )
-        pose["jaw"] = PartPose(rotation=(0.12 + abs(chewing) * 0.14, 0.0, 0.0))
     else:
         pose["head"] = PartPose(rotation=(head_pitch, look_yaw, 0.0))
     for name, phase in (
@@ -144,6 +143,9 @@ def animated_pose(
     ):
         if any(part.name == name for part in model.parts):
             pose[name] = PartPose(rotation=(phase, 0.0, 0.0))
+    if model.key == "hostile" and state is not MobState.ATTACK:
+        pose["arm_left"] = PartPose(rotation=(-0.88 - swing * 0.18, 0.0, 0.0))
+        pose["arm_right"] = PartPose(rotation=(-0.88 + swing * 0.18, 0.0, 0.0))
     if any(part.name == "tail" for part in model.parts):
         pose["tail"] = PartPose(rotation=(0.08, math.sin(animation_time * 2.0) * 0.28, 0.0))
     if state is MobState.ATTACK:
@@ -153,7 +155,6 @@ def animated_pose(
         )
         pose["arm_left"] = PartPose(rotation=(-1.2 * attack, 0.0, 0.0))
         pose["arm_right"] = PartPose(rotation=(-1.2 * attack, 0.0, 0.0))
-        pose["jaw"] = PartPose(rotation=(attack * 0.5, 0.0, 0.0))
     elif state is MobState.HURT:
         pose["body"] = PartPose(rotation=(0.0, 0.0, math.sin(animation_time * 28.0) * 0.18))
     elif state is MobState.DEATH:
