@@ -58,6 +58,8 @@ Runtime settings live in `config/settings.toml`.
 controls terrain shadow acne correction.
 `graphics.clouds` toggles procedural clouds and `graphics.postprocess` enables the optional
 tone-mapping/vignette framebuffer pass.
+Player overrides are written atomically to `saves/settings.toml`. The Settings and Controls
+screens expose graphics toggles, VSync, and conflict-checked movement/jump rebinding.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;
@@ -112,7 +114,7 @@ Client controls:
 Architecture decisions are recorded in `docs/adr`.
 
 Current prototype state: selecting Create World or Load World enters a rendered generated
-world with original programmatic block textures. Chunks stream around the player on
+world with its own seed, metadata, and player save. Chunks stream around the player on
 background workers while the overlay reports loaded, pending, visible, lighting, and mesh
 counts.
 

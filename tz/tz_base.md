@@ -2119,23 +2119,23 @@ Done when:
 Checklist:
 
 - [x] Main menu.
-- [ ] Create world menu.
-- [ ] Load world menu.
+- [x] Create world menu.
+- [x] Load world menu.
 - [x] Open to LAN action in the singleplayer Pause Menu.
 - [x] Join LAN menu.
-- [ ] Settings menu.
-- [ ] Controls menu.
+- [x] Settings menu.
+- [x] Controls menu.
 - [x] Inventory UI.
 - [x] Crafting UI.
 - [x] Pause menu.
 - [x] Debug overlay.
-- [ ] Key rebinding.
-- [ ] Persist settings.
+- [x] Key rebinding.
+- [x] Persist settings.
 
 Done when:
 
-- [ ] Game can be used without CLI.
-- [ ] Settings persist across restarts.
+- [x] Game can be used without CLI.
+- [x] Settings persist across restarts.
 
 ---
 

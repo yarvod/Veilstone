@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 17 - UI polish and settings: ready to start.
+Phase 18 - Packaging: ready to start.
 
 ## Completed checklist
 
@@ -221,6 +221,19 @@ Phase 17 - UI polish and settings: ready to start.
 - [x] Worldgen remains approximately `9.90 ms/chunk` over 100 chunks.
 - commit: `00a0dbf`.
 
+### Phase 17 - UI polish and settings
+
+- [x] Create World captures a name and seed and creates an isolated save directory.
+- [x] Load World discovers metadata and restores the selected world's player snapshot.
+- [x] World switching releases old network, process-pool, mesh, and GPU resources.
+- [x] Settings screen exposes shadow quality, clouds, postprocess, and VSync.
+- [x] Controls screen supports conflict-checked movement/jump rebinding.
+- [x] User settings persist atomically in `saves/settings.toml` and overlay project defaults.
+- [x] Existing inventory, crafting, pause, LAN, and debug UI remain accessible from one entry point.
+- [x] Integration test verifies Alpha/Beta world seed and player-state isolation.
+- [x] Final gate: 134 tests, Ruff, Pyright, and client/server smoke pass.
+- commits: `c8287f0`, `29f0b67`, `08fe233`.
+
 ## Failed checks
 
 None recorded.
@@ -258,4 +271,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Start Phase 17 with real create/load world selection and persisted user settings.
+Start Phase 18 with packaged app metadata, resource verification, and clean-machine launch scripts.
