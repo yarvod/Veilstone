@@ -10,7 +10,14 @@ class LanClient:
         self.connection: socket.socket | None = None
         self.player_id: int | None = None
 
-    def connect(self, host: str, port: int, *, name: str) -> Message:
+    def connect(
+        self,
+        host: str,
+        port: int,
+        *,
+        name: str,
+        position: tuple[float, float, float] | None = None,
+    ) -> Message:
         self.connection = socket.create_connection((host, port), timeout=2.0)
         send_frame(
             self.connection,
@@ -19,7 +26,10 @@ class LanClient:
         response = receive_frame(self.connection)
         if response.get("type") != "handshake_ok":
             raise ConnectionError(f"Handshake failed: {response}")
-        send_frame(self.connection, {"type": "join"})
+        join: Message = {"type": "join"}
+        if position is not None:
+            join["position"] = list(position)
+        send_frame(self.connection, join)
         joined = receive_frame(self.connection)
         player_id = joined.get("player_id")
         if not isinstance(player_id, int):

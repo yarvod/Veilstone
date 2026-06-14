@@ -6,6 +6,7 @@ import logging
 import math
 import queue
 import time
+from contextlib import suppress
 from pathlib import Path
 from typing import Final, cast
 
@@ -253,6 +254,7 @@ class GameWindow(pyglet.window.Window):
             )
             for _ in range(6)
         ]
+        self._start_local_authority()
         if connect is not None:
             self._connect_remote(connect, player_name)
         if recovered_saved_position is not None:
@@ -266,12 +268,7 @@ class GameWindow(pyglet.window.Window):
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
         pyglet.clock.unschedule(self.reload_shaders)
-        if self.network_session is not None:
-            self.network_session.close()
-        if self.lan_discovery is not None:
-            self.lan_discovery.stop()
-        if self.lan_server is not None:
-            self.lan_server.stop()
+        self._stop_network_services()
         self._save_player()
         self.world_renderer.autosave()
         self.debug_shader.release()
@@ -304,7 +301,8 @@ class GameWindow(pyglet.window.Window):
                             "position": [self.player.x, self.player.y, self.player.z],
                         }
                     )
-                    self._request_remote_chunk()
+                    if self.world_renderer.remote_mode:
+                        self._request_remote_chunk()
                 except (ConnectionError, OSError):
                     self.inventory_status = "Connection interrupted; reconnecting..."
         self._autosave_accumulator += delta_time
@@ -706,6 +704,9 @@ class GameWindow(pyglet.window.Window):
         value = field.value.strip()
         if field.purpose is TextPurpose.NICKNAME:
             self.player_name = value[:32] or "Player"
+            if self.network_session is not None:
+                with suppress(ConnectionError, OSError):
+                    self.network_session.send({"type": "rename", "name": self.player_name})
             self.menu.status = f"Nickname: {self.player_name}"
             self.text_input = None
         elif field.purpose is TextPurpose.DIRECT_CONNECT:
@@ -934,11 +935,9 @@ class GameWindow(pyglet.window.Window):
         host, separator, raw_port = target.rpartition(":")
         if not separator or not host:
             raise ValueError("Connect address must use HOST:PORT")
-        if self.network_session is not None:
-            self.network_session.close()
-            self.network_session = None
         session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
         joined = session.connect(host, int(raw_port), name=player_name[:32] or "Player")
+        self._stop_network_services()
         self.network_session = session
         self.world_renderer.enable_remote_mode()
         self.inventory_status = f"Connected as player {joined['player_id']}"
@@ -1092,11 +1091,38 @@ class GameWindow(pyglet.window.Window):
             self.lan_server.apply_block_action(block, block_id)
 
     def open_to_lan(self) -> None:
-        if self.lan_server is not None:
-            host, port = self.lan_server.address
-            self.menu.status = f"World already open to LAN on {host}:{port}"
+        if self.lan_server is None:
+            self.menu.status = "Open to LAN is available only for a singleplayer world."
+            return
+        if self.lan_discovery is not None:
+            self.menu.status = f"World already open to LAN on port {self.lan_server.address[1]}"
             return
         self.world_renderer.autosave()
+        try:
+            discovery = DiscoveryResponder(
+                "0.0.0.0",
+                25565,
+                world_name="Veilstone Singleplayer World",
+                game_port=self.lan_server.address[1],
+                player_count=lambda: self.lan_server.player_count if self.lan_server else 0,
+            )
+            discovery.start()
+        except OSError as error:
+            self.menu.status = f"Could not open LAN discovery port 25565: {error}"
+            return
+        self.lan_discovery = discovery
+        self.menu.world_open_to_lan = True
+        self.menu.status = f"Open to LAN on port {self.lan_server.address[1]}"
+
+    def _apply_lan_block_actions(self) -> None:
+        while True:
+            try:
+                block, block_id = self.lan_block_actions.get_nowait()
+            except queue.Empty:
+                return
+            self.world_renderer.set_block(block, block_id)
+
+    def _start_local_authority(self) -> None:
         server = LanServer(
             "0.0.0.0",
             0,
@@ -1107,31 +1133,30 @@ class GameWindow(pyglet.window.Window):
             ),
         )
         server.start()
+        session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
         try:
-            discovery = DiscoveryResponder(
-                "0.0.0.0",
-                25565,
-                world_name="Veilstone Singleplayer World",
-                game_port=server.address[1],
-                player_count=lambda: server.player_count + 1,
+            session.connect(
+                "127.0.0.1",
+                server.address[1],
+                name=self.player_name,
+                position=(self.player.x, self.player.y, self.player.z),
             )
-            discovery.start()
-        except OSError as error:
+        except OSError:
             server.stop()
-            self.menu.status = f"Could not open LAN discovery port 25565: {error}"
-            return
+            raise
         self.lan_server = server
-        self.lan_discovery = discovery
-        self.menu.world_open_to_lan = True
-        self.menu.status = f"Open to LAN on port {server.address[1]}"
+        self.network_session = session
 
-    def _apply_lan_block_actions(self) -> None:
-        while True:
-            try:
-                block, block_id = self.lan_block_actions.get_nowait()
-            except queue.Empty:
-                return
-            self.world_renderer.set_block(block, block_id)
+    def _stop_network_services(self) -> None:
+        if self.network_session is not None:
+            self.network_session.close()
+            self.network_session = None
+        if self.lan_discovery is not None:
+            self.lan_discovery.stop()
+            self.lan_discovery = None
+        if self.lan_server is not None:
+            self.lan_server.stop()
+            self.lan_server = None
 
     def _request_remote_chunk(self) -> None:
         if self.network_session is None:

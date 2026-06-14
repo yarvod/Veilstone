@@ -164,11 +164,15 @@ class _Handler(socketserver.BaseRequestHandler):
                 return
             server = cast(_ThreadingServer, self.server)
             state = server.state
+            joined_position = _validated_position(join.get("position")) or (0.5, 40.0, 0.5)
             with state.lock:
                 player_id = state.next_player_id
                 state.next_player_id += 1
                 state.clients[player_id] = connection
-                state.players[player_id] = {"name": name, "position": [0.5, 40.0, 0.5]}
+                state.players[player_id] = {
+                    "name": name,
+                    "position": list(joined_position),
+                }
                 state.rate_limits[player_id] = TokenBucket(rate=40.0, capacity=80.0)
                 state.snapshot_sequences[player_id] = 0
                 players = dict(state.players)
@@ -236,6 +240,12 @@ class _Handler(socketserver.BaseRequestHandler):
             text = str(message.get("text", ""))[:256]
             if text:
                 state.broadcast({"type": "chat", "player_id": player_id, "text": text})
+        elif message_type == "rename":
+            name = str(message.get("name", ""))[:32].strip()
+            if name:
+                with state.lock:
+                    state.players[player_id]["name"] = name
+                state.send_entity_snapshots(force_full=True)
         elif message_type == "request_chunk":
             coord = message.get("coord", [0, 0])
             connection = state.clients.get(player_id)

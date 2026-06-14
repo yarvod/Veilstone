@@ -20,7 +20,7 @@ class ClientSession:
         self._messages: queue.SimpleQueue[Message] = queue.SimpleQueue()
         self._thread: threading.Thread | None = None
         self._closed = threading.Event()
-        self._target: tuple[str, int, str] | None = None
+        self._target: tuple[str, int, str, tuple[float, float, float] | None] | None = None
         self._auto_reconnect = auto_reconnect
         self._reconnect_attempts = reconnect_attempts
         self._reconnect_delay = reconnect_delay
@@ -29,10 +29,17 @@ class ClientSession:
     def player_id(self) -> int | None:
         return self.client.player_id
 
-    def connect(self, host: str, port: int, *, name: str) -> Message:
-        self._target = host, port, name
+    def connect(
+        self,
+        host: str,
+        port: int,
+        *,
+        name: str,
+        position: tuple[float, float, float] | None = None,
+    ) -> Message:
+        self._target = host, port, name, position
         self._closed.clear()
-        joined = self.client.connect(host, port, name=name)
+        joined = self.client.connect(host, port, name=name, position=position)
         assert self.client.connection is not None
         self.client.connection.settimeout(None)
         self._thread = threading.Thread(target=self._receive_loop, daemon=True)
@@ -46,12 +53,12 @@ class ClientSession:
         if self._thread is not None:
             self._thread.join(timeout=1.0)
             self._thread = None
-        host, port, name = self._target
+        host, port, name, position = self._target
         last_error: OSError | None = None
         for _ in range(attempts):
             try:
                 self.client = LanClient()
-                return self.connect(host, port, name=name)
+                return self.connect(host, port, name=name, position=position)
             except OSError as error:
                 last_error = error
                 time.sleep(delay)
@@ -92,14 +99,14 @@ class ClientSession:
     def _reconnect_from_receiver(self) -> Message | None:
         if self._target is None:
             return None
-        host, port, name = self._target
+        host, port, name, position = self._target
         self.client.close()
         for _ in range(self._reconnect_attempts):
             if self._closed.is_set():
                 return None
             candidate = LanClient()
             try:
-                joined = candidate.connect(host, port, name=name)
+                joined = candidate.connect(host, port, name=name, position=position)
             except OSError:
                 candidate.close()
                 time.sleep(self._reconnect_delay)

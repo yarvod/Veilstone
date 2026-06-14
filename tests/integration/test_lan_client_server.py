@@ -84,3 +84,25 @@ def test_server_reads_and_persists_the_configured_world(tmp_path: Path) -> None:
     saved = storage.load_chunk(ChunkCoord(0, 0))
     assert saved is not None
     assert saved.get_block(8, 40, 8) == 10
+
+
+def test_join_accepts_initial_position_and_runtime_rename() -> None:
+    server = LanServer("127.0.0.1", 0, seed="join-state")
+    server.start()
+    client = LanClient()
+    try:
+        joined = client.connect(
+            *server.address,
+            name="Before",
+            position=(8.5, 33.0, 8.5),
+        )
+        player_id = joined["player_id"]
+        snapshot = receive_type(client, "entity_snapshot")
+        assert snapshot["players"][player_id]["position"] == [8.5, 33.0, 8.5]  # type: ignore[index]
+
+        client.send({"type": "rename", "name": "After"})
+        renamed = receive_type(client, "entity_snapshot")
+        assert renamed["players"][player_id]["name"] == "After"  # type: ignore[index]
+    finally:
+        client.close()
+        server.stop()
