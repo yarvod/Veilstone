@@ -16,6 +16,13 @@ level = "INFO"
 [development]
 shader_hot_reload = true
 
+[controls]
+forward = "W"
+backward = "S"
+left = "A"
+right = "D"
+jump = "SPACE"
+
 [world]
 seed = "veilstone-dev"
 render_distance = 2

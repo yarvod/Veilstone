@@ -33,6 +33,15 @@ class DevelopmentSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class ControlsSettings:
+    forward: str = "W"
+    backward: str = "S"
+    left: str = "A"
+    right: str = "D"
+    jump: str = "SPACE"
+
+
+@dataclass(frozen=True, slots=True)
 class WorldSettings:
     seed: str = "veilstone-dev"
     render_distance: int = 2
@@ -67,6 +76,7 @@ class AppSettings:
     development: DevelopmentSettings = DevelopmentSettings()
     world: WorldSettings = WorldSettings()
     graphics: GraphicsSettings = GraphicsSettings()
+    controls: ControlsSettings = ControlsSettings()
 
 
 def _section(data: dict[str, Any], key: str) -> dict[str, Any]:
@@ -99,6 +109,7 @@ def load_settings(path: Path | None = None) -> AppSettings:
         development=DevelopmentSettings(**_section(data, "development")),
         world=WorldSettings(**_section(data, "world")),
         graphics=GraphicsSettings(**_section(data, "graphics")),
+        controls=ControlsSettings(**_section(data, "controls")),
     )
 
 
@@ -117,6 +128,12 @@ def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
         f"clouds = {str(settings.graphics.clouds).lower()}\n"
         f"postprocess = {str(settings.graphics.postprocess).lower()}\n"
         f"fog = {str(settings.graphics.fog).lower()}\n"
+        "\n[controls]\n"
+        f'forward = "{settings.controls.forward}"\n'
+        f'backward = "{settings.controls.backward}"\n'
+        f'left = "{settings.controls.left}"\n'
+        f'right = "{settings.controls.right}"\n'
+        f'jump = "{settings.controls.jump}"\n'
     )
     temporary = target.with_suffix(target.suffix + ".tmp")
     temporary.write_text(content, encoding="utf-8")

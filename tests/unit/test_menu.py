@@ -53,6 +53,7 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
         "Clouds",
         "Postprocess",
         "VSync",
+        "Controls",
         "Back",
     ]
     menu = MenuController()
@@ -60,6 +61,16 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert menu.activate() is MenuCommand.CYCLE_SHADOWS
     menu.select(1)
     assert menu.activate() is MenuCommand.TOGGLE_CLOUDS
+
+
+def test_controls_menu_exposes_rebinding_actions() -> None:
+    assert labels(Screen.CONTROLS) == ["Forward", "Backward", "Left", "Right", "Jump", "Back"]
+    menu = MenuController()
+    menu.screen = Screen.CONTROLS
+
+    assert menu.activate() is MenuCommand.REBIND_FORWARD
+    menu.select(4)
+    assert menu.activate() is MenuCommand.REBIND_JUMP
 
 
 def test_open_to_lan_returns_application_command() -> None:

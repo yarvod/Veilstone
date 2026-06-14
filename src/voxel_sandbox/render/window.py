@@ -77,6 +77,8 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context = moderngl.create_context(require=330)
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
+        self.control_bindings = self._control_symbols()
+        self.rebinding_action: str | None = None
         self.active_save_root = save_root or Path(__file__).parents[3] / "saves" / "dev_world"
         self.pending_world_name = ""
         shader_root = Path(__file__).parent / "shaders" / "glsl"
@@ -337,13 +339,17 @@ class GameWindow(pyglet.window.Window):
             )
         if self.inventory_open:
             return
-        forward = float(self.key_state.is_pressed(key.W)) - float(self.key_state.is_pressed(key.S))
-        right = float(self.key_state.is_pressed(key.D)) - float(self.key_state.is_pressed(key.A))
+        forward = float(self.key_state.is_pressed(self.control_bindings["forward"])) - float(
+            self.key_state.is_pressed(self.control_bindings["backward"])
+        )
+        right = float(self.key_state.is_pressed(self.control_bindings["right"])) - float(
+            self.key_state.is_pressed(self.control_bindings["left"])
+        )
         self.player.update(
             PlayerInput(
                 forward=forward,
                 right=right,
-                jump=self.key_state.is_pressed(key.SPACE),
+                jump=self.key_state.is_pressed(self.control_bindings["jump"]),
             ),
             self.camera.yaw_degrees,
             delta_time,
@@ -436,6 +442,9 @@ class GameWindow(pyglet.window.Window):
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
+        if self.rebinding_action is not None:
+            self._apply_rebind(symbol)
+            return
         if self.text_input is not None:
             if symbol in {key.ENTER, key.RETURN}:
                 self._submit_text_input()
@@ -659,6 +668,11 @@ class GameWindow(pyglet.window.Window):
             "toggle_clouds": "on" if self.settings.graphics.clouds else "off",
             "toggle_postprocess": "on" if self.settings.graphics.postprocess else "off",
             "toggle_vsync": "on" if self.settings.window.vsync else "off",
+            "rebind_forward": self.settings.controls.forward,
+            "rebind_backward": self.settings.controls.backward,
+            "rebind_left": self.settings.controls.left,
+            "rebind_right": self.settings.controls.right,
+            "rebind_jump": self.settings.controls.jump,
         }
         value = values.get(item.action or "")
         return item.label if value is None else f"{item.label}: {value}"
@@ -744,6 +758,21 @@ class GameWindow(pyglet.window.Window):
                 initial=worlds[0][0],
                 maximum_length=48,
             )
+        elif command in {
+            MenuCommand.REBIND_FORWARD,
+            MenuCommand.REBIND_BACKWARD,
+            MenuCommand.REBIND_LEFT,
+            MenuCommand.REBIND_RIGHT,
+            MenuCommand.REBIND_JUMP,
+        }:
+            self.rebinding_action = {
+                MenuCommand.REBIND_FORWARD: "forward",
+                MenuCommand.REBIND_BACKWARD: "backward",
+                MenuCommand.REBIND_LEFT: "left",
+                MenuCommand.REBIND_RIGHT: "right",
+                MenuCommand.REBIND_JUMP: "jump",
+            }[command]
+            self.menu.status = f"Press a key for {self.rebinding_action}."
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
@@ -752,6 +781,50 @@ class GameWindow(pyglet.window.Window):
         if should_capture != self.mouse_captured:
             self.mouse_captured = should_capture
             self.set_exclusive_mouse(should_capture)
+
+    def _control_symbols(self) -> dict[str, int]:
+        controls = self.settings.controls
+        return {
+            "forward": cast(int, getattr(key, controls.forward, key.W)),
+            "backward": cast(int, getattr(key, controls.backward, key.S)),
+            "left": cast(int, getattr(key, controls.left, key.A)),
+            "right": cast(int, getattr(key, controls.right, key.D)),
+            "jump": cast(int, getattr(key, controls.jump, key.SPACE)),
+        }
+
+    def _apply_rebind(self, symbol: int) -> None:
+        action = self.rebinding_action
+        if action is None:
+            return
+        conflict = next(
+            (
+                name
+                for name, bound_symbol in self.control_bindings.items()
+                if bound_symbol == symbol
+            ),
+            None,
+        )
+        if conflict is not None and conflict != action:
+            self.menu.status = f"Key already assigned to {conflict}."
+            self.rebinding_action = None
+            return
+        name = key.symbol_string(symbol)
+        controls = self.settings.controls
+        if action == "forward":
+            controls = replace(controls, forward=name)
+        elif action == "backward":
+            controls = replace(controls, backward=name)
+        elif action == "left":
+            controls = replace(controls, left=name)
+        elif action == "right":
+            controls = replace(controls, right=name)
+        else:
+            controls = replace(controls, jump=name)
+        self.settings = replace(self.settings, controls=controls)
+        self.control_bindings[action] = symbol
+        self.rebinding_action = None
+        self.menu.status = f"{action.title()} bound to {name}."
+        save_user_settings(self.settings)
 
     def _sync_camera_to_player(self) -> None:
         self.camera.x, self.camera.y, self.camera.z = self.player.eye_position

@@ -11,6 +11,7 @@ class Screen(Enum):
     SETTINGS = auto()
     GAME = auto()
     PAUSE = auto()
+    CONTROLS = auto()
 
 
 class MenuCommand(Enum):
@@ -26,6 +27,11 @@ class MenuCommand(Enum):
     TOGGLE_VSYNC = auto()
     CREATE_WORLD = auto()
     LOAD_WORLD = auto()
+    REBIND_FORWARD = auto()
+    REBIND_BACKWARD = auto()
+    REBIND_LEFT = auto()
+    REBIND_RIGHT = auto()
+    REBIND_JUMP = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +64,16 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Clouds", action="toggle_clouds"),
         MenuItem("Postprocess", action="toggle_postprocess"),
         MenuItem("VSync", action="toggle_vsync"),
+        MenuItem("Controls", target=Screen.CONTROLS),
         MenuItem("Back", action="settings_back"),
+    ),
+    Screen.CONTROLS: (
+        MenuItem("Forward", action="rebind_forward"),
+        MenuItem("Backward", action="rebind_backward"),
+        MenuItem("Left", action="rebind_left"),
+        MenuItem("Right", action="rebind_right"),
+        MenuItem("Jump", action="rebind_jump"),
+        MenuItem("Back", target=Screen.SETTINGS),
     ),
     Screen.PAUSE: (
         MenuItem("Resume", target=Screen.GAME),
@@ -89,6 +104,7 @@ class MenuController:
             Screen.MULTIPLAYER: "MULTIPLAYER",
             Screen.SETTINGS: "SETTINGS",
             Screen.PAUSE: "PAUSED",
+            Screen.CONTROLS: "CONTROLS",
         }
         return titles.get(self.screen, "")
 
@@ -121,6 +137,7 @@ class MenuController:
             Screen.MULTIPLAYER: Screen.MAIN,
             Screen.SETTINGS: self._settings_return,
             Screen.PAUSE: Screen.GAME,
+            Screen.CONTROLS: Screen.SETTINGS,
             Screen.GAME: Screen.PAUSE,
         }
         target = targets.get(self.screen)
@@ -156,6 +173,16 @@ class MenuController:
             return MenuCommand.TOGGLE_POSTPROCESS
         elif action == "toggle_vsync":
             return MenuCommand.TOGGLE_VSYNC
+        elif action == "rebind_forward":
+            return MenuCommand.REBIND_FORWARD
+        elif action == "rebind_backward":
+            return MenuCommand.REBIND_BACKWARD
+        elif action == "rebind_left":
+            return MenuCommand.REBIND_LEFT
+        elif action == "rebind_right":
+            return MenuCommand.REBIND_RIGHT
+        elif action == "rebind_jump":
+            return MenuCommand.REBIND_JUMP
         elif action == "settings_back":
             self._go_to(self._settings_return)
         return MenuCommand.NONE

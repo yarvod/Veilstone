@@ -32,6 +32,7 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
             postprocess=True,
         ),
         window=replace(settings.window, vsync=False),
+        controls=replace(settings.controls, forward="UP", jump="RSHIFT"),
     )
     path = tmp_path / "settings.toml"
 
@@ -42,3 +43,5 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
     assert not loaded.graphics.clouds
     assert loaded.graphics.postprocess
     assert not loaded.window.vsync
+    assert loaded.controls.forward == "UP"
+    assert loaded.controls.jump == "RSHIFT"
