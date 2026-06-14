@@ -2174,27 +2174,27 @@ Native Windows, macOS, and Linux package jobs passed in GitHub Actions run `2749
 
 Checklist:
 
-- [ ] Add AudioBackend protocol.
-- [ ] Add PygletAudioBackend.
-- [ ] Add NullAudioBackend for tests/server.
-- [ ] Add audio event bus.
-- [ ] Add sound registry.
-- [ ] Add music registry.
-- [ ] Add volume groups.
-- [ ] Add positional block sounds.
-- [ ] Add player footstep sounds by block material.
-- [ ] Add mob sound hooks.
-- [ ] Add biome ambience loop.
-- [ ] Add music director state machine.
-- [ ] Add settings UI for audio volumes.
-- [ ] Add tests for audio event routing with NullAudioBackend.
+- [x] Add AudioBackend protocol.
+- [x] Add PygletAudioBackend.
+- [x] Add NullAudioBackend for tests/server.
+- [x] Add audio event bus.
+- [x] Add sound registry.
+- [x] Add music registry.
+- [x] Add volume groups.
+- [x] Add positional block sounds.
+- [x] Add player footstep sounds by block material.
+- [x] Add mob sound hooks.
+- [x] Add biome ambience loop.
+- [x] Add music director state machine.
+- [x] Add settings UI for audio volumes.
+- [x] Add tests for audio event routing with NullAudioBackend.
 
 Done when:
 
-- [ ] Blocks, UI and mobs can trigger sounds.
-- [ ] Biomes can change ambience.
-- [ ] Music can change by game state.
-- [ ] Server runs with NullAudioBackend.
+- [x] Blocks, UI and mobs can trigger sounds.
+- [x] Biomes can change ambience.
+- [x] Music can change by game state.
+- [x] Server runs with NullAudioBackend.
 
 ### Phase 20 — Articulated mobs and procedural animation
 

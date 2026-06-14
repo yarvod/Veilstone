@@ -60,6 +60,9 @@ controls terrain shadow acne correction.
 tone-mapping/vignette framebuffer pass.
 Player overrides are written atomically to `saves/settings.toml`. The Settings and Controls
 screens expose graphics toggles, VSync, and conflict-checked movement/jump rebinding.
+The Audio screen persists master, effects, music, and ambience volume groups. Positional block
+sounds, material footsteps, mob feedback, biome ambience, and state-driven music are routed
+through a backend-independent event bus; dedicated servers use a silent backend.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;

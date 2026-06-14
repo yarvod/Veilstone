@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 18 - Packaging: complete. Phase 19 audio foundation is next.
+Phase 19 - Audio foundation: complete. Phase 20 articulated mobs is next.
 
 ## Completed checklist
 
@@ -253,6 +253,20 @@ Phase 18 - Packaging: complete. Phase 19 audio foundation is next.
 - [x] Cross-platform CI exposed and fixed a receiver-thread socket shutdown race.
 - commits: `1ba392e`, `d364c7c`, `c5fd635`, `7641db2`.
 
+### Phase 19 - Audio foundation
+
+- [x] Backend protocol with Pyglet and deterministic Null implementations.
+- [x] Event bus, TOML registry, master/effects/music/ambience volume groups.
+- [x] Positional material block sounds and grounded movement footsteps.
+- [x] UI click and mob hit/death hooks.
+- [x] Surface/cave ambience and menu/exploration/night music state machine.
+- [x] Audio settings screen persists and applies all four volume groups.
+- [x] Dedicated server composes the Null backend and imports no playback driver.
+- [x] Original procedural WAV set and reproducible asset generator.
+- [x] Wheel and PyInstaller resource verification covers registry and audio assets.
+- [x] Final gate: 145 tests, Ruff, Pyright, source/frozen client smoke, and server smoke pass.
+- commit: `2936e77`.
+
 ## Failed checks
 
 None recorded.
@@ -288,4 +302,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Begin Phase 19 with backend protocols, event routing, registries, and NullAudioBackend tests.
+Begin Phase 20 with model-part definitions, poses, animation clips, and textured mob assets.
