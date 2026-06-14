@@ -16,6 +16,7 @@ class Screen(Enum):
 class MenuCommand(Enum):
     NONE = auto()
     CLOSE = auto()
+    DISCOVER_LAN = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +123,7 @@ class MenuController:
             self._go_to(Screen.GAME)
         elif action == "join_lan":
             self.status = "Searching for LAN worlds..."
+            return MenuCommand.DISCOVER_LAN
         elif action == "direct_connect":
             self.status = "Direct Connect screen is scheduled for the network phase."
         elif action == "open_lan":

@@ -166,7 +166,10 @@ Phase 14 - Multiplayer polish: in progress.
 - [x] Entity snapshots are filtered per client to a 64-block visibility radius.
 - [x] Per-client token buckets limit input/action/chat/request traffic.
 - [x] UDP LAN discovery advertises world name, game port, and current player count.
-- [ ] Delta snapshots, reconnect, menu flows, nickname input, and true Open to LAN remain.
+- [x] Sequence-numbered entity deltas use periodic full baselines and explicit removals.
+- [x] Client session supports bounded reconnect attempts to its previous target.
+- [x] `--name` selects a bounded LAN nickname and `Join LAN World` uses discovery results.
+- [ ] Direct Connect address text input, chat text input, and true Open to LAN remain.
 
 ## Failed checks
 

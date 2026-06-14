@@ -19,7 +19,7 @@ from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot
-from voxel_sandbox.network import ClientSession, Message, decode_chunk_blocks
+from voxel_sandbox.network import ClientSession, Message, decode_chunk_blocks, discover_worlds
 from voxel_sandbox.network.interpolation import SnapshotInterpolator, reconcile_position
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
@@ -40,6 +40,7 @@ class GameWindow(pyglet.window.Window):
         visible: bool = True,
         save_root: Path | None = None,
         connect: str | None = None,
+        player_name: str = "Player",
     ) -> None:
         configure_layout_independent_game_keys()
         config = pyglet.gl.Config(
@@ -128,6 +129,9 @@ class GameWindow(pyglet.window.Window):
         self.remote_player_interpolation: dict[int, SnapshotInterpolator] = {}
         self.remote_chunks_received = 0
         self.requested_remote_chunks: set[ChunkCoord] = set()
+        self.network_players: dict[object, object] = {}
+        self.last_snapshot_sequence = 0
+        self.player_name = player_name[:32] or "Player"
         self.inventory_open = False
         self.crafting_grid_size = 2
         self.inventory_status = ""
@@ -219,7 +223,7 @@ class GameWindow(pyglet.window.Window):
             for _ in range(6)
         ]
         if connect is not None:
-            self._connect_remote(connect)
+            self._connect_remote(connect, player_name)
         pyglet.clock.schedule_interval(self.fixed_update, FIXED_UPDATE_SECONDS)
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
@@ -567,6 +571,16 @@ class GameWindow(pyglet.window.Window):
     def _handle_menu_command(self, command: MenuCommand) -> None:
         if command is MenuCommand.CLOSE:
             self.close()
+        elif command is MenuCommand.DISCOVER_LAN:
+            worlds = discover_worlds()
+            if not worlds:
+                self.menu.status = "No LAN worlds found. Start Open to LAN or a dedicated server."
+                return
+            world = worlds[0]
+            try:
+                self._connect_remote(f"{world.host}:{world.port}", self.player_name)
+            except OSError as error:
+                self.menu.status = f"LAN connection failed: {error}"
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open
@@ -755,12 +769,12 @@ class GameWindow(pyglet.window.Window):
             )
         )
 
-    def _connect_remote(self, target: str) -> None:
+    def _connect_remote(self, target: str, player_name: str) -> None:
         host, separator, raw_port = target.rpartition(":")
         if not separator or not host:
             raise ValueError("Connect address must use HOST:PORT")
         session = ClientSession()
-        joined = session.connect(host, int(raw_port), name="Player")
+        joined = session.connect(host, int(raw_port), name=player_name[:32] or "Player")
         self.network_session = session
         self.world_renderer.enable_remote_mode()
         self.inventory_status = f"Connected as player {joined['player_id']}"
@@ -805,8 +819,23 @@ class GameWindow(pyglet.window.Window):
                 self.world_renderer.set_block((values[0], values[1], values[2]), block_id)
         elif message_type == "entity_snapshot":
             players = message.get("players")
-            if isinstance(players, dict):
-                self._sync_remote_players(cast(dict[object, object], players))
+            sequence = message.get("sequence", 0)
+            full = message.get("full", True)
+            removed = message.get("removed", [])
+            if (
+                isinstance(players, dict)
+                and isinstance(sequence, int)
+                and sequence > self.last_snapshot_sequence
+            ):
+                self.last_snapshot_sequence = sequence
+                if full is True:
+                    self.network_players = dict(cast(dict[object, object], players))
+                else:
+                    self.network_players.update(cast(dict[object, object], players))
+                    if isinstance(removed, list):
+                        for player_id in cast(list[object], removed):
+                            self.network_players.pop(player_id, None)
+                self._sync_remote_players(self.network_players)
         elif message_type == "chat":
             self.inventory_status = f"Chat: {message.get('text', '')}"
 
@@ -899,6 +928,7 @@ def run_window(
     *,
     smoke_test: bool = False,
     connect: str | None = None,
+    player_name: str = "Player",
 ) -> None:
     temporary_save = None
     if smoke_test or connect is not None:
@@ -910,6 +940,7 @@ def run_window(
         visible=not smoke_test,
         save_root=Path(temporary_save.name) if temporary_save is not None else None,
         connect=connect,
+        player_name=player_name,
     )
     if smoke_test:
         window.switch_to()

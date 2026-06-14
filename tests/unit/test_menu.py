@@ -51,3 +51,11 @@ def test_exit_returns_close_command() -> None:
     menu = MenuController()
     menu.select(3)
     assert menu.activate() is MenuCommand.CLOSE
+
+
+def test_join_lan_returns_discovery_command() -> None:
+    menu = MenuController()
+    menu.screen = Screen.MULTIPLAYER
+
+    assert menu.activate() is MenuCommand.DISCOVER_LAN
+    assert "Searching" in menu.status

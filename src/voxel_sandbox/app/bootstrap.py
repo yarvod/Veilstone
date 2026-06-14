@@ -22,6 +22,7 @@ def run_command(args: argparse.Namespace) -> int:
             settings,
             smoke_test=bool(args.smoke_test),
             connect=str(connect) if (connect := getattr(args, "connect", None)) else None,
+            player_name=str(getattr(args, "name", "Player")),
         )
     if command == "server":
         from voxel_sandbox.app.main_server import run_server

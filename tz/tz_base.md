@@ -2041,15 +2041,15 @@ Checklist:
 - [x] Add client prediction.
 - [x] Add interpolation.
 - [x] Add server reconciliation.
-- [ ] Add delta snapshots.
+- [x] Add delta snapshots.
 - [x] Add chunk interest management.
 - [x] Add entity interest management.
 - [x] Add rate limiting.
-- [ ] Add disconnect/reconnect handling.
+- [x] Add disconnect/reconnect handling.
 - [x] Add LAN discovery.
 - [ ] Add Open to LAN flow in the singleplayer Pause Menu.
-- [ ] Add join LAN menu.
-- [ ] Add nickname selection.
+- [x] Add join LAN menu.
+- [x] Add nickname selection.
 
 Done when:
 

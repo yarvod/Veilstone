@@ -26,6 +26,7 @@ def test_two_clients_join_and_receive_entities_blocks_and_chat() -> None:
         snapshot = receive_type(first, "entity_snapshot")
         while len(snapshot["players"]) < 2:  # type: ignore[arg-type]
             snapshot = receive_type(first, "entity_snapshot")
+        assert snapshot["full"] is True
         assert len(snapshot["players"]) == 2  # type: ignore[arg-type]
 
         first.send({"type": "input", "position": [3.0, 40.0, 5.0]})
@@ -38,6 +39,8 @@ def test_two_clients_join_and_receive_entities_blocks_and_chat() -> None:
                 break
         else:
             raise AssertionError("Moved player snapshot was not received")
+        assert moved["full"] is False
+        assert isinstance(moved["sequence"], int)
 
         second.send({"type": "request_chunk", "coord": [0, 0]})
         chunk = receive_type(second, "chunk")

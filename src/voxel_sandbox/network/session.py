@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import queue
 import threading
+import time
 
 from voxel_sandbox.network.client import LanClient
 from voxel_sandbox.network.protocol import Message
@@ -13,18 +14,39 @@ class ClientSession:
         self._messages: queue.SimpleQueue[Message] = queue.SimpleQueue()
         self._thread: threading.Thread | None = None
         self._closed = threading.Event()
+        self._target: tuple[str, int, str] | None = None
 
     @property
     def player_id(self) -> int | None:
         return self.client.player_id
 
     def connect(self, host: str, port: int, *, name: str) -> Message:
+        self._target = host, port, name
+        self._closed.clear()
         joined = self.client.connect(host, port, name=name)
         assert self.client.connection is not None
         self.client.connection.settimeout(None)
         self._thread = threading.Thread(target=self._receive_loop, daemon=True)
         self._thread.start()
         return joined
+
+    def reconnect(self, *, attempts: int = 3, delay: float = 0.1) -> Message:
+        if self._target is None:
+            raise ConnectionError("Session has no previous target")
+        self.client.close()
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+            self._thread = None
+        host, port, name = self._target
+        last_error: OSError | None = None
+        for _ in range(attempts):
+            try:
+                self.client = LanClient()
+                return self.connect(host, port, name=name)
+            except OSError as error:
+                last_error = error
+                time.sleep(delay)
+        raise ConnectionError("Reconnect attempts exhausted") from last_error
 
     def send(self, message: Message) -> None:
         self.client.send(message)

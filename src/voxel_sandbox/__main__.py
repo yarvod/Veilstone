@@ -13,6 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     client = subparsers.add_parser("client", help="Start the graphical client")
     client.add_argument("--connect", metavar="HOST:PORT")
+    client.add_argument("--name", default="Player", help="LAN player nickname")
     client.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
 
     server = subparsers.add_parser("server", help="Start a dedicated server")

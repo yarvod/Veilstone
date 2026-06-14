@@ -22,6 +22,8 @@ class ServerState:
     players: dict[int, dict[str, object]] = field(default_factory=lambda: {})
     blocks: dict[tuple[int, int, int], int] = field(default_factory=lambda: {})
     rate_limits: dict[int, TokenBucket] = field(default_factory=lambda: {})
+    snapshot_sequences: dict[int, int] = field(default_factory=lambda: {})
+    snapshot_baselines: dict[int, dict[int, dict[str, object]]] = field(default_factory=lambda: {})
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -36,7 +38,7 @@ class ServerState:
             except OSError:
                 continue
 
-    def send_entity_snapshots(self) -> None:
+    def send_entity_snapshots(self, *, force_full: bool = False) -> None:
         with self.lock:
             clients = tuple(self.clients.items())
             players = dict(self.players)
@@ -46,7 +48,10 @@ class ServerState:
                 continue
             own_position = cast(list[float], own["position"])
             visible = {
-                other_id: player
+                other_id: {
+                    "name": player["name"],
+                    "position": list(cast(list[float], player["position"])),
+                }
                 for other_id, player in players.items()
                 if _distance_squared(
                     own_position,
@@ -54,8 +59,34 @@ class ServerState:
                 )
                 <= 64.0**2
             }
+            sequence = self.snapshot_sequences.get(player_id, 0) + 1
+            self.snapshot_sequences[player_id] = sequence
+            baseline = self.snapshot_baselines.get(player_id, {})
+            full = force_full or not baseline or sequence % 20 == 0
+            changed = (
+                visible
+                if full
+                else {
+                    entity_id: player
+                    for entity_id, player in visible.items()
+                    if baseline.get(entity_id) != player
+                }
+            )
+            removed = (
+                [] if full else [entity_id for entity_id in baseline if entity_id not in visible]
+            )
+            self.snapshot_baselines[player_id] = visible
             try:
-                send_frame(connection, {"type": "entity_snapshot", "players": visible})
+                send_frame(
+                    connection,
+                    {
+                        "type": "entity_snapshot",
+                        "sequence": sequence,
+                        "full": full,
+                        "players": changed,
+                        "removed": removed,
+                    },
+                )
             except OSError:
                 continue
 
@@ -84,6 +115,7 @@ class _Handler(socketserver.BaseRequestHandler):
                 state.clients[player_id] = connection
                 state.players[player_id] = {"name": name, "position": [0.5, 40.0, 0.5]}
                 state.rate_limits[player_id] = TokenBucket(rate=40.0, capacity=80.0)
+                state.snapshot_sequences[player_id] = 0
                 players = dict(state.players)
             send_frame(
                 connection,
@@ -94,7 +126,7 @@ class _Handler(socketserver.BaseRequestHandler):
                     "players": players,
                 },
             )
-            state.send_entity_snapshots()
+            state.send_entity_snapshots(force_full=True)
             while True:
                 message = receive_frame(connection)
                 self._handle_message(player_id, message)
@@ -108,7 +140,9 @@ class _Handler(socketserver.BaseRequestHandler):
                     state.clients.pop(player_id, None)
                     state.players.pop(player_id, None)
                     state.rate_limits.pop(player_id, None)
-                state.send_entity_snapshots()
+                    state.snapshot_sequences.pop(player_id, None)
+                    state.snapshot_baselines.pop(player_id, None)
+                state.send_entity_snapshots(force_full=True)
 
     def _handle_message(self, player_id: int, message: Message) -> None:
         server = cast(_ThreadingServer, self.server)

@@ -20,3 +20,12 @@ def test_developer_benchmark_commands_are_registered() -> None:
         "benchmark-network",
     ):
         assert parser.parse_args([command]).command == command
+
+
+def test_client_accepts_connect_address_and_nickname() -> None:
+    args = build_parser().parse_args(
+        ["client", "--connect", "127.0.0.1:25565", "--name", "Veilwalker"]
+    )
+
+    assert args.connect == "127.0.0.1:25565"
+    assert args.name == "Veilwalker"
