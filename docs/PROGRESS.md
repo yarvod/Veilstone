@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 18 - Packaging: implementation complete; native Windows CI verification pending.
+Phase 18 - Packaging: complete. Phase 19 audio foundation is next.
 
 ## Completed checklist
 
@@ -246,8 +246,12 @@ Phase 18 - Packaging: implementation complete; native Windows CI verification pe
 - [x] macOS arm64 bundle builds and completes the real OpenGL client smoke test.
 - [x] Built wheel installs and completes the same smoke test from a clean environment.
 - [x] GitHub Actions matrix defines native macOS, Windows, and optional Linux package smoke jobs.
-- [x] Final local gate: 139 tests, Ruff, Pyright, wheel smoke, and macOS bundle smoke pass.
-- [ ] Run and confirm the Windows native package job before tagging Phase 18 complete.
+- [x] Final local gate: 141 tests, Ruff, Pyright, wheel smoke, and macOS bundle smoke pass.
+- [x] Native Windows, macOS, and Linux package jobs pass in Actions run `27496080787`.
+- [x] Windows verifies executable startup, resources, user-data writes, and dedicated server.
+- [x] Linux and macOS complete the packaged OpenGL client smoke test.
+- [x] Cross-platform CI exposed and fixed a receiver-thread socket shutdown race.
+- commits: `1ba392e`, `d364c7c`, `c5fd635`, `7641db2`.
 
 ## Failed checks
 
@@ -284,4 +288,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Run the native package workflow and confirm the Windows artifact before tagging Phase 18 complete.
+Begin Phase 19 with backend protocols, event routing, registries, and NullAudioBackend tests.

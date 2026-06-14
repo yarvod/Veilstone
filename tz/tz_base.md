@@ -2147,9 +2147,9 @@ Checklist:
 - [x] Add version.
 - [x] Add build script.
 - [x] Package with PyInstaller or Briefcase.
-- [ ] Test Windows build.
+- [x] Test Windows build.
 - [x] Test macOS build.
-- [ ] Test Linux build optional.
+- [x] Test Linux build optional.
 - [x] Include assets.
 - [x] Include shader files.
 - [x] Add crash logs.
@@ -2161,8 +2161,7 @@ Done when:
 - [x] Assets and shaders are found.
 - [x] Saves are written to user data dir.
 
-Native Windows and optional Linux build/smoke jobs are defined in
-`.github/workflows/package.yml`; their checklist items remain open until those runners complete.
+Native Windows, macOS, and Linux package jobs passed in GitHub Actions run `27496080787`.
 
 ---
 
