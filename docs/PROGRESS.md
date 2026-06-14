@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 19 - Audio foundation: complete. Phase 20 articulated mobs is next.
+Phase 20 - Articulated mobs and procedural animation: complete. Phase 21 moving structures is next.
 
 ## Completed checklist
 
@@ -267,6 +267,22 @@ Phase 19 - Audio foundation: complete. Phase 20 articulated mobs is next.
 - [x] Final gate: 145 tests, Ruff, Pyright, source/frozen client smoke, and server smoke pass.
 - commit: `2936e77`.
 
+### Phase 20 - Articulated mobs and procedural animation
+
+- [x] Versioned TOML skeleton/model and animation clip formats.
+- [x] Shared texture atlas with per-part material, UV, tint, transform, and hierarchy data.
+- [x] Original image-generated Veilgrazer and Gloamstalker pixel skins.
+- [x] Distinct quadruped passive and upright hostile silhouettes with nine parts each.
+- [x] AnimationGraph, PoseBlender, local state phases, and reusable procedural controllers.
+- [x] Independent head, limb, tail, jaw, ear, and horn transforms.
+- [x] Idle bob, speed-synchronized gait, attack, hurt, and delayed death poses.
+- [x] LAN player animation state/phase replication and articulated remote player model.
+- [x] Distance culling plus body/head LOD beyond 28 blocks.
+- [x] Rendered OpenGL smoke verifies at least 18 part draws for two mobs.
+- [x] Animation state summary in the debug overlay.
+- [x] Final gate: 154 tests, Ruff, Pyright, wheel/frozen resource checks, and client smoke pass.
+- [x] Articulated shadow benchmark remains `0.35 ms` p95 against the `12 ms` budget.
+
 ## Failed checks
 
 None recorded.
@@ -296,10 +312,7 @@ None recorded.
 - Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
 - Water Vessel can place a source but does not yet scoop an existing source back up.
 - Mob navigation is intentionally local steering over terrain height, not global pathfinding.
-- Entity models are colored prototype cuboids pending later art/model polish.
-- Phase 20 now explicitly requires original textured articulated models, independently animated
-  body parts, walk/attack/hurt/death states, and removal of the Phase 11 proxy cuboids.
 
 ## Next recommended tasks
 
-Begin Phase 20 with model-part definitions, poses, animation clips, and textured mob assets.
+Begin Phase 21 with BlockEntity storage and transform-driven moving structures.

@@ -2200,37 +2200,37 @@ Done when:
 
 Checklist:
 
-- [ ] Add original mob texture/skin format and texture atlas support.
-- [ ] Add per-model-part UV/material definitions.
-- [ ] Add model part/skeleton definition format.
-- [ ] Add AnimationClip format.
-- [ ] Add AnimationGraph.
-- [ ] Add Pose/PoseBlender.
-- [ ] Add procedural motion controllers.
-- [ ] Add head look-at controller.
-- [ ] Add limb swing controller.
-- [ ] Add tail/tentacle wave controller.
-- [ ] Add flying wing controller.
-- [ ] Add crawling gait controller.
-- [ ] Add animation network replication state.
-- [ ] Convert passive mob to articulated model.
-- [ ] Convert hostile mob to articulated model.
-- [ ] Give passive and hostile mobs distinct original silhouettes, palettes and proportions.
-- [ ] Add idle breathing/bobbing and speed-synchronized walk/run cycles.
-- [ ] Add attack wind-up/release/recover, hurt reaction and death animation.
-- [ ] Animate head, torso and limbs independently instead of moving one rigid cuboid.
-- [ ] Add entity animation culling/LOD or batching to stay inside the entity frame budget.
-- [ ] Add rendered animation smoke/visual regression coverage.
-- [ ] Add animation debug overlay.
+- [x] Add original mob texture/skin format and texture atlas support.
+- [x] Add per-model-part UV/material definitions.
+- [x] Add model part/skeleton definition format.
+- [x] Add AnimationClip format.
+- [x] Add AnimationGraph.
+- [x] Add Pose/PoseBlender.
+- [x] Add procedural motion controllers.
+- [x] Add head look-at controller.
+- [x] Add limb swing controller.
+- [x] Add tail/tentacle wave controller.
+- [x] Add flying wing controller.
+- [x] Add crawling gait controller.
+- [x] Add animation network replication state.
+- [x] Convert passive mob to articulated model.
+- [x] Convert hostile mob to articulated model.
+- [x] Give passive and hostile mobs distinct original silhouettes, palettes and proportions.
+- [x] Add idle breathing/bobbing and speed-synchronized walk/run cycles.
+- [x] Add attack wind-up/release/recover, hurt reaction and death animation.
+- [x] Animate head, torso and limbs independently instead of moving one rigid cuboid.
+- [x] Add entity animation culling/LOD or batching to stay inside the entity frame budget.
+- [x] Add rendered animation smoke/visual regression coverage.
+- [x] Add animation debug overlay.
 
 Done when:
 
-- [ ] Mobs have moving body parts.
-- [ ] Passive and hostile mobs no longer use single-color proxy cuboids.
-- [ ] Both mobs have original textured articulated models readable at gameplay distance.
-- [ ] Walk, attack, hurt and death states have visibly different poses/motion.
-- [ ] New movement style can be added without rewriting renderer.
-- [ ] Multiplayer clients see consistent animation phases.
+- [x] Mobs have moving body parts.
+- [x] Passive and hostile mobs no longer use single-color proxy cuboids.
+- [x] Both mobs have original textured articulated models readable at gameplay distance.
+- [x] Walk, attack, hurt and death states have visibly different poses/motion.
+- [x] New movement style can be added without rewriting renderer.
+- [x] Multiplayer clients see consistent animation phases.
 
 ### Phase 21 — Moving structures and magical machines
 
