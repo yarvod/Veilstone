@@ -26,6 +26,7 @@ uv run python -m voxel_sandbox benchmark-streaming
 uv run python -m voxel_sandbox benchmark-frame-streaming
 uv run python -m voxel_sandbox benchmark-network
 uv run python -m voxel_sandbox benchmark-server
+uv run python -m voxel_sandbox benchmark-shadows
 ```
 
 Singleplayer uses the same server-authoritative transport as multiplayer:
@@ -52,6 +53,8 @@ menu and world once, and starts the dedicated server entry point.
 
 The committed `.python-version` and `pyproject.toml` keep the project on Python 3.13.
 Runtime settings live in `config/settings.toml`.
+`graphics.shadow_quality` accepts `off`, `low`, or `medium`; `graphics.shadow_bias`
+controls terrain shadow acne correction.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed

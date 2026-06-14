@@ -2069,15 +2069,15 @@ Done when:
 
 Checklist:
 
-- [ ] Add shadow map framebuffer.
-- [ ] Add sun light matrix.
-- [ ] Render world depth to shadow map.
-- [ ] Apply shadows in chunk shader.
-- [ ] Add entity shadows.
-- [ ] Add shadow bias tuning.
-- [ ] Add PCF filtering.
+- [x] Add shadow map framebuffer.
+- [x] Add sun light matrix.
+- [x] Render world depth to shadow map.
+- [x] Apply shadows in chunk shader.
+- [x] Add entity shadows.
+- [x] Add shadow bias tuning.
+- [x] Add PCF filtering.
 - [ ] Keep the shadow depth pass and filtering inside the GPU frame budget.
-- [ ] Add shadow quality settings.
+- [x] Add shadow quality settings.
 - [ ] Add water shader polish.
 - [ ] Add skybox/sun/moon.
 - [ ] Add clouds.
@@ -2085,10 +2085,10 @@ Checklist:
 
 Done when:
 
-- [ ] Shadows can be enabled.
+- [x] Shadows can be enabled.
 - [ ] FPS remains acceptable on medium.
 - [ ] Medium shadow settings keep GPU frame at or below the `<= 12 ms` target scene budget.
-- [ ] Low settings can disable shadows.
+- [x] Low settings can disable shadows.
 
 ---
 

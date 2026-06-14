@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 15 - Shadows and shader polish: ready to start.
+Phase 15 - Shadows and shader polish: in progress.
 
 ## Completed checklist
 
@@ -186,6 +186,20 @@ Phase 15 - Shadows and shader polish: ready to start.
   headless shell after passing targeted runs earlier; Ruff, Pyright, server smoke, and benchmarks pass.
 - commits: `92e833d`, `995afd8`, `e2fb4b9`, `5932913`, `5f06b17`, `219338c`, `d2b4b2e`.
 
+### Phase 15 - Shadows and shader polish (in progress)
+
+- [x] Configurable `off`, `low` (1024), and `medium` (2048) shadow-map quality.
+- [x] Stable texel-snapped directional sun view-projection matrix.
+- [x] Depth texture/framebuffer and depth-only opaque chunk pass.
+- [x] Additional depth VAOs are built at mesh upload time, not during frame rendering.
+- [x] Opaque chunk shader samples the shadow map with configurable bias and 3x3 PCF.
+- [x] Entity geometry uses a matching animated depth-only shadow pass.
+- [x] Sun shadowing leaves emissive block-light contribution unshadowed.
+- [x] Unit coverage for quality mapping and stable finite sun matrices.
+- [x] `benchmark-shadows` forces GPU completion and enforces a 12 ms medium-shadow p95 budget.
+- [ ] GPU budget measurement and visual OpenGL smoke remain.
+- commits: `4742e88`, `0111f90`, `af67cb1`.
+
 ## Failed checks
 
 None recorded.
@@ -221,4 +235,4 @@ None recorded.
 
 ## Next recommended tasks
 
-Start Phase 15 with the shadow-map framebuffer, directional sun matrix, and depth-only world pass.
+Continue Phase 15 with entity depth rendering, visual bias tuning, and the GPU frame-budget gate.
