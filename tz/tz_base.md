@@ -2232,6 +2232,29 @@ Done when:
 - [x] New movement style can be added without rewriting renderer.
 - [x] Multiplayer clients see consistent animation phases.
 
+### Phase 20.1 — Difficulty, light-aware hostile spawning and command line
+
+Checklist:
+
+- [x] Add persisted `peaceful` and `normal` gameplay difficulty settings.
+- [x] Expose difficulty in the in-game Settings screen.
+- [x] Remove existing hostile mobs immediately when peaceful difficulty is selected.
+- [x] Reduce normal hostile population to one nearby mob and evaluate replenishment every 5 seconds.
+- [x] Prevent hostile spawning above configurable effective light level 7.
+- [x] Combine day-adjusted skylight and block light for hostile spawn checks.
+- [x] Reject spawn candidates whose chunks are not loaded.
+- [x] Add an in-game command line on `/` with `/help`.
+- [x] Add `/time set day|noon|night|midnight|<ticks>`.
+- [x] Add `/difficulty peaceful|normal`.
+- [x] Add unit and OpenGL integration coverage for settings, light, spawning and commands.
+
+Done when:
+
+- [x] Peaceful gameplay contains no aggressive mobs.
+- [x] Normal daytime does not spawn aggressive mobs in well-lit locations.
+- [x] Normal mode can spawn an aggressive mob in darkness or at night.
+- [x] Time and difficulty can be changed without leaving the world.
+
 ### Phase 21 — Moving structures and magical machines
 
 Checklist:

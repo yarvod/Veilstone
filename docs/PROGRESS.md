@@ -283,6 +283,18 @@ Phase 20 - Articulated mobs and procedural animation: complete. Phase 21 moving 
 - [x] Final gate: 154 tests, Ruff, Pyright, wheel/frozen resource checks, and client smoke pass.
 - [x] Articulated shadow benchmark remains `0.35 ms` p95 against the `12 ms` budget.
 
+### Phase 20.1 - Difficulty and command line post-pass
+
+- [x] Persisted Settings option cycles between peaceful and normal difficulty.
+- [x] Peaceful mode immediately removes hostile mobs and prevents replenishment.
+- [x] Normal mode caps nearby hostile population at one and replenishes every five seconds.
+- [x] Hostile candidates require a loaded chunk and effective skylight/block light at level 7 or less.
+- [x] `/` opens the command line with `/help`, `/time set ...`, and `/difficulty ...` commands.
+- [x] Unit tests cover parsing, persistence, lighting and population rules.
+- [x] Hidden-window integration verifies time changes and peaceful hostile removal.
+- [x] Final gate: 164 tests, Ruff and Pyright pass.
+- commit: `11b3ce0`.
+
 ## Failed checks
 
 None recorded.
