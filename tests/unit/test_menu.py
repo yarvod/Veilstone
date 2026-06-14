@@ -38,8 +38,24 @@ def test_pause_settings_returns_to_pause() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
+    menu.select(len(menu.items) - 1)
     menu.activate()
     assert menu.screen is Screen.PAUSE
+
+
+def test_settings_menu_exposes_runtime_graphics_actions() -> None:
+    assert labels(Screen.SETTINGS) == [
+        "Shadow Quality",
+        "Clouds",
+        "Postprocess",
+        "VSync",
+        "Back",
+    ]
+    menu = MenuController()
+    menu.screen = Screen.SETTINGS
+    assert menu.activate() is MenuCommand.CYCLE_SHADOWS
+    menu.select(1)
+    assert menu.activate() is MenuCommand.TOGGLE_CLOUDS
 
 
 def test_open_to_lan_returns_application_command() -> None:

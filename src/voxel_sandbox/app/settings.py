@@ -83,6 +83,14 @@ def load_settings(path: Path | None = None) -> AppSettings:
 
     with config_path.open("rb") as config_file:
         data = tomllib.load(config_file)
+    if path is None:
+        user_path = Path("saves/settings.toml")
+        if user_path.exists():
+            with user_path.open("rb") as user_file:
+                user_data = tomllib.load(user_file)
+            for section, values in user_data.items():
+                if isinstance(values, dict):
+                    data.setdefault(section, {}).update(values)
 
     return AppSettings(
         window=WindowSettings(**_section(data, "window")),
@@ -92,3 +100,24 @@ def load_settings(path: Path | None = None) -> AppSettings:
         world=WorldSettings(**_section(data, "world")),
         graphics=GraphicsSettings(**_section(data, "graphics")),
     )
+
+
+def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
+    target = path or Path("saves/settings.toml")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    content = (
+        "[window]\n"
+        f"vsync = {str(settings.window.vsync).lower()}\n"
+        f"fullscreen = {str(settings.window.fullscreen).lower()}\n\n"
+        "[camera]\n"
+        f"field_of_view = {settings.camera.field_of_view}\n"
+        f"mouse_sensitivity = {settings.camera.mouse_sensitivity}\n\n"
+        "[graphics]\n"
+        f'shadow_quality = "{settings.graphics.shadow_quality}"\n'
+        f"clouds = {str(settings.graphics.clouds).lower()}\n"
+        f"postprocess = {str(settings.graphics.postprocess).lower()}\n"
+        f"fog = {str(settings.graphics.fog).lower()}\n"
+    )
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    temporary.write_text(content, encoding="utf-8")
+    temporary.replace(target)

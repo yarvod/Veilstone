@@ -7,6 +7,7 @@ import math
 import queue
 import time
 from contextlib import suppress
+from dataclasses import replace
 from pathlib import Path
 from typing import Final, cast
 
@@ -14,7 +15,7 @@ import moderngl
 import pyglet
 from pyglet.window import key, mouse
 
-from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
@@ -629,7 +630,7 @@ class GameWindow(pyglet.window.Window):
             if index >= len(self.menu.items):
                 label.text = ""
                 continue
-            label.text = self.menu.items[index].label
+            label.text = self._menu_item_label(index)
             label.x = center_x
             label.y = self._menu_item_y(index)
             label.color = (
@@ -669,6 +670,17 @@ class GameWindow(pyglet.window.Window):
                 return index
         return None
 
+    def _menu_item_label(self, index: int) -> str:
+        item = self.menu.items[index]
+        values = {
+            "cycle_shadows": self.settings.graphics.shadow_quality,
+            "toggle_clouds": "on" if self.settings.graphics.clouds else "off",
+            "toggle_postprocess": "on" if self.settings.graphics.postprocess else "off",
+            "toggle_vsync": "on" if self.settings.window.vsync else "off",
+        }
+        value = values.get(item.action or "")
+        return item.label if value is None else f"{item.label}: {value}"
+
     def _handle_menu_command(self, command: MenuCommand) -> None:
         if command is MenuCommand.CLOSE:
             self.close()
@@ -697,6 +709,41 @@ class GameWindow(pyglet.window.Window):
             )
         elif command is MenuCommand.OPEN_LAN:
             self.open_to_lan()
+        elif command is MenuCommand.CYCLE_SHADOWS:
+            qualities = ("off", "low", "medium")
+            current = self.settings.graphics.shadow_quality
+            current_index = qualities.index(current) if current in qualities else 1
+            next_quality = qualities[(current_index + 1) % len(qualities)]
+            self.settings = replace(
+                self.settings,
+                graphics=replace(self.settings.graphics, shadow_quality=next_quality),
+            )
+            self.menu.status = f"Shadow quality saved as {next_quality}; applies after restart."
+            save_user_settings(self.settings)
+        elif command is MenuCommand.TOGGLE_CLOUDS:
+            enabled = not self.settings.graphics.clouds
+            self.settings = replace(
+                self.settings,
+                graphics=replace(self.settings.graphics, clouds=enabled),
+            )
+            self.sky_renderer.clouds = enabled
+            save_user_settings(self.settings)
+        elif command is MenuCommand.TOGGLE_POSTPROCESS:
+            enabled = not self.settings.graphics.postprocess
+            self.settings = replace(
+                self.settings,
+                graphics=replace(self.settings.graphics, postprocess=enabled),
+            )
+            self.postprocess_renderer.enabled = enabled
+            save_user_settings(self.settings)
+        elif command is MenuCommand.TOGGLE_VSYNC:
+            enabled = not self.settings.window.vsync
+            self.settings = replace(
+                self.settings,
+                window=replace(self.settings.window, vsync=enabled),
+            )
+            self.set_vsync(enabled)
+            save_user_settings(self.settings)
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None

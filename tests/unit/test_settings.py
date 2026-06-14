@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
-from voxel_sandbox.app.settings import AppSettings, load_settings
+from voxel_sandbox.app.settings import AppSettings, load_settings, save_user_settings
 
 
 def test_missing_settings_file_uses_defaults(tmp_path: Path) -> None:
@@ -18,3 +19,26 @@ def test_settings_are_loaded_from_toml(tmp_path: Path) -> None:
     assert settings.window.title == "Test World"
     assert settings.window.width == 800
     assert settings.window.height == 720
+
+
+def test_user_settings_roundtrip(tmp_path: Path) -> None:
+    settings = AppSettings()
+    settings = replace(
+        settings,
+        graphics=replace(
+            settings.graphics,
+            shadow_quality="off",
+            clouds=False,
+            postprocess=True,
+        ),
+        window=replace(settings.window, vsync=False),
+    )
+    path = tmp_path / "settings.toml"
+
+    save_user_settings(settings, path)
+    loaded = load_settings(path)
+
+    assert loaded.graphics.shadow_quality == "off"
+    assert not loaded.graphics.clouds
+    assert loaded.graphics.postprocess
+    assert not loaded.window.vsync

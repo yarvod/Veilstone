@@ -20,6 +20,10 @@ class MenuCommand(Enum):
     DIRECT_CONNECT = auto()
     EDIT_NICKNAME = auto()
     OPEN_LAN = auto()
+    CYCLE_SHADOWS = auto()
+    TOGGLE_CLOUDS = auto()
+    TOGGLE_POSTPROCESS = auto()
+    TOGGLE_VSYNC = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +51,13 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Nickname", action="nickname"),
         MenuItem("Back", target=Screen.MAIN),
     ),
-    Screen.SETTINGS: (MenuItem("Back", action="settings_back"),),
+    Screen.SETTINGS: (
+        MenuItem("Shadow Quality", action="cycle_shadows"),
+        MenuItem("Clouds", action="toggle_clouds"),
+        MenuItem("Postprocess", action="toggle_postprocess"),
+        MenuItem("VSync", action="toggle_vsync"),
+        MenuItem("Back", action="settings_back"),
+    ),
     Screen.PAUSE: (
         MenuItem("Resume", target=Screen.GAME),
         MenuItem("Open to LAN", action="open_lan"),
@@ -134,6 +144,14 @@ class MenuController:
             return MenuCommand.EDIT_NICKNAME
         elif action == "open_lan":
             return MenuCommand.OPEN_LAN
+        elif action == "cycle_shadows":
+            return MenuCommand.CYCLE_SHADOWS
+        elif action == "toggle_clouds":
+            return MenuCommand.TOGGLE_CLOUDS
+        elif action == "toggle_postprocess":
+            return MenuCommand.TOGGLE_POSTPROCESS
+        elif action == "toggle_vsync":
+            return MenuCommand.TOGGLE_VSYNC
         elif action == "settings_back":
             self._go_to(self._settings_return)
         return MenuCommand.NONE
