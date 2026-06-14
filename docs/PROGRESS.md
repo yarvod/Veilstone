@@ -315,6 +315,15 @@ verification. Phase 22 story progression foundation is next.
 - [x] Replaced generic item drops with minified 1x1 voxel block textures using atlas UVs.
 - [x] Medium shadows with articulated entity pivots remain `0.40 ms` p95 vs `12 ms` budget.
 
+### Phase 20.3 - Reference-informed entity material authoring
+
+- [x] Reviewed `obiwac/python-minecraft-clone` at upstream commit `d482ff6`.
+- [x] Adopted semantic face assignment without copying tutorial code or assets.
+- [x] Entity configs support named UV regions and all/sides/X/Y/Z face groups.
+- [x] Explicit face overrides have deterministic precedence and invalid names fail at load time.
+- [x] Existing shared GPU atlas and articulated model renderer remain unchanged.
+- [x] Detailed findings are recorded in `docs/research/python-minecraft-clone-review.md`.
+
 ### Phase 21 - Moving structures and magical machines
 
 - [x] Typed BlockEntity registry plus data-driven MultiBlockStructure definitions.

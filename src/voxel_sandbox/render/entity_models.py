@@ -53,10 +53,17 @@ class EntityModelRegistry:
             if not isinstance(raw_model, dict):
                 raise ValueError("Entity models must be TOML tables")
             model = cast("dict[str, object]", raw_model)
+            raw_regions = model.get("uv_regions", {})
+            if not isinstance(raw_regions, dict):
+                raise ValueError("Entity model uv_regions must be a table")
+            regions = {
+                str(name): _vec4(value)
+                for name, value in cast("dict[object, object]", raw_regions).items()
+            }
             raw_parts = model.get("parts")
             if not isinstance(raw_parts, list):
                 raise ValueError("Entity model must contain parts")
-            parts = tuple(_parse_part(part) for part in cast("list[object]", raw_parts))
+            parts = tuple(_parse_part(part, regions) for part in cast("list[object]", raw_parts))
             models.append(
                 EntityModelDef(
                     key=str(model["key"]),
@@ -71,14 +78,27 @@ class EntityModelRegistry:
         return self._models[key]
 
 
-def _parse_part(raw: object) -> ModelPart:
+def _parse_part(raw: object, regions: dict[str, Vec4]) -> ModelPart:
     if not isinstance(raw, dict):
         raise ValueError("Model parts must be TOML tables")
     values = cast("dict[str, object]", raw)
-    uv = _vec4(values.get("uv", [0.0, 0.0, 1.0, 1.0]))
+    uv = _resolve_uv(values.get("uv_all", values.get("uv", [0.0, 0.0, 1.0, 1.0])), regions)
+    face_values = {face: uv for face in ("front", "back", "left", "right", "top", "bottom")}
+    for alias, faces in (
+        ("uv_sides", ("front", "back", "left", "right")),
+        ("uv_x", ("left", "right")),
+        ("uv_y", ("top", "bottom")),
+        ("uv_z", ("front", "back")),
+    ):
+        if alias in values:
+            resolved = _resolve_uv(values[alias], regions)
+            for face in faces:
+                face_values[face] = resolved
+    for face in face_values:
+        if (key := f"uv_{face}") in values:
+            face_values[face] = _resolve_uv(values[key], regions)
     face_uvs = tuple(
-        _vec4(values.get(f"uv_{face}", list(uv)))
-        for face in ("front", "back", "left", "right", "top", "bottom")
+        face_values[face] for face in ("front", "back", "left", "right", "top", "bottom")
     )
     return ModelPart(
         name=str(values["name"]),
@@ -91,6 +111,15 @@ def _parse_part(raw: object) -> ModelPart:
         face_uvs=cast("FaceUVs", face_uvs),
         tint=_vec3(values.get("tint", [1.0, 1.0, 1.0])),
     )
+
+
+def _resolve_uv(value: object, regions: dict[str, Vec4]) -> Vec4:
+    if isinstance(value, str):
+        try:
+            return regions[value]
+        except KeyError as error:
+            raise ValueError(f"Unknown entity UV region: {value}") from error
+    return _vec4(value)
 
 
 def _vec3(value: object) -> Vec3:

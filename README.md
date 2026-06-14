@@ -67,8 +67,9 @@ sounds, material footsteps, distinct cow/zombie feedback, biome ambience, and st
 use per-resource gain staging through a backend-independent event bus; dedicated servers use a
 silent backend.
 Cow and zombie mobs use original generated material sheets and versioned articulated model
-definitions. Per-part UV regions, joint pivots, inherited transforms, gravity, buoyancy, and
-distance LOD keep their silhouettes and movement readable without copying third-party assets.
+definitions. Named UV regions map semantic all/sides/axis or explicit per-face assignments onto a
+shared GPU atlas. Joint pivots, inherited transforms, gravity, buoyancy, and distance LOD keep
+their silhouettes and movement readable without copying third-party assets.
 World generation and section meshing use reusable process pools by default. CPU work stays
 off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
 Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.engine.ecs import MobState
 from voxel_sandbox.render.entity_animation import (
@@ -35,12 +39,86 @@ def test_original_mob_models_are_textured_and_articulated() -> None:
     assert {part.name for part in passive.parts} >= {"head", "tail", "leg_front_left"}
     assert {part.name for part in hostile.parts} >= {"jaw", "arm_left", "leg_right"}
     assert all(part.material == "skin" for part in passive.parts)
-    assert all(part.uv != (0.0, 0.0, 1.0, 1.0) for part in hostile.parts)
+    assert all(
+        part.face_uvs is not None
+        and all(face_uv != (0.0, 0.0, 1.0, 1.0) for face_uv in part.face_uvs)
+        for part in hostile.parts
+    )
     assert passive.parts[1].face_uvs is not None
     assert passive.parts[1].face_uvs[0] != passive.parts[1].face_uvs[2]
     assert hostile.parts[1].face_uvs is not None
     assert hostile.parts[1].face_uvs[0] != hostile.parts[1].face_uvs[3]
+    assert hostile.parts[2].face_uvs is not None
+    assert hostile.parts[2].face_uvs[2] != hostile.parts[2].face_uvs[3]
+    assert hostile.parts[2].face_uvs[4] != hostile.parts[2].face_uvs[5]
     assert len(models.get("remote_player").parts) == 6
+
+
+def test_named_uv_regions_and_face_groups_resolve_with_explicit_precedence(
+    tmp_path: Path,
+) -> None:
+    config = tmp_path / "models.toml"
+    config.write_text(
+        """
+version = 1
+
+[[models]]
+key = "test"
+texture = "test.png"
+base_color = [1, 1, 1]
+
+[models.uv_regions]
+default = [0.0, 0.0, 0.1, 0.1]
+sides = [0.1, 0.0, 0.1, 0.1]
+x_axis = [0.2, 0.0, 0.1, 0.1]
+front = [0.3, 0.0, 0.1, 0.1]
+
+[[models.parts]]
+name = "body"
+offset = [0, 0, 0]
+size = [1, 1, 1]
+uv_all = "default"
+uv_sides = "sides"
+uv_x = "x_axis"
+uv_front = "front"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    part = EntityModelRegistry.from_toml(config, tmp_path).get("test").parts[0]
+
+    assert part.face_uvs == (
+        (0.3, 0.0, 0.1, 0.1),
+        (0.1, 0.0, 0.1, 0.1),
+        (0.2, 0.0, 0.1, 0.1),
+        (0.2, 0.0, 0.1, 0.1),
+        (0.0, 0.0, 0.1, 0.1),
+        (0.0, 0.0, 0.1, 0.1),
+    )
+
+
+def test_unknown_named_uv_region_is_rejected(tmp_path: Path) -> None:
+    config = tmp_path / "models.toml"
+    config.write_text(
+        """
+version = 1
+
+[[models]]
+key = "test"
+texture = "test.png"
+base_color = [1, 1, 1]
+
+[[models.parts]]
+name = "body"
+offset = [0, 0, 0]
+size = [1, 1, 1]
+uv_front = "missing"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Unknown entity UV region: missing"):
+        EntityModelRegistry.from_toml(config, tmp_path)
 
 
 def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() -> None:

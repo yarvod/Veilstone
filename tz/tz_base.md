@@ -2291,6 +2291,29 @@ Done when:
 - [x] Unlit caves remain dark but geometry is still readable.
 - [x] Gameplay effects remain below clipping and are gain-balanced by semantic category.
 
+### Phase 20.3 — Reference-informed entity material authoring
+
+External tutorial projects may be reviewed for general engineering ideas, but their code and
+assets must not be copied blindly. The resulting runtime format must remain original, validated,
+batch-friendly and compatible with the existing articulated model system.
+
+Checklist:
+
+- [x] Review `obiwac/python-minecraft-clone` model, texture, collision and chunk rendering code.
+- [x] Confirm that upstream mob AI and articulated animation are planned rather than implemented.
+- [x] Add named UV regions to entity model definitions.
+- [x] Add semantic face groups: all, sides, X, Y and Z axes.
+- [x] Keep explicit front/back/left/right/top/bottom overrides at highest precedence.
+- [x] Reject unknown UV region names during config loading.
+- [x] Keep one batched GPU entity atlas instead of binding a separate file for every face.
+- [x] Add unit coverage for face-group precedence and invalid references.
+
+Done when:
+
+- [x] Mob material configs are readable without repeating raw UV coordinates for every part.
+- [x] Faces still resolve to the same intentional regions as before the authoring refactor.
+- [x] No external source code or texture assets are introduced.
+
 ### Phase 21 — Moving structures and magical machines
 
 Checklist:
