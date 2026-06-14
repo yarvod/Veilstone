@@ -27,6 +27,7 @@ from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController
+from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
 LOGGER = logging.getLogger(__name__)
@@ -136,6 +137,7 @@ class GameWindow(pyglet.window.Window):
         self.last_snapshot_sequence = 0
         self.player_name = player_name[:32] or "Player"
         self.inventory_open = False
+        self.text_input: TextInput | None = None
         self.crafting_grid_size = 2
         self.inventory_status = (
             "Recovered invalid saved position" if recovered_saved_position is not None else ""
@@ -216,6 +218,17 @@ class GameWindow(pyglet.window.Window):
             font_name="Menlo",
             font_size=10,
             color=(160, 180, 215, 255),
+        )
+        self.text_input_label = pyglet.text.Label(
+            "",
+            anchor_x="center",
+            anchor_y="center",
+            align="center",
+            multiline=True,
+            width=600,
+            font_name="Menlo",
+            font_size=14,
+            color=(245, 220, 140, 255),
         )
         self.menu_labels = [
             pyglet.text.Label(
@@ -384,10 +397,21 @@ class GameWindow(pyglet.window.Window):
         self._draw_hotbar()
         if self.inventory_open:
             self._draw_inventory()
+        if self.text_input is not None:
+            self._draw_text_input()
         self.fps_display.draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
+        if self.text_input is not None:
+            if symbol in {key.ENTER, key.RETURN}:
+                self._submit_text_input()
+            elif symbol == key.ESCAPE:
+                self.text_input = None
+            elif symbol == key.BACKSPACE:
+                self.text_input.backspace()
+            self._sync_mouse_capture()
+            return
         if not self.menu.in_game:
             if symbol in {key.UP, key.W}:
                 self.menu.move_selection(-1)
@@ -443,7 +467,14 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.Q:
             self._drop_selected_item()
             return
+        if symbol == key.T:
+            self._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
+            return
         self.key_state.press(symbol)
+
+    def on_text(self, text: str) -> None:
+        if self.text_input is not None:
+            self.text_input.append(text)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
@@ -567,6 +598,15 @@ class GameWindow(pyglet.window.Window):
         self.menu_status.x = center_x
         self.menu_status.y = self.height // 4
         self.menu_status.draw()
+        if self.text_input is not None:
+            self._draw_text_input()
+
+    def _draw_text_input(self) -> None:
+        assert self.text_input is not None
+        self.text_input_label.text = self.text_input.display
+        self.text_input_label.x = self.width // 2
+        self.text_input_label.y = self.height // 3
+        self.text_input_label.draw()
 
     def _menu_item_y(self, index: int) -> int:
         return self.height // 2 + 45 - index * 48
@@ -590,11 +630,24 @@ class GameWindow(pyglet.window.Window):
             world = worlds[0]
             try:
                 self._connect_remote(f"{world.host}:{world.port}", self.player_name)
-            except OSError as error:
+            except (OSError, ValueError) as error:
                 self.menu.status = f"LAN connection failed: {error}"
+        elif command is MenuCommand.DIRECT_CONNECT:
+            self._begin_text_input(
+                TextPurpose.DIRECT_CONNECT,
+                "Server address (HOST:PORT)",
+                initial="127.0.0.1:25565",
+            )
+        elif command is MenuCommand.EDIT_NICKNAME:
+            self._begin_text_input(
+                TextPurpose.NICKNAME,
+                "Nickname",
+                initial=self.player_name,
+                maximum_length=32,
+            )
 
     def _sync_mouse_capture(self) -> None:
-        should_capture = self.menu.in_game and not self.inventory_open
+        should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
         if not should_capture:
             self.key_state.clear()
         if should_capture != self.mouse_captured:
@@ -610,6 +663,48 @@ class GameWindow(pyglet.window.Window):
             return "empty"
         definition = self.item_registry.by_id(selected.item_id)
         return f"{definition.name} x{selected.count}"
+
+    def _begin_text_input(
+        self,
+        purpose: TextPurpose,
+        prompt: str,
+        *,
+        initial: str = "",
+        maximum_length: int = 128,
+    ) -> None:
+        self.text_input = TextInput(purpose, prompt, initial, maximum_length)
+        self.key_state.clear()
+        self._sync_mouse_capture()
+
+    def _submit_text_input(self) -> None:
+        field = self.text_input
+        if field is None:
+            return
+        value = field.value.strip()
+        if field.purpose is TextPurpose.NICKNAME:
+            self.player_name = value[:32] or "Player"
+            self.menu.status = f"Nickname: {self.player_name}"
+            self.text_input = None
+        elif field.purpose is TextPurpose.DIRECT_CONNECT:
+            if not value:
+                self.menu.status = "Server address is required."
+                return
+            try:
+                self._connect_remote(value, self.player_name)
+            except (OSError, ValueError) as error:
+                self.menu.status = f"Connection failed: {error}"
+                return
+            self.text_input = None
+        elif field.purpose is TextPurpose.CHAT:
+            if value and self.network_session is not None:
+                try:
+                    self.network_session.send({"type": "chat", "text": value})
+                except (ConnectionError, OSError) as error:
+                    self.inventory_status = f"Chat failed: {error}"
+            elif value:
+                self.inventory_status = "Chat is available in multiplayer."
+            self.text_input = None
+        self._sync_mouse_capture()
 
     def _drop_selected_item(self) -> None:
         stack = self.inventory.take_from_slot(self.hotbar.selected_index)

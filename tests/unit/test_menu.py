@@ -10,7 +10,12 @@ def labels(screen: Screen) -> list[str]:
 def test_player_facing_menu_tree() -> None:
     assert labels(Screen.MAIN) == ["Singleplayer", "Multiplayer", "Settings", "Exit"]
     assert labels(Screen.SINGLEPLAYER) == ["Create World", "Load World", "Back"]
-    assert labels(Screen.MULTIPLAYER) == ["Join LAN World", "Direct Connect", "Back"]
+    assert labels(Screen.MULTIPLAYER) == [
+        "Join LAN World",
+        "Direct Connect",
+        "Nickname",
+        "Back",
+    ]
     assert labels(Screen.PAUSE) == ["Resume", "Open to LAN", "Settings", "Main Menu"]
 
 
@@ -37,14 +42,12 @@ def test_pause_settings_returns_to_pause() -> None:
     assert menu.screen is Screen.PAUSE
 
 
-def test_open_to_lan_records_intent_without_claiming_network_is_ready() -> None:
+def test_open_to_lan_returns_application_command() -> None:
     menu = MenuController()
     menu.screen = Screen.PAUSE
     menu.select(1)
 
-    assert menu.activate() is MenuCommand.NONE
-    assert menu.world_open_to_lan
-    assert "Phase 13" in menu.status
+    assert menu.activate() is MenuCommand.OPEN_LAN
 
 
 def test_exit_returns_close_command() -> None:
@@ -59,3 +62,13 @@ def test_join_lan_returns_discovery_command() -> None:
 
     assert menu.activate() is MenuCommand.DISCOVER_LAN
     assert "Searching" in menu.status
+
+
+def test_direct_connect_and_nickname_return_input_commands() -> None:
+    menu = MenuController()
+    menu.screen = Screen.MULTIPLAYER
+
+    menu.select(1)
+    assert menu.activate() is MenuCommand.DIRECT_CONNECT
+    menu.select(2)
+    assert menu.activate() is MenuCommand.EDIT_NICKNAME

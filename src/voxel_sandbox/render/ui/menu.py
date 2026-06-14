@@ -17,6 +17,9 @@ class MenuCommand(Enum):
     NONE = auto()
     CLOSE = auto()
     DISCOVER_LAN = auto()
+    DIRECT_CONNECT = auto()
+    EDIT_NICKNAME = auto()
+    OPEN_LAN = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +44,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
     Screen.MULTIPLAYER: (
         MenuItem("Join LAN World", action="join_lan"),
         MenuItem("Direct Connect", action="direct_connect"),
+        MenuItem("Nickname", action="nickname"),
         MenuItem("Back", target=Screen.MAIN),
     ),
     Screen.SETTINGS: (MenuItem("Back", action="settings_back"),),
@@ -125,10 +129,11 @@ class MenuController:
             self.status = "Searching for LAN worlds..."
             return MenuCommand.DISCOVER_LAN
         elif action == "direct_connect":
-            self.status = "Direct Connect screen is scheduled for the network phase."
+            return MenuCommand.DIRECT_CONNECT
+        elif action == "nickname":
+            return MenuCommand.EDIT_NICKNAME
         elif action == "open_lan":
-            self.world_open_to_lan = True
-            self.status = "Local world marked open to LAN. Networking follows in Phase 13."
+            return MenuCommand.OPEN_LAN
         elif action == "settings_back":
             self._go_to(self._settings_return)
         return MenuCommand.NONE
