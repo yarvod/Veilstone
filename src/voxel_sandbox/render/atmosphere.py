@@ -3,6 +3,18 @@ from __future__ import annotations
 import math
 
 
+def sun_direction(time_of_day: float) -> tuple[float, float, float]:
+    angle = (time_of_day % 1.0) * math.tau
+    raw = (math.cos(angle), math.sin(angle), 0.28)
+    length = math.sqrt(sum(component * component for component in raw))
+    return raw[0] / length, raw[1] / length, raw[2] / length
+
+
+def celestial_light_direction(time_of_day: float) -> tuple[float, float, float]:
+    sun = sun_direction(time_of_day)
+    return sun if sun[1] >= 0.0 else (-sun[0], -sun[1], -sun[2])
+
+
 def daylight_factor(time_of_day: float) -> float:
     """Return ambient daylight for a normalized day position."""
     return 0.12 + 0.88 * max(0.0, math.sin((time_of_day % 1.0) * math.tau))

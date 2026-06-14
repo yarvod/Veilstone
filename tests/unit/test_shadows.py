@@ -19,3 +19,10 @@ def test_sun_matrix_is_finite_and_stable_inside_one_texel() -> None:
     assert first.shape == (4, 4)
     assert np.isfinite(first).all()
     assert np.array_equal(first, second)
+
+
+def test_shadow_matrix_changes_with_celestial_light_direction() -> None:
+    morning = sun_light_matrix((8.0, 32.0, 8.0), map_size=1024, direction=(1.0, 0.5, 0.0))
+    evening = sun_light_matrix((8.0, 32.0, 8.0), map_size=1024, direction=(-1.0, 0.5, 0.0))
+
+    assert not np.array_equal(morning, evening)

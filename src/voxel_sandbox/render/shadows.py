@@ -16,15 +16,16 @@ def sun_light_matrix(
     center: tuple[float, float, float],
     *,
     map_size: int,
+    direction: tuple[float, float, float] = (0.4, 0.8, 0.25),
     radius: float = 48.0,
 ) -> NDArray[np.float32]:
-    direction = np.asarray((0.4, 0.8, 0.25), dtype=np.float32)
-    direction /= np.linalg.norm(direction)
+    light_direction = np.asarray(direction, dtype=np.float32)
+    light_direction /= np.linalg.norm(light_direction)
     target = np.asarray(center, dtype=np.float32)
     texel_world_size = (radius * 2.0) / max(map_size, 1)
     target[0] = round(float(target[0]) / texel_world_size) * texel_world_size
     target[2] = round(float(target[2]) / texel_world_size) * texel_world_size
-    eye = (target + direction * radius).astype(np.float32)
+    eye = (target + light_direction * radius).astype(np.float32)
     return _orthographic(-radius, radius, -radius, radius, 0.1, radius * 3.0) @ _look_at(
         eye,
         target,

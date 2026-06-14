@@ -8,6 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import cast
 
+from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, Chunk, ChunkCoord, split_world_axis
 from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
 from voxel_sandbox.infrastructure.storage import WorldStorage
@@ -22,6 +23,7 @@ class ServerState:
     storage: WorldStorage | None = None
     block_action_sink: Callable[[tuple[int, int, int], int], None] | None = None
     generator: TerrainGenerator = field(init=False)
+    block_registry: BlockRegistry = field(init=False)
     next_player_id: int = 1
     clients: dict[int, socket.socket] = field(default_factory=lambda: {})
     players: dict[int, dict[str, object]] = field(default_factory=lambda: {})
@@ -34,6 +36,26 @@ class ServerState:
 
     def __post_init__(self) -> None:
         self.generator = TerrainGenerator(WorldSeed.parse(self.seed))
+        self.block_registry = create_core_block_registry()
+
+    def allows_player_block_action(
+        self,
+        position: tuple[int, int, int],
+        block_id: int,
+    ) -> bool:
+        try:
+            self.block_registry.by_id(block_id)
+        except KeyError:
+            return False
+        if block_id != 0:
+            return True
+        world_x, y, world_z = position
+        if not 0 <= y < CHUNK_HEIGHT:
+            return False
+        chunk_x, local_x = split_world_axis(world_x)
+        chunk_z, local_z = split_world_axis(world_z)
+        current = self.chunk_at(ChunkCoord(chunk_x, chunk_z)).get_block(local_x, y, local_z)
+        return not self.block_registry.by_id(current).is_fluid
 
     def broadcast(self, message: Message) -> None:
         with self.lock:
@@ -234,6 +256,8 @@ class _Handler(socketserver.BaseRequestHandler):
                 if player is None or not _block_action_in_range(
                     cast(list[float], player["position"]), key
                 ):
+                    return
+                if not state.allows_player_block_action(key, block_id):
                     return
                 state.apply_block_action(key, block_id, notify_sink=True)
         elif message_type == "chat":

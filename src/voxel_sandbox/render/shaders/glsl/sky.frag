@@ -33,11 +33,18 @@ vec3 camera_ray() {
     vec3 ray = normalize(vec3(1.0, ndc.y * scale, ndc.x * aspect_ratio * scale));
     float cp = cos(pitch);
     float sp = sin(pitch);
-    ray.xy = mat2(cp, -sp, sp, cp) * ray.xy;
+    ray = vec3(
+        cp * ray.x - sp * ray.y,
+        sp * ray.x + cp * ray.y,
+        ray.z
+    );
     float cy = cos(yaw);
     float sy = sin(yaw);
-    ray.xz = mat2(cy, -sy, sy, cy) * ray.xz;
-    return normalize(ray);
+    return normalize(vec3(
+        cy * ray.x - sy * ray.z,
+        ray.y,
+        sy * ray.x + cy * ray.z
+    ));
 }
 
 void main() {

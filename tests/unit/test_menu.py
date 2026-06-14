@@ -47,6 +47,24 @@ def test_pause_settings_returns_to_pause() -> None:
     assert menu.screen is Screen.PAUSE
 
 
+def test_audio_back_does_not_replace_settings_return_screen() -> None:
+    menu = MenuController()
+    menu.select(2)
+    menu.activate()
+    assert menu.screen is Screen.SETTINGS
+
+    menu.select(4)
+    menu.activate()
+    assert menu.screen is Screen.AUDIO
+    menu.select(len(menu.items) - 1)
+    menu.activate()
+    assert menu.screen is Screen.SETTINGS
+
+    menu.select(len(menu.items) - 1)
+    menu.activate()
+    assert menu.screen is Screen.MAIN
+
+
 def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert labels(Screen.SETTINGS) == [
         "Shadow Quality",

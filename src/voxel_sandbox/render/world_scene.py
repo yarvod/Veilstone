@@ -29,7 +29,11 @@ from voxel_sandbox.engine.generation import (
 from voxel_sandbox.engine.lighting import relight_chunk
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
 from voxel_sandbox.infrastructure.storage import WorldStorage
-from voxel_sandbox.render.atmosphere import daylight_factor, sky_color
+from voxel_sandbox.render.atmosphere import (
+    celestial_light_direction,
+    daylight_factor,
+    sky_color,
+)
 from voxel_sandbox.render.block_highlight import BlockHighlightRenderer
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.frustum import aabb_intersects_frustum
@@ -314,7 +318,11 @@ class DemoWorldRenderer:
                 self.water_mesh_cache.remove(completed.key)
 
         light_matrix = (
-            sun_light_matrix(camera.position, map_size=self.shadow_map.size)
+            sun_light_matrix(
+                camera.position,
+                map_size=self.shadow_map.size,
+                direction=celestial_light_direction(self.time_of_day),
+            )
             if self.shadow_map is not None
             else np.identity(4, dtype=np.float32)
         )

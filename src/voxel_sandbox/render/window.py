@@ -607,6 +607,9 @@ class GameWindow(pyglet.window.Window):
             return
         if button == mouse.LEFT:
             block_id = self.world_renderer.get_block(*hit.block)
+            if self.world_renderer.registry.by_id(block_id).is_fluid:
+                self.inventory_status = "Water cannot be mined"
+                return
             if self.world_renderer.set_block(hit.block, 0):
                 self._play_block_sound(block_id, hit.block)
                 self._send_block_action(hit.block, 0)

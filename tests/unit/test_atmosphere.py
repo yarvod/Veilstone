@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import math
 
-from voxel_sandbox.render.atmosphere import daylight_factor, sky_color
+from voxel_sandbox.render.atmosphere import (
+    celestial_light_direction,
+    daylight_factor,
+    sky_color,
+    sun_direction,
+)
 
 
 def test_daylight_peaks_at_noon_and_has_night_floor() -> None:
@@ -20,3 +25,15 @@ def test_sky_color_blends_between_night_and_day() -> None:
         math.isclose(actual, expected)
         for actual, expected in zip(sky_color(1.0), (0.26, 0.43, 0.62, 1.0), strict=True)
     )
+
+
+def test_celestial_light_tracks_sun_and_switches_to_moon_at_night() -> None:
+    noon = sun_direction(0.25)
+    sunset = sun_direction(0.5)
+    night_sun = sun_direction(0.75)
+    night_light = celestial_light_direction(0.75)
+
+    assert noon[1] > 0.9
+    assert abs(sunset[0] + 0.963) < 0.01
+    assert night_sun[1] < -0.9
+    assert night_light == (-night_sun[0], -night_sun[1], -night_sun[2])

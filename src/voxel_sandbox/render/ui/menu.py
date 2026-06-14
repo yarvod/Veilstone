@@ -139,7 +139,7 @@ class MenuController:
             return MenuCommand.NONE
         item = self.items[self.selected_index]
         if item.target is not None:
-            if item.target is Screen.SETTINGS:
+            if item.target is Screen.SETTINGS and self.screen in {Screen.MAIN, Screen.PAUSE}:
                 self._settings_return = self.screen
             self._go_to(item.target)
             return MenuCommand.NONE
