@@ -24,11 +24,15 @@ def test_singleplayer_enters_game_and_escape_opens_pause() -> None:
     menu.activate()
     assert menu.screen is Screen.SINGLEPLAYER
 
-    menu.activate()
-    assert menu.screen is Screen.GAME
+    assert menu.activate() is MenuCommand.CREATE_WORLD
 
-    menu.back()
-    assert menu.screen is Screen.PAUSE
+
+def test_load_world_returns_application_command() -> None:
+    menu = MenuController()
+    menu.activate()
+    menu.select(1)
+
+    assert menu.activate() is MenuCommand.LOAD_WORLD
 
 
 def test_pause_settings_returns_to_pause() -> None:

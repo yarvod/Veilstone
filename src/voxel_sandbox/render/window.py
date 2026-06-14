@@ -22,7 +22,7 @@ from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, ChunkCoord
 from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
-from voxel_sandbox.infrastructure.storage import PlayerSnapshot
+from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
 from voxel_sandbox.network import (
     ClientSession,
     LanServer,
@@ -77,6 +77,8 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context = moderngl.create_context(require=330)
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
+        self.active_save_root = save_root or Path(__file__).parents[3] / "saves" / "dev_world"
+        self.pending_world_name = ""
         shader_root = Path(__file__).parent / "shaders" / "glsl"
         self.debug_shader = ShaderProgram(
             self.mgl_context,
@@ -88,27 +90,7 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context,
             enabled=settings.graphics.postprocess,
         )
-        self.world_renderer = DemoWorldRenderer(
-            self.mgl_context,
-            seed=settings.world.seed,
-            render_distance=settings.world.render_distance,
-            generation_workers=settings.world.generation_workers,
-            generation_backend=settings.world.generation_backend,
-            uploads_per_frame=settings.world.chunk_uploads_per_frame,
-            meshing_workers=settings.world.meshing_workers,
-            meshing_backend=settings.world.meshing_backend,
-            mesh_uploads_per_frame=settings.world.mesh_uploads_per_frame,
-            greedy_meshing=settings.graphics.greedy_meshing,
-            smooth_lighting=settings.graphics.smooth_lighting,
-            ambient_occlusion=settings.graphics.ambient_occlusion,
-            fog=settings.graphics.fog,
-            fog_start=settings.graphics.fog_start,
-            fog_end=settings.graphics.fog_end,
-            day_cycle_seconds=settings.graphics.day_cycle_seconds,
-            shadow_quality=settings.graphics.shadow_quality,
-            shadow_bias=settings.graphics.shadow_bias,
-            save_root=save_root or Path(__file__).parents[3] / "saves" / "dev_world",
-        )
+        self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
@@ -744,6 +726,24 @@ class GameWindow(pyglet.window.Window):
             )
             self.set_vsync(enabled)
             save_user_settings(self.settings)
+        elif command is MenuCommand.CREATE_WORLD:
+            self._begin_text_input(
+                TextPurpose.WORLD_NAME,
+                "World name",
+                initial="New World",
+                maximum_length=48,
+            )
+        elif command is MenuCommand.LOAD_WORLD:
+            worlds = self._saved_worlds()
+            if not worlds:
+                self.menu.status = "No saved worlds found."
+                return
+            self._begin_text_input(
+                TextPurpose.LOAD_WORLD,
+                "Load world: " + ", ".join(name for name, _path in worlds),
+                initial=worlds[0][0],
+                maximum_length=48,
+            )
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
@@ -805,6 +805,27 @@ class GameWindow(pyglet.window.Window):
                     self.inventory_status = f"Chat failed: {error}"
             elif value:
                 self.inventory_status = "Chat is available in multiplayer."
+            self.text_input = None
+        elif field.purpose is TextPurpose.WORLD_NAME:
+            if not value:
+                self.menu.status = "World name is required."
+                return
+            self.pending_world_name = value[:48]
+            self.text_input = TextInput(
+                TextPurpose.WORLD_SEED,
+                "World seed",
+                self.pending_world_name,
+                64,
+            )
+            return
+        elif field.purpose is TextPurpose.WORLD_SEED:
+            seed = value or self.pending_world_name
+            self.create_world(self.pending_world_name, seed)
+            self.text_input = None
+        elif field.purpose is TextPurpose.LOAD_WORLD:
+            if not self.load_world(value):
+                self.menu.status = f"Saved world not found: {value}"
+                return
             self.text_input = None
         self._sync_mouse_capture()
 
@@ -1224,6 +1245,110 @@ class GameWindow(pyglet.window.Window):
             raise
         self.lan_server = server
         self.network_session = session
+
+    def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
+        settings = self.settings
+        return DemoWorldRenderer(
+            self.mgl_context,
+            seed=settings.world.seed,
+            render_distance=settings.world.render_distance,
+            generation_workers=settings.world.generation_workers,
+            generation_backend=settings.world.generation_backend,
+            uploads_per_frame=settings.world.chunk_uploads_per_frame,
+            meshing_workers=settings.world.meshing_workers,
+            meshing_backend=settings.world.meshing_backend,
+            mesh_uploads_per_frame=settings.world.mesh_uploads_per_frame,
+            greedy_meshing=settings.graphics.greedy_meshing,
+            smooth_lighting=settings.graphics.smooth_lighting,
+            ambient_occlusion=settings.graphics.ambient_occlusion,
+            fog=settings.graphics.fog,
+            fog_start=settings.graphics.fog_start,
+            fog_end=settings.graphics.fog_end,
+            day_cycle_seconds=settings.graphics.day_cycle_seconds,
+            shadow_quality=settings.graphics.shadow_quality,
+            shadow_bias=settings.graphics.shadow_bias,
+            save_root=save_root,
+        )
+
+    def create_world(self, name: str, seed: str) -> None:
+        root = Path("saves") / self._world_slug(name)
+        WorldStorage(root).ensure_world(name=name, seed=seed)
+        self._switch_world(root)
+
+    def load_world(self, name: str) -> bool:
+        match = next(
+            (
+                path
+                for world_name, path in self._saved_worlds()
+                if name.casefold() in {world_name.casefold(), path.name.casefold()}
+            ),
+            None,
+        )
+        if match is None:
+            return False
+        self._switch_world(match)
+        return True
+
+    def _switch_world(self, save_root: Path) -> None:
+        self._save_player()
+        self.world_renderer.autosave()
+        self._stop_network_services()
+        self.world_renderer.release()
+        self.active_save_root = save_root
+        self.world_renderer = self._create_world_renderer(save_root)
+        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
+        self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
+        self.inventory = Inventory()
+        self.hotbar = Hotbar(self.inventory)
+        self.inventory.set(0, ItemStack(3, 32), self.item_registry)
+        self.inventory.set(1, ItemStack(7, 8), self.item_registry)
+        self.inventory.set(2, ItemStack(8, 1), self.item_registry)
+        self.inventory.set(3, ItemStack(4, 4), self.item_registry)
+        self.player_health = 20.0
+        saved = self.world_renderer.storage.load_player(self.item_registry)
+        if saved is not None:
+            self.world_renderer.storage.restore_inventory(saved, self.inventory, self.item_registry)
+            self.player_health = saved.health
+            self.hotbar.select(saved.selected_slot)
+            self._restore_player_position(saved.position)
+        self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
+        self.entities.maintain_population(
+            (self.player.x, self.player.y, self.player.z),
+            self.world_renderer.generator.height_at,
+            self._is_entity_hazard,
+        )
+        self.network_players.clear()
+        self.remote_player_entities.clear()
+        self.remote_player_interpolation.clear()
+        self.requested_remote_chunks.clear()
+        self.last_snapshot_sequence = 0
+        self._start_local_authority()
+        self.menu.screen = Screen.GAME
+        self.menu.status = ""
+        self._sync_camera_to_player()
+        self._sync_mouse_capture()
+
+    @staticmethod
+    def _saved_worlds() -> tuple[tuple[str, Path], ...]:
+        saves_root = Path("saves")
+        if not saves_root.exists():
+            return ()
+        worlds: list[tuple[str, Path]] = []
+        for path in sorted(saves_root.iterdir()):
+            if not path.is_dir():
+                continue
+            metadata = WorldStorage(path).load_metadata()
+            if metadata is not None:
+                worlds.append((metadata.name, path))
+        return tuple(worlds)
+
+    @staticmethod
+    def _world_slug(name: str) -> str:
+        slug = "-".join(
+            "".join(character.lower() for character in part if character.isalnum())
+            for part in name.split()
+        )
+        return slug or "world"
 
     def _stop_network_services(self) -> None:
         if self.network_session is not None:

@@ -24,6 +24,8 @@ class MenuCommand(Enum):
     TOGGLE_CLOUDS = auto()
     TOGGLE_POSTPROCESS = auto()
     TOGGLE_VSYNC = auto()
+    CREATE_WORLD = auto()
+    LOAD_WORLD = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,8 +135,10 @@ class MenuController:
     def _run_action(self, action: str | None) -> MenuCommand:
         if action == "exit":
             return MenuCommand.CLOSE
-        if action in {"create_world", "load_world"}:
-            self._go_to(Screen.GAME)
+        if action == "create_world":
+            return MenuCommand.CREATE_WORLD
+        if action == "load_world":
+            return MenuCommand.LOAD_WORLD
         elif action == "join_lan":
             self.status = "Searching for LAN worlds..."
             return MenuCommand.DISCOVER_LAN

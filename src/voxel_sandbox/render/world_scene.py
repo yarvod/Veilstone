@@ -109,8 +109,10 @@ class DemoWorldRenderer:
         self.storage = WorldStorage(save_root)
         metadata = self.storage.load_metadata()
         active_seed = metadata.seed if metadata is not None else seed
+        self.world_name = metadata.name if metadata is not None else "Development World"
         self.seed_text = active_seed
-        self.storage.ensure_world(name="Development World", seed=active_seed)
+        if metadata is None:
+            self.storage.ensure_world(name=self.world_name, seed=active_seed)
         self.generator = TerrainGenerator(WorldSeed.parse(active_seed))
         self.streamer = ChunkStreamer(
             self.generator,
@@ -411,7 +413,7 @@ class DemoWorldRenderer:
             self.shadow_map.release()
 
     def autosave(self) -> int:
-        self.storage.ensure_world(name="Development World", seed=self.seed_text)
+        self.storage.ensure_world(name=self.world_name, seed=self.seed_text)
         return self.streamer.save_dirty()
 
     def install_remote_chunk(self, chunk: Chunk) -> None:
