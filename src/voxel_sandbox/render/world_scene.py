@@ -44,6 +44,7 @@ from voxel_sandbox.render.meshes.gpu_cache import GpuSectionMesh, SectionMeshCac
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
+from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
 from voxel_sandbox.render.texture_atlas import create_block_atlas
 
 
@@ -67,6 +68,8 @@ class DemoWorldRenderer:
         fog_start: float,
         fog_end: float,
         day_cycle_seconds: float,
+        shadow_quality: str,
+        shadow_bias: float,
         save_root: Path,
     ) -> None:
         self.context = context
@@ -75,6 +78,9 @@ class DemoWorldRenderer:
             context, ShaderFiles.from_directory(shader_root, "chunk_opaque")
         )
         self.water_shader = ShaderProgram(context, ShaderFiles.from_directory(shader_root, "water"))
+        self.shadow_shader = ShaderProgram(
+            context, ShaderFiles.from_directory(shader_root, "shadow_depth")
+        )
         atlas = create_block_atlas()
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
@@ -90,6 +96,10 @@ class DemoWorldRenderer:
         self.fog_start = fog_start
         self.fog_end = fog_end
         self.day_cycle_seconds = max(day_cycle_seconds, 1.0)
+        self.shadow_quality = shadow_quality
+        self.shadow_bias = shadow_bias
+        shadow_size = shadow_map_size(shadow_quality)
+        self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
         self.time_of_day = 0.25
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
@@ -109,9 +119,17 @@ class DemoWorldRenderer:
             prepare_lighting=True,
             storage=self.storage,
         )
-        if self.shader.program is None or self.water_shader.program is None:
+        if (
+            self.shader.program is None
+            or self.water_shader.program is None
+            or self.shadow_shader.program is None
+        ):
             raise RuntimeError("World shaders failed to compile")
-        self.mesh_cache = SectionMeshCache(context, self.shader.program)
+        self.mesh_cache = SectionMeshCache(
+            context,
+            self.shader.program,
+            self.shadow_shader.program if self.shadow_map is not None else None,
+        )
         self.water_mesh_cache = SectionMeshCache(context, self.water_shader.program)
         self.mesh_worker = SectionMeshWorker(
             self.registry,
@@ -259,6 +277,14 @@ class DemoWorldRenderer:
             else:
                 self.water_mesh_cache.remove(completed.key)
 
+        light_matrix = (
+            sun_light_matrix(camera.position, map_size=self.shadow_map.size)
+            if self.shadow_map is not None
+            else np.identity(4, dtype=np.float32)
+        )
+        if self.shadow_map is not None:
+            self._render_shadow_depth(light_matrix, width, height)
+
         camera_uniform = cast("moderngl.Uniform", self.shader.program["camera_matrix"])
         texture_uniform = cast("moderngl.Uniform", self.shader.program["texture_atlas"])
         camera_position_uniform = cast("moderngl.Uniform", self.shader.program["camera_position"])
@@ -268,8 +294,21 @@ class DemoWorldRenderer:
         fog_start_uniform = cast("moderngl.Uniform", self.shader.program["fog_start"])
         fog_end_uniform = cast("moderngl.Uniform", self.shader.program["fog_end"])
         fog_enabled_uniform = cast("moderngl.Uniform", self.shader.program["fog_enabled"])
+        cast("moderngl.Uniform", self.shader.program["shadow_matrix"]).write(
+            light_matrix.T.astype("f4").tobytes()
+        )
+        cast("moderngl.Uniform", self.shader.program["shadows_enabled"]).value = int(
+            self.shadow_map is not None
+        )
+        cast("moderngl.Uniform", self.shader.program["shadow_bias"]).value = self.shadow_bias
+        cast("moderngl.Uniform", self.shader.program["shadow_texel_size"]).value = (
+            1.0 / self.shadow_map.size if self.shadow_map is not None else 1.0
+        )
+        cast("moderngl.Uniform", self.shader.program["shadow_map"]).value = 1
         camera_uniform.write(matrix.T.astype("f4").tobytes())
         self.texture.use(0)
+        if self.shadow_map is not None:
+            self.shadow_map.texture.use(1)
         texture_uniform.value = 0
         camera_position_uniform.value = camera.position
         daylight_uniform.value = self.daylight
@@ -333,6 +372,9 @@ class DemoWorldRenderer:
         self.texture.release()
         self.shader.release()
         self.water_shader.release()
+        self.shadow_shader.release()
+        if self.shadow_map is not None:
+            self.shadow_map.release()
 
     def autosave(self) -> int:
         self.storage.ensure_world(name="Development World", seed=self.seed_text)
@@ -483,6 +525,38 @@ class DemoWorldRenderer:
             self.triangle_count += gpu_mesh.data.triangle_count
         self.context.depth_mask = True  # pyright: ignore[reportAttributeAccessIssue]
         self.context.disable(moderngl.BLEND)
+        self.context.enable(moderngl.CULL_FACE)
+
+    def _render_shadow_depth(
+        self,
+        light_matrix: np.ndarray,
+        width: int,
+        height: int,
+    ) -> None:
+        shadow_map = self.shadow_map
+        program = self.shadow_shader.program
+        if shadow_map is None or program is None:
+            return
+        shadow_map.framebuffer.use()
+        self.context.viewport = (0, 0, shadow_map.size, shadow_map.size)
+        self.context.clear(depth=1.0)
+        self.context.cull_face = "front"
+        cast("moderngl.Uniform", program["light_matrix"]).write(
+            light_matrix.T.astype("f4").tobytes()
+        )
+        origin_uniform = cast("moderngl.Uniform", program["section_origin"])
+        for key, gpu_mesh in self.mesh_cache.items():
+            if gpu_mesh.depth_vertex_array is None:
+                continue
+            origin_uniform.value = (
+                key.x * SECTION_SIZE,
+                key.y * SECTION_SIZE,
+                key.z * SECTION_SIZE,
+            )
+            gpu_mesh.depth_vertex_array.render(moderngl.TRIANGLES)
+        self.context.cull_face = "back"
+        self.context.screen.use()
+        self.context.viewport = (0, 0, max(width, 1), max(height, 1))
         self.context.enable(moderngl.CULL_FACE)
 
     def _schedule_horizontal_neighbors(self, coord: ChunkCoord) -> None:

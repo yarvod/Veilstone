@@ -34,3 +34,5 @@ fog = true
 fog_start = 24.0
 fog_end = 56.0
 day_cycle_seconds = 240.0
+shadow_quality = "medium"
+shadow_bias = 0.0015

@@ -17,17 +17,26 @@ class GpuSectionMesh:
     vertex_buffer: moderngl.Buffer
     index_buffer: moderngl.Buffer
     vertex_array: moderngl.VertexArray
+    depth_vertex_array: moderngl.VertexArray | None = None
 
     def release(self) -> None:
+        if self.depth_vertex_array is not None:
+            self.depth_vertex_array.release()
         self.vertex_array.release()
         self.index_buffer.release()
         self.vertex_buffer.release()
 
 
 class SectionMeshCache:
-    def __init__(self, context: moderngl.Context, program: moderngl.Program) -> None:
+    def __init__(
+        self,
+        context: moderngl.Context,
+        program: moderngl.Program,
+        depth_program: moderngl.Program | None = None,
+    ) -> None:
         self.context = context
         self.program = program
+        self.depth_program = depth_program
         self._meshes: dict[SectionCoord, GpuSectionMesh] = {}
 
     def upload(self, key: SectionCoord, mesh: MeshData) -> None:
@@ -52,7 +61,21 @@ class SectionMeshCache:
             index_buffer,
             index_element_size=4,
         )
-        self._meshes[key] = GpuSectionMesh(mesh, vertex_buffer, index_buffer, vertex_array)
+        depth_vertex_array = None
+        if self.depth_program is not None:
+            depth_vertex_array = self.context.vertex_array(
+                self.depth_program,
+                [(vertex_buffer, "3f 48x", "in_position")],
+                index_buffer,
+                index_element_size=4,
+            )
+        self._meshes[key] = GpuSectionMesh(
+            mesh,
+            vertex_buffer,
+            index_buffer,
+            vertex_array,
+            depth_vertex_array,
+        )
 
     def get(self, key: SectionCoord) -> GpuSectionMesh | None:
         return self._meshes.get(key)

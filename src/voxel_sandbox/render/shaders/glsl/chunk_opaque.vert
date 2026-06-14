@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform mat4 camera_matrix;
+uniform mat4 shadow_matrix;
 uniform vec3 section_origin;
 
 in vec3 in_position;
@@ -18,6 +19,7 @@ out float vertex_block_light;
 out float vertex_ao;
 out vec3 vertex_world_position;
 out vec4 vertex_atlas_rect;
+out vec4 vertex_shadow_position;
 
 void main() {
     vec3 sun_direction = normalize(vec3(0.4, 0.8, 0.25));
@@ -28,5 +30,6 @@ void main() {
     vertex_ao = in_ao;
     vertex_atlas_rect = in_atlas_rect;
     vertex_world_position = in_position + section_origin;
+    vertex_shadow_position = shadow_matrix * vec4(vertex_world_position, 1.0);
     gl_Position = camera_matrix * vec4(vertex_world_position, 1.0);
 }

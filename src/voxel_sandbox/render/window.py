@@ -97,6 +97,8 @@ class GameWindow(pyglet.window.Window):
             fog_start=settings.graphics.fog_start,
             fog_end=settings.graphics.fog_end,
             day_cycle_seconds=settings.graphics.day_cycle_seconds,
+            shadow_quality=settings.graphics.shadow_quality,
+            shadow_bias=settings.graphics.shadow_bias,
             save_root=save_root or Path(__file__).parents[3] / "saves" / "dev_world",
         )
         self.menu = MenuController()
