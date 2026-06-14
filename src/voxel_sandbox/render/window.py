@@ -34,7 +34,9 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator, reconcile_
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
+from voxel_sandbox.render.postprocess import PostProcessRenderer
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
+from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
@@ -80,6 +82,11 @@ class GameWindow(pyglet.window.Window):
             ShaderFiles.from_directory(shader_root, "debug"),
         )
         self.camera = FirstPersonCamera()
+        self.sky_renderer = SkyRenderer(self.mgl_context, clouds=settings.graphics.clouds)
+        self.postprocess_renderer = PostProcessRenderer(
+            self.mgl_context,
+            enabled=settings.graphics.postprocess,
+        )
         self.world_renderer = DemoWorldRenderer(
             self.mgl_context,
             seed=settings.world.seed,
@@ -274,6 +281,8 @@ class GameWindow(pyglet.window.Window):
         self._save_player()
         self.world_renderer.autosave()
         self.debug_shader.release()
+        self.sky_renderer.release()
+        self.postprocess_renderer.release()
         self.entity_renderer.release()
         self.world_renderer.release()
         super().close()
@@ -363,10 +372,23 @@ class GameWindow(pyglet.window.Window):
         clear_color = (
             self.world_renderer.clear_color if self.menu.in_game else (0.025, 0.04, 0.075, 1.0)
         )
-        self.mgl_context.clear(*clear_color, depth=1.0)
         if not self.menu.in_game:
+            self.mgl_context.screen.use()
+            self.mgl_context.viewport = (0, 0, max(self.width, 1), max(self.height, 1))
+            self.mgl_context.clear(*clear_color, depth=1.0)
             self._draw_menu()
             return
+        postprocess_active = self.postprocess_renderer.begin(self.width, self.height)
+        self.mgl_context.clear(*clear_color, depth=1.0)
+        self.sky_renderer.render(
+            self.camera,
+            self.width,
+            self.height,
+            self.settings.camera.field_of_view,
+            self.world_renderer.daylight,
+            self.world_renderer.time_of_day,
+            self.world_renderer.animation_time,
+        )
         self.world_renderer.render(
             self.camera,
             self.width,
@@ -386,6 +408,8 @@ class GameWindow(pyglet.window.Window):
             self.settings.camera.field_of_view,
             self.world_renderer.animation_time,
         )
+        if postprocess_active:
+            self.postprocess_renderer.present(self.width, self.height)
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
         frame_time_ms = 1000.0 / fps if fps > 0.0 else 0.0

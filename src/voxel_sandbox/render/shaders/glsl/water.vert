@@ -16,6 +16,7 @@ out vec2 vertex_uv;
 out float vertex_light;
 out vec3 vertex_world_position;
 out vec4 vertex_atlas_rect;
+out vec3 vertex_normal;
 
 void main() {
     vec3 world_position = in_position + section_origin;
@@ -26,5 +27,6 @@ void main() {
     vertex_light = max(max(in_sky_light, in_block_light), 0.12) * (0.75 + in_ao * 0.25);
     vertex_world_position = world_position;
     vertex_atlas_rect = in_atlas_rect;
+    vertex_normal = in_normal;
     gl_Position = camera_matrix * vec4(world_position, 1.0);
 }

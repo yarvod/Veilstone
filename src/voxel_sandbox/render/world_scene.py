@@ -527,6 +527,7 @@ class DemoWorldRenderer:
         cast("moderngl.Uniform", program["fog_start"]).value = fog_start
         cast("moderngl.Uniform", program["fog_end"]).value = fog_end
         cast("moderngl.Uniform", program["fog_enabled"]).value = int(self.fog_enabled)
+        cast("moderngl.Uniform", program["sky_color"]).value = self.clear_color[:3]
         origin_uniform = cast("moderngl.Uniform", program["section_origin"])
         visible: list[tuple[float, SectionCoord, GpuSectionMesh]] = []
         for key, gpu_mesh in self.water_mesh_cache.items():
@@ -572,6 +573,8 @@ class DemoWorldRenderer:
         program = self.shadow_shader.program
         if shadow_map is None or program is None:
             return
+        previous_framebuffer = self.context.fbo
+        previous_viewport = self.context.viewport
         shadow_map.framebuffer.use()
         self.context.viewport = (0, 0, shadow_map.size, shadow_map.size)
         self.context.clear(depth=1.0)
@@ -592,8 +595,8 @@ class DemoWorldRenderer:
         if shadow_caster is not None:
             shadow_caster(light_matrix)
         self.context.cull_face = "back"
-        self.context.screen.use()
-        self.context.viewport = (0, 0, max(width, 1), max(height, 1))
+        previous_framebuffer.use()
+        self.context.viewport = previous_viewport
         self.context.enable(moderngl.CULL_FACE)
 
     def _schedule_horizontal_neighbors(self, coord: ChunkCoord) -> None:

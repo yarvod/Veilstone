@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -58,5 +59,35 @@ def test_invalid_saved_position_recovers_without_losing_inventory() -> None:
             corrected = storage.load_player(registry)
             assert corrected is not None
             assert corrected.position == (window.player.x, window.player.y, window.player.z)
+        finally:
+            window.close()
+
+
+def test_optional_postprocess_renders_and_resizes() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    settings = AppSettings()
+    settings = replace(
+        settings,
+        graphics=replace(settings.graphics, postprocess=True),
+    )
+    with tempfile.TemporaryDirectory(prefix="veilstone-postprocess-test-") as directory:
+        window = GameWindow(settings, visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+            assert window.postprocess_renderer.size == (window.width, window.height)
+
+            window.set_size(640, 360)
+            window.on_draw()
+            window.mgl_context.finish()
+            assert window.postprocess_renderer.size == (window.width, window.height)
         finally:
             window.close()

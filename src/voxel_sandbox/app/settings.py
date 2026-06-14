@@ -55,6 +55,8 @@ class GraphicsSettings:
     day_cycle_seconds: float = 240.0
     shadow_quality: str = "medium"
     shadow_bias: float = 0.0015
+    clouds: bool = True
+    postprocess: bool = False
 
 
 @dataclass(frozen=True, slots=True)
