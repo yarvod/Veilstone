@@ -2143,23 +2143,26 @@ Done when:
 
 Checklist:
 
-- [ ] Add icon.
-- [ ] Add version.
-- [ ] Add build script.
-- [ ] Package with PyInstaller or Briefcase.
+- [x] Add icon.
+- [x] Add version.
+- [x] Add build script.
+- [x] Package with PyInstaller or Briefcase.
 - [ ] Test Windows build.
-- [ ] Test macOS build.
+- [x] Test macOS build.
 - [ ] Test Linux build optional.
-- [ ] Include assets.
-- [ ] Include shader files.
-- [ ] Add crash logs.
-- [ ] Add first-run config.
+- [x] Include assets.
+- [x] Include shader files.
+- [x] Add crash logs.
+- [x] Add first-run config.
 
 Done when:
 
-- [ ] Game launches from packaged build.
-- [ ] Assets and shaders are found.
-- [ ] Saves are written to user data dir.
+- [x] Game launches from packaged build.
+- [x] Assets and shaders are found.
+- [x] Saves are written to user data dir.
+
+Native Windows and optional Linux build/smoke jobs are defined in
+`.github/workflows/package.yml`; their checklist items remain open until those runners complete.
 
 ---
 

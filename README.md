@@ -67,6 +67,20 @@ the developer preview command prints their validated block layers and loot table
 Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed
 chunk files, and the local player's position, health, hotbar, and inventory.
 
+## Packaging
+
+Build the native application on the target operating system:
+
+```bash
+uv sync --frozen
+uv run python scripts/build_app.py
+```
+
+On macOS this produces `dist/Veilstone.app`; Windows and Linux produce a `dist/Veilstone`
+directory. Packaged builds store settings, saves, and crash logs in the platform user-data
+directory. `VEILSTONE_DATA_DIR` overrides that location for automated tests. See
+`docs/RELEASE.md` for the complete release gate.
+
 Local multiplayer developer run:
 
 ```bash
@@ -239,6 +253,6 @@ uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-lighting
 ```
 
-Block and sky light use bounded voxel propagation, not per-light ray tracing. Sun cast
-shadows are planned as a GPU shadow-map pass in Phase 15; see
+Block and sky light use bounded voxel propagation, not per-light ray tracing. Sun-cast
+shadows use a GPU shadow map with configurable quality, bias, and PCF; see
 `docs/adr/0002-voxel-lighting-and-shadows.md`.

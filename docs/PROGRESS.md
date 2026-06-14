@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 18 - Packaging: ready to start.
+Phase 18 - Packaging: implementation complete; native Windows CI verification pending.
 
 ## Completed checklist
 
@@ -234,6 +234,21 @@ Phase 18 - Packaging: ready to start.
 - [x] Final gate: 134 tests, Ruff, Pyright, and client/server smoke pass.
 - commits: `c8287f0`, `29f0b67`, `08fe233`.
 
+### Phase 18 - Packaging
+
+- [x] Original Veilstone PNG, macOS ICNS, and Windows ICO application icons.
+- [x] Application version `0.1.0` is reported by `voxel --version`.
+- [x] Cross-platform PyInstaller build script includes config, assets, shaders, and templates.
+- [x] Frozen multiprocessing initialization supports worldgen and meshing process pools.
+- [x] Packaged resources resolve independently of the repository working directory.
+- [x] Platform user-data roots hold settings, saves, and append-only crash logs.
+- [x] First packaged launch creates an editable user settings file.
+- [x] macOS arm64 bundle builds and completes the real OpenGL client smoke test.
+- [x] Built wheel installs and completes the same smoke test from a clean environment.
+- [x] GitHub Actions matrix defines native macOS, Windows, and optional Linux package smoke jobs.
+- [x] Final local gate: 139 tests, Ruff, Pyright, wheel smoke, and macOS bundle smoke pass.
+- [ ] Run and confirm the Windows native package job before tagging Phase 18 complete.
+
 ## Failed checks
 
 None recorded.
@@ -266,9 +281,7 @@ None recorded.
 - Entity models are colored prototype cuboids pending later art/model polish.
 - Phase 20 now explicitly requires original textured articulated models, independently animated
   body parts, walk/attack/hurt/death states, and removal of the Phase 11 proxy cuboids.
-- Create World and Load World currently target the same `saves/dev_world`; world selection UI is
-  still a later menu polish task.
 
 ## Next recommended tasks
 
-Start Phase 18 with packaged app metadata, resource verification, and clean-machine launch scripts.
+Run the native package workflow and confirm the Windows artifact before tagging Phase 18 complete.
