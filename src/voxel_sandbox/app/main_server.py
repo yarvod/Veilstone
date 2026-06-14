@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import LanServer
 from voxel_sandbox.network.discovery import DiscoveryResponder
 
@@ -17,7 +19,14 @@ def run_server(
     port: int,
     smoke_test: bool = False,
 ) -> int:
-    server = LanServer("0.0.0.0", 0 if smoke_test else port, seed=settings.world.seed)
+    storage = WorldStorage(Path(world))
+    storage.ensure_world(name="Veilstone Dedicated World", seed=settings.world.seed)
+    server = LanServer(
+        "0.0.0.0",
+        0 if smoke_test else port,
+        seed=settings.world.seed,
+        storage=storage,
+    )
     server.start()
     discovery = DiscoveryResponder(
         "0.0.0.0",

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import math
 import socket
 import socketserver
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import cast
 
-from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, Chunk, ChunkCoord, split_world_axis
 from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
+from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network.chunks import encode_chunk_blocks
 from voxel_sandbox.network.protocol import PROTOCOL_VERSION, Message, receive_frame, send_frame
 from voxel_sandbox.network.rate_limit import TokenBucket
@@ -16,6 +19,8 @@ from voxel_sandbox.network.rate_limit import TokenBucket
 @dataclass(slots=True)
 class ServerState:
     seed: str
+    storage: WorldStorage | None = None
+    block_action_sink: Callable[[tuple[int, int, int], int], None] | None = None
     generator: TerrainGenerator = field(init=False)
     next_player_id: int = 1
     clients: dict[int, socket.socket] = field(default_factory=lambda: {})
@@ -24,6 +29,7 @@ class ServerState:
     rate_limits: dict[int, TokenBucket] = field(default_factory=lambda: {})
     snapshot_sequences: dict[int, int] = field(default_factory=lambda: {})
     snapshot_baselines: dict[int, dict[int, dict[str, object]]] = field(default_factory=lambda: {})
+    chunks: dict[ChunkCoord, Chunk] = field(default_factory=lambda: {})
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -37,6 +43,55 @@ class ServerState:
                 send_frame(connection, message)
             except OSError:
                 continue
+
+    def apply_block_action(
+        self,
+        position: tuple[int, int, int],
+        block_id: int,
+        *,
+        notify_sink: bool,
+    ) -> None:
+        with self.lock:
+            self.blocks[position] = block_id
+            world_x, y, world_z = position
+            chunk_x, local_x = split_world_axis(world_x)
+            chunk_z, local_z = split_world_axis(world_z)
+            chunk = self.chunks.get(ChunkCoord(chunk_x, chunk_z))
+            if chunk is not None and 0 <= y < CHUNK_HEIGHT:
+                chunk.set_block(local_x, y, local_z, block_id)
+        if notify_sink and self.block_action_sink is not None:
+            self.block_action_sink(position, block_id)
+        self.broadcast({"type": "block_delta", "position": list(position), "block_id": block_id})
+
+    def chunk_at(self, coord: ChunkCoord) -> Chunk:
+        with self.lock:
+            cached = self.chunks.get(coord)
+        if cached is not None:
+            return cached
+        chunk = self.storage.load_chunk(coord) if self.storage is not None else None
+        if chunk is None:
+            chunk = self.generator.generate_chunk(coord)
+        with self.lock:
+            overrides = tuple(self.blocks.items())
+        for (world_x, y, world_z), block_id in overrides:
+            chunk_x, local_x = split_world_axis(world_x)
+            chunk_z, local_z = split_world_axis(world_z)
+            if (chunk_x, chunk_z) == (coord.x, coord.z) and 0 <= y < CHUNK_HEIGHT:
+                chunk.set_block(local_x, y, local_z, block_id)
+        with self.lock:
+            self.chunks[coord] = chunk
+        return chunk
+
+    def save(self) -> None:
+        if self.storage is None:
+            return
+        with self.lock:
+            changed_coords = {
+                ChunkCoord(split_world_axis(x)[0], split_world_axis(z)[0])
+                for x, _y, z in self.blocks
+            }
+        for coord in changed_coords:
+            self.storage.save_chunk(self.chunk_at(coord))
 
     def send_entity_snapshots(self, *, force_full: bool = False) -> None:
         with self.lock:
@@ -153,9 +208,10 @@ class _Handler(socketserver.BaseRequestHandler):
         message_type = message.get("type")
         if message_type == "input":
             position = message.get("position")
-            if isinstance(position, list) and len(cast(list[object], position)) == 3:
+            validated = _validated_position(position)
+            if validated is not None:
                 with state.lock:
-                    state.players[player_id]["position"] = position
+                    state.players[player_id]["position"] = list(validated)
                 state.send_entity_snapshots()
         elif message_type == "block_action":
             position = message.get("position")
@@ -170,11 +226,12 @@ class _Handler(socketserver.BaseRequestHandler):
                     return
                 coordinates = cast(list[int], values)
                 key = coordinates[0], coordinates[1], coordinates[2]
-                with state.lock:
-                    state.blocks[key] = block_id
-                state.broadcast(
-                    {"type": "block_delta", "position": list(key), "block_id": block_id}
-                )
+                player = state.players.get(player_id)
+                if player is None or not _block_action_in_range(
+                    cast(list[float], player["position"]), key
+                ):
+                    return
+                state.apply_block_action(key, block_id, notify_sink=True)
         elif message_type == "chat":
             text = str(message.get("text", ""))[:256]
             if text:
@@ -206,7 +263,7 @@ class _Handler(socketserver.BaseRequestHandler):
                     > 4
                 ):
                     return
-                chunk = state.generator.generate_chunk(chunk_coord)
+                chunk = state.chunk_at(chunk_coord)
                 send_frame(
                     connection,
                     {
@@ -224,9 +281,17 @@ class _ThreadingServer(socketserver.ThreadingTCPServer):
 
 
 class LanServer:
-    def __init__(self, host: str, port: int, *, seed: str) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        *,
+        seed: str,
+        storage: WorldStorage | None = None,
+        block_action_sink: Callable[[tuple[int, int, int], int], None] | None = None,
+    ) -> None:
         self._server = _ThreadingServer((host, port), _Handler)
-        self._server.state = ServerState(seed)
+        self._server.state = ServerState(seed, storage, block_action_sink)
         self._thread: threading.Thread | None = None
 
     @property
@@ -244,12 +309,37 @@ class LanServer:
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
 
+    def apply_block_action(self, position: tuple[int, int, int], block_id: int) -> None:
+        self._server.state.apply_block_action(position, block_id, notify_sink=False)
+
     def stop(self) -> None:
         self._server.shutdown()
         self._server.server_close()
         if self._thread is not None:
             self._thread.join(timeout=2.0)
+        self._server.state.save()
 
 
 def _distance_squared(first: list[float], second: list[float]) -> float:
     return sum((first[index] - second[index]) ** 2 for index in range(3))
+
+
+def _validated_position(value: object) -> tuple[float, float, float] | None:
+    if not isinstance(value, list) or len(cast(list[object], value)) != 3:
+        return None
+    raw = cast(list[object], value)
+    if not all(isinstance(coordinate, int | float) for coordinate in raw):
+        return None
+    x, y, z = (float(cast(int | float, coordinate)) for coordinate in raw)
+    if not all(math.isfinite(coordinate) for coordinate in (x, y, z)):
+        return None
+    if abs(x) > 30_000_000.0 or abs(z) > 30_000_000.0 or not 0.0 <= y <= CHUNK_HEIGHT:
+        return None
+    return x, y, z
+
+
+def _block_action_in_range(
+    player_position: list[float], block_position: tuple[int, int, int]
+) -> bool:
+    block_center = [float(coordinate) + 0.5 for coordinate in block_position]
+    return _distance_squared(player_position, block_center) <= 8.0**2

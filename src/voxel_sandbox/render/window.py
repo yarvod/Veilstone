@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import queue
 import time
 from pathlib import Path
 from typing import Final, cast
@@ -20,7 +21,14 @@ from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, ChunkCoord
 from voxel_sandbox.engine.ecs import EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot
-from voxel_sandbox.network import ClientSession, Message, decode_chunk_blocks, discover_worlds
+from voxel_sandbox.network import (
+    ClientSession,
+    LanServer,
+    Message,
+    decode_chunk_blocks,
+    discover_worlds,
+)
+from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator, reconcile_position
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
@@ -129,6 +137,11 @@ class GameWindow(pyglet.window.Window):
         self._autosave_accumulator = 0.0
         self._network_accumulator = 0.0
         self.network_session: ClientSession | None = None
+        self.lan_server: LanServer | None = None
+        self.lan_discovery: DiscoveryResponder | None = None
+        self.lan_block_actions: queue.SimpleQueue[tuple[tuple[int, int, int], int]] = (
+            queue.SimpleQueue()
+        )
         self.remote_player_entities: dict[int, int] = {}
         self.remote_player_interpolation: dict[int, SnapshotInterpolator] = {}
         self.remote_chunks_received = 0
@@ -255,6 +268,10 @@ class GameWindow(pyglet.window.Window):
         pyglet.clock.unschedule(self.reload_shaders)
         if self.network_session is not None:
             self.network_session.close()
+        if self.lan_discovery is not None:
+            self.lan_discovery.stop()
+        if self.lan_server is not None:
+            self.lan_server.stop()
         self._save_player()
         self.world_renderer.autosave()
         self.debug_shader.release()
@@ -267,6 +284,7 @@ class GameWindow(pyglet.window.Window):
         self.debug_shader.reload_if_changed()
 
     def fixed_update(self, delta_time: float) -> None:
+        self._apply_lan_block_actions()
         if not self.menu.in_game:
             return
         if not self._player_position_within_world():
@@ -645,6 +663,8 @@ class GameWindow(pyglet.window.Window):
                 initial=self.player_name,
                 maximum_length=32,
             )
+        elif command is MenuCommand.OPEN_LAN:
+            self.open_to_lan()
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
@@ -1042,6 +1062,50 @@ class GameWindow(pyglet.window.Window):
             self.network_session.send(
                 {"type": "block_action", "position": list(block), "block_id": block_id}
             )
+        elif self.lan_server is not None:
+            self.lan_server.apply_block_action(block, block_id)
+
+    def open_to_lan(self) -> None:
+        if self.lan_server is not None:
+            host, port = self.lan_server.address
+            self.menu.status = f"World already open to LAN on {host}:{port}"
+            return
+        self.world_renderer.autosave()
+        server = LanServer(
+            "0.0.0.0",
+            0,
+            seed=self.world_renderer.seed_text,
+            storage=self.world_renderer.storage,
+            block_action_sink=lambda position, block_id: self.lan_block_actions.put(
+                (position, block_id)
+            ),
+        )
+        server.start()
+        try:
+            discovery = DiscoveryResponder(
+                "0.0.0.0",
+                25565,
+                world_name="Veilstone Singleplayer World",
+                game_port=server.address[1],
+                player_count=lambda: server.player_count + 1,
+            )
+            discovery.start()
+        except OSError as error:
+            server.stop()
+            self.menu.status = f"Could not open LAN discovery port 25565: {error}"
+            return
+        self.lan_server = server
+        self.lan_discovery = discovery
+        self.menu.world_open_to_lan = True
+        self.menu.status = f"Open to LAN on port {server.address[1]}"
+
+    def _apply_lan_block_actions(self) -> None:
+        while True:
+            try:
+                block, block_id = self.lan_block_actions.get_nowait()
+            except queue.Empty:
+                return
+            self.world_renderer.set_block(block, block_id)
 
     def _request_remote_chunk(self) -> None:
         if self.network_session is None:
