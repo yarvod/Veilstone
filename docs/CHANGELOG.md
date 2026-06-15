@@ -17,6 +17,7 @@
 - Cow grazing lowers the head with the correct rotation sign.
 - Windows UI labels select Segoe UI through one platform-font policy.
 - The player list omits the duplicated local network snapshot.
+- Menu text now renders with alpha blending and depth test disabled during menu rendering on Windows.
 
 ### Fixed
 

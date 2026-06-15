@@ -573,7 +573,12 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context.screen.use()
             self.mgl_context.viewport = (0, 0, max(self.width, 1), max(self.height, 1))
             self.mgl_context.clear(*clear_color, depth=1.0)
+            self.mgl_context.disable(moderngl.DEPTH_TEST)
+            self.mgl_context.enable(moderngl.BLEND)
+            self.mgl_context.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
             self._draw_menu()
+            self.mgl_context.disable(moderngl.BLEND)
+            self.mgl_context.enable(moderngl.DEPTH_TEST)
             return
         postprocess_active = self.postprocess_renderer.begin(self.width, self.height)
         self.mgl_context.clear(*clear_color, depth=1.0)
