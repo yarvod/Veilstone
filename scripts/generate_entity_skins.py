@@ -148,10 +148,61 @@ def _zombie_skin() -> Image.Image:
     return image
 
 
+def _player_skin() -> Image.Image:
+    image = Image.new("RGB", (SIZE, SIZE), (105, 76, 58))
+    draw = ImageDraw.Draw(image)
+    skin = (178, 128, 92)
+    skin_shadow = (138, 91, 68)
+    hair = (48, 34, 31)
+    eye = (52, 92, 122)
+    shirt = (42, 112, 132)
+    shirt_dark = (29, 77, 94)
+    trousers = (48, 54, 78)
+    boots = (31, 29, 34)
+
+    for column in range(4):
+        _tile(draw, column, 0, skin)
+        _tile(draw, column, 1, shirt)
+        _tile(draw, column, 2, shirt)
+        _tile(draw, column, 3, trousers)
+
+    # Face exists only on the authored front tile.
+    _rect(draw, 0, 0, (5, 5, 58, 17), hair)
+    _rect(draw, 0, 0, (7, 13, 15, 35), hair)
+    _rect(draw, 0, 0, (49, 13, 57, 30), hair)
+    _rect(draw, 0, 0, (15, 28, 23, 35), eye)
+    _rect(draw, 0, 0, (41, 28, 49, 35), eye)
+    _rect(draw, 0, 0, (27, 46, 38, 50), skin_shadow)
+    _rect(draw, 1, 0, (5, 5, 18, 42), hair)
+    _rect(draw, 2, 0, (4, 4, 59, 43), hair)
+    _rect(draw, 3, 0, (46, 5, 59, 42), hair)
+
+    # Jacket front/back and clean side seams.
+    _rect(draw, 0, 1, (27, 4, 36, 59), shirt_dark)
+    _rect(draw, 0, 1, (8, 8, 55, 15), (63, 142, 154))
+    _rect(draw, 1, 1, (4, 4, 12, 59), shirt_dark)
+    _rect(draw, 2, 1, (7, 7, 56, 16), shirt_dark)
+    _rect(draw, 3, 1, (51, 4, 59, 59), shirt_dark)
+
+    # Sleeves with hands at the authored lower edge.
+    for column in range(4):
+        _rect(draw, column, 2, (0, 0, 63, 45), shirt)
+        _rect(draw, column, 2, (0, 0, 63, 8), shirt_dark)
+        _rect(draw, column, 2, (0, 48, 63, 63), skin)
+
+    # Trousers and boots.
+    for column in range(4):
+        _rect(draw, column, 3, (0, 49, 63, 63), boots)
+    _rect(draw, 0, 3, (27, 4, 36, 48), (38, 42, 65))
+    _rect(draw, 2, 3, (10, 7, 53, 16), (61, 66, 91))
+    return image
+
+
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     _cow_skin().save(OUTPUT / "cow-skin.png")
     _zombie_skin().save(OUTPUT / "zombie-skin.png")
+    _player_skin().save(OUTPUT / "player-skin.png")
 
 
 if __name__ == "__main__":

@@ -4,6 +4,10 @@ from dataclasses import dataclass
 from enum import Enum, auto
 
 
+def platform_font_name(platform: str) -> str:
+    return "Segoe UI" if platform == "win32" else "Menlo"
+
+
 class Screen(Enum):
     MAIN = auto()
     SINGLEPLAYER = auto()

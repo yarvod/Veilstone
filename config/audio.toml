@@ -29,6 +29,12 @@ group = "effects"
 gain = 0.48
 
 [[audio]]
+key = "player.hurt"
+path = "audio/player_hurt.wav"
+group = "effects"
+gain = 0.62
+
+[[audio]]
 key = "mob.passive_hurt"
 paths = ["audio/cow/hurt_1.wav", "audio/cow/hurt_2.wav"]
 group = "effects"

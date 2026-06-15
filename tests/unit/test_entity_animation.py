@@ -18,6 +18,7 @@ from voxel_sandbox.render.entity_animation import (
     wing_controller,
 )
 from voxel_sandbox.render.entity_models import EntityModelRegistry
+from voxel_sandbox.render.entity_renderer import cube_vertices
 
 
 def _registries() -> tuple[EntityModelRegistry, AnimationClipRegistry]:
@@ -52,6 +53,7 @@ def test_original_mob_models_are_textured_and_articulated() -> None:
     assert hostile.parts[2].face_uvs is not None
     assert hostile.parts[2].face_uvs[2] != hostile.parts[2].face_uvs[3]
     assert len(models.get("remote_player").parts) == 6
+    assert models.get("remote_player").texture.name == "player-skin.png"
 
 
 def test_named_uv_regions_and_face_groups_resolve_with_explicit_precedence(
@@ -130,6 +132,22 @@ def test_generated_mob_skins_keep_faces_out_of_profile_tiles() -> None:
         assert cow.size == (256, 256)
         assert cow.getpixel((20, 64 + 48)) == (55, 38, 29)
         assert cow.getpixel((64 + 20, 64 + 48)) != (55, 38, 29)
+    with Image.open(resource_path("assets/entities/player-skin.png")) as player:
+        assert player.size == (256, 256)
+        assert player.getpixel((18, 31)) == (52, 92, 122)
+        assert player.getpixel((64 + 18, 31)) != (52, 92, 122)
+
+
+def test_entity_cube_front_is_upright_and_side_faces_are_not_mirrored() -> None:
+    vertices = cube_vertices()
+    front = {vertex[:3]: vertex[3:5] for vertex in vertices[:6]}
+    left = {vertex[:3]: vertex[3:5] for vertex in vertices[12:18]}
+
+    assert front[(-0.5, 0.5, -0.5)] == (0.0, 0.0)
+    assert front[(0.5, 0.5, -0.5)] == (1.0, 0.0)
+    assert front[(-0.5, -0.5, -0.5)] == (0.0, 1.0)
+    assert left[(-0.5, 0.5, 0.5)] == (1.0, 0.0)
+    assert left[(-0.5, 0.5, -0.5)] == (0.0, 0.0)
 
 
 def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() -> None:
@@ -148,6 +166,7 @@ def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() ->
     assert attack["arm_left"].rotation[0] < -0.5
     assert hurt["body"].rotation != death["body"].rotation
     assert graze["head"].offset[1] < -0.3
+    assert graze["head"].rotation[0] < -0.6
 
 
 def test_pose_blending_hierarchy_and_extra_controllers() -> None:

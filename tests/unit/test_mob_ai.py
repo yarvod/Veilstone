@@ -62,6 +62,38 @@ def test_mob_death_spawns_item_entity_that_can_be_picked_up() -> None:
     assert len(simulation.world.items) == 0
 
 
+def test_hit_knocks_passive_mob_away_and_transitions_to_flee() -> None:
+    simulation = EntitySimulation(seed=3)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (2.0, 10.0, 0.0))
+
+    simulation.damage(mob, 2.0, source_position=(0.0, 10.0, 0.0))
+
+    ai = simulation.world.mob_ai[mob]
+    velocity = simulation.world.velocities[mob]
+    assert ai.state is MobState.HURT
+    assert ai.knockback_remaining > 0.0
+    assert velocity.x > 5.0
+    before_x = simulation.world.transforms[mob].x
+
+    for _ in range(4):
+        simulation.update(0.1, (0.0, 10.0, 0.0), flat_ground, no_hazard)
+
+    assert simulation.world.transforms[mob].x > before_x
+    assert simulation.world.mob_ai[mob].state is MobState.FLEE
+
+
+def test_spawned_mobs_start_at_their_species_maximum_health() -> None:
+    simulation = EntitySimulation(seed=4)
+
+    passive = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 2.0, 0.0))
+    hostile = simulation.spawn_mob(MobKind.HOSTILE, (2.0, 2.0, 0.0))
+
+    passive_health = simulation.world.health[passive]
+    hostile_health = simulation.world.health[hostile]
+    assert (passive_health.current, passive_health.maximum) == (10.0, 10.0)
+    assert (hostile_health.current, hostile_health.maximum) == (16.0, 16.0)
+
+
 def test_far_mob_despawns() -> None:
     simulation = EntitySimulation()
     mob = simulation.spawn_mob(MobKind.PASSIVE, (60.0, 10.0, 0.0))

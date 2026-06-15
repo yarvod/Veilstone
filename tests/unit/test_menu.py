@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from voxel_sandbox.render.ui.menu import MENUS, MenuCommand, MenuController, Screen
+from voxel_sandbox.render.ui.menu import (
+    MENUS,
+    MenuCommand,
+    MenuController,
+    Screen,
+    platform_font_name,
+)
 
 
 def labels(screen: Screen) -> list[str]:
@@ -125,3 +131,8 @@ def test_direct_connect_and_nickname_return_input_commands() -> None:
     assert menu.activate() is MenuCommand.DIRECT_CONNECT
     menu.select(2)
     assert menu.activate() is MenuCommand.EDIT_NICKNAME
+
+
+def test_platform_font_uses_windows_native_metrics() -> None:
+    assert platform_font_name("win32") == "Segoe UI"
+    assert platform_font_name("darwin") == "Menlo"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -41,3 +42,55 @@ def test_graphical_client_installs_server_chunk() -> None:
         finally:
             window.close()
             server.stop()
+
+
+def test_two_graphical_clients_create_remote_player_avatars() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    settings = AppSettings()
+    settings = replace(
+        settings,
+        world=replace(settings.world, generation_backend="thread", meshing_backend="thread"),
+    )
+    with (
+        tempfile.TemporaryDirectory(prefix="veilstone-host-avatar-") as host_directory,
+        tempfile.TemporaryDirectory(prefix="veilstone-guest-avatar-") as guest_directory,
+    ):
+        host = GameWindow(
+            settings,
+            visible=False,
+            save_root=Path(host_directory),
+            player_name="Host",
+        )
+        assert host.lan_server is not None
+        host.menu.screen = Screen.GAME
+        guest = GameWindow(
+            settings,
+            visible=False,
+            save_root=Path(guest_directory),
+            connect=f"127.0.0.1:{host.lan_server.address[1]}",
+            player_name="Guest",
+        )
+        try:
+            deadline = time.monotonic() + 3.0
+            while (
+                not host.remote_player_entities or not guest.remote_player_entities
+            ) and time.monotonic() < deadline:
+                host.fixed_update(0.05)
+                guest.fixed_update(0.05)
+                time.sleep(0.01)
+
+            assert len(host.remote_player_entities) == 1
+            assert len(guest.remote_player_entities) == 1
+            for window in (host, guest):
+                entity = next(iter(window.remote_player_entities.values()))
+                assert window.entities.world.render_models[entity].key == "remote_player"
+                assert window.entities.world.transforms.get(entity) is not None
+        finally:
+            guest.close()
+            host.close()

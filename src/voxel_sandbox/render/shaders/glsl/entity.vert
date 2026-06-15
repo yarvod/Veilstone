@@ -38,8 +38,8 @@ void main() {
     vec3 pivot = part_pivot * part_scale;
     vec3 local = rotate_part(in_position * part_scale - pivot) + pivot + part_offset;
     mat2 yaw_rotation = mat2(
-        cos(entity_yaw), -sin(entity_yaw),
-        sin(entity_yaw), cos(entity_yaw)
+        cos(entity_yaw), sin(entity_yaw),
+        -sin(entity_yaw), cos(entity_yaw)
     );
     local.xz = yaw_rotation * local.xz;
     vec3 normal = rotate_part(in_normal);

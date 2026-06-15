@@ -49,7 +49,7 @@ class EntityRenderer:
         )
         neutral_shadow_framebuffer.clear(depth=1.0)
         neutral_shadow_framebuffer.release()
-        vertices = np.asarray(_cube_vertices(), dtype=np.float32)
+        vertices = np.asarray(cube_vertices(), dtype=np.float32)
         self.vertex_buffer = context.buffer(vertices.tobytes())
         self.vertex_array = context.vertex_array(
             self.shader.program,
@@ -388,7 +388,7 @@ def _atlas_bounds_to_rect(
     return bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]
 
 
-def _cube_vertices() -> tuple[tuple[float, ...], ...]:
+def cube_vertices() -> tuple[tuple[float, ...], ...]:
     corners = (
         (-0.5, -0.5, -0.5),
         (0.5, -0.5, -0.5),
@@ -407,9 +407,18 @@ def _cube_vertices() -> tuple[tuple[float, ...], ...]:
         ((3, 2, 6, 7), (0.0, 1.0, 0.0)),
         ((4, 5, 1, 0), (0.0, -1.0, 0.0)),
     )
-    uvs = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
+    # PIL rows are uploaded directly, so V=0 is the authored top edge. Side faces
+    # need their own U order to remain readable when viewed from outside the cube.
+    face_uvs = (
+        ((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),
+        ((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),
+        ((1.0, 1.0), (0.0, 1.0), (0.0, 0.0), (1.0, 0.0)),
+        ((1.0, 1.0), (0.0, 1.0), (0.0, 0.0), (1.0, 0.0)),
+        ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)),
+        ((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),
+    )
     return tuple(
-        (*corners[index], *uvs[uv_index], float(face_index), *normal)
+        (*corners[index], *face_uvs[face_index][uv_index], float(face_index), *normal)
         for face_index, (face, normal) in enumerate(faces)
         for index, uv_index in (
             (face[0], 0),

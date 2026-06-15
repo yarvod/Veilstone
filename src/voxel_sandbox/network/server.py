@@ -182,6 +182,7 @@ class ServerState:
                 other_id: {
                     "name": player["name"],
                     "position": list(cast(list[float], player["position"])),
+                    "yaw": player.get("yaw", 0.0),
                     "animation_state": player.get("animation_state", "idle"),
                     "animation_phase": player.get("animation_phase", 0.0),
                 }
@@ -250,6 +251,7 @@ class _Handler(socketserver.BaseRequestHandler):
                 state.players[player_id] = {
                     "name": name,
                     "position": list(joined_position),
+                    "yaw": 0.0,
                     "animation_state": "idle",
                     "animation_phase": 0.0,
                 }
@@ -301,6 +303,9 @@ class _Handler(socketserver.BaseRequestHandler):
                     previous = cast(list[float], player["position"])
                     distance = math.dist(previous, validated)
                     player["position"] = list(validated)
+                    raw_yaw = message.get("yaw")
+                    if isinstance(raw_yaw, int | float) and math.isfinite(float(raw_yaw)):
+                        player["yaw"] = float(raw_yaw)
                     player["animation_state"] = "walk" if distance > 0.002 else "idle"
                     raw_phase = player.get("animation_phase", 0.0)
                     previous_phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0

@@ -70,6 +70,7 @@ def test_gameplay_effects_are_normalized_without_clipping() -> None:
         "block_earth.wav",
         "block_wood.wav",
         "footstep.wav",
+        "player_hurt.wav",
         "cow/hurt_1.wav",
         "cow/death_1.wav",
         "zombie/hurt_1.wav",

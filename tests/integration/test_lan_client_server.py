@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.infrastructure.storage import WorldStorage
@@ -36,7 +37,7 @@ def test_two_clients_join_and_receive_entities_blocks_and_chat() -> None:
             for player in snapshot["players"].values()  # type: ignore[union-attr]
         )
 
-        first.send({"type": "input", "position": [3.0, 40.0, 5.0]})
+        first.send({"type": "input", "position": [3.0, 40.0, 5.0], "yaw": 1.25})
         for _ in range(4):
             moved = receive_type(second, "entity_snapshot")
             if any(
@@ -48,6 +49,8 @@ def test_two_clients_join_and_receive_entities_blocks_and_chat() -> None:
             raise AssertionError("Moved player snapshot was not received")
         assert moved["full"] is False
         assert isinstance(moved["sequence"], int)
+        moved_players = cast("dict[int, dict[str, object]]", moved["players"])
+        assert any(player.get("yaw") == 1.25 for player in moved_players.values())
 
         second.send({"type": "request_chunk", "coord": [0, 0]})
         chunk = receive_type(second, "chunk")
