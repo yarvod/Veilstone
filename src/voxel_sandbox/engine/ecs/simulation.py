@@ -53,7 +53,8 @@ class EntitySimulation:
         self.world.velocities.set(entity, Velocity())
         collider = Collider(0.9, 1.4) if kind is MobKind.PASSIVE else Collider(0.65, 1.85)
         self.world.colliders.set(entity, collider)
-        self.world.health.set(entity, Health(10.0 if kind is MobKind.PASSIVE else 16.0, 16.0))
+        maximum_health = 10.0 if kind is MobKind.PASSIVE else 16.0
+        self.world.health.set(entity, Health(maximum_health, maximum_health))
         self.world.mob_ai.set(entity, MobAI(kind))
         self.world.animations.set(entity, AnimationState())
         color = (0.34, 0.58, 0.68) if kind is MobKind.PASSIVE else (0.62, 0.18, 0.28)
@@ -124,6 +125,19 @@ class EntitySimulation:
             if is_solid is not None:
                 _update_vertical(transform, velocity, collider, delta_time, is_solid, is_hazard)
             animation.phase += delta_time
+            if ai.knockback_remaining > 0.0:
+                ai.knockback_remaining = max(0.0, ai.knockback_remaining - delta_time)
+                _move_knockback(
+                    transform,
+                    velocity,
+                    collider,
+                    delta_time,
+                    is_hazard,
+                    is_solid,
+                )
+                damping = max(0.0, 1.0 - 6.5 * delta_time)
+                velocity.x *= damping
+                velocity.z *= damping
             if animation.death_remaining > 0.0:
                 animation.death_remaining -= delta_time
                 ai.state = MobState.DEATH
@@ -136,6 +150,8 @@ class EntitySimulation:
                 ai.state = MobState.HURT
                 _advance_animation_state(animation, ai.state, delta_time)
                 continue
+            if ai.state is MobState.HURT:
+                ai.state = MobState.FLEE if ai.kind is MobKind.PASSIVE else MobState.CHASE
             dx = player_position[0] - transform.x
             dz = player_position[2] - transform.z
             distance = math.hypot(dx, dz)
@@ -172,6 +188,8 @@ class EntitySimulation:
                         ai.state_time = 2.5 + self._random.random() * 4.0
                 if ai.state in {MobState.IDLE, MobState.GRAZE}:
                     speed = 0.0
+                elif ai.state is MobState.FLEE:
+                    speed = 2.35
                 else:
                     speed = 0.72 if ai.kind is MobKind.PASSIVE else 1.05
             actual_speed = 0.0
@@ -217,7 +235,12 @@ class EntitySimulation:
             _advance_animation_state(animation, ai.state, delta_time)
         return player_damage
 
-    def damage(self, entity: EntityId, amount: float) -> tuple[ItemStack, ...]:
+    def damage(
+        self,
+        entity: EntityId,
+        amount: float,
+        source_position: tuple[float, float, float] | None = None,
+    ) -> tuple[ItemStack, ...]:
         health = self.world.health.get(entity)
         ai = self.world.mob_ai.get(entity)
         transform = self.world.transforms.get(entity)
@@ -226,6 +249,16 @@ class EntitySimulation:
             return ()
         if health.current <= 0.0:
             return ()
+        velocity = self.world.velocities.get(entity)
+        if velocity is not None:
+            away_x, away_z = _damage_direction(transform, source_position)
+            velocity.x = away_x * 5.2
+            velocity.z = away_z * 5.2
+            velocity.y = max(velocity.y, 3.8)
+            ai.knockback_remaining = 0.32
+            ai.direction_x = away_x
+            ai.direction_z = away_z
+            ai.state_time = 2.8 if ai.kind is MobKind.PASSIVE else 0.8
         if not health.damage(amount):
             animation.hurt_remaining = 0.25
             ai.state = MobState.HURT
@@ -235,10 +268,6 @@ class EntitySimulation:
         ai.state = MobState.DEATH
         animation.death_remaining = 0.65
         animation.speed = 0.0
-        velocity = self.world.velocities.get(entity)
-        if velocity is not None:
-            velocity.x = 0.0
-            velocity.z = 0.0
         for stack in drops:
             self.spawn_item(position, stack)
         return drops
@@ -306,6 +335,43 @@ def _approach_angle(current: float, target: float, maximum_delta: float) -> floa
     difference = (target - current + math.pi) % math.tau - math.pi
     difference = max(-maximum_delta, min(maximum_delta, difference))
     return current + difference
+
+
+def _damage_direction(
+    transform: Transform,
+    source_position: tuple[float, float, float] | None,
+) -> tuple[float, float]:
+    if source_position is not None:
+        direction = _normalized(transform.x - source_position[0], transform.z - source_position[2])
+        if direction != (0.0, 0.0):
+            return direction
+    return -math.sin(transform.yaw), math.cos(transform.yaw)
+
+
+def _move_knockback(
+    transform: Transform,
+    velocity: Velocity,
+    collider: Collider,
+    delta_time: float,
+    is_hazard: Callable[[int, int, int], bool],
+    is_solid: Callable[[int, int, int], bool] | None,
+) -> None:
+    next_x = transform.x + velocity.x * delta_time
+    next_z = transform.z + velocity.z * delta_time
+    if is_hazard(math.floor(next_x), math.floor(transform.y), math.floor(next_z)):
+        velocity.x = velocity.z = 0.0
+        return
+    if is_solid is not None and _mob_collides(
+        next_x,
+        transform.y,
+        next_z,
+        collider,
+        is_solid,
+    ):
+        velocity.x = velocity.z = 0.0
+        return
+    transform.x = next_x
+    transform.z = next_z
 
 
 def _advance_animation_state(

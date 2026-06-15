@@ -2,8 +2,9 @@
 
 ## Current phase
 
-Phase 20.4 corrective work is complete on top of Phase 21: mob UVs, movement, world lighting and
-cross-chunk light propagation are ready for manual verification. Phase 22 story progression is next.
+Phase 21.1 corrective work is code-complete: entity face orientation, movement direction, combat
+feedback, player HUD and multiplayer avatar visibility have regression coverage. A packaged Windows
+font-layout visual check remains manual. Phase 22 story progression is next after gameplay review.
 
 ## Completed checklist
 
@@ -350,6 +351,19 @@ cross-chunk light propagation are ready for manual verification. Phase 22 story 
 - [x] Unit, storage, LAN, and hidden-window OpenGL coverage for all three structures.
 - [x] Final gate: 180 tests, Ruff, Pyright, and OpenGL smoke pass.
 
+### Phase 21.1 - Entity, player HUD, and multiplayer presentation correction
+
+- [x] Corrected cube face UV orientation and entity/shadow yaw convention.
+- [x] Added an original remote-player skin, replicated facing, name tags, and mutual avatar smoke.
+- [x] Removed delayed self-snapshot reconciliation that could move the player to an old position.
+- [x] Added mob knockback, passive flee behavior, and corrected species maximum health.
+- [x] Added heart health HUD, first-person hand/item presentation, and original hurt audio.
+- [x] Removed duplicate FPS output and ignored Pyglet key events without a symbol.
+- [x] Centralized cross-platform UI font selection with Segoe UI on Windows.
+- [x] Added `docs/BUGS.md` and the Fogleman architecture review without copying code or assets.
+- [x] Final gate: 191 tests, Ruff, Pyright, two-window LAN smoke, and rendered visual QA pass.
+- [ ] Confirm menu text layout in a packaged Windows build.
+
 ## Failed checks
 
 None recorded.
@@ -374,10 +388,12 @@ None recorded.
 
 ## Known bugs
 
+- Packaged Windows menu layout needs a manual visual confirmation after the font-policy change.
 - Fluid propagation is currently chunk-local; cross-chunk flow belongs to later world simulation work.
 - Water Vessel can place a source but does not yet scoop an existing source back up.
 - Mob navigation is intentionally local steering over terrain height, not global pathfinding.
 
 ## Next recommended tasks
 
-Begin Phase 22 with typed quest definitions, world flags, and multiplayer-safe progression events.
+Manually verify Phase 21.1 in gameplay, then begin Phase 22 with typed quest definitions, world
+flags, and multiplayer-safe progression events.

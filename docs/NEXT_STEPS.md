@@ -1,7 +1,8 @@
 # Next steps
 
-Phase 21 moving structures and magical machines is complete. Phase 22 story progression is next
-after manual gameplay verification of structure interaction, mob presentation, audio and lighting.
+Phase 21.1 entity/player/multiplayer correction is complete in code and automated tests. Before
+Phase 22, manually verify mob fronts and grazing, hit knockback, hearts/hurt audio, two LAN players,
+and packaged Windows menu text.
 
 1. Define typed QuestDef, Objective, Reward, LoreEntry and WorldFlag data.
 2. Add authoritative progression events and persistence.

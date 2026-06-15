@@ -122,6 +122,12 @@ def main() -> None:
         peak=0.48,
     )
     _write(root / "footstep.wav", 0.095, _noise(37, 3200.0, 2.2), peak=0.34)
+    _write(
+        root / "player_hurt.wav",
+        0.18,
+        _mix((_tone(118.0, 8.5), 0.58), (_noise(41, 5400.0, 3.2), 0.42)),
+        peak=0.42,
+    )
     _write(root / "cow_hurt.wav", 0.34, _creature_voice(145.0, -35.0, 43), peak=0.42)
     _write(root / "cow_death.wav", 0.52, _creature_voice(125.0, -70.0, 47), peak=0.45)
     _write(root / "zombie_hurt.wav", 0.25, _creature_voice(185.0, -80.0, 53), peak=0.48)

@@ -86,6 +86,7 @@ class MobAI:
     direction_x: float = 0.0
     direction_z: float = 0.0
     attack_cooldown: float = 0.0
+    knockback_remaining: float = 0.0
 
 
 @dataclass(slots=True)

@@ -127,7 +127,7 @@ def animated_pose(
         pose["body"] = PartPose(offset=(0.0, 0.0, 0.0))
         pose["head"] = PartPose(
             offset=(0.0, -0.38 + chewing * 0.015, -0.08),
-            rotation=(0.72 + chewing * 0.08, look_yaw, 0.0),
+            rotation=(-0.72 - chewing * 0.08, look_yaw, 0.0),
         )
     else:
         pose["head"] = PartPose(rotation=(head_pitch, look_yaw, 0.0))

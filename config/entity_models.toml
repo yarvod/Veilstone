@@ -219,7 +219,7 @@ uv_y = "leg_back"
 
 [[models]]
 key = "remote_player"
-texture = "entities/zombie-skin.png" # TODO: player-skin.png
+texture = "entities/player-skin.png"
 base_color = [1.0, 1.0, 1.0]
 
 [models.uv_regions]

@@ -244,5 +244,7 @@ def test_inventory_grid_and_item_icons_render() -> None:
             assert window.inventory_open
             assert len(window.crafting_grid) == 4
             assert len(window.item_icon_images) == len(window.item_registry)
+            assert len(window.heart_sprites) == 10
+            window.on_key_press(None, 0)
         finally:
             window.close()

@@ -23,6 +23,6 @@ vec3 rotate_part(vec3 value) {
 void main() {
     vec3 pivot = part_pivot * part_scale;
     vec3 local = rotate_part(in_position * part_scale - pivot) + pivot + part_offset;
-    local.xz = mat2(cos(entity_yaw), -sin(entity_yaw), sin(entity_yaw), cos(entity_yaw)) * local.xz;
+    local.xz = mat2(cos(entity_yaw), sin(entity_yaw), -sin(entity_yaw), cos(entity_yaw)) * local.xz;
     gl_Position = light_matrix * vec4(entity_position + local, 1.0);
 }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import queue
+import sys
 import time
 from contextlib import suppress
 from dataclasses import replace
@@ -22,8 +23,8 @@ from voxel_sandbox.app.commands import (
     SetDifficultyCommand,
     SetTimeCommand,
     SpawnStructureCommand,
-    ToggleStructureCommand,
     TeleportCommand,
+    ToggleStructureCommand,
     parse_command,
 )
 from voxel_sandbox.app.paths import application_data_root, resource_path
@@ -34,7 +35,7 @@ from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureW
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
-from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, ChunkCoord
+from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.ecs import AnimationState, EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
@@ -46,7 +47,7 @@ from voxel_sandbox.network import (
     discover_worlds,
 )
 from voxel_sandbox.network.discovery import DiscoveryResponder
-from voxel_sandbox.network.interpolation import SnapshotInterpolator, reconcile_position
+from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
@@ -54,13 +55,22 @@ from voxel_sandbox.render.postprocess import PostProcessRenderer
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
-from voxel_sandbox.render.ui.item_icons import ICON_SIZE, create_item_icons
-from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen
+from voxel_sandbox.render.ui.item_icons import (
+    HEART_SIZE,
+    ICON_SIZE,
+    create_hand_image,
+    create_heart_icons,
+    create_item_icons,
+)
+from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
 LOGGER = logging.getLogger(__name__)
 FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
+
+
+UI_FONT_NAME: Final = platform_font_name(sys.platform)
 
 
 class GameWindow(pyglet.window.Window):
@@ -163,7 +173,7 @@ class GameWindow(pyglet.window.Window):
         self.remote_player_interpolation: dict[int, SnapshotInterpolator] = {}
         self.remote_chunks_received = 0
         self.requested_remote_chunks: set[ChunkCoord] = set()
-        self.network_players: dict[object, object] = {}
+        self.network_players: dict[int, dict[str, object]] = {}
         self.last_snapshot_sequence = 0
         self.player_name = player_name[:32] or "Player"
         self.inventory_open = False
@@ -178,7 +188,6 @@ class GameWindow(pyglet.window.Window):
         self.mouse_y = 0
         self.mouse_captured = False
         self.debug_overlay_visible = False
-        self.fps_display = pyglet.window.FPSDisplay(self)
         self.debug_label = pyglet.text.Label(
             "",
             x=10,
@@ -187,13 +196,13 @@ class GameWindow(pyglet.window.Window):
             anchor_y="top",
             multiline=True,
             width=500,
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=11,
             color=(255, 255, 255, 255),
         )
         self.player_name_label = pyglet.text.Label(
             "",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=14,
             anchor_x="center",
             anchor_y="center",
@@ -207,7 +216,7 @@ class GameWindow(pyglet.window.Window):
             anchor_y="top",
             multiline=True,
             width=500,
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=13,
             color=(255, 255, 255, 255),
         )
@@ -219,7 +228,7 @@ class GameWindow(pyglet.window.Window):
             anchor_y="center",
             multiline=True,
             width=600,
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=16,
             color=(255, 255, 255, 255),
         )
@@ -227,11 +236,13 @@ class GameWindow(pyglet.window.Window):
             "+",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=18,
             color=(245, 235, 190, 255),
         )
         self.item_icon_images = create_item_icons(self.item_registry, self.world_renderer.registry)
+        self.heart_images = create_heart_icons()
+        self.heart_sprites = [pyglet.sprite.Sprite(self.heart_images[0]) for _ in range(10)]
         default_icon = self.item_icon_images[1]
         self.hotbar_slots = [pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3) for _ in range(9)]
         self.hotbar_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
@@ -240,7 +251,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=UI_FONT_NAME,
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -251,7 +262,7 @@ class GameWindow(pyglet.window.Window):
                 str(index + 1),
                 anchor_x="left",
                 anchor_y="top",
-                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=UI_FONT_NAME,
                 font_size=8,
                 color=(190, 200, 215, 255),
             )
@@ -261,7 +272,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=22,
             color=(245, 220, 140, 255),
         )
@@ -279,7 +290,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=UI_FONT_NAME,
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -292,7 +303,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=UI_FONT_NAME,
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -304,14 +315,14 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="right",
             anchor_y="bottom",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=12,
         )
         self.crafting_label = pyglet.text.Label(
             "CRAFTING",
             anchor_x="left",
             anchor_y="bottom",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=13,
             color=(205, 215, 230, 255),
         )
@@ -319,24 +330,25 @@ class GameWindow(pyglet.window.Window):
             ">",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=26,
         )
         self.cursor_item_label = pyglet.text.Label(
             "",
             anchor_x="left",
             anchor_y="bottom",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=13,
             color=(245, 220, 140, 255),
         )
         self.cursor_item_icon = pyglet.sprite.Sprite(default_icon)
         self.held_item_icon = pyglet.sprite.Sprite(default_icon)
+        self.held_hand_sprite = pyglet.sprite.Sprite(create_hand_image())
         self.hud_status_label = pyglet.text.Label(
             "",
             anchor_x="left",
             anchor_y="bottom",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=13,
             color=(245, 235, 210, 255),
         )
@@ -344,7 +356,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=38,
             color=(220, 230, 255, 255),
         )
@@ -352,7 +364,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=13,
             color=(160, 180, 215, 255),
         )
@@ -363,7 +375,7 @@ class GameWindow(pyglet.window.Window):
             align="center",
             multiline=True,
             width=600,
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=17,
             color=(245, 220, 140, 255),
         )
@@ -374,7 +386,7 @@ class GameWindow(pyglet.window.Window):
             align="left",
             multiline=True,
             width=760,
-            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=UI_FONT_NAME,
             font_size=17,
             color=(245, 220, 140, 255),
         )
@@ -383,7 +395,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="center",
                 anchor_y="center",
-                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=UI_FONT_NAME,
                 font_size=20,
             )
             for _ in range(8)
@@ -444,9 +456,16 @@ class GameWindow(pyglet.window.Window):
             self.camera.position,
             self.camera.direction,
         )
-        if not self._player_position_within_world():
+        invalid_position_reason = self._invalid_player_position_reason()
+        if invalid_position_reason is not None:
+            previous_position = (self.player.x, self.player.y, self.player.z)
             self._move_player_to_spawn()
-            self.inventory_status = "Recovered from outside the world"
+            self.inventory_status = f"Recovered position: {invalid_position_reason}"
+            LOGGER.error(
+                "Player position recovered to spawn: reason=%s position=%s",
+                invalid_position_reason,
+                previous_position,
+            )
         self.world_renderer.update(delta_time)
         self._network_accumulator += delta_time
         if self.network_session is not None:
@@ -459,6 +478,7 @@ class GameWindow(pyglet.window.Window):
                         {
                             "type": "input",
                             "position": [self.player.x, self.player.y, self.player.z],
+                            "yaw": math.radians(self.camera.yaw_degrees) + math.pi / 2.0,
                         }
                     )
                     if self.world_renderer.remote_mode:
@@ -474,19 +494,30 @@ class GameWindow(pyglet.window.Window):
         if self._population_accumulator >= 5.0:
             self._population_accumulator %= 5.0
             self._maintain_population((self.player.x, self.player.y, self.player.z))
-        self.player_health -= self.entities.update(
+        player_damage = self.entities.update(
             delta_time,
             (self.player.x, self.player.y, self.player.z),
             self.world_renderer.generator.height_at,
             self._is_entity_hazard,
             self._is_solid_combined,
         )
+        if player_damage > 0.0:
+            self.player_health = max(0.0, self.player_health - player_damage)
+            self.audio.emit(AudioEvent(AudioEventKind.SOUND, "player.hurt"))
+            LOGGER.info(
+                "Player damaged: amount=%.1f health=%.1f position=%s",
+                player_damage,
+                self.player_health,
+                (self.player.x, self.player.y, self.player.z),
+            )
         if self.player_health <= 0.0:
+            death_position = (self.player.x, self.player.y, self.player.z)
             spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
             self.player.x, self.player.y, self.player.z = spawn_x, spawn_y, spawn_z
             self.player.velocity_y = 0.0
             self.player_health = 20.0
             self.inventory_status = "Respawned"
+            LOGGER.warning("Player respawned after death at %s", death_position)
         picked_up = self.entities.pickup_items(
             (self.player.x, self.player.y + 0.5, self.player.z),
             1.5,
@@ -659,7 +690,7 @@ class GameWindow(pyglet.window.Window):
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
-        
+
         self.hud_top_left_label.text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
         if self.debug_overlay_visible:
             self.debug_label.y = self.height - 10
@@ -672,7 +703,10 @@ class GameWindow(pyglet.window.Window):
             names = ["Players Online:"]
             if self.network_session is not None:
                 names.append("You (Local)")
+                local_id = self.network_session.player_id
                 for p_id, p in self.network_players.items():
+                    if p_id == local_id:
+                        continue
                     names.append(str(p.get("name", f"Player {p_id}")))
             else:
                 names.append("You (Singleplayer)")
@@ -680,10 +714,15 @@ class GameWindow(pyglet.window.Window):
             self.player_list_label.x = self.width // 2
             self.player_list_label.y = self.height // 2
             self.player_list_label.draw()
-            
+
         from voxel_sandbox.render.math3d import camera_matrix
-        matrix = camera_matrix(self.camera, max(self.width, 1) / max(self.height, 1), self.settings.camera.field_of_view)
-        
+
+        matrix = camera_matrix(
+            self.camera,
+            max(self.width, 1) / max(self.height, 1),
+            self.settings.camera.field_of_view,
+        )
+
         for player_id, entity in self.remote_player_entities.items():
             transform = self.entities.world.transforms.get(entity)
             if transform is None:
@@ -697,7 +736,9 @@ class GameWindow(pyglet.window.Window):
                 if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
                     screen_x = (ndc_x + 1) * self.width / 2
                     screen_y = (ndc_y + 1) * self.height / 2
-                    name = self.network_players.get(player_id, {}).get("name", f"Player {player_id}")
+                    name = self.network_players.get(player_id, {}).get(
+                        "name", f"Player {player_id}"
+                    )
                     self.player_name_label.text = str(name)
                     self.player_name_label.x = screen_x
                     self.player_name_label.y = screen_y
@@ -706,15 +747,18 @@ class GameWindow(pyglet.window.Window):
         self.crosshair.y = self.height // 2
         self.crosshair.draw()
         self._draw_hotbar()
+        self._draw_health()
         if not self.inventory_open:
+            self.held_hand_sprite.x = self.width - 150
+            self.held_hand_sprite.y = -12
+            self.held_hand_sprite.draw()
             held_stack = self.inventory[self.hotbar.selected_index]
             if held_stack is not None:
                 self.held_item_icon.image = self.item_icon_images[held_stack.item_id]
-                self.held_item_icon.scale = 160 / max(1, self.held_item_icon.image.width)
-                self.held_item_icon.x = self.width - 200
-                self.held_item_icon.y = -20
-                # A bit of tilt to make it look like held item
-                self.held_item_icon.rotation = 15
+                self.held_item_icon.scale = 112 / max(1, self.held_item_icon.image.width)
+                self.held_item_icon.x = self.width - 190
+                self.held_item_icon.y = 12
+                self.held_item_icon.rotation = 12
                 self.held_item_icon.draw()
         if self.inventory_status and not self.inventory_open:
             self.hud_status_label.text = self.inventory_status
@@ -725,7 +769,6 @@ class GameWindow(pyglet.window.Window):
             self._draw_inventory()
         if self.text_input is not None:
             self._draw_text_input()
-        self.fps_display.draw()
         self.mgl_context.enable(moderngl.DEPTH_TEST)
 
     def _animation_debug_summary(self) -> str:
@@ -734,8 +777,11 @@ class GameWindow(pyglet.window.Window):
             counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
         return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
 
-    def on_key_press(self, symbol: int, modifiers: int) -> None:
+    def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         del modifiers
+        if symbol is None:
+            LOGGER.debug("Ignored key event without a symbol")
+            return
         if self.rebinding_action is not None:
             self._apply_rebind(symbol)
             return
@@ -777,7 +823,7 @@ class GameWindow(pyglet.window.Window):
                 self._sync_mouse_capture()
             elif symbol == key.C:
                 self._take_crafting_result()
-            elif symbol is not None and ord("1") <= symbol <= ord("9"):
+            elif ord("1") <= symbol <= ord("9"):
                 self.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.ESCAPE:
@@ -802,7 +848,7 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.F9:
             self.world_renderer.toggle_mesher()
             return
-        if symbol is not None and ord("1") <= symbol <= ord("9"):
+        if ord("1") <= symbol <= ord("9"):
             self.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.Q:
@@ -872,7 +918,7 @@ class GameWindow(pyglet.window.Window):
             target = self.entities.target_mob(self.camera.position, self.camera.direction)
             if target is not None:
                 kind = self.entities.world.mob_ai[target].kind.value
-                drops = self.entities.damage(target, 4.0)
+                drops = self.entities.damage(target, 4.0, self.player.eye_position)
                 self.audio.emit(
                     AudioEvent(
                         AudioEventKind.SOUND,
@@ -1326,12 +1372,22 @@ class GameWindow(pyglet.window.Window):
             if self.network_session is None:
                 self.inventory_status = "Teleportation requires multiplayer."
                 return
-            target_pos = None
-            for p_id, p in self.network_players.items():
+            target_pos: tuple[float, float, float] | None = None
+            for _p_id, p in self.network_players.items():
                 if str(p.get("name", "")).casefold() == command.target_name.casefold():
-                    target_pos = p.get("position")
+                    raw_position = p.get("position")
+                    if (
+                        isinstance(raw_position, list)
+                        and len(raw_position) == 3
+                        and all(
+                            isinstance(value, int | float)
+                            for value in cast(list[object], raw_position)
+                        )
+                    ):
+                        values = cast(list[int | float], raw_position)
+                        target_pos = float(values[0]), float(values[1]), float(values[2])
                     break
-            if target_pos is not None and len(target_pos) == 3:
+            if target_pos is not None:
                 self.player.x, self.player.y, self.player.z = target_pos
                 self.inventory_status = f"Teleported to {command.target_name}."
             else:
@@ -1434,6 +1490,16 @@ class GameWindow(pyglet.window.Window):
             key_label.x = x + 4
             key_label.y = 64
             key_label.draw()
+
+    def _draw_health(self) -> None:
+        start_x = self.width // 2 - (52 * 9) // 2
+        for index, sprite in enumerate(self.heart_sprites):
+            remaining = self.player_health - index * 2.0
+            state = 2 if remaining >= 2.0 else 1 if remaining > 0.0 else 0
+            sprite.image = self.heart_images[state]
+            sprite.x = start_x + index * (HEART_SIZE + 2)
+            sprite.y = 74
+            sprite.draw()
 
     def _draw_inventory(self) -> None:
         center_x = self.width // 2
@@ -1759,7 +1825,17 @@ class GameWindow(pyglet.window.Window):
         return True
 
     def _player_position_within_world(self) -> bool:
-        return self._position_within_world((self.player.x, self.player.y, self.player.z))
+        return self._invalid_player_position_reason() is None
+
+    def _invalid_player_position_reason(self) -> str | None:
+        position = (self.player.x, self.player.y, self.player.z)
+        if not all(math.isfinite(value) for value in position):
+            return "non-finite coordinate"
+        if not -256.0 <= self.player.y <= 1024.0:
+            return f"vertical coordinate {self.player.y:.2f} outside safety bounds"
+        if abs(self.player.x) > 30_000_000.0 or abs(self.player.z) > 30_000_000.0:
+            return "horizontal coordinate outside safety bounds"
+        return None
 
     def _position_within_world(self, position: tuple[float, float, float]) -> bool:
         x, y, z = position
@@ -1851,13 +1927,15 @@ class GameWindow(pyglet.window.Window):
                 and sequence > self.last_snapshot_sequence
             ):
                 self.last_snapshot_sequence = sequence
+                normalized_players = self._normalize_network_players(players)
                 if full is True:
-                    self.network_players = dict(cast(dict[object, object], players))
+                    self.network_players = normalized_players
                 else:
-                    self.network_players.update(cast(dict[object, object], players))
+                    self.network_players.update(normalized_players)
                     if isinstance(removed, list):
                         for player_id in cast(list[object], removed):
-                            self.network_players.pop(player_id, None)
+                            if isinstance(player_id, int):
+                                self.network_players.pop(player_id, None)
                 self._sync_remote_players(self.network_players)
         elif message_type == "structure_snapshot":
             self._replace_structure_snapshots(
@@ -1893,13 +1971,24 @@ class GameWindow(pyglet.window.Window):
             self.menu.status = "Disconnected: reconnect attempts exhausted."
             self._sync_mouse_capture()
 
-    def _sync_remote_players(self, players: dict[object, object]) -> None:
+    @staticmethod
+    def _normalize_network_players(raw_players: object) -> dict[int, dict[str, object]]:
+        if not isinstance(raw_players, dict):
+            return {}
+        players: dict[int, dict[str, object]] = {}
+        for raw_id, raw_player in cast(dict[object, object], raw_players).items():
+            if isinstance(raw_id, int) and isinstance(raw_player, dict):
+                players[raw_id] = {
+                    str(key_name): value
+                    for key_name, value in cast(dict[object, object], raw_player).items()
+                }
+        return players
+
+    def _sync_remote_players(self, players: dict[int, dict[str, object]]) -> None:
         local_id = self.network_session.player_id if self.network_session is not None else None
         visible_ids: set[int] = set()
         for raw_id, raw_player in players.items():
-            if not isinstance(raw_id, int) or not isinstance(raw_player, dict):
-                continue
-            player = cast(dict[object, object], raw_player)
+            player = raw_player
             position = player.get("position")
             if not isinstance(position, list) or len(cast(list[object], position)) != 3:
                 continue
@@ -1913,12 +2002,6 @@ class GameWindow(pyglet.window.Window):
                 float(coordinates[2]),
             )
             if raw_id == local_id:
-                corrected = reconcile_position(
-                    (self.player.x, self.player.y, self.player.z),
-                    position_tuple,
-                )
-                self.player.x, self.player.y, self.player.z = corrected
-                self._sync_camera_to_player()
                 continue
             entity = self.remote_player_entities.get(raw_id)
             if entity is None:
@@ -1935,6 +2018,10 @@ class GameWindow(pyglet.window.Window):
                 )
                 self.entities.world.animations.set(entity, AnimationState())
             animation = self.entities.world.animations.get(entity)
+            transform = self.entities.world.transforms.get(entity)
+            raw_yaw = player.get("yaw", 0.0)
+            if transform is not None and isinstance(raw_yaw, int | float):
+                transform.yaw = float(raw_yaw)
             if animation is not None:
                 raw_phase = player.get("animation_phase", 0.0)
                 animation.phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0

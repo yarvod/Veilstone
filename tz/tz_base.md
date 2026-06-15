@@ -2367,6 +2367,41 @@ Done when:
 - [x] Structures animate without rebuilding thousands of blocks each frame.
 - [x] Structure state persists and replicates over LAN.
 
+### Phase 21.1 — Entity, player HUD and multiplayer presentation correction
+
+This corrective phase incorporates the reported gameplay regressions before story work. External
+projects may inform architecture, face orientation and interaction conventions, but all shipped
+code and assets must remain original.
+
+Checklist:
+
+- [x] Use explicit per-face cube UV orientation for articulated entities.
+- [x] Align model and shadow yaw with the AI forward vector.
+- [x] Keep cow grazing head rotation anatomically downward.
+- [x] Add source-relative mob knockback and passive flee behavior.
+- [x] Give remote players an original humanoid skin, facing yaw and overhead name label.
+- [x] Verify two graphical LAN clients create one another's remote avatars.
+- [x] Do not reconcile the local player against delayed client-authored echo snapshots.
+- [x] Log invalid-position recovery, player damage and death-respawn coordinates.
+- [x] Ignore Pyglet key events that contain no symbol.
+- [x] Add health hearts, first-person hand/current item and visible hotbar selection.
+- [x] Remove the duplicate FPS counter.
+- [x] Add an original normalized player hurt sound.
+- [x] Centralize platform UI font selection and prefer Segoe UI on Windows.
+- [x] Maintain a concise changelog and bug registry with regression-test references.
+- [x] Record Fogleman reference findings without copying code or assets.
+- [ ] Confirm menu text layout in a packaged Windows build.
+
+Done when:
+
+- [x] Zombie, cow and player faces appear only on intended upright faces.
+- [x] Mobs move face-first and cow grazing does not invert the head.
+- [x] A struck mob is visibly displaced; passive mobs flee.
+- [x] LAN peers see one another with names and facing direction.
+- [x] Health, held item and damage feedback are visible and audible.
+- [x] Automated gate passes with unit, integration and hidden-window rendering coverage.
+- [ ] Packaged Windows menu labels are visually non-overlapping.
+
 ### Phase 22 — Story progression foundation
 
 Checklist:
