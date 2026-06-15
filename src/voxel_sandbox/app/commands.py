@@ -38,6 +38,11 @@ class ListStructuresCommand:
     pass
 
 
+@dataclass(frozen=True, slots=True)
+class TeleportCommand:
+    target_name: str
+
+
 type GameCommand = (
     SetTimeCommand
     | SetDifficultyCommand
@@ -45,6 +50,7 @@ type GameCommand = (
     | SpawnStructureCommand
     | ToggleStructureCommand
     | ListStructuresCommand
+    | TeleportCommand
 )
 
 _NAMED_TIMES = {
@@ -85,6 +91,8 @@ def parse_command(source: str) -> GameCommand:
         return ToggleStructureCommand(entity_id)
     if command == "structure" and arguments == ["list"]:
         return ListStructuresCommand()
+    if command == "tp" and len(arguments) == 1:
+        return TeleportCommand(arguments[0])
     raise CommandError(f"Unknown command: {source.strip()}. Use /help.")
 
 

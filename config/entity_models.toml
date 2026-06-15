@@ -219,40 +219,96 @@ uv_y = "leg_back"
 
 [[models]]
 key = "remote_player"
-texture = "entities/veilgrazer-skin.png"
-base_color = [0.82, 0.76, 0.96]
+texture = "entities/zombie-skin.png" # TODO: player-skin.png
+base_color = [1.0, 1.0, 1.0]
+
+[models.uv_regions]
+head_front = [0.01, 0.01, 0.23, 0.23]
+head_back = [0.51, 0.01, 0.23, 0.23]
+head_left = [0.76, 0.01, 0.23, 0.23]
+head_right = [0.26, 0.01, 0.23, 0.23]
+torso_front = [0.01, 0.26, 0.23, 0.23]
+torso_back = [0.51, 0.26, 0.23, 0.23]
+torso_left = [0.76, 0.26, 0.23, 0.23]
+torso_right = [0.26, 0.26, 0.23, 0.23]
+arm_front = [0.01, 0.51, 0.23, 0.23]
+arm_right = [0.26, 0.51, 0.23, 0.23]
+arm_back = [0.51, 0.51, 0.23, 0.23]
+arm_left = [0.76, 0.51, 0.23, 0.23]
+leg_front = [0.01, 0.76, 0.23, 0.23]
+leg_right = [0.26, 0.76, 0.23, 0.23]
+leg_back = [0.51, 0.76, 0.23, 0.23]
+leg_left = [0.76, 0.76, 0.23, 0.23]
 
 [[models.parts]]
 name = "body"
-offset = [0.0, 1.15, 0.0]
-size = [0.62, 0.78, 0.34]
+offset = [0.0, 1.05, 0.0]
+size = [0.62, 0.76, 0.38]
+uv = "torso_front"
+uv_front = "torso_front"
+uv_back = "torso_back"
+uv_left = "torso_left"
+uv_right = "torso_right"
+uv_top = "torso_back"
+uv_bottom = "torso_front"
 
 [[models.parts]]
 name = "head"
 parent = "body"
-offset = [0.0, 0.62, 0.0]
-size = [0.52, 0.52, 0.52]
+offset = [0.0, 0.67, -0.02]
+size = [0.56, 0.56, 0.56]
+uv = "head_front"
+uv_front = "head_front"
+uv_back = "head_back"
+uv_left = "head_left"
+uv_right = "head_right"
+uv_top = "head_back"
+uv_bottom = "torso_back"
 
 [[models.parts]]
 name = "arm_left"
 parent = "body"
-offset = [-0.43, 0.0, 0.0]
-size = [0.20, 0.76, 0.22]
+offset = [-0.43, 0.02, 0.0]
+size = [0.22, 0.78, 0.24]
+pivot = [0.0, 0.5, 0.0]
+uv_front = "arm_front"
+uv_back = "arm_back"
+uv_left = "arm_left"
+uv_right = "arm_right"
+uv_y = "arm_back"
 
 [[models.parts]]
 name = "arm_right"
 parent = "body"
-offset = [0.43, 0.0, 0.0]
-size = [0.20, 0.76, 0.22]
+offset = [0.43, 0.02, 0.0]
+size = [0.22, 0.78, 0.24]
+pivot = [0.0, 0.5, 0.0]
+uv_front = "arm_front"
+uv_back = "arm_back"
+uv_left = "arm_left"
+uv_right = "arm_right"
+uv_y = "arm_back"
 
 [[models.parts]]
 name = "leg_left"
 parent = "body"
-offset = [-0.18, -0.75, 0.0]
-size = [0.24, 0.76, 0.28]
+offset = [-0.18, -0.68, 0.0]
+size = [0.25, 0.74, 0.28]
+pivot = [0.0, 0.5, 0.0]
+uv_front = "leg_front"
+uv_back = "leg_back"
+uv_left = "leg_left"
+uv_right = "leg_right"
+uv_y = "leg_back"
 
 [[models.parts]]
 name = "leg_right"
 parent = "body"
-offset = [0.18, -0.75, 0.0]
-size = [0.24, 0.76, 0.28]
+offset = [0.18, -0.68, 0.0]
+size = [0.25, 0.74, 0.28]
+pivot = [0.0, 0.5, 0.0]
+uv_front = "leg_front"
+uv_back = "leg_back"
+uv_left = "leg_left"
+uv_right = "leg_right"
+uv_y = "leg_back"

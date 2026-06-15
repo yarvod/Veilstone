@@ -23,6 +23,7 @@ from voxel_sandbox.app.commands import (
     SetTimeCommand,
     SpawnStructureCommand,
     ToggleStructureCommand,
+    TeleportCommand,
     parse_command,
 )
 from voxel_sandbox.app.paths import application_data_root, resource_path
@@ -184,15 +185,49 @@ class GameWindow(pyglet.window.Window):
             y=self.height - 10,
             anchor_x="left",
             anchor_y="top",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            multiline=True,
+            width=500,
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=11,
-            color=(225, 235, 255, 255),
+            color=(255, 255, 255, 255),
+        )
+        self.player_name_label = pyglet.text.Label(
+            "",
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_size=14,
+            anchor_x="center",
+            anchor_y="center",
+            color=(255, 255, 255, 255),
+        )
+        self.hud_top_left_label = pyglet.text.Label(
+            "",
+            x=10,
+            y=self.height - 10,
+            anchor_x="left",
+            anchor_y="top",
+            multiline=True,
+            width=500,
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_size=13,
+            color=(255, 255, 255, 255),
+        )
+        self.player_list_label = pyglet.text.Label(
+            "",
+            x=self.width // 2,
+            y=self.height // 2,
+            anchor_x="center",
+            anchor_y="center",
+            multiline=True,
+            width=600,
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
+            font_size=16,
+            color=(255, 255, 255, 255),
         )
         self.crosshair = pyglet.text.Label(
             "+",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=18,
             color=(245, 235, 190, 255),
         )
@@ -205,7 +240,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -216,7 +251,7 @@ class GameWindow(pyglet.window.Window):
                 str(index + 1),
                 anchor_x="left",
                 anchor_y="top",
-                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=8,
                 color=(190, 200, 215, 255),
             )
@@ -226,7 +261,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=22,
             color=(245, 220, 140, 255),
         )
@@ -244,7 +279,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -257,7 +292,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="right",
                 anchor_y="bottom",
-                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=12,
                 color=(255, 255, 255, 255),
             )
@@ -269,14 +304,14 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="right",
             anchor_y="bottom",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=12,
         )
         self.crafting_label = pyglet.text.Label(
             "CRAFTING",
             anchor_x="left",
             anchor_y="bottom",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(205, 215, 230, 255),
         )
@@ -284,23 +319,24 @@ class GameWindow(pyglet.window.Window):
             ">",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=26,
         )
         self.cursor_item_label = pyglet.text.Label(
             "",
             anchor_x="left",
             anchor_y="bottom",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(245, 220, 140, 255),
         )
         self.cursor_item_icon = pyglet.sprite.Sprite(default_icon)
+        self.held_item_icon = pyglet.sprite.Sprite(default_icon)
         self.hud_status_label = pyglet.text.Label(
             "",
             anchor_x="left",
             anchor_y="bottom",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(245, 235, 210, 255),
         )
@@ -308,7 +344,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=38,
             color=(220, 230, 255, 255),
         )
@@ -316,7 +352,7 @@ class GameWindow(pyglet.window.Window):
             "",
             anchor_x="center",
             anchor_y="center",
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=13,
             color=(160, 180, 215, 255),
         )
@@ -327,7 +363,7 @@ class GameWindow(pyglet.window.Window):
             align="center",
             multiline=True,
             width=600,
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=17,
             color=(245, 220, 140, 255),
         )
@@ -338,7 +374,7 @@ class GameWindow(pyglet.window.Window):
             align="left",
             multiline=True,
             width=760,
-            font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+            font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
             font_size=17,
             color=(245, 220, 140, 255),
         )
@@ -347,7 +383,7 @@ class GameWindow(pyglet.window.Window):
                 "",
                 anchor_x="center",
                 anchor_y="center",
-                font_name=("Arial" if __import__("sys").platform == "win32" else "Menlo"),
+                font_name=("Consolas" if __import__("sys").platform == "win32" else "Menlo"),
                 font_size=20,
             )
             for _ in range(8)
@@ -623,13 +659,63 @@ class GameWindow(pyglet.window.Window):
         )
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
+        
+        self.hud_top_left_label.text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
         if self.debug_overlay_visible:
             self.debug_label.y = self.height - 10
             self.debug_label.draw()
+        else:
+            self.hud_top_left_label.y = self.height - 10
+            self.hud_top_left_label.draw()
+
+        if self.key_state.is_pressed(key.TAB):
+            names = ["Players Online:"]
+            if self.network_session is not None:
+                names.append("You (Local)")
+                for p_id, p in self.network_players.items():
+                    names.append(str(p.get("name", f"Player {p_id}")))
+            else:
+                names.append("You (Singleplayer)")
+            self.player_list_label.text = "\n".join(names)
+            self.player_list_label.x = self.width // 2
+            self.player_list_label.y = self.height // 2
+            self.player_list_label.draw()
+            
+        from voxel_sandbox.render.math3d import camera_matrix
+        matrix = camera_matrix(self.camera, max(self.width, 1) / max(self.height, 1), self.settings.camera.field_of_view)
+        
+        for player_id, entity in self.remote_player_entities.items():
+            transform = self.entities.world.transforms.get(entity)
+            if transform is None:
+                continue
+            pos = np.array([transform.x, transform.y + 2.1, transform.z, 1.0], dtype=np.float32)
+            clip = matrix @ pos
+            w = clip[3]
+            if w > 0:
+                ndc_x = clip[0] / w
+                ndc_y = clip[1] / w
+                if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
+                    screen_x = (ndc_x + 1) * self.width / 2
+                    screen_y = (ndc_y + 1) * self.height / 2
+                    name = self.network_players.get(player_id, {}).get("name", f"Player {player_id}")
+                    self.player_name_label.text = str(name)
+                    self.player_name_label.x = screen_x
+                    self.player_name_label.y = screen_y
+                    self.player_name_label.draw()
         self.crosshair.x = self.width // 2
         self.crosshair.y = self.height // 2
         self.crosshair.draw()
         self._draw_hotbar()
+        if not self.inventory_open:
+            held_stack = self.inventory[self.hotbar.selected_index]
+            if held_stack is not None:
+                self.held_item_icon.image = self.item_icon_images[held_stack.item_id]
+                self.held_item_icon.scale = 160 / max(1, self.held_item_icon.image.width)
+                self.held_item_icon.x = self.width - 200
+                self.held_item_icon.y = -20
+                # A bit of tilt to make it look like held item
+                self.held_item_icon.rotation = 15
+                self.held_item_icon.draw()
         if self.inventory_status and not self.inventory_open:
             self.hud_status_label.text = self.inventory_status
             self.hud_status_label.x = 20
@@ -691,7 +777,7 @@ class GameWindow(pyglet.window.Window):
                 self._sync_mouse_capture()
             elif symbol == key.C:
                 self._take_crafting_result()
-            elif ord("1") <= symbol <= ord("9"):
+            elif symbol is not None and ord("1") <= symbol <= ord("9"):
                 self.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.ESCAPE:
@@ -716,7 +802,7 @@ class GameWindow(pyglet.window.Window):
         if symbol == key.F9:
             self.world_renderer.toggle_mesher()
             return
-        if ord("1") <= symbol <= ord("9"):
+        if symbol is not None and ord("1") <= symbol <= ord("9"):
             self.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.Q:
@@ -1236,6 +1322,20 @@ class GameWindow(pyglet.window.Window):
         elif isinstance(command, SetDifficultyCommand):
             self._set_difficulty(command.difficulty)
             self.inventory_status = f"Difficulty set to {command.difficulty}."
+        elif isinstance(command, TeleportCommand):
+            if self.network_session is None:
+                self.inventory_status = "Teleportation requires multiplayer."
+                return
+            target_pos = None
+            for p_id, p in self.network_players.items():
+                if str(p.get("name", "")).casefold() == command.target_name.casefold():
+                    target_pos = p.get("position")
+                    break
+            if target_pos is not None and len(target_pos) == 3:
+                self.player.x, self.player.y, self.player.z = target_pos
+                self.inventory_status = f"Teleported to {command.target_name}."
+            else:
+                self.inventory_status = f"Player {command.target_name} not found."
         elif isinstance(command, SpawnStructureCommand):
             if self.lan_server is None or self.world_renderer.remote_mode:
                 self.inventory_status = "Structure commands require a local authoritative world."
@@ -1475,8 +1575,8 @@ class GameWindow(pyglet.window.Window):
         shape.y = y
         shape.width = size
         shape.height = size
-        shape.color = (58, 63, 76)
-        shape.border_color = (232, 195, 96) if selected else (125, 136, 154)
+        shape.color = (80, 85, 100, 255) if selected else (58, 63, 76, 255)
+        shape.border_color = (255, 255, 100, 255) if selected else (125, 136, 154, 255)
         shape.draw()
         if stack is None:
             icon.visible = False
@@ -1665,7 +1765,7 @@ class GameWindow(pyglet.window.Window):
         x, y, z = position
         return (
             all(math.isfinite(value) for value in position)
-            and 0.0 <= y <= CHUNK_HEIGHT - self.player.height
+            and -256.0 <= y <= 1024.0
             and abs(x) <= 30_000_000.0
             and abs(z) <= 30_000_000.0
         )

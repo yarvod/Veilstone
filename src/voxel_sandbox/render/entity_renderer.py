@@ -407,7 +407,7 @@ def _cube_vertices() -> tuple[tuple[float, ...], ...]:
         ((3, 2, 6, 7), (0.0, 1.0, 0.0)),
         ((4, 5, 1, 0), (0.0, -1.0, 0.0)),
     )
-    uvs = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
+    uvs = ((1.0, 1.0), (0.0, 1.0), (0.0, 0.0), (1.0, 0.0))
     return tuple(
         (*corners[index], *uvs[uv_index], float(face_index), *normal)
         for face_index, (face, normal) in enumerate(faces)
