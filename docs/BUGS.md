@@ -12,7 +12,7 @@ This file records current corrective work. Detailed completed phase history rema
 | BUG-005 | Fixed | LAN clients did not reliably prove mutual player visibility. | Replicated yaw, retained per-player snapshots, and added a real two-window avatar test. | `test_remote_render_client.py` |
 | BUG-006 | Fixed | Hitting a cow did not produce a physical or behavioral response. | Added source-relative knockback, vertical impulse, hurt state, and passive flee state. | `test_mob_ai.py` |
 | BUG-007 | Fixed | HUD lacked health/hand feedback and showed duplicate FPS readouts. | Added hearts and hand/item sprites, hurt sound, and removed Pyglet's second FPS display. | `test_application_smoke.py`, `test_audio.py` |
-| BUG-008 | Code complete, manual check pending | Windows menu text could overlap. | Centralized platform font selection and use Segoe UI on Windows. | `test_menu.py`; packaged Windows visual check still required |
+| BUG-008 | Fixed | Windows menu text could overlap. | Centralized platform font selection and use Segoe UI on Windows; added menu render state correction for alpha blending and disabled depth testing during menu rendering. | `test_menu.py`, `test_application_smoke.py` |
 
 ## Known Limitations
 

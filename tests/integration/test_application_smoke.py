@@ -94,6 +94,43 @@ def test_optional_postprocess_renders_and_resizes() -> None:
             window.close()
 
 
+def test_main_menu_text_renders_with_blending() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-menu-text-test-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.MAIN
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+
+            image = pyglet.image.get_buffer_manager().get_color_buffer().get_image_data()
+            width = image.width
+            height = image.height
+            raw = image.get_data("RGBA", width * 4)
+
+            def get_pixel(x: int, y: int) -> tuple[int, int, int, int]:
+                offset = (y * width + x) * 4
+                return tuple(raw[offset : offset + 4])
+
+            sample_rows = [height // 2 + 35, height // 2 + 70, height // 2 + 105]
+            bright = 0
+            for y in sample_rows:
+                for x in (width // 2 - 40, width // 2, width // 2 + 40):
+                    r, g, b, a = get_pixel(x, y)
+                    if a > 0 and (r + g + b) >= 100:
+                        bright += 1
+            assert bright >= 3, "Main menu text should render visibly in the framebuffer"
+        finally:
+            window.close()
+
+
 @pytest.mark.parametrize("quality", ["off", "low"])
 def test_shadow_quality_modes_render(quality: str) -> None:
     import pyglet

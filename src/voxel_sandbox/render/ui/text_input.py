@@ -9,9 +9,10 @@ class TextPurpose(Enum):
     NICKNAME = auto()
     CHAT = auto()
     COMMAND = auto()
+    RENAME_WORLD = auto()
     WORLD_NAME = auto()
     WORLD_SEED = auto()
-    LOAD_WORLD = auto()
+    DELETE_WORLD = auto()
 
 
 @dataclass(slots=True)
