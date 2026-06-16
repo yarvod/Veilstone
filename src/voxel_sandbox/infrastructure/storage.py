@@ -54,6 +54,13 @@ class WorldStorage:
         )
         return metadata
 
+    def rename_world(self, new_name: str) -> WorldMetadata:
+        # overwrite metadata name preserving seed
+        meta = self.load_metadata()
+        if meta is None:
+            raise ValueError("No metadata to rename")
+        return self.ensure_world(name=new_name, seed=meta.seed)
+
     def load_metadata(self) -> WorldMetadata | None:
         import tomllib
 

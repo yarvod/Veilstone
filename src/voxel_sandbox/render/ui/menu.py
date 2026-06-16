@@ -32,7 +32,6 @@ class MenuCommand(Enum):
     TOGGLE_VSYNC = auto()
     CYCLE_DIFFICULTY = auto()
     CREATE_WORLD = auto()
-    LOAD_WORLD = auto()
     REBIND_FORWARD = auto()
     REBIND_BACKWARD = auto()
     REBIND_LEFT = auto()
@@ -60,7 +59,6 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
     ),
     Screen.SINGLEPLAYER: (
         MenuItem("Create World", action="create_world"),
-        MenuItem("Load World", action="load_world"),
         MenuItem("Back", target=Screen.MAIN),
     ),
     Screen.MULTIPLAYER: (
@@ -175,8 +173,6 @@ class MenuController:
             return MenuCommand.CLOSE
         if action == "create_world":
             return MenuCommand.CREATE_WORLD
-        if action == "load_world":
-            return MenuCommand.LOAD_WORLD
         elif action == "join_lan":
             self.status = "Searching for LAN worlds..."
             return MenuCommand.DISCOVER_LAN
