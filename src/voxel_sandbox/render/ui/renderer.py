@@ -1,5 +1,5 @@
 import pyglet
-from typing import Callable
+from typing import Callable, Any
 from .menu import MenuController, Screen
 from .widgets import Button, Label, Panel, WorldCard
 from .layout import VBox
@@ -38,7 +38,7 @@ class UiRenderer:
         self.height = height
         self._layout()
 
-    from typing import Callable
+    from typing import Callable, Any
 
     def update(
         self,

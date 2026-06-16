@@ -36,7 +36,7 @@ from voxel_sandbox.render.atmosphere import (
 )
 from voxel_sandbox.render.block_highlight import BlockHighlightRenderer
 from voxel_sandbox.render.camera import FirstPersonCamera
-from voxel_sandbox.render.frustum import aabb_intersects_frustum
+from voxel_sandbox.render.frustum import Frustum
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.meshes import (
     MeshData,
@@ -425,6 +425,7 @@ class DemoWorldRenderer:
         self.draw_calls = 0
         self.face_count = 0
         self.triangle_count = 0
+        frustum = Frustum(matrix)
         for key, gpu_mesh in self.mesh_cache.items():
             origin = (key.x * SECTION_SIZE, key.y * SECTION_SIZE, key.z * SECTION_SIZE)
             minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
@@ -433,7 +434,7 @@ class DemoWorldRenderer:
                 float(origin[1] + SECTION_SIZE),
                 float(origin[2] + SECTION_SIZE),
             )
-            if not aabb_intersects_frustum(matrix, minimum, maximum):
+            if not frustum.intersects(minimum, maximum):
                 continue
             origin_uniform.value = origin
             gpu_mesh.vertex_array.render(moderngl.TRIANGLES)
@@ -607,6 +608,7 @@ class DemoWorldRenderer:
         cast("moderngl.Uniform", program["sky_color"]).value = self.clear_color[:3]
         origin_uniform = cast("moderngl.Uniform", program["section_origin"])
         visible: list[tuple[float, SectionCoord, GpuSectionMesh]] = []
+        frustum = Frustum(matrix)
         for key, gpu_mesh in self.water_mesh_cache.items():
             origin = (key.x * SECTION_SIZE, key.y * SECTION_SIZE, key.z * SECTION_SIZE)
             minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
@@ -615,7 +617,7 @@ class DemoWorldRenderer:
                 float(origin[1] + SECTION_SIZE),
                 float(origin[2] + SECTION_SIZE),
             )
-            if not aabb_intersects_frustum(matrix, minimum, maximum):
+            if not frustum.intersects(minimum, maximum):
                 continue
             center = tuple(value + SECTION_SIZE * 0.5 for value in origin)
             distance = sum((center[i] - camera.position[i]) ** 2 for i in range(3))

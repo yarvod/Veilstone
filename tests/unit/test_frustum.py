@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from voxel_sandbox.render.frustum import aabb_intersects_frustum
+from voxel_sandbox.render.frustum import Frustum
 
 
 def test_aabb_inside_identity_clip_space_is_visible() -> None:

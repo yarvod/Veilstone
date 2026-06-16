@@ -66,3 +66,24 @@ A simple UI framework (Theme, Widgets, Layouts, Screens) will allow much richer 
 - [x] UI looks polished and game-ready.
 - [x] Mouse and keyboard interactions work.
 - [x] All tests pass.
+
+### UPERF-004: Fast Frustum Culling
+
+Status: done
+Priority: P0
+Area: render
+
+#### Problem
+Frustum culling is allocating NumPy arrays or objects per chunk section per frame, creating heavy CPU overhead.
+
+#### Hypothesis
+Eliminating per-frame allocations during culling will drop frame latency and improve overall FPS at high render distances.
+
+#### Plan
+- [x] Optimize math in `AABB.in_frustum()` / `Frustum` checks.
+- [x] Remove `numpy` allocations in tight inner loops.
+- [x] Benchmark rendering performance.
+
+#### Acceptance
+- [x] Performance improved.
+- [x] Tests pass.
