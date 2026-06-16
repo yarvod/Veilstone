@@ -112,17 +112,26 @@ def test_main_menu_text_renders_with_blending() -> None:
 
             image = pyglet.image.get_buffer_manager().get_color_buffer().get_image_data()
             width = image.width
-            height = image.height
             raw = image.get_data("RGBA", width * 4)
 
             def get_pixel(x: int, y: int) -> tuple[int, int, int, int]:
                 offset = (y * width + x) * 4
-                return tuple(raw[offset : offset + 4])
+                val = tuple(raw[offset : offset + 4])
+                return (val[0], val[1], val[2], val[3])
 
             sample_rows = [
-                int(window.menu_labels[0].y),
-                int(window.menu_labels[1].y),
-                int(window.menu_title.y),
+                int(
+                    window.ui_renderer.buttons[0].bounds.y
+                    + window.ui_renderer.buttons[0].bounds.height // 2
+                ),
+                int(
+                    window.ui_renderer.buttons[1].bounds.y
+                    + window.ui_renderer.buttons[1].bounds.height // 2
+                ),
+                int(
+                    window.ui_renderer.title_label.bounds.y
+                    + window.ui_renderer.title_label.bounds.height // 2
+                ),
             ]
             bright = 0
             for y in sample_rows:

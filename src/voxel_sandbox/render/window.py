@@ -63,6 +63,7 @@ from voxel_sandbox.render.ui.item_icons import (
     create_item_icons,
 )
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen, platform_font_name
+from voxel_sandbox.render.ui.renderer import UiRenderer
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 import shutil
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
@@ -125,6 +126,7 @@ class GameWindow(pyglet.window.Window):
         )
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
+        self.ui_renderer = UiRenderer(self.width, self.height)
         self._prof_frame_start = 0.0
         self._prof_fixed_update = 0.0
         self._prof_world_render = 0.0
@@ -259,10 +261,23 @@ class GameWindow(pyglet.window.Window):
         )
         self.item_icon_images = create_item_icons(self.item_registry, self.world_renderer.registry)
         self.heart_images = create_heart_icons()
-        self.heart_sprites = [pyglet.sprite.Sprite(self.heart_images[0], batch=self.hud_batch, group=self.hud_fg_group) for _ in range(10)]
+        self.heart_sprites = [
+            pyglet.sprite.Sprite(
+                self.heart_images[0], batch=self.hud_batch, group=self.hud_fg_group
+            )
+            for _ in range(10)
+        ]
         default_icon = self.item_icon_images[1]
-        self.hotbar_slots = [pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3, batch=self.hud_batch, group=self.hud_bg_group) for _ in range(9)]
-        self.hotbar_icons = [pyglet.sprite.Sprite(default_icon, batch=self.hud_batch, group=self.hud_fg_group) for _ in range(9)]
+        self.hotbar_slots = [
+            pyglet.shapes.BorderedRectangle(
+                0, 0, 52, 52, 3, batch=self.hud_batch, group=self.hud_bg_group
+            )
+            for _ in range(9)
+        ]
+        self.hotbar_icons = [
+            pyglet.sprite.Sprite(default_icon, batch=self.hud_batch, group=self.hud_fg_group)
+            for _ in range(9)
+        ]
         self.hotbar_count_labels = [
             pyglet.text.Label(
                 "",
@@ -363,8 +378,12 @@ class GameWindow(pyglet.window.Window):
             color=(245, 220, 140, 255),
         )
         self.cursor_item_icon = pyglet.sprite.Sprite(default_icon)
-        self.held_item_icon = pyglet.sprite.Sprite(default_icon, batch=self.hud_batch, group=self.hud_fg_group)
-        self.held_hand_sprite = pyglet.sprite.Sprite(create_hand_image(), batch=self.hud_batch, group=self.hud_fg_group)
+        self.held_item_icon = pyglet.sprite.Sprite(
+            default_icon, batch=self.hud_batch, group=self.hud_fg_group
+        )
+        self.held_hand_sprite = pyglet.sprite.Sprite(
+            create_hand_image(), batch=self.hud_batch, group=self.hud_fg_group
+        )
         self.hud_status_label = pyglet.text.Label(
             "",
             anchor_x="left",
@@ -863,9 +882,9 @@ class GameWindow(pyglet.window.Window):
                 self._draw_inventory()
             if self.text_input is not None:
                 self._draw_text_input()
-            
+
             self.hud_batch.draw()
-            
+
         self._prof_ui_render_last = (time.perf_counter() - _prof_ui_start) * 1000.0
         self.mgl_context.enable(moderngl.DEPTH_TEST)
 
@@ -896,7 +915,9 @@ class GameWindow(pyglet.window.Window):
                     self.world_list_index = max(0, self.world_list_index - 1)
             elif symbol in {key.DOWN, key.S}:
                 if self.menu.screen is Screen.SINGLEPLAYER:
-                    self.world_list_index = min(max(0, len(self.world_list_items) - 1), self.world_list_index + 1)
+                    self.world_list_index = min(
+                        max(0, len(self.world_list_items) - 1), self.world_list_index + 1
+                    )
             self._sync_mouse_capture()
             return
         if not self.menu.in_game:
@@ -1016,9 +1037,9 @@ class GameWindow(pyglet.window.Window):
             for idx in range(min(8, len(self.world_list_items))):
                 item_y = start_y - idx * item_height
                 if abs(y - item_y) <= 16 and x >= list_x and x <= list_x + 500:
-                    now = pyglet.clock.get_default().time()
+                    now = time.time()
                     if self.world_list_index == idx and (now - self.world_list_last_click) < 0.5:
-                        name, path = self.world_list_items[idx]
+                        name, _ = self.world_list_items[idx]
                         self.load_world(name)
                         self.world_list_last_click = 0.0
                         return
@@ -1135,7 +1156,9 @@ class GameWindow(pyglet.window.Window):
             if scroll_y > 0:
                 self.world_list_index = max(0, self.world_list_index - 1)
             elif scroll_y < 0:
-                self.world_list_index = min(max(0, len(self.world_list_items) - 1), self.world_list_index + 1)
+                self.world_list_index = min(
+                    max(0, len(self.world_list_items) - 1), self.world_list_index + 1
+                )
             return
         if self.menu.in_game and not self.inventory_open and scroll_y:
             self.hotbar.cycle(-1 if scroll_y > 0 else 1)
@@ -1159,34 +1182,14 @@ class GameWindow(pyglet.window.Window):
 
     def _draw_menu(self) -> None:
         center_x = self.width // 2
-        self.menu_title.text = self.menu.title
-        self.menu_title.x = center_x
-        self.menu_title.y = self.height * 3 // 4
-        self.menu_title.draw()
 
-        for index, label in enumerate(self.menu_labels):
-            if index >= len(self.menu.items):
-                label.text = ""
-                continue
-            label.text = self._menu_item_label(index)
-            label.x = center_x
-            label.y = self._menu_item_y(index)
-            label.color = (
-                (245, 220, 140, 255)
-                if index == self.menu.selected_index
-                else (
-                    205,
-                    215,
-                    235,
-                    255,
-                )
-            )
-            label.draw()
+        def on_item_click(index: int):
+            self.menu.select(index)
+            self._handle_menu_command(self.menu.activate())
 
-        self.menu_status.text = self.menu.status
-        self.menu_status.x = center_x
-        self.menu_status.y = self.height // 4
-        self.menu_status.draw()
+        self.ui_renderer.update(self.menu, self._menu_item_label, on_item_click)
+        self.ui_renderer.draw()
+
         # If we're on the singleplayer world screen, draw a selectable world list below the buttons
         if self.menu.screen is Screen.SINGLEPLAYER:
             self._draw_world_list(center_x)
@@ -1195,7 +1198,7 @@ class GameWindow(pyglet.window.Window):
         elif self.text_input is None:
             self.text_input_overlay.opacity = 0
             self.text_input_panel.opacity = 0
-        
+
     def _draw_text_input_modal(self) -> None:
         assert self.text_input is not None
         overlay_margin = 40
@@ -1239,7 +1242,7 @@ class GameWindow(pyglet.window.Window):
         visible = min(8, count)
         label_x = center_x
         for idx in range(visible):
-            name, path = self.world_list_items[idx]
+            name, _ = self.world_list_items[idx]
             label = self.world_list_labels[idx]
             label.text = name
             label.anchor_x = "center"
@@ -1612,7 +1615,9 @@ class GameWindow(pyglet.window.Window):
                 shutil.rmtree(path)
                 self.menu.status = f"Deleted world {name}."
                 self.world_list_items = list(self._saved_worlds())
-                self.world_list_index = max(0, min(self.world_list_index, len(self.world_list_items) - 1))
+                self.world_list_index = max(
+                    0, min(self.world_list_index, len(self.world_list_items) - 1)
+                )
             else:
                 self.menu.status = "Delete cancelled (type DELETE to confirm)."
             self.text_input = None
@@ -1734,17 +1739,25 @@ class GameWindow(pyglet.window.Window):
 
     def _draw_hotbar(self) -> None:
         if self.inventory_open:
-            for s in self.hotbar_slots: s.visible = False
-            for s in self.hotbar_icons: s.visible = False
-            for s in self.hotbar_count_labels: s.visible = False
-            for s in self.hotbar_key_labels: s.visible = False
+            for s in self.hotbar_slots:
+                s.visible = False
+            for s in self.hotbar_icons:
+                s.visible = False
+            for s in self.hotbar_count_labels:
+                s.visible = False
+            for s in self.hotbar_key_labels:
+                s.visible = False
             return
         else:
-            for s in self.hotbar_slots: s.visible = True
-            for s in self.hotbar_icons: s.visible = True
-            for s in self.hotbar_count_labels: s.visible = True
-            for s in self.hotbar_key_labels: s.visible = True
-            
+            for s in self.hotbar_slots:
+                s.visible = True
+            for s in self.hotbar_icons:
+                s.visible = True
+            for s in self.hotbar_count_labels:
+                s.visible = True
+            for s in self.hotbar_key_labels:
+                s.visible = True
+
         slot_size = 52
         start_x = self.width // 2 - (slot_size * 9) // 2
         for index, shape in enumerate(self.hotbar_slots):
@@ -1763,15 +1776,18 @@ class GameWindow(pyglet.window.Window):
             key_label = self.hotbar_key_labels[index]
             key_label.x = x + 4
             key_label.y = 64
-            if getattr(key_label, "batch", None) is None: key_label.draw()
+            if getattr(key_label, "batch", None) is None:
+                key_label.draw()
 
     def _draw_health(self) -> None:
         if self.inventory_open:
-            for s in self.heart_sprites: s.visible = False
+            for s in self.heart_sprites:
+                s.visible = False
             return
         else:
-            for s in self.heart_sprites: s.visible = True
-            
+            for s in self.heart_sprites:
+                s.visible = True
+
         start_x = self.width // 2 - (52 * 9) // 2
         for index, sprite in enumerate(self.heart_sprites):
             remaining = self.player_health - index * 2.0
@@ -1779,7 +1795,8 @@ class GameWindow(pyglet.window.Window):
             sprite.image = self.heart_images[state]
             sprite.x = start_x + index * (HEART_SIZE + 2)
             sprite.y = 74
-            if getattr(sprite, "batch", None) is None: sprite.draw()
+            if getattr(sprite, "batch", None) is None:
+                sprite.draw()
 
     def _draw_inventory(self) -> None:
         center_x = self.width // 2
@@ -1923,7 +1940,8 @@ class GameWindow(pyglet.window.Window):
         shape.height = size
         shape.color = (80, 85, 100, 255) if selected else (58, 63, 76, 255)
         shape.border_color = (255, 255, 100, 255) if selected else (125, 136, 154, 255)
-        if getattr(shape, "batch", None) is None: shape.draw()
+        if getattr(shape, "batch", None) is None:
+            shape.draw()
         if stack is None:
             icon.visible = False
             count_label.text = ""
@@ -1933,11 +1951,13 @@ class GameWindow(pyglet.window.Window):
         icon.scale = (size - 12) / ICON_SIZE
         icon.x = x + 6
         icon.y = y + 6
-        if getattr(icon, "batch", None) is None: icon.draw()
+        if getattr(icon, "batch", None) is None:
+            icon.draw()
         count_label.text = str(stack.count) if stack.count > 1 else ""
         count_label.x = x + size - 4
         count_label.y = y + 2
-        if getattr(count_label, "batch", None) is None: count_label.draw()
+        if getattr(count_label, "batch", None) is None:
+            count_label.draw()
 
     def _open_inventory(self, grid_size: int) -> None:
         self.inventory_open = True

@@ -40,3 +40,29 @@ Batching static UI elements and throttling text updates to 5Hz will reduce the C
 #### Acceptance
 - [x] Visuals are the same.
 - [x] Tests pass (`uv run pytest -m smoke` green).
+
+## Phase 2
+
+### UPERF-003: New Game UI Toolkit
+Status: doing
+Priority: P0
+Area: ui
+
+#### Problem
+Menu drawing is hardcoded, manual, and doesn't scale well for complex settings, world cards, and styling.
+
+#### Hypothesis
+A simple UI framework (Theme, Widgets, Layouts, Screens) will allow much richer menus and interactive UI.
+
+#### Plan
+- [ ] Create UI foundation (`theme.py`, `geometry.py`).
+- [ ] Create core `widgets.py` (Label, Button, Panel, ListBox).
+- [ ] Create `layout.py` helpers (VBox, HBox).
+- [ ] Refactor existing `menu.py` into new `screens.py` using the widgets.
+- [ ] Implement Main Menu redesign.
+- [ ] Implement World Selection Cards.
+
+#### Acceptance
+- [ ] UI looks polished and game-ready.
+- [ ] Mouse and keyboard interactions work.
+- [ ] All tests pass.

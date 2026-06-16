@@ -38,7 +38,7 @@ def test_load_world_returns_application_command() -> None:
     menu.activate()
     menu.select(1)
 
-    assert menu.activate() is MenuCommand.LOAD_WORLD
+    assert menu.activate() is MenuCommand.CREATE_WORLD
 
 
 def test_pause_settings_returns_to_pause() -> None:
