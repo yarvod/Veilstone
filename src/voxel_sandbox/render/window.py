@@ -197,6 +197,10 @@ class GameWindow(pyglet.window.Window):
         self.mouse_y = 0
         self.mouse_captured = False
         self.debug_overlay_visible = False
+        self.hud_batch = pyglet.graphics.Batch()
+        self.hud_bg_group = pyglet.graphics.Group(order=0)
+        self.hud_fg_group = pyglet.graphics.Group(order=1)
+        self.hud_text_group = pyglet.graphics.Group(order=2)
         self.debug_label = pyglet.text.Label(
             "",
             x=10,
@@ -228,6 +232,8 @@ class GameWindow(pyglet.window.Window):
             font_name=UI_FONT_NAME,
             font_size=13,
             color=(255, 255, 255, 255),
+            batch=self.hud_batch,
+            group=self.hud_text_group,
         )
         self.player_list_label = pyglet.text.Label(
             "",
@@ -248,13 +254,15 @@ class GameWindow(pyglet.window.Window):
             font_name=UI_FONT_NAME,
             font_size=18,
             color=(245, 235, 190, 255),
+            batch=self.hud_batch,
+            group=self.hud_text_group,
         )
         self.item_icon_images = create_item_icons(self.item_registry, self.world_renderer.registry)
         self.heart_images = create_heart_icons()
-        self.heart_sprites = [pyglet.sprite.Sprite(self.heart_images[0]) for _ in range(10)]
+        self.heart_sprites = [pyglet.sprite.Sprite(self.heart_images[0], batch=self.hud_batch, group=self.hud_fg_group) for _ in range(10)]
         default_icon = self.item_icon_images[1]
-        self.hotbar_slots = [pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3) for _ in range(9)]
-        self.hotbar_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
+        self.hotbar_slots = [pyglet.shapes.BorderedRectangle(0, 0, 52, 52, 3, batch=self.hud_batch, group=self.hud_bg_group) for _ in range(9)]
+        self.hotbar_icons = [pyglet.sprite.Sprite(default_icon, batch=self.hud_batch, group=self.hud_fg_group) for _ in range(9)]
         self.hotbar_count_labels = [
             pyglet.text.Label(
                 "",
@@ -263,6 +271,8 @@ class GameWindow(pyglet.window.Window):
                 font_name=UI_FONT_NAME,
                 font_size=12,
                 color=(255, 255, 255, 255),
+                batch=self.hud_batch,
+                group=self.hud_text_group,
             )
             for _ in range(9)
         ]
@@ -274,6 +284,8 @@ class GameWindow(pyglet.window.Window):
                 font_name=UI_FONT_NAME,
                 font_size=8,
                 color=(190, 200, 215, 255),
+                batch=self.hud_batch,
+                group=self.hud_text_group,
             )
             for index in range(9)
         ]
@@ -351,8 +363,8 @@ class GameWindow(pyglet.window.Window):
             color=(245, 220, 140, 255),
         )
         self.cursor_item_icon = pyglet.sprite.Sprite(default_icon)
-        self.held_item_icon = pyglet.sprite.Sprite(default_icon)
-        self.held_hand_sprite = pyglet.sprite.Sprite(create_hand_image())
+        self.held_item_icon = pyglet.sprite.Sprite(default_icon, batch=self.hud_batch, group=self.hud_fg_group)
+        self.held_hand_sprite = pyglet.sprite.Sprite(create_hand_image(), batch=self.hud_batch, group=self.hud_fg_group)
         self.hud_status_label = pyglet.text.Label(
             "",
             anchor_x="left",
@@ -360,6 +372,8 @@ class GameWindow(pyglet.window.Window):
             font_name=UI_FONT_NAME,
             font_size=13,
             color=(245, 235, 210, 255),
+            batch=self.hud_batch,
+            group=self.hud_text_group,
         )
         self.menu_title = pyglet.text.Label(
             "",
@@ -725,42 +739,52 @@ class GameWindow(pyglet.window.Window):
         self._prepare_ui_draw()
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
-        self.debug_label.text = (
-            f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
-            f"Grounded {self.player.on_ground}  VelocityY {self.player.velocity_y:5.2f}\n"
-            f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
-            f"\nChunks {self.world_renderer.loaded_chunks}  "
-            f"Pending {self.world_renderer.pending_chunks}  "
-            f"Mesh queue {self.world_renderer.pending_meshes}  "
-            f"Visible sections {self.world_renderer.visible_sections}\n"
-            f"Faces {self.world_renderer.face_count}  "
-            f"Triangles {self.world_renderer.triangle_count}  "
-            f"Draws {self.world_renderer.draw_calls}\n"
-            f"Daylight {self.world_renderer.daylight:4.2f}  "
-            f"Smooth {self.world_renderer.smooth_lighting}  "
-            f"AO {self.world_renderer.ambient_occlusion}  "
-            f"Fog {self.world_renderer.fog_enabled}  "
-            f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
-            f"Health {self.player_health:4.1f}  "
-            f"Entities {len(self.entities.world.alive)}  "
-            f"Mobs {len(self.entities.world.mob_ai)}  "
-            f"Drops {len(self.entities.world.items)}  Entity draws {entity_draws}\n"
-            f"Animation states {self._animation_debug_summary()}\n"
-            f"Selected {self._selected_item_name()}  "
-            "[1-9 hotbar, E inventory, C craft, Q drop]"
-        )
-        if self.world_renderer.selection is not None:
-            self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
+        now = time.perf_counter()
+        if now - self._prof_last_update_time >= 0.2:
+            self._prof_last_update_time = now
+            new_debug_text = (
+                f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
+                f"Grounded {self.player.on_ground}  VelocityY {self.player.velocity_y:5.2f}\n"
+                f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
+                f"\nChunks {self.world_renderer.loaded_chunks}  "
+                f"Pending {self.world_renderer.pending_chunks}  "
+                f"Mesh queue {self.world_renderer.pending_meshes}  "
+                f"Visible sections {self.world_renderer.visible_sections}\n"
+                f"Faces {self.world_renderer.face_count}  "
+                f"Triangles {self.world_renderer.triangle_count}  "
+                f"Draws {self.world_renderer.draw_calls}\n"
+                f"Daylight {self.world_renderer.daylight:4.2f}  "
+                f"Smooth {self.world_renderer.smooth_lighting}  "
+                f"AO {self.world_renderer.ambient_occlusion}  "
+                f"Fog {self.world_renderer.fog_enabled}  "
+                f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
+                f"Health {self.player_health:4.1f}  "
+                f"Entities {len(self.entities.world.alive)}  "
+                f"Mobs {len(self.entities.world.mob_ai)}  "
+                f"Drops {len(self.entities.world.items)}  Entity draws {entity_draws}\n"
+                f"Animation states {self._animation_debug_summary()}\n"
+                f"Selected {self._selected_item_name()}  "
+                "[1-9 hotbar, E inventory, C craft, Q drop]"
+            )
+            if self.world_renderer.selection is not None:
+                new_debug_text += f"\nTarget {self.world_renderer.selection.block}"
+            if self.debug_label.text != new_debug_text:
+                self.debug_label.text = new_debug_text
+
+            new_hud_text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
+            if self.hud_top_left_label.text != new_hud_text:
+                self.hud_top_left_label.text = new_hud_text
 
         _prof_ui_start = time.perf_counter()
         if not getattr(self.settings.development, "disable_hud", False):
-            self.hud_top_left_label.text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
             if self.debug_overlay_visible:
+                self.debug_label.visible = True
+                self.hud_top_left_label.visible = False
                 self.debug_label.y = self.height - 10
-                self.debug_label.draw()
             else:
+                self.debug_label.visible = False
+                self.hud_top_left_label.visible = True
                 self.hud_top_left_label.y = self.height - 10
-                self.hud_top_left_label.draw()
 
             if self.key_state.is_pressed(key.TAB):
                 names = ["Players Online:"]
@@ -806,32 +830,42 @@ class GameWindow(pyglet.window.Window):
                         self.player_name_label.x = screen_x
                         self.player_name_label.y = screen_y
                         self.player_name_label.draw()
+            self.crosshair.visible = not self.inventory_open
             self.crosshair.x = self.width // 2
             self.crosshair.y = self.height // 2
-            self.crosshair.draw()
             self._draw_hotbar()
             self._draw_health()
             if not self.inventory_open:
+                self.held_hand_sprite.visible = True
                 self.held_hand_sprite.x = self.width - 150
                 self.held_hand_sprite.y = -12
-                self.held_hand_sprite.draw()
                 held_stack = self.inventory[self.hotbar.selected_index]
                 if held_stack is not None:
+                    self.held_item_icon.visible = True
                     self.held_item_icon.image = self.item_icon_images[held_stack.item_id]
                     self.held_item_icon.scale = 112 / max(1, self.held_item_icon.image.width)
                     self.held_item_icon.x = self.width - 190
                     self.held_item_icon.y = 12
                     self.held_item_icon.rotation = 12
-                    self.held_item_icon.draw()
+                else:
+                    self.held_item_icon.visible = False
+            else:
+                self.held_hand_sprite.visible = False
+                self.held_item_icon.visible = False
             if self.inventory_status and not self.inventory_open:
+                self.hud_status_label.visible = True
                 self.hud_status_label.text = self.inventory_status
                 self.hud_status_label.x = 20
                 self.hud_status_label.y = 112 if self.text_input is not None else 82
-                self.hud_status_label.draw()
+            else:
+                self.hud_status_label.visible = False
             if self.inventory_open:
                 self._draw_inventory()
             if self.text_input is not None:
                 self._draw_text_input()
+            
+            self.hud_batch.draw()
+            
         self._prof_ui_render_last = (time.perf_counter() - _prof_ui_start) * 1000.0
         self.mgl_context.enable(moderngl.DEPTH_TEST)
 
@@ -1699,6 +1733,18 @@ class GameWindow(pyglet.window.Window):
         self.inventory_status = f"Dropped {self.item_registry.by_id(stack.item_id).name}"
 
     def _draw_hotbar(self) -> None:
+        if self.inventory_open:
+            for s in self.hotbar_slots: s.visible = False
+            for s in self.hotbar_icons: s.visible = False
+            for s in self.hotbar_count_labels: s.visible = False
+            for s in self.hotbar_key_labels: s.visible = False
+            return
+        else:
+            for s in self.hotbar_slots: s.visible = True
+            for s in self.hotbar_icons: s.visible = True
+            for s in self.hotbar_count_labels: s.visible = True
+            for s in self.hotbar_key_labels: s.visible = True
+            
         slot_size = 52
         start_x = self.width // 2 - (slot_size * 9) // 2
         for index, shape in enumerate(self.hotbar_slots):
@@ -1717,9 +1763,15 @@ class GameWindow(pyglet.window.Window):
             key_label = self.hotbar_key_labels[index]
             key_label.x = x + 4
             key_label.y = 64
-            key_label.draw()
+            if getattr(key_label, "batch", None) is None: key_label.draw()
 
     def _draw_health(self) -> None:
+        if self.inventory_open:
+            for s in self.heart_sprites: s.visible = False
+            return
+        else:
+            for s in self.heart_sprites: s.visible = True
+            
         start_x = self.width // 2 - (52 * 9) // 2
         for index, sprite in enumerate(self.heart_sprites):
             remaining = self.player_health - index * 2.0
@@ -1727,7 +1779,7 @@ class GameWindow(pyglet.window.Window):
             sprite.image = self.heart_images[state]
             sprite.x = start_x + index * (HEART_SIZE + 2)
             sprite.y = 74
-            sprite.draw()
+            if getattr(sprite, "batch", None) is None: sprite.draw()
 
     def _draw_inventory(self) -> None:
         center_x = self.width // 2
@@ -1871,7 +1923,7 @@ class GameWindow(pyglet.window.Window):
         shape.height = size
         shape.color = (80, 85, 100, 255) if selected else (58, 63, 76, 255)
         shape.border_color = (255, 255, 100, 255) if selected else (125, 136, 154, 255)
-        shape.draw()
+        if getattr(shape, "batch", None) is None: shape.draw()
         if stack is None:
             icon.visible = False
             count_label.text = ""
@@ -1881,11 +1933,11 @@ class GameWindow(pyglet.window.Window):
         icon.scale = (size - 12) / ICON_SIZE
         icon.x = x + 6
         icon.y = y + 6
-        icon.draw()
+        if getattr(icon, "batch", None) is None: icon.draw()
         count_label.text = str(stack.count) if stack.count > 1 else ""
         count_label.x = x + size - 4
         count_label.y = y + 2
-        count_label.draw()
+        if getattr(count_label, "batch", None) is None: count_label.draw()
 
     def _open_inventory(self, grid_size: int) -> None:
         self.inventory_open = True
