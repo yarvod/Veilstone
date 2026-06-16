@@ -109,3 +109,25 @@ Moving heavy tasks like `streamer.update()` out of `on_draw` and into a fixed-ra
 - [x] Frame rate is visibly smoother during movement.
 - [x] All tests pass.
 
+### UPERF-006: Fast Singleplayer Mode
+
+Status: done
+Priority: P1
+Area: network
+
+#### Problem
+Singleplayer uses the local LAN server via sockets (`LanServer` and `ClientSession`). This introduces IPC overhead, packet serialization, and context switching even for local standalone gameplay, reducing performance on weak CPUs.
+
+#### Hypothesis
+Bypassing the network layer and directly mutating the local world state via a `LocalWorldAuthority` will significantly reduce latency and save CPU cycles.
+
+#### Plan
+- [x] Implement `WorldAuthority` interface (`LocalWorldAuthority` vs `NetworkWorldAuthority`).
+- [x] Use `LocalWorldAuthority` by default for singleplayer, skipping socket initialization until "Open to LAN" is invoked.
+- [x] Retain existing `ClientSession` approach for true multiplayer modes.
+
+#### Acceptance
+- [x] Singleplayer world loads without creating a local network session.
+- [x] Multiplayer / "Open to LAN" remains functional.
+- [x] Existing protocol and multiplayer tests pass.
+

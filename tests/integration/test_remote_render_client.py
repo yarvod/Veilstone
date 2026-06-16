@@ -67,6 +67,7 @@ def test_two_graphical_clients_create_remote_player_avatars() -> None:
             save_root=Path(host_directory),
             player_name="Host",
         )
+        host.open_to_lan()
         assert host.lan_server is not None
         host.menu.screen = Screen.GAME
         guest = GameWindow(

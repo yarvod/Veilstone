@@ -223,10 +223,10 @@ def test_runtime_structures_render_from_authoritative_state() -> None:
     with tempfile.TemporaryDirectory(prefix="veilstone-runtime-structures-") as directory:
         window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
         try:
-            assert window.lan_server is not None
+            assert window.authority is not None
             for index, key_name in enumerate(("gate", "altar", "bridge")):
-                entity = window.lan_server.spawn_structure(key_name, (index * 8, 40, 0))
-                window.lan_server.toggle_structure(entity.entity_id)
+                entity = window.structure_world.spawn(key_name, (index * 8, 40, 0))
+                window.authority.toggle_structure(entity.entity_id)
             draws = window.structure_renderer.render(
                 window.structure_world,
                 window.camera,

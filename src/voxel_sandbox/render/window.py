@@ -48,6 +48,7 @@ from voxel_sandbox.network import (
 )
 from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
+from voxel_sandbox.engine.authority import WorldAuthority, LocalWorldAuthority, NetworkWorldAuthority
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
@@ -176,6 +177,7 @@ class GameWindow(pyglet.window.Window):
         self._network_accumulator = 0.0
         self.network_session: ClientSession | None = None
         self.lan_server: LanServer | None = None
+        self.authority: WorldAuthority | None = None
         self.lan_discovery: DiscoveryResponder | None = None
         self.lan_block_actions: queue.SimpleQueue[tuple[tuple[int, int, int], int]] = (
             queue.SimpleQueue()
@@ -570,13 +572,11 @@ class GameWindow(pyglet.window.Window):
             if self._network_accumulator >= 0.05:
                 self._network_accumulator %= 0.05
                 try:
-                    self.network_session.send(
-                        {
-                            "type": "input",
-                            "position": [self.player.x, self.player.y, self.player.z],
-                            "yaw": math.radians(self.camera.yaw_degrees) + math.pi / 2.0,
-                        }
-                    )
+                    if self.authority is not None:
+                        self.authority.send_input(
+                            (self.player.x, self.player.y, self.player.z),
+                            math.radians(self.camera.yaw_degrees) + math.pi / 2.0,
+                        )
                     if self.world_renderer.remote_mode:
                         self._request_remote_chunk()
                 except (ConnectionError, OSError):
@@ -1523,9 +1523,8 @@ class GameWindow(pyglet.window.Window):
         value = field.value.strip()
         if field.purpose is TextPurpose.NICKNAME:
             self.player_name = value[:32] or "Player"
-            if self.network_session is not None:
-                with suppress(ConnectionError, OSError):
-                    self.network_session.send({"type": "rename", "name": self.player_name})
+            if self.authority is not None:
+                self.authority.set_player_name(self.player_name)
             self.menu.status = f"Nickname: {self.player_name}"
             self.text_input = None
         elif field.purpose is TextPurpose.DIRECT_CONNECT:
@@ -1539,9 +1538,9 @@ class GameWindow(pyglet.window.Window):
                 return
             self.text_input = None
         elif field.purpose is TextPurpose.CHAT:
-            if value and self.network_session is not None:
+            if value and self.authority is not None:
                 try:
-                    self.network_session.send({"type": "chat", "text": value})
+                    self.authority.send_chat(value)
                 except (ConnectionError, OSError) as error:
                     self.inventory_status = f"Chat failed: {error}"
             elif value:
@@ -2155,6 +2154,8 @@ class GameWindow(pyglet.window.Window):
         joined = session.connect(host, int(raw_port), name=player_name[:32] or "Player")
         self._stop_network_services()
         self.network_session = session
+        self.structure_world = StructureWorld()
+        self.authority = NetworkWorldAuthority(session, self.structure_world)
         self.world_renderer.enable_remote_mode()
         self.last_structure_revision = -1
         self._replace_structure_snapshots(
@@ -2162,7 +2163,7 @@ class GameWindow(pyglet.window.Window):
             joined.get("structure_revision", 0),
         )
         self.inventory_status = f"Connected as player {joined['player_id']}"
-        session.send({"type": "request_chunk", "coord": [0, 0]})
+        self.authority.request_chunk(0, 0)
         self.requested_remote_chunks.add(ChunkCoord(0, 0))
         self.menu.screen = Screen.GAME
         self._sync_mouse_capture()
@@ -2330,39 +2331,71 @@ class GameWindow(pyglet.window.Window):
                 transform.x, transform.y, transform.z = position
 
     def _send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
-        if self.network_session is not None:
+        if self.authority is not None:
             try:
-                self.network_session.send(
-                    {"type": "block_action", "position": list(block), "block_id": block_id}
-                )
+                self.authority.apply_block_action(block, block_id)
             except (ConnectionError, OSError):
                 self.inventory_status = "Block action pending reconnect"
         elif self.lan_server is not None:
             self.lan_server.apply_block_action(block, block_id)
 
     def _toggle_structure(self, entity_id: int) -> None:
-        if self.world_renderer.remote_mode and self.network_session is not None:
+        if self.world_renderer.remote_mode and self.authority is not None:
             try:
-                self.network_session.send({"type": "structure_toggle", "id": entity_id})
+                self.authority.toggle_structure(entity_id)
                 self.inventory_status = f"Requested structure #{entity_id} toggle."
             except (ConnectionError, OSError):
                 self.inventory_status = "Structure interaction pending reconnect."
             return
-        if self.lan_server is None:
-            return
-        entity = self.lan_server.toggle_structure(entity_id)
-        self.inventory_status = (
-            f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
-        )
+        if self.lan_server is not None:
+            entity = self.lan_server.toggle_structure(entity_id)
+            self.inventory_status = (
+                f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+            )
+        elif self.authority is not None:
+            entity = self.authority.toggle_structure(entity_id)
+            if entity is not None:
+                self.inventory_status = f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
 
     def open_to_lan(self) -> None:
-        if self.lan_server is None:
-            self.menu.status = "Open to LAN is available only for a singleplayer world."
-            return
-        if self.lan_discovery is not None:
+        if self.lan_server is not None:
             self.menu.status = f"World already open to LAN on port {self.lan_server.address[1]}"
             return
+        if self.network_session is not None:
+            self.menu.status = "Cannot open a multiplayer game to LAN."
+            return
         self.world_renderer.autosave()
+        
+        if self.world_renderer.storage is not None:
+            self.world_renderer.storage.save_structure_world(self.structure_world)
+        
+        server = LanServer(
+            "0.0.0.0",
+            25565,
+            seed=self.world_renderer.seed_text,
+            storage=self.world_renderer.storage,
+            block_action_sink=lambda position, block_id: self.lan_block_actions.put((position, block_id)),
+        )
+        server.start()
+        self.lan_server = server
+        
+        session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
+        try:
+            session.connect(
+                "127.0.0.1",
+                server.address[1],
+                name=self.player_name,
+                position=(self.player.x, self.player.y, self.player.z),
+            )
+        except OSError as error:
+            server.stop()
+            self.menu.status = f"Failed to connect to local server: {error}"
+            self.lan_server = None
+            return
+            
+        self.network_session = session
+        self.authority = NetworkWorldAuthority(session, self.structure_world)
+        
         try:
             discovery = DiscoveryResponder(
                 "0.0.0.0",
@@ -2388,46 +2421,31 @@ class GameWindow(pyglet.window.Window):
             self.world_renderer.set_block(block, block_id)
 
     def _start_local_authority(self) -> None:
-        server = LanServer(
-            "0.0.0.0",
-            0,
-            seed=self.world_renderer.seed_text,
-            storage=self.world_renderer.storage,
-            block_action_sink=lambda position, block_id: self.lan_block_actions.put(
-                (position, block_id)
-            ),
+        self.structure_world = (
+            self.world_renderer.storage.load_structure_world()
+            if self.world_renderer.storage is not None
+            else StructureWorld()
         )
-        server.start()
-        self.structure_world = server.structure_world
         self.last_structure_revision = self.structure_world.revision
-        session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
-        try:
-            session.connect(
-                "127.0.0.1",
-                server.address[1],
-                name=self.player_name,
-                position=(self.player.x, self.player.y, self.player.z),
-            )
-        except OSError:
-            server.stop()
-            raise
-        self.lan_server = server
-        self.network_session = session
+        self.authority = LocalWorldAuthority(
+            self.structure_world,
+            lambda position, block_id: self.lan_block_actions.put((position, block_id))
+        )
 
     def _replace_structure_snapshots(self, raw_snapshots: object, raw_revision: object) -> None:
         if not isinstance(raw_snapshots, list) or not isinstance(raw_revision, int):
             return
         if raw_revision < self.last_structure_revision:
             return
+        if self.structure_world is None:
+            return
         snapshots: list[StructureSnapshot] = []
         for raw in cast("list[object]", raw_snapshots):
             if not isinstance(raw, dict):
                 return
             snapshots.append(cast("StructureSnapshot", raw))
-        world = StructureWorld()
-        world.replace_from_snapshots(snapshots)
-        world.revision = raw_revision
-        self.structure_world = world
+        self.structure_world.replace_from_snapshots(snapshots)
+        self.structure_world.revision = raw_revision
         self.last_structure_revision = raw_revision
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
@@ -2556,8 +2574,8 @@ class GameWindow(pyglet.window.Window):
         ):
             if coord in self.requested_remote_chunks:
                 continue
-            self.requested_remote_chunks.add(coord)
-            self.network_session.send({"type": "request_chunk", "coord": [coord.x, coord.z]})
+            if self.authority is not None:
+                self.authority.request_chunk(coord.x, coord.z)
             return
 
 
