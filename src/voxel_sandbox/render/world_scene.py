@@ -318,22 +318,7 @@ class DemoWorldRenderer:
         self.greedy_meshing = not self.greedy_meshing
         self._remesh_all()
 
-    def render(
-        self,
-        camera: FirstPersonCamera,
-        width: int,
-        height: int,
-        fov: float,
-        shadow_caster: Callable[[np.ndarray], object] | None = None,
-        transparent_underlay: Callable[[np.ndarray], object] | None = None,
-    ) -> None:
-        if self.shader.program is None:
-            return
-        matrix = camera_matrix(camera, max(width, 1) / max(height, 1), fov)
-        center = ChunkCoord(
-            int(np.floor(camera.x / SECTION_SIZE)),
-            int(np.floor(camera.z / SECTION_SIZE)),
-        )
+    def update_streaming(self, center: ChunkCoord) -> None:
         if not self.remote_mode:
             batch = self.streamer.update(center, max_completed=self.uploads_per_frame)
             for coord in batch.unloaded:
@@ -347,6 +332,20 @@ class DemoWorldRenderer:
                     affected_chunks[chunk.coord] = chunk
             for chunk in affected_chunks.values():
                 self._schedule_chunk(chunk)
+
+    def render(
+        self,
+        camera: FirstPersonCamera,
+        width: int,
+        height: int,
+        fov: float,
+        shadow_caster: Callable[[np.ndarray], object] | None = None,
+        transparent_underlay: Callable[[np.ndarray], object] | None = None,
+    ) -> None:
+        if self.shader.program is None:
+            return
+        matrix = camera_matrix(camera, max(width, 1) / max(height, 1), fov)
+
         for completed in self.mesh_worker.poll(self.mesh_uploads_per_frame):
             if self.streamer.get_chunk(completed.key.chunk) is None:
                 continue

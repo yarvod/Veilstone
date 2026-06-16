@@ -1,5 +1,5 @@
 import pyglet
-from typing import Callable, Any
+from typing import Callable
 from .menu import MenuController, Screen
 from .widgets import Button, Label, Panel, WorldCard
 from .layout import VBox

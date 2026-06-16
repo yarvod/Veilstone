@@ -35,7 +35,7 @@ from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureW
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
-from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
 from voxel_sandbox.engine.ecs import AnimationState, EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
@@ -558,6 +558,11 @@ class GameWindow(pyglet.window.Window):
                 previous_position,
             )
         self.world_renderer.update(delta_time)
+        center = ChunkCoord(
+            math.floor(self.camera.x / SECTION_SIZE),
+            math.floor(self.camera.z / SECTION_SIZE),
+        )
+        self.world_renderer.update_streaming(center)
         self._network_accumulator += delta_time
         if self.network_session is not None:
             self._process_network_messages()

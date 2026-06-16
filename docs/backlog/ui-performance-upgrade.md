@@ -87,3 +87,25 @@ Eliminating per-frame allocations during culling will drop frame latency and imp
 #### Acceptance
 - [x] Performance improved.
 - [x] Tests pass.
+
+### UPERF-005: Separate Render from Streaming/Update
+
+Status: done
+Priority: P1
+Area: streaming
+
+#### Problem
+The render path performs heavy streaming/update work (chunk generation/mesh loading scheduling), causing stuttering and inconsistent frame times.
+
+#### Hypothesis
+Moving heavy tasks like `streamer.update()` out of `on_draw` and into a fixed-rate update loop (or throttling them) will stabilize the frame rate.
+
+#### Plan
+- [x] Move `streamer.update` to fixed update or throttle it.
+- [x] Ensure `on_draw` only dispatches rendering and light GPU uploads.
+
+#### Acceptance
+- [x] `on_draw` is free of chunk streaming logic.
+- [x] Frame rate is visibly smoother during movement.
+- [x] All tests pass.
+
