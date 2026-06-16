@@ -32,6 +32,8 @@ class LoggingSettings:
 @dataclass(frozen=True, slots=True)
 class DevelopmentSettings:
     shader_hot_reload: bool = True
+    profile_frame: bool = False
+    disable_hud: bool = False
 
 
 @dataclass(frozen=True, slots=True)

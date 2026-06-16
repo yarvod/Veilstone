@@ -124,6 +124,14 @@ class GameWindow(pyglet.window.Window):
         )
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
+        self._prof_frame_start = 0.0
+        self._prof_fixed_update = 0.0
+        self._prof_world_render = 0.0
+        self._prof_ui_render = 0.0
+        self._prof_streaming_update = 0.0
+        self._prof_network_poll = 0.0
+        self._prof_display_text = ""
+        self._prof_last_update_time = time.time()
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
@@ -436,6 +444,7 @@ class GameWindow(pyglet.window.Window):
         )
 
     def fixed_update(self, delta_time: float) -> None:
+        _prof_start = time.perf_counter()
         self._apply_lan_block_actions()
         if not self.menu.in_game:
             self.audio_director.set_game_state("menu")
@@ -566,6 +575,7 @@ class GameWindow(pyglet.window.Window):
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
+        _prof_frame_start_time = time.perf_counter()
         clear_color = (
             self.world_renderer.clear_color if self.menu.in_game else (0.025, 0.04, 0.075, 1.0)
         )
@@ -662,9 +672,7 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context.disable(moderngl.DEPTH_TEST)
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
-        frame_time_ms = 1000.0 / fps if fps > 0.0 else 0.0
         self.debug_label.text = (
-            f"FPS {fps:5.1f}  Frame {frame_time_ms:5.2f} ms\n"
             f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
             f"Grounded {self.player.on_ground}  VelocityY {self.player.velocity_y:5.2f}\n"
             f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
@@ -691,84 +699,87 @@ class GameWindow(pyglet.window.Window):
         if self.world_renderer.selection is not None:
             self.debug_label.text += f"\nTarget {self.world_renderer.selection.block}"
 
-        self.hud_top_left_label.text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
-        if self.debug_overlay_visible:
-            self.debug_label.y = self.height - 10
-            self.debug_label.draw()
-        else:
-            self.hud_top_left_label.y = self.height - 10
-            self.hud_top_left_label.draw()
-
-        if self.key_state.is_pressed(key.TAB):
-            names = ["Players Online:"]
-            if self.network_session is not None:
-                names.append("You (Local)")
-                local_id = self.network_session.player_id
-                for p_id, p in self.network_players.items():
-                    if p_id == local_id:
-                        continue
-                    names.append(str(p.get("name", f"Player {p_id}")))
+        _prof_ui_start = time.perf_counter()
+        if not getattr(self.settings.development, "disable_hud", False):
+            self.hud_top_left_label.text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
+            if self.debug_overlay_visible:
+                self.debug_label.y = self.height - 10
+                self.debug_label.draw()
             else:
-                names.append("You (Singleplayer)")
-            self.player_list_label.text = "\n".join(names)
-            self.player_list_label.x = self.width // 2
-            self.player_list_label.y = self.height // 2
-            self.player_list_label.draw()
+                self.hud_top_left_label.y = self.height - 10
+                self.hud_top_left_label.draw()
 
-        from voxel_sandbox.render.math3d import camera_matrix
+            if self.key_state.is_pressed(key.TAB):
+                names = ["Players Online:"]
+                if self.network_session is not None:
+                    names.append("You (Local)")
+                    local_id = self.network_session.player_id
+                    for p_id, p in self.network_players.items():
+                        if p_id == local_id:
+                            continue
+                        names.append(str(p.get("name", f"Player {p_id}")))
+                else:
+                    names.append("You (Singleplayer)")
+                self.player_list_label.text = "\n".join(names)
+                self.player_list_label.x = self.width // 2
+                self.player_list_label.y = self.height // 2
+                self.player_list_label.draw()
 
-        matrix = camera_matrix(
-            self.camera,
-            max(self.width, 1) / max(self.height, 1),
-            self.settings.camera.field_of_view,
-        )
+            from voxel_sandbox.render.math3d import camera_matrix
 
-        for player_id, entity in self.remote_player_entities.items():
-            transform = self.entities.world.transforms.get(entity)
-            if transform is None:
-                continue
-            pos = np.array([transform.x, transform.y + 2.1, transform.z, 1.0], dtype=np.float32)
-            clip = matrix @ pos
-            w = clip[3]
-            if w > 0:
-                ndc_x = clip[0] / w
-                ndc_y = clip[1] / w
-                if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
-                    screen_x = (ndc_x + 1) * self.width / 2
-                    screen_y = (ndc_y + 1) * self.height / 2
-                    name = self.network_players.get(player_id, {}).get(
-                        "name", f"Player {player_id}"
-                    )
-                    self.player_name_label.text = str(name)
-                    self.player_name_label.x = screen_x
-                    self.player_name_label.y = screen_y
-                    self.player_name_label.draw()
-        self.crosshair.x = self.width // 2
-        self.crosshair.y = self.height // 2
-        self.crosshair.draw()
-        self._draw_hotbar()
-        self._draw_health()
-        if not self.inventory_open:
-            self.held_hand_sprite.x = self.width - 150
-            self.held_hand_sprite.y = -12
-            self.held_hand_sprite.draw()
-            held_stack = self.inventory[self.hotbar.selected_index]
-            if held_stack is not None:
-                self.held_item_icon.image = self.item_icon_images[held_stack.item_id]
-                self.held_item_icon.scale = 112 / max(1, self.held_item_icon.image.width)
-                self.held_item_icon.x = self.width - 190
-                self.held_item_icon.y = 12
-                self.held_item_icon.rotation = 12
-                self.held_item_icon.draw()
-        if self.inventory_status and not self.inventory_open:
-            self.hud_status_label.text = self.inventory_status
-            self.hud_status_label.x = 20
-            self.hud_status_label.y = 112 if self.text_input is not None else 82
-            self.hud_status_label.draw()
-        if self.inventory_open:
-            self._draw_inventory()
-        if self.text_input is not None:
-            self._draw_text_input()
+            matrix = camera_matrix(
+                self.camera,
+                max(self.width, 1) / max(self.height, 1),
+                self.settings.camera.field_of_view,
+            )
+
+            for player_id, entity in self.remote_player_entities.items():
+                transform = self.entities.world.transforms.get(entity)
+                if transform is None:
+                    continue
+                pos = np.array([transform.x, transform.y + 2.1, transform.z, 1.0], dtype=np.float32)
+                clip = matrix @ pos
+                w = clip[3]
+                if w > 0:
+                    ndc_x = clip[0] / w
+                    ndc_y = clip[1] / w
+                    if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
+                        screen_x = (ndc_x + 1) * self.width / 2
+                        screen_y = (ndc_y + 1) * self.height / 2
+                        name = self.network_players.get(player_id, {}).get(
+                            "name", f"Player {player_id}"
+                        )
+                        self.player_name_label.text = str(name)
+                        self.player_name_label.x = screen_x
+                        self.player_name_label.y = screen_y
+                        self.player_name_label.draw()
+            self.crosshair.x = self.width // 2
+            self.crosshair.y = self.height // 2
+            self.crosshair.draw()
+            self._draw_hotbar()
+            self._draw_health()
+            if not self.inventory_open:
+                self.held_hand_sprite.x = self.width - 150
+                self.held_hand_sprite.y = -12
+                self.held_hand_sprite.draw()
+                held_stack = self.inventory[self.hotbar.selected_index]
+                if held_stack is not None:
+                    self.held_item_icon.image = self.item_icon_images[held_stack.item_id]
+                    self.held_item_icon.scale = 112 / max(1, self.held_item_icon.image.width)
+                    self.held_item_icon.x = self.width - 190
+                    self.held_item_icon.y = 12
+                    self.held_item_icon.rotation = 12
+                    self.held_item_icon.draw()
+            if self.inventory_status and not self.inventory_open:
+                self.hud_status_label.text = self.inventory_status
+                self.hud_status_label.x = 20
+                self.hud_status_label.y = 112 if self.text_input is not None else 82
+                self.hud_status_label.draw()
+            if self.inventory_open:
+                self._draw_inventory()
+            if self.text_input is not None:
+                self._draw_text_input()
+        self._prof_ui_render_last = (time.perf_counter() - _prof_ui_start) * 1000.0
         self.mgl_context.enable(moderngl.DEPTH_TEST)
 
     def _animation_debug_summary(self) -> str:
