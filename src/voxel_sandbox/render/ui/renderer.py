@@ -1,7 +1,7 @@
 import pyglet
 from typing import Callable
-from .menu import MenuController
-from .widgets import Button, Label, Panel
+from .menu import MenuController, Screen
+from .widgets import Button, Label, Panel, WorldCard
 from .layout import VBox
 from .theme import VEILSTONE_THEME
 
@@ -27,6 +27,11 @@ class UiRenderer:
 
         self.buttons: list[Button] = []
         self.vbox = VBox(theme=VEILSTONE_THEME, spacing=16)
+        self.world_cards: list[WorldCard] = []
+        self.world_list_vbox = VBox(theme=VEILSTONE_THEME, spacing=8)
+        self.world_action_label = Label(
+            "", font_size=VEILSTONE_THEME.body_size, color=VEILSTONE_THEME.text_color
+        )
 
     def resize(self, width: int, height: int) -> None:
         self.width = width
@@ -62,6 +67,25 @@ class UiRenderer:
             if i < len(menu.items):
                 btn.text = get_item_label(i) if get_item_label else menu.items[i].label
 
+    def update_world_list(
+        self, worlds: list[tuple[str, Any]], selected_index: int, action_text: str
+    ) -> None:
+        if len(self.world_cards) != len(worlds) or any(
+            c.name != w[0] for c, w in zip(self.world_cards, worlds)
+        ):
+            self.world_cards.clear()
+            self.world_list_vbox.children.clear()
+            for w in worlds:
+                card = WorldCard(w[0])
+                self.world_cards.append(card)
+                self.world_list_vbox.add_child(card)
+            self._layout()
+
+        for i, card in enumerate(self.world_cards):
+            card.is_selected = i == selected_index
+
+        self.world_action_label.text = action_text
+
     def _rebuild_tree(
         self, menu: MenuController, on_item_click: Callable[[int], None] | None
     ) -> None:
@@ -94,12 +118,17 @@ class UiRenderer:
 
         # Lay out status
         self.status_label.layout(0, self.height // 4 - 20, self.width, 40)
+        self.world_list_vbox.layout(0, 0, self.width, self.height - 400)
+        self.world_action_label.layout(0, self.height // 4 - 60, self.width, 40)
 
     def draw(self) -> None:
         # Let widgets add themselves to batch
         self.title_label.draw()
         self.vbox.draw()
         self.status_label.draw()
+        if self._current_screen is Screen.SINGLEPLAYER:
+            self.world_list_vbox.draw()
+            self.world_action_label.draw()
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> int | None:
         for i, btn in enumerate(self.buttons):

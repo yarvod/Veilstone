@@ -59,10 +59,10 @@ A simple UI framework (Theme, Widgets, Layouts, Screens) will allow much richer 
 - [ ] Create core `widgets.py` (Label, Button, Panel, ListBox).
 - [ ] Create `layout.py` helpers (VBox, HBox).
 - [ ] Refactor existing `menu.py` into new `screens.py` using the widgets.
-- [ ] Implement Main Menu redesign.
-- [ ] Implement World Selection Cards.
+- [x] Implement Main Menu redesign.
+- [x] Implement World Selection Cards.
 
 #### Acceptance
-- [ ] UI looks polished and game-ready.
-- [ ] Mouse and keyboard interactions work.
-- [ ] All tests pass.
+- [x] UI looks polished and game-ready.
+- [x] Mouse and keyboard interactions work.
+- [x] All tests pass.

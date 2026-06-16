@@ -245,3 +245,56 @@ class Panel(Widget):
             if child.on_mouse_release(x, y, button, modifiers):
                 return True
         return super().on_mouse_release(x, y, button, modifiers)
+
+
+class WorldCard(Widget):
+    def __init__(self, name: str, is_selected: bool = False, theme: UiTheme = VEILSTONE_THEME):
+        super().__init__(theme)
+        self.name = name
+        self.is_selected = is_selected
+        self._rect = pyglet.shapes.BorderedRectangle(
+            0,
+            0,
+            theme.button_width + 180,
+            theme.button_height,
+            2,
+            color=theme.panel_color,
+            border_color=theme.accent_color if is_selected else theme.panel_border_color,
+        )
+        self._label = Label(name, theme=theme, anchor_x="left")
+
+    def layout(self, x: int, y: int, width: int, height: int) -> None:
+        super().layout(x, y, width, height)
+        self._rect.x = x
+        self._rect.y = y
+        self._rect.width = width
+        self._rect.height = height
+        self._label.layout(
+            x + self.theme.panel_padding, y, width - self.theme.panel_padding * 2, height
+        )
+
+    def draw(
+        self, batch: pyglet.graphics.Batch | None = None, group: pyglet.graphics.Group | None = None
+    ) -> None:
+        if not self.visible:
+            return
+
+        if self.is_selected:
+            self._rect.border_color = self.theme.accent_color
+            self._rect.opacity = 255
+        elif self.hovered:
+            self._rect.border_color = self.theme.button_hover_color
+            self._rect.opacity = 255
+        else:
+            self._rect.border_color = self.theme.panel_border_color
+            self._rect.opacity = 200
+
+        if batch is not None:
+            self._rect.batch = batch
+            if group is not None:
+                self._rect.group = group
+        else:
+            self._rect.batch = None
+            self._rect.draw()
+
+        self._label.draw(batch, group)

@@ -1234,38 +1234,16 @@ class GameWindow(pyglet.window.Window):
         self.world_list_items = list(self._saved_worlds())
         count = len(self.world_list_items)
         if count == 0:
+            self.ui_renderer.update_world_list([], -1, "")
             return
         self.world_list_index = min(self.world_list_index, max(0, count - 1))
-        top_items = len(self.menu.items)
-        start_y = self.height * 3 // 4 - (top_items + 1) * 48 - 24
-        item_height = 44
-        visible = min(8, count)
-        label_x = center_x
-        for idx in range(visible):
-            name, _ = self.world_list_items[idx]
-            label = self.world_list_labels[idx]
-            label.text = name
-            label.anchor_x = "center"
-            label.x = label_x
-            label.y = start_y - idx * item_height
-            if idx == self.world_list_index:
-                rect = pyglet.shapes.BorderedRectangle(
-                    label_x - 240,
-                    label.y - 20,
-                    480,
-                    40,
-                    2,
-                    color=(30, 34, 44),
-                    border_color=(120, 135, 155),
-                )
-                rect.opacity = 200
-                rect.draw()
-            label.draw()
-        self.world_list_action_label.text = "[Play]    [Rename]    [Delete]"
-        self.world_list_action_label.anchor_x = "center"
-        self.world_list_action_label.x = label_x
-        self.world_list_action_label.y = start_y - visible * item_height - 24
-        self.world_list_action_label.draw()
+
+        visible_items = self.world_list_items[:8]
+        self.ui_renderer.update_world_list(
+            visible_items,
+            self.world_list_index if self.world_list_index < 8 else -1,
+            "[Play]    [Rename]    [Delete]",
+        )
 
     def _prepare_ui_draw(self) -> None:
         self.mgl_context.disable(moderngl.DEPTH_TEST)
