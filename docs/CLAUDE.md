@@ -59,6 +59,33 @@ audio/        — bus, director, backend
 - Run: `.venv/bin/python -m pytest tests/ -x -q`
 - Pre-existing failure: test_block_registry (expects 11 blocks, has 13)
 
+## MCP Tools — Usage Policy
+
+### Запуск сессии
+Запускай Claude через `headroom wrap claude` (не просто `claude`) — это стартует прокси, который автоматически сжимает большие tool outputs и экономит 60–90% токенов на рутинных операциях.
+
+### Headroom (экономия токенов)
+- Когда в выводе инструментов есть маркер `[N items compressed to M. Retrieve more: hash=…]` — вызывай `mcp__headroom__headroom_retrieve` с этим hash, чтобы получить полный контент. Не повторяй вызов исходного инструмента.
+- `mcp__headroom__headroom_stats` — посмотреть статистику экономии.
+- Прокси работает на `http://127.0.0.1:8787` (прописан в env.ANTHROPIC_BASE_URL через `headroom init claude`).
+
+### Serena (навигация по коду — LSP-backed, без чтения файлов)
+Перед началом работы с кодом вызывай `mcp__serena__initial_instructions`.
+
+Используй Serena **вместо grep/Read** для поиска и навигации:
+- `mcp__serena__find_symbol` — найти класс/функцию/метод по имени
+- `mcp__serena__find_declaration` — перейти к объявлению символа
+- `mcp__serena__find_implementations` — найти все реализации (для интерфейсов/базовых классов)
+- `mcp__serena__find_referencing_symbols` — где используется символ
+- `mcp__serena__get_symbols_overview` — обзор всех символов файла (вместо cat целого файла)
+- `mcp__serena__get_diagnostics_for_file` — статические ошибки типов/импортов без запуска mypy
+
+Для редактирования через Serena (точечно, без чтения всего файла):
+- `mcp__serena__replace_symbol_body` — заменить тело функции/класса
+- `mcp__serena__insert_after_symbol` / `mcp__serena__insert_before_symbol` — вставить код вокруг символа
+- `mcp__serena__replace_content` — заменить произвольный блок кода в файле
+- `mcp__serena__safe_delete_symbol` — удалить символ с проверкой ссылок
+
 ### Known Pitfalls
 - `_saved_worlds()` reads filesystem every frame (performance)
 - `execute_command` is 80-line if/elif chain
