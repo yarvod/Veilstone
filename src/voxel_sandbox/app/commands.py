@@ -26,7 +26,7 @@ class HelpCommand:
 
 @dataclass(frozen=True, slots=True)
 class SpawnStructureCommand:
-    template_name: str
+    key: str
 
 
 @dataclass(frozen=True, slots=True)
