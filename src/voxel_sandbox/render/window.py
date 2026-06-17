@@ -1024,57 +1024,11 @@ class GameWindow(pyglet.window.Window):
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         if self.text_input is not None:
             return
-        if button == mouse.LEFT and not self.menu.in_game:
-            index = self._menu_index_at(x, y)
-            if index is not None:
-                self.menu.select(index)
-                self._play_ui_sound()
-                self._handle_menu_command(self.menu.activate())
-                self._sync_mouse_capture()
+        if not self.menu.in_game:
+            if hasattr(self, "ui_renderer") and self.ui_renderer:
+                if self.ui_renderer.on_mouse_press(x, y, button, modifiers):
+                    self._play_ui_sound()
             return
-        # handle clicks in menu world list
-        if self.menu.screen is Screen.SINGLEPLAYER:
-            top_items = len(self.menu.items)
-            start_y = self.height * 3 // 4 - top_items * 48 - 32
-            item_height = 36
-            list_x = self.width // 2 - 220
-            action_x = self.width // 2 + 40
-            for idx in range(min(8, len(self.world_list_items))):
-                item_y = start_y - idx * item_height
-                if abs(y - item_y) <= 16 and x >= list_x and x <= list_x + 500:
-                    now = time.time()
-                    if self.world_list_index == idx and (now - self.world_list_last_click) < 0.5:
-                        name, _ = self.world_list_items[idx]
-                        self.load_world(name)
-                        self.world_list_last_click = 0.0
-                        return
-                    self.world_list_index = idx
-                    self.world_list_last_click = now
-                    return
-            for idx in range(min(8, len(self.world_list_items))):
-                item_y = start_y - idx * item_height
-                if abs(y - item_y) <= 16 and x >= action_x and x <= action_x + 200:
-                    rel = x - action_x
-                    if rel < 72:
-                        name, _ = self.world_list_items[idx]
-                        self.load_world(name)
-                        return
-                    if rel < 146:
-                        self.world_list_index = idx
-                        self._begin_text_input(
-                            TextPurpose.RENAME_WORLD,
-                            "Rename world",
-                            initial=self.world_list_items[idx][0],
-                            maximum_length=48,
-                        )
-                        return
-                    self.world_list_index = idx
-                    self._begin_text_input(
-                        TextPurpose.DELETE_WORLD,
-                        "Type DELETE to confirm deleting:",
-                        maximum_length=6,
-                    )
-                    return
         if self.menu.in_game and self.inventory_open:
             crafting_slot = self._crafting_slot_at(x, y)
             if crafting_slot is not None:
@@ -1168,6 +1122,11 @@ class GameWindow(pyglet.window.Window):
         if self.menu.in_game and not self.inventory_open and scroll_y:
             self.hotbar.cycle(-1 if scroll_y > 0 else 1)
 
+    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
+        if not self.menu.in_game:
+            if hasattr(self, "ui_renderer") and self.ui_renderer:
+                self.ui_renderer.on_mouse_release(x, y, button, modifiers)
+
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         self.mouse_x = x
         self.mouse_y = y
@@ -1175,13 +1134,8 @@ class GameWindow(pyglet.window.Window):
             return
         if not self.menu.in_game:
             if hasattr(self, "ui_renderer") and self.ui_renderer:
-                index = self.ui_renderer.on_mouse_motion(x, y, dx, dy)
-                if index is not None:
-                    self.menu.select(index)
-            else:
-                index = self._menu_index_at(x, y)
-                if index is not None:
-                    self.menu.select(index)
+                if self.ui_renderer.on_mouse_motion(x, y, dx, dy):
+                    self._play_ui_sound()
             return
         if self.mouse_captured:
             self.camera.rotate(
@@ -1240,19 +1194,69 @@ class GameWindow(pyglet.window.Window):
         self._draw_text_input()
 
     def _draw_world_list(self, center_x: int) -> None:
-        # refresh list
         self.world_list_items = list(self._saved_worlds())
         count = len(self.world_list_items)
-        if count == 0:
-            self.ui_renderer.update_world_list([], -1, "")
-            return
-        self.world_list_index = min(self.world_list_index, max(0, count - 1))
+        if count > 0:
+            self.world_list_index = min(self.world_list_index, max(0, count - 1))
+        else:
+            self.world_list_index = -1
+        
+        def on_select(idx: int):
+            self.world_list_index = idx
+        
+        def on_play():
+            if self.world_list_items and 0 <= self.world_list_index < count:
+                name, _ = self.world_list_items[self.world_list_index]
+                self.load_world(name)
+        
+        def on_create():
+            self._handle_menu_command("create_world")
 
-        visible_items = self.world_list_items[:8]
+        def on_edit():
+            if self.world_list_items and 0 <= self.world_list_index < count:
+                name, _ = self.world_list_items[self.world_list_index]
+                self._begin_text_input(
+                    TextPurpose.RENAME_WORLD,
+                    "Rename world",
+                    initial=name,
+                    maximum_length=48,
+                )
+
+        def on_delete():
+            if self.world_list_items and 0 <= self.world_list_index < count:
+                self._begin_text_input(
+                    TextPurpose.DELETE_WORLD,
+                    "Type DELETE to confirm deleting:",
+                    maximum_length=6,
+                )
+                
+        def on_cancel():
+            self._handle_menu_command("main_menu")
+
+        if count == 0:
+            self.ui_renderer.update_world_list([], -1, on_select, on_play, on_create, on_edit, on_delete, on_cancel)
+            return
+
+        start_index = max(0, self.world_list_index - 3)
+        end_index = start_index + 8
+        if end_index > count:
+            end_index = count
+            start_index = max(0, end_index - 8)
+
+        visible_items = self.world_list_items[start_index:end_index]
+        
+        def mapped_on_select(visible_idx: int):
+            on_select(start_index + visible_idx)
+
         self.ui_renderer.update_world_list(
             visible_items,
-            self.world_list_index if self.world_list_index < 8 else -1,
-            "[Play]    [Rename]    [Delete]",
+            self.world_list_index - start_index,
+            mapped_on_select,
+            on_play,
+            on_create,
+            on_edit,
+            on_delete,
+            on_cancel,
         )
 
     def _prepare_ui_draw(self) -> None:
@@ -1276,19 +1280,6 @@ class GameWindow(pyglet.window.Window):
             self.text_input_label.x = self.width // 2
             self.text_input_label.y = self.height // 3
             self.text_input_label.draw()
-
-    def _menu_item_y(self, index: int) -> int:
-        if self.menu.screen is Screen.SINGLEPLAYER:
-            return self.height * 3 // 4 - (index + 1) * 48
-        return self.height // 2 + 45 - index * 48
-
-    def _menu_index_at(self, x: int, y: int) -> int | None:
-        if abs(x - self.width // 2) > 180:
-            return None
-        for index in range(len(self.menu.items)):
-            if abs(y - self._menu_item_y(index)) <= 20:
-                return index
-        return None
 
     def _menu_item_label(self, index: int) -> str:
         item = self.menu.items[index]

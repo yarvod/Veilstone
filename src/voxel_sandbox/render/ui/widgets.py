@@ -32,6 +32,8 @@ class Widget:
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool:
         was_hovered = self.hovered
         self.hovered = self.contains(x, y)
+        if self.hovered and not was_hovered and hasattr(self, "on_hover") and self.on_hover:
+            self.on_hover()
         return self.hovered != was_hovered
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool:
