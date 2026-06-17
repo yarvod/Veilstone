@@ -17,16 +17,6 @@ import numpy as np
 import pyglet
 from pyglet.window import key
 
-from voxel_sandbox.app.commands import (
-    CommandError,
-    ListStructuresCommand,
-    SetDifficultyCommand,
-    SetTimeCommand,
-    SpawnStructureCommand,
-    TeleportCommand,
-    ToggleStructureCommand,
-    parse_command,
-)
 from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
@@ -51,6 +41,7 @@ from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
+from voxel_sandbox.render.gameplay_controller import GameplayController
 from voxel_sandbox.render.input_state import (
     InputHandler,
     KeyState,
@@ -112,6 +103,7 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context = moderngl.create_context(require=330)
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
+        self._gameplay = GameplayController(self)
         self.audio = create_audio_bus(settings.audio)
         self.audio_director = AudioDirector(self.audio)
         self._footstep_accumulator = 0.0
@@ -1399,113 +1391,17 @@ class GameWindow(pyglet.window.Window):
             else:
                 self.menu.status = "Delete cancelled (type DELETE to confirm)."
             self.text_input = None
-        self._sync_mouse_capture()
-
     def execute_command(self, source: str) -> None:
-        try:
-            command = parse_command(source)
-        except CommandError as error:
-            self.inventory_status = str(error)
-            return
-        if isinstance(command, SetTimeCommand):
-            self.world_renderer.time_of_day = command.time_of_day
-            if command.freeze:
-                self.world_renderer.day_cycle_seconds = 0.0
-            else:
-                self.world_renderer.day_cycle_seconds = self.settings.graphics.day_cycle_seconds
-            self.inventory_status = f"Time set to {command.label}{' (frozen)' if command.freeze else ''}."
-        elif isinstance(command, SetDifficultyCommand):
-            self._set_difficulty(command.difficulty)
-            self.inventory_status = f"Difficulty set to {command.difficulty}."
-        elif isinstance(command, TeleportCommand):
-            if self.network_session is None:
-                self.inventory_status = "Teleportation requires multiplayer."
-                return
-            target_pos: tuple[float, float, float] | None = None
-            for _p_id, p in self.network_players.items():
-                if str(p.get("name", "")).casefold() == command.target_name.casefold():
-                    raw_position = p.get("position")
-                    if (
-                        isinstance(raw_position, list)
-                        and len(raw_position) == 3
-                        and all(
-                            isinstance(value, int | float)
-                            for value in cast(list[object], raw_position)
-                        )
-                    ):
-                        values = cast(list[int | float], raw_position)
-                        target_pos = float(values[0]), float(values[1]), float(values[2])
-                    break
-            if target_pos is not None:
-                self.player.x, self.player.y, self.player.z = target_pos
-                self.inventory_status = f"Teleported to {command.target_name}."
-            else:
-                self.inventory_status = f"Player {command.target_name} not found."
-        elif isinstance(command, SpawnStructureCommand):
-            if self.lan_server is None or self.world_renderer.remote_mode:
-                self.inventory_status = "Structure commands require a local authoritative world."
-                return
-            distance = 5.0
-            origin = (
-                math.floor(self.player.x + self.camera.direction[0] * distance),
-                math.floor(self.player.y),
-                math.floor(self.player.z + self.camera.direction[2] * distance),
-            )
-            entity = self.lan_server.spawn_structure(command.key, origin)
-            self.structure_world = self.lan_server.structure_world
-            self.inventory_status = f"Spawned {command.key} structure #{entity.entity_id}."
-        elif isinstance(command, ToggleStructureCommand):
-            if self.lan_server is None or self.world_renderer.remote_mode:
-                self.inventory_status = "Structure commands require a local authoritative world."
-                return
-            try:
-                entity = self.lan_server.toggle_structure(command.entity_id)
-            except KeyError:
-                self.inventory_status = f"Unknown structure #{command.entity_id}."
-                return
-            self.inventory_status = (
-                f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
-            )
-        elif isinstance(command, ListStructuresCommand):
-            structures = sorted(
-                self.structure_world.entities.values(),
-                key=lambda item: item.entity_id,
-            )
-            self.inventory_status = (
-                ", ".join(f"#{item.entity_id} {item.key}" for item in structures)
-                if structures
-                else "No runtime structures."
-            )
-        else:
-            self.inventory_status = (
-                "/time set <...>; /difficulty <...>; /structure <spawn|toggle|list>"
-            )
+        self._gameplay.execute_command(source)
 
     def _set_difficulty(self, difficulty: str) -> None:
-        self.settings = replace(
-            self.settings,
-            gameplay=replace(self.settings.gameplay, difficulty=difficulty),
-        )
-        self._maintain_population((self.player.x, self.player.y, self.player.z))
-        save_user_settings(self.settings)
+        self._gameplay._set_difficulty(difficulty)
 
     def _maintain_population(self, center: tuple[float, float, float]) -> None:
-        hostile_count = 0 if self.settings.gameplay.difficulty == "peaceful" else 1
-        self.entities.maintain_population(
-            center,
-            self.world_renderer.generator.height_at,
-            self._is_entity_hazard,
-            hostile_count=hostile_count,
-            hostile_spawn_allowed=self._hostile_spawn_allowed,
-            is_solid=self._is_solid_combined,
-        )
+        self._gameplay._maintain_population(center)
 
     def _hostile_spawn_allowed(self, x: int, y: int, z: int) -> bool:
-        light_level = self.world_renderer.spawn_light_level(x, y, z)
-        return (
-            light_level is not None
-            and light_level <= self.settings.gameplay.hostile_spawn_light_limit
-        )
+        return self._gameplay._hostile_spawn_allowed(x, y, z)
 
     def _drop_selected_item(self) -> None:
         stack = self.inventory.take_from_slot(self.hotbar.selected_index)
@@ -1790,8 +1686,7 @@ class GameWindow(pyglet.window.Window):
             )
 
     def _is_entity_hazard(self, x: int, y: int, z: int) -> bool:
-        block_id = self.world_renderer.get_block(x, y, z)
-        return self.world_renderer.registry.by_id(block_id).is_fluid
+        return self._gameplay._is_entity_hazard(x, y, z)
 
     def _restore_player_position(self, position: tuple[float, float, float]) -> bool:
         if not self._position_within_world(position):
