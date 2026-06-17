@@ -81,7 +81,6 @@ class GraphicsSettings:
     shadow_quality: str = "medium"
     shadow_bias: float = 0.0015
     clouds: bool = True
-    postprocess: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +127,8 @@ def load_settings(path: Path | None = None) -> AppSettings:
                 if isinstance(values, dict):
                     data.setdefault(section, {}).update(values)
 
+    graphics_data = _section(data, "graphics")
+    graphics_data.pop("postprocess", None)
     return AppSettings(
         window=WindowSettings(**_section(data, "window")),
         camera=CameraSettings(**_section(data, "camera")),
@@ -135,7 +136,7 @@ def load_settings(path: Path | None = None) -> AppSettings:
         development=DevelopmentSettings(**_section(data, "development")),
         world=WorldSettings(**_section(data, "world")),
         gameplay=GameplaySettings(**_section(data, "gameplay")),
-        graphics=GraphicsSettings(**_section(data, "graphics")),
+        graphics=GraphicsSettings(**graphics_data),
         audio=AudioSettings(**_section(data, "audio")),
         controls=ControlsSettings(**_section(data, "controls")),
     )
@@ -154,7 +155,6 @@ def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
         "[graphics]\n"
         f'shadow_quality = "{settings.graphics.shadow_quality}"\n'
         f"clouds = {str(settings.graphics.clouds).lower()}\n"
-        f"postprocess = {str(settings.graphics.postprocess).lower()}\n"
         f"fog = {str(settings.graphics.fog).lower()}\n"
         "\n[gameplay]\n"
         f'difficulty = "{settings.gameplay.difficulty}"\n'

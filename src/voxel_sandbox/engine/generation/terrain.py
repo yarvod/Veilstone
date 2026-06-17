@@ -160,26 +160,62 @@ class TerrainGenerator:
                 if self._hash3(world_x, 0, world_z, 20) <= threshold:
                     continue
                 ground_y = self.height_at(world_x, world_z) - 1
-                trunk_height = 4 + int(self._hash3(world_x, 1, world_z, 21) * 3)
+                is_giant = self._hash3(world_x, 2, world_z, 25) > 0.85
+                if is_giant:
+                    self._place_giant_tree(chunk, coord, world_x, ground_y, world_z, touched_sections)
+                else:
+                    trunk_height = 4 + int(self._hash3(world_x, 1, world_z, 21) * 3)
+                    for y in range(ground_y + 1, ground_y + trunk_height + 1):
+                        self._set_if_inside(chunk, coord, world_x, y, world_z, 4, touched_sections)
+                    crown_y = ground_y + trunk_height
+                    for dx in range(-2, 3):
+                        for dy in range(-1, 3):
+                            for dz in range(-2, 3):
+                                if abs(dx) + abs(dz) + max(0, abs(dy) - 1) > 4:
+                                    continue
+                                self._set_if_inside(
+                                    chunk,
+                                    coord,
+                                    world_x + dx,
+                                    crown_y + dy,
+                                    world_z + dz,
+                                    5,
+                                    touched_sections,
+                                    replace_air_only=True,
+                                )
+                    self._set_if_inside(chunk, coord, world_x, crown_y, world_z, 4, touched_sections)
+
+    def _place_giant_tree(
+        self,
+        chunk: Chunk,
+        coord: ChunkCoord,
+        world_x: int,
+        ground_y: int,
+        world_z: int,
+        touched_sections: set[int],
+    ) -> None:
+        trunk_height = 10 + int(self._hash3(world_x, 1, world_z, 21) * 8)
+        for dx in (0, 1):
+            for dz in (0, 1):
                 for y in range(ground_y + 1, ground_y + trunk_height + 1):
-                    self._set_if_inside(chunk, coord, world_x, y, world_z, 4, touched_sections)
-                crown_y = ground_y + trunk_height
-                for dx in range(-2, 3):
-                    for dy in range(-1, 3):
-                        for dz in range(-2, 3):
-                            if abs(dx) + abs(dz) + max(0, abs(dy) - 1) > 4:
-                                continue
-                            self._set_if_inside(
-                                chunk,
-                                coord,
-                                world_x + dx,
-                                crown_y + dy,
-                                world_z + dz,
-                                5,
-                                touched_sections,
-                                replace_air_only=True,
-                            )
-                self._set_if_inside(chunk, coord, world_x, crown_y, world_z, 4, touched_sections)
+                    self._set_if_inside(chunk, coord, world_x + dx, y, world_z + dz, 4, touched_sections)
+        
+        crown_y = ground_y + trunk_height
+        for dx in range(-4, 6):
+            for dy in range(-3, 4):
+                for dz in range(-4, 6):
+                    dist = math.sqrt((dx - 0.5)**2 + (dy * 1.5)**2 + (dz - 0.5)**2)
+                    if dist <= 4.5 + self._hash3(world_x + dx, crown_y + dy, world_z + dz, 30) * 1.5:
+                        self._set_if_inside(
+                            chunk,
+                            coord,
+                            world_x + dx,
+                            crown_y + dy,
+                            world_z + dz,
+                            5,
+                            touched_sections,
+                            replace_air_only=True,
+                        )
 
     @staticmethod
     def _set_if_inside(

@@ -52,7 +52,6 @@ from voxel_sandbox.engine.authority import WorldAuthority, LocalWorldAuthority, 
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
-from voxel_sandbox.render.postprocess import PostProcessRenderer
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
@@ -121,10 +120,6 @@ class GameWindow(pyglet.window.Window):
         )
         self.camera = FirstPersonCamera()
         self.sky_renderer = SkyRenderer(self.mgl_context, clouds=settings.graphics.clouds)
-        self.postprocess_renderer = PostProcessRenderer(
-            self.mgl_context,
-            enabled=settings.graphics.postprocess,
-        )
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
         self.ui_renderer = UiRenderer(self.width, self.height)
@@ -513,7 +508,6 @@ class GameWindow(pyglet.window.Window):
         self.world_renderer.autosave()
         self.debug_shader.release()
         self.sky_renderer.release()
-        self.postprocess_renderer.release()
         self.entity_renderer.release()
         self.structure_renderer.release()
         self.world_renderer.release()
@@ -677,7 +671,6 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context.disable(moderngl.BLEND)
             self.mgl_context.enable(moderngl.DEPTH_TEST)
             return
-        postprocess_active = self.postprocess_renderer.begin(self.width, self.height)
         self.mgl_context.clear(*clear_color, depth=1.0)
         self.sky_renderer.render(
             self.camera,
@@ -759,8 +752,6 @@ class GameWindow(pyglet.window.Window):
             ),
             transparent_underlay=render_entities,
         )
-        if postprocess_active:
-            self.postprocess_renderer.present(self.width, self.height)
         self.mgl_context.disable(moderngl.DEPTH_TEST)
         self._prepare_ui_draw()
         x, y, z = self.camera.position
@@ -1288,7 +1279,6 @@ class GameWindow(pyglet.window.Window):
         values = {
             "cycle_shadows": self.settings.graphics.shadow_quality,
             "toggle_clouds": "on" if self.settings.graphics.clouds else "off",
-            "toggle_postprocess": "on" if self.settings.graphics.postprocess else "off",
             "toggle_vsync": "on" if self.settings.window.vsync else "off",
             "cycle_difficulty": self.settings.gameplay.difficulty,
             "rebind_forward": self.settings.controls.forward,
@@ -1389,14 +1379,6 @@ class GameWindow(pyglet.window.Window):
                 graphics=replace(self.settings.graphics, clouds=enabled),
             )
             self.sky_renderer.clouds = enabled
-            save_user_settings(self.settings)
-        elif command is MenuCommand.TOGGLE_POSTPROCESS:
-            enabled = not self.settings.graphics.postprocess
-            self.settings = replace(
-                self.settings,
-                graphics=replace(self.settings.graphics, postprocess=enabled),
-            )
-            self.postprocess_renderer.enabled = enabled
             save_user_settings(self.settings)
         elif command is MenuCommand.TOGGLE_VSYNC:
             enabled = not self.settings.window.vsync

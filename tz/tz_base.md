@@ -3178,3 +3178,11 @@ Priorities:
 6. feature completeness.
 
 Do not sacrifice FPS and architecture for adding many half-broken mechanics.
+
+
+## 13. Twilight Forest Update
+
+- Add giant trees with thick trunks (2x2 or 3x3).
+- Add magical biomes with unique foliage color.
+- Adjust day/night cycle to permanent twilight or apply blue/green atmospheric lighting/fog.
+- Implement glowing blocks and new entities.

@@ -48,7 +48,6 @@ day_cycle_seconds = 240.0
 shadow_quality = "medium"
 shadow_bias = 0.0015
 clouds = true
-postprocess = false
 
 [audio]
 master = 0.8

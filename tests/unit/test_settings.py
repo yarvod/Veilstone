@@ -29,7 +29,6 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
             settings.graphics,
             shadow_quality="off",
             clouds=False,
-            postprocess=True,
         ),
         window=replace(settings.window, vsync=False),
         gameplay=replace(settings.gameplay, difficulty="peaceful", hostile_spawn_light_limit=5),
@@ -43,7 +42,6 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
 
     assert loaded.graphics.shadow_quality == "off"
     assert not loaded.graphics.clouds
-    assert loaded.graphics.postprocess
     assert not loaded.window.vsync
     assert loaded.gameplay.difficulty == "peaceful"
     assert loaded.gameplay.hostile_spawn_light_limit == 5

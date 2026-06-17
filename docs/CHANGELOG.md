@@ -18,9 +18,13 @@
 - Windows UI labels select Segoe UI through one platform-font policy.
 - The player list omits the duplicated local network snapshot.
 - Menu text now renders with alpha blending and depth test disabled during menu rendering on Windows.
+- Removed post-processing renderer and settings to prepare for new lighting and world generation (Twilight Forest update).
 
 ### Fixed
 
+- Fixed UI layout geometry resulting in offset hitboxes for VBox and HBox children.
+- Restricted UI widget clicks to the left mouse button, resolving unintended interaction.
+- Restored FPS counter and debug coordinate text rendering.
 - Prevented `on_key_press` from crashing when Pyglet supplies a `None` key symbol.
 - Stopped delayed echoed local snapshots from moving the player back toward an old position.
 - Removed the second bottom-left FPS counter while retaining the normal upper-left HUD.

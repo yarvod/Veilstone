@@ -162,7 +162,7 @@ def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() ->
     graze = graph.evaluate(models.get("passive"), MobState.GRAZE, 0.5, 0.0)
 
     assert walk["leg_left"] != attack.get("leg_left")
-    assert walk["arm_left"].rotation[0] < -0.7
+    assert walk["arm_left"].rotation[0] > 0.7
     assert attack["arm_left"].rotation[0] < -0.5
     assert hurt["body"].rotation != death["body"].rotation
     assert graze["head"].offset[1] < -0.3

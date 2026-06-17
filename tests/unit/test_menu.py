@@ -15,7 +15,7 @@ def labels(screen: Screen) -> list[str]:
 
 def test_player_facing_menu_tree() -> None:
     assert labels(Screen.MAIN) == ["Singleplayer", "Multiplayer", "Settings", "Exit"]
-    assert labels(Screen.SINGLEPLAYER) == ["Create World", "Load World", "Back"]
+    assert labels(Screen.SINGLEPLAYER) == ["Create World", "Back"]
     assert labels(Screen.MULTIPLAYER) == [
         "Join LAN World",
         "Direct Connect",
@@ -33,12 +33,12 @@ def test_singleplayer_enters_game_and_escape_opens_pause() -> None:
     assert menu.activate() is MenuCommand.CREATE_WORLD
 
 
-def test_load_world_returns_application_command() -> None:
+def test_singleplayer_back_goes_to_main() -> None:
     menu = MenuController()
-    menu.activate()
+    menu.screen = Screen.SINGLEPLAYER
     menu.select(1)
-
-    assert menu.activate() is MenuCommand.CREATE_WORLD
+    menu.activate()
+    assert menu.screen is Screen.MAIN
 
 
 def test_pause_settings_returns_to_pause() -> None:
@@ -59,7 +59,7 @@ def test_audio_back_does_not_replace_settings_return_screen() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(5)
+    menu.select(4)
     menu.activate()
     assert menu.screen is Screen.AUDIO
     menu.select(len(menu.items) - 1)
@@ -75,7 +75,6 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert labels(Screen.SETTINGS) == [
         "Shadow Quality",
         "Clouds",
-        "Postprocess",
         "VSync",
         "Difficulty",
         "Audio",
@@ -87,7 +86,7 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert menu.activate() is MenuCommand.CYCLE_SHADOWS
     menu.select(1)
     assert menu.activate() is MenuCommand.TOGGLE_CLOUDS
-    menu.select(4)
+    menu.select(3)
     assert menu.activate() is MenuCommand.CYCLE_DIFFICULTY
 
 

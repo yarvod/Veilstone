@@ -28,7 +28,6 @@ class MenuCommand(Enum):
     OPEN_LAN = auto()
     CYCLE_SHADOWS = auto()
     TOGGLE_CLOUDS = auto()
-    TOGGLE_POSTPROCESS = auto()
     TOGGLE_VSYNC = auto()
     CYCLE_DIFFICULTY = auto()
     CREATE_WORLD = auto()
@@ -70,7 +69,6 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
     Screen.SETTINGS: (
         MenuItem("Shadow Quality", action="cycle_shadows"),
         MenuItem("Clouds", action="toggle_clouds"),
-        MenuItem("Postprocess", action="toggle_postprocess"),
         MenuItem("VSync", action="toggle_vsync"),
         MenuItem("Difficulty", action="cycle_difficulty"),
         MenuItem("Audio", target=Screen.AUDIO),
@@ -186,8 +184,6 @@ class MenuController:
             return MenuCommand.CYCLE_SHADOWS
         elif action == "toggle_clouds":
             return MenuCommand.TOGGLE_CLOUDS
-        elif action == "toggle_postprocess":
-            return MenuCommand.TOGGLE_POSTPROCESS
         elif action == "toggle_vsync":
             return MenuCommand.TOGGLE_VSYNC
         elif action == "cycle_difficulty":
