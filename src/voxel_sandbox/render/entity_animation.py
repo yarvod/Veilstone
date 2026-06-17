@@ -144,8 +144,8 @@ def animated_pose(
         if any(part.name == name for part in model.parts):
             pose[name] = PartPose(rotation=(phase, 0.0, 0.0))
     if model.key == "hostile" and state is not MobState.ATTACK:
-        pose["arm_left"] = PartPose(rotation=(-0.88 - swing * 0.18, 0.0, 0.0))
-        pose["arm_right"] = PartPose(rotation=(-0.88 + swing * 0.18, 0.0, 0.0))
+        pose["arm_left"] = PartPose(rotation=(0.88 + swing * 0.18, 0.0, 0.0))
+        pose["arm_right"] = PartPose(rotation=(0.88 - swing * 0.18, 0.0, 0.0))
     if any(part.name == "tail" for part in model.parts):
         pose["tail"] = PartPose(rotation=(0.08, math.sin(animation_time * 2.0) * 0.28, 0.0))
     if state is MobState.ATTACK:

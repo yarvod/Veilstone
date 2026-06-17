@@ -172,7 +172,7 @@ uv_bottom = "torso_back"
 [[models.parts]]
 name = "arm_left"
 parent = "body"
-offset = [-0.43, 0.02, 0.0]
+offset = [0.43, 0.02, 0.0]
 size = [0.22, 0.78, 0.24]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "arm_front"
@@ -184,7 +184,7 @@ uv_y = "arm_back"
 [[models.parts]]
 name = "arm_right"
 parent = "body"
-offset = [0.43, 0.02, 0.0]
+offset = [-0.43, 0.02, 0.0]
 size = [0.22, 0.78, 0.24]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "arm_front"
@@ -196,7 +196,7 @@ uv_y = "arm_back"
 [[models.parts]]
 name = "leg_left"
 parent = "body"
-offset = [-0.18, -0.68, 0.0]
+offset = [0.18, -0.68, 0.0]
 size = [0.25, 0.74, 0.28]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "leg_front"
@@ -208,7 +208,7 @@ uv_y = "leg_back"
 [[models.parts]]
 name = "leg_right"
 parent = "body"
-offset = [0.18, -0.68, 0.0]
+offset = [-0.18, -0.68, 0.0]
 size = [0.25, 0.74, 0.28]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "leg_front"
@@ -268,7 +268,7 @@ uv_bottom = "torso_back"
 [[models.parts]]
 name = "arm_left"
 parent = "body"
-offset = [-0.43, 0.02, 0.0]
+offset = [0.43, 0.02, 0.0]
 size = [0.22, 0.78, 0.24]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "arm_front"
@@ -280,7 +280,7 @@ uv_y = "arm_back"
 [[models.parts]]
 name = "arm_right"
 parent = "body"
-offset = [0.43, 0.02, 0.0]
+offset = [-0.43, 0.02, 0.0]
 size = [0.22, 0.78, 0.24]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "arm_front"
@@ -292,7 +292,7 @@ uv_y = "arm_back"
 [[models.parts]]
 name = "leg_left"
 parent = "body"
-offset = [-0.18, -0.68, 0.0]
+offset = [0.18, -0.68, 0.0]
 size = [0.25, 0.74, 0.28]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "leg_front"
@@ -304,7 +304,7 @@ uv_y = "leg_back"
 [[models.parts]]
 name = "leg_right"
 parent = "body"
-offset = [0.18, -0.68, 0.0]
+offset = [-0.18, -0.68, 0.0]
 size = [0.25, 0.74, 0.28]
 pivot = [0.0, 0.5, 0.0]
 uv_front = "leg_front"

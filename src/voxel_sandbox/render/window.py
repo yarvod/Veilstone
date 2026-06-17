@@ -1174,9 +1174,14 @@ class GameWindow(pyglet.window.Window):
         if self.text_input is not None:
             return
         if not self.menu.in_game:
-            index = self._menu_index_at(x, y)
-            if index is not None:
-                self.menu.select(index)
+            if hasattr(self, "ui_renderer") and self.ui_renderer:
+                index = self.ui_renderer.on_mouse_motion(x, y, dx, dy)
+                if index is not None:
+                    self.menu.select(index)
+            else:
+                index = self._menu_index_at(x, y)
+                if index is not None:
+                    self.menu.select(index)
             return
         if self.mouse_captured:
             self.camera.rotate(
