@@ -272,7 +272,10 @@ class DemoWorldRenderer:
         direction: tuple[float, float, float],
         max_distance: float = 6.0,
     ) -> RaycastHit | None:
-        return voxel_raycast(self.get_block, origin, direction, max_distance)
+        def skip_fluid(block_id: int) -> bool:
+            return self.registry.by_id(block_id).is_fluid
+
+        return voxel_raycast(self.get_block, origin, direction, max_distance, skip_block=skip_fluid)
 
     def set_block(self, block: tuple[int, int, int], block_id: int) -> bool:
         previous_id = self.get_block(*block)

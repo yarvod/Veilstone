@@ -21,6 +21,7 @@ def voxel_raycast(
     origin: tuple[float, float, float],
     direction: tuple[float, float, float],
     max_distance: float,
+    skip_block: Callable[[int], bool] | None = None,
 ) -> RaycastHit | None:
     length = math.sqrt(sum(component * component for component in direction))
     if length == 0.0 or max_distance < 0.0:
@@ -29,7 +30,7 @@ def voxel_raycast(
     voxel = [math.floor(component) for component in origin]
     previous = _tuple3(voxel)
     block_id = get_block(*voxel)
-    if block_id != 0:
+    if block_id != 0 and not (skip_block and skip_block(block_id)):
         return RaycastHit(_tuple3(voxel), previous, (0, 0, 0), 0.0, block_id)
 
     step = [1 if component > 0.0 else -1 if component < 0.0 else 0 for component in ray]
@@ -52,7 +53,7 @@ def voxel_raycast(
         voxel[axis] += step[axis]
         side[axis] += delta[axis]
         block_id = get_block(*voxel)
-        if block_id != 0:
+        if block_id != 0 and not (skip_block and skip_block(block_id)):
             normal = [0, 0, 0]
             normal[axis] = -step[axis]
             return RaycastHit(_tuple3(voxel), previous, _tuple3(normal), distance, block_id)

@@ -523,6 +523,12 @@ class GameWindow(pyglet.window.Window):
             x, y, z
         )
 
+    def _is_fluid_at(self, x: int, y: int, z: int) -> bool:
+        block_id = self.world_renderer.get_block(x, y, z)
+        if block_id == 0:
+            return False
+        return self.world_renderer.registry.by_id(block_id).is_fluid
+
     def fixed_update(self, delta_time: float) -> None:
         _prof_start = time.perf_counter()
         self._apply_lan_block_actions()
@@ -637,7 +643,9 @@ class GameWindow(pyglet.window.Window):
             ),
             self.camera.yaw_degrees,
             delta_time,
-            self._is_solid_combined,
+            self.world_renderer.streamer.get_block,
+            is_solid=self._is_solid_combined,
+            is_fluid=self._is_fluid_at,
         )
         moving = abs(forward) + abs(right) > 0.0
         if moving and self.player.on_ground:
