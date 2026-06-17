@@ -38,10 +38,10 @@
 - [ ] Все pyglet спрайты инвентаря → в контроллер
 - [ ] Тесты: unit + integration
 
-### 1.2 InputHandler (~10 методов)
-- [ ] Извлечь on_key_press, on_mouse_*, on_text, on_scroll
-- [ ] Dispatch events → контроллерам через callbacks
-- [ ] Тесты: unit
+### 1.2 InputHandler (~10 методов) ✅
+- [x] Извлечь on_key_press, on_mouse_*, on_text, on_scroll
+- [x] Dispatch events → контроллерам через callbacks
+- [x] Тесты: unit (42 теста)
 
 ### 1.3 NetworkController (~12 методов)
 - [ ] Извлечь connect_remote, process_network_*, sync_remote_*

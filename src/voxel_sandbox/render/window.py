@@ -52,7 +52,11 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.engine.authority import WorldAuthority, LocalWorldAuthority, NetworkWorldAuthority
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
-from voxel_sandbox.render.input_state import KeyState, configure_layout_independent_game_keys
+from voxel_sandbox.render.input_state import (
+    InputHandler,
+    KeyState,
+    configure_layout_independent_game_keys,
+)
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
@@ -507,6 +511,7 @@ class GameWindow(pyglet.window.Window):
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
         LOGGER.info("ModernGL context: %s", self.mgl_context.info.get("GL_VERSION", "unknown"))
+        self._input = InputHandler(self)
 
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
@@ -911,256 +916,31 @@ class GameWindow(pyglet.window.Window):
         return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
-        del modifiers
-        if symbol is None:
-            LOGGER.debug("Ignored key event without a symbol")
-            return
-        if self.rebinding_action is not None:
-            self._apply_rebind(symbol)
-            return
-        if self.text_input is not None:
-            if symbol in {key.ENTER, key.RETURN}:
-                self._submit_text_input()
-            elif symbol == key.ESCAPE:
-                self.text_input = None
-            elif symbol == key.BACKSPACE:
-                self.text_input.backspace()
-            self._sync_mouse_capture()
-            return
-        if not self.menu.in_game:
-            if symbol in {key.UP, key.W}:
-                if self.menu.screen is Screen.SINGLEPLAYER and self.world_list_items:
-                    self.world_list_index = max(0, self.world_list_index - 1)
-                else:
-                    self.menu.move_selection(-1)
-                self._play_ui_sound()
-            elif symbol in {key.DOWN, key.S}:
-                if self.menu.screen is Screen.SINGLEPLAYER and self.world_list_items:
-                    self.world_list_index = min(
-                        len(self.world_list_items) - 1, self.world_list_index + 1
-                    )
-                else:
-                    self.menu.move_selection(1)
-                self._play_ui_sound()
-            elif symbol in {key.ENTER, key.RETURN, key.SPACE}:
-                self._play_ui_sound()
-                if (
-                    self.menu.screen is Screen.SINGLEPLAYER
-                    and self.world_list_items
-                    and 0 <= self.world_list_index < len(self.world_list_items)
-                ):
-                    name, _ = self.world_list_items[self.world_list_index]
-                    self.load_world(name)
-                else:
-                    self._handle_menu_command(self.menu.activate())
-            elif symbol == key.ESCAPE:
-                self._play_ui_sound()
-                self.menu.back()
-            self._sync_mouse_capture()
-            return
-        if symbol == key.E:
-            if self.inventory_open:
-                self._close_inventory()
-            else:
-                self._open_inventory(2)
-            self.key_state.clear()
-            self._sync_mouse_capture()
-            return
-        if self.inventory_open:
-            if symbol == key.ESCAPE:
-                self._close_inventory()
-                self._sync_mouse_capture()
-            elif symbol == key.C:
-                self._take_crafting_result()
-            elif ord("1") <= symbol <= ord("9"):
-                self.hotbar.select(symbol - ord("1"))
-            return
-        if symbol == key.ESCAPE:
-            self.menu.back()
-            self._sync_mouse_capture()
-            return
-        if symbol == key.F5:
-            self.debug_shader.reload(force=True)
-            return
-        if symbol == key.F3:
-            self.debug_overlay_visible = not self.debug_overlay_visible
-            return
-        if symbol == key.F6:
-            self.world_renderer.toggle_smooth_lighting()
-            return
-        if symbol == key.F7:
-            self.world_renderer.toggle_ambient_occlusion()
-            return
-        if symbol == key.F8:
-            self.world_renderer.toggle_fog()
-            return
-        if symbol == key.F9:
-            self.world_renderer.toggle_mesher()
-            return
-        if ord("1") <= symbol <= ord("9"):
-            self.hotbar.select(symbol - ord("1"))
-            return
-        if symbol == key.Q:
-            self._drop_selected_item()
-            return
-        if symbol == key.T:
-            self._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
-            return
-        if symbol == key.SLASH:
-            self._begin_text_input(
-                TextPurpose.COMMAND,
-                "Command (/help)",
-                initial="/",
-                maximum_length=256,
-            )
-            return
-        self.key_state.press(symbol)
+        self._input.on_key_press(symbol, modifiers)
 
     def on_text(self, text: str) -> None:
-        if self.text_input is not None:
-            if (
-                self.text_input.purpose is TextPurpose.COMMAND
-                and self.text_input.value == "/"
-                and text == "/"
-            ):
-                return
-            self.text_input.append(text)
+        self._input.on_text(text)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
-        del modifiers
-        self.key_state.release(symbol)
+        self._input.on_key_release(symbol, modifiers)
 
     def on_deactivate(self) -> None:
-        self.key_state.clear()
-        if self.mouse_captured:
-            self.mouse_captured = False
-            self.set_exclusive_mouse(False)
+        self._input.on_deactivate()
 
     def on_activate(self) -> None:
-        self._sync_mouse_capture()
+        self._input.on_activate()
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
-        if self.text_input is not None:
-            return
-        if not self.menu.in_game:
-            if hasattr(self, "ui_renderer") and self.ui_renderer:
-                if self.ui_renderer.on_mouse_press(x, y, button, modifiers):
-                    self._play_ui_sound()
-            return
-        if self.menu.in_game and self.inventory_open:
-            crafting_slot = self._crafting_slot_at(x, y)
-            if crafting_slot is not None:
-                self._handle_crafting_click(crafting_slot, button)
-            elif self._crafting_result_at(x, y):
-                self._take_crafting_result()
-            elif (slot := self._inventory_slot_at(x, y)) is not None:
-                self._handle_inventory_click(
-                    slot,
-                    button,
-                    quick_move=bool(modifiers & key.MOD_SHIFT),
-                )
-            return
-        if not self.menu.in_game or not self.mouse_captured or self.inventory_open:
-            return
-        if button == mouse.LEFT:
-            target = self.entities.target_mob(self.camera.position, self.camera.direction)
-            if target is not None:
-                kind = self.entities.world.mob_ai[target].kind.value
-                drops = self.entities.damage(target, 4.0, self.player.eye_position)
-                self.audio.emit(
-                    AudioEvent(
-                        AudioEventKind.SOUND,
-                        f"mob.{kind}_{'death' if drops else 'hurt'}",
-                        self.entities.world.transforms[target].position,
-                    )
-                )
-                self.inventory_status = "Mob defeated" if drops else "Hit mob"
-                return
-        hit = self.world_renderer.raycast(self.camera.position, self.camera.direction)
-        structure_hit = self.structure_world.raycast_entity(
-            self.camera.position,
-            self.camera.direction,
-        )
-        if (
-            button == mouse.RIGHT
-            and structure_hit is not None
-            and (hit is None or structure_hit[1] < hit.distance)
-        ):
-            self._toggle_structure(structure_hit[0])
-            return
-        if hit is None:
-            return
-        if button == mouse.LEFT:
-            block_id = self.world_renderer.get_block(*hit.block)
-            if self.world_renderer.registry.by_id(block_id).is_fluid:
-                self.inventory_status = "Water cannot be mined"
-                return
-            if self.world_renderer.set_block(hit.block, 0):
-                self._play_block_sound(block_id, hit.block)
-                self._send_block_action(hit.block, 0)
-                drop = self.item_registry.drop_for_block(block_id)
-                if drop is not None:
-                    self.entities.spawn_item(
-                        (
-                            float(hit.block[0]) + 0.5,
-                            float(hit.block[1]) + 0.5,
-                            float(hit.block[2]) + 0.5,
-                        ),
-                        drop,
-                    )
-        elif button == mouse.RIGHT:
-            if self.world_renderer.get_block(*hit.block) == 10:
-                self._open_inventory(3)
-                self._sync_mouse_capture()
-                return
-            selected = self.hotbar.selected
-            if selected is None or self.player.intersects_block(hit.previous):
-                return
-            definition = self.item_registry.by_id(selected.item_id)
-            if definition.block_id is None:
-                return
-            if self.world_renderer.set_block(hit.previous, definition.block_id):
-                self._play_block_sound(definition.block_id, hit.previous)
-                self._send_block_action(hit.previous, definition.block_id)
-                self.inventory.take_from_slot(self.hotbar.selected_index)
+        self._input.on_mouse_press(x, y, button, modifiers)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
-        del x, y, scroll_x
-        if self.text_input is not None:
-            return
-        if self.menu.screen is Screen.SINGLEPLAYER:
-            # navigate world list with scroll
-            if scroll_y > 0:
-                self.world_list_index = max(0, self.world_list_index - 1)
-            elif scroll_y < 0:
-                self.world_list_index = min(
-                    max(0, len(self.world_list_items) - 1), self.world_list_index + 1
-                )
-            return
-        if self.menu.in_game and not self.inventory_open and scroll_y:
-            self.hotbar.cycle(-1 if scroll_y > 0 else 1)
+        self._input.on_mouse_scroll(x, y, scroll_x, scroll_y)
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
-        if not self.menu.in_game:
-            if hasattr(self, "ui_renderer") and self.ui_renderer:
-                self.ui_renderer.on_mouse_release(x, y, button, modifiers)
+        self._input.on_mouse_release(x, y, button, modifiers)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
-        self.mouse_x = x
-        self.mouse_y = y
-        if self.text_input is not None:
-            return
-        if not self.menu.in_game:
-            if hasattr(self, "ui_renderer") and self.ui_renderer:
-                if self.ui_renderer.on_mouse_motion(x, y, dx, dy):
-                    self._play_ui_sound()
-            return
-        if self.mouse_captured:
-            self.camera.rotate(
-                float(dx),
-                float(dy),
-                self.settings.camera.mouse_sensitivity,
-            )
+        self._input.on_mouse_motion(x, y, dx, dy)
 
     def _draw_menu(self) -> None:
         center_x = self.width // 2
