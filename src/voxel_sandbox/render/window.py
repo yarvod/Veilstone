@@ -519,9 +519,11 @@ class GameWindow(pyglet.window.Window):
         self.debug_shader.reload_if_changed()
 
     def _is_solid_combined(self, x: int, y: int, z: int) -> bool:
-        return self.world_renderer.is_solid_block(x, y, z) or self.structure_world.is_solid_cell(
-            x, y, z
-        )
+        if self.world_renderer.is_solid_block(x, y, z):
+            return True
+        if hasattr(self, "structure_world") and self.structure_world.is_solid_cell(x, y, z):
+            return True
+        return False
 
     def _is_fluid_at(self, x: int, y: int, z: int) -> bool:
         block_id = self.world_renderer.get_block(x, y, z)
@@ -1696,6 +1698,7 @@ class GameWindow(pyglet.window.Window):
             self._is_entity_hazard,
             hostile_count=hostile_count,
             hostile_spawn_allowed=self._hostile_spawn_allowed,
+            is_solid=self._is_solid_combined,
         )
 
     def _hostile_spawn_allowed(self, x: int, y: int, z: int) -> bool:

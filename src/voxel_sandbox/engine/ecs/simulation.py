@@ -70,6 +70,7 @@ class EntitySimulation:
         passive_count: int = 3,
         hostile_count: int = 1,
         hostile_spawn_allowed: Callable[[int, int, int], bool] | None = None,
+        is_solid: Callable[[int, int, int], bool] | None = None,
     ) -> None:
         counts = {MobKind.PASSIVE: 0, MobKind.HOSTILE: 0}
         for entity, ai in tuple(self.world.mob_ai.items()):
@@ -94,6 +95,9 @@ class EntitySimulation:
                 ground = ground_height(block_x, block_z)
                 if is_hazard(block_x, ground, block_z):
                     continue
+                if is_solid is not None:
+                    if is_solid(block_x, ground, block_z) or is_solid(block_x, ground + 1, block_z):
+                        continue
                 if (
                     kind is MobKind.HOSTILE
                     and hostile_spawn_allowed is not None
@@ -161,11 +165,13 @@ class EntitySimulation:
             ai.attack_cooldown = max(0.0, ai.attack_cooldown - delta_time)
             ai.state_time -= delta_time
             speed = 0.0
-            if ai.kind is MobKind.HOSTILE and distance <= 1.5:
+            dy = player_position[1] - transform.y
+            if ai.kind is MobKind.HOSTILE and distance <= 1.5 and abs(dy) <= 2.0:
                 ai.state = MobState.ATTACK
                 if ai.attack_cooldown == 0.0:
                     player_damage += 2.0
                     ai.attack_cooldown = 1.0
+                    animation.state_phase = 0.0
             elif ai.kind is MobKind.HOSTILE and distance <= 14.0:
                 ai.state = MobState.CHASE
                 ai.direction_x, ai.direction_z = _normalized(dx, dz)
@@ -221,9 +227,24 @@ class EntitySimulation:
                         transform.x = next_x
                         transform.z = next_z
                     else:
-                        ai.direction_x *= -1.0
-                        ai.direction_z *= -1.0
-                        ai.state_time = 0.5
+                        avoided = False
+                        for turn_angle in (0.7, -0.7, 1.4, -1.4):
+                            cos_a = math.cos(turn_angle)
+                            sin_a = math.sin(turn_angle)
+                            new_dx = ai.direction_x * cos_a - ai.direction_z * sin_a
+                            new_dz = ai.direction_x * sin_a + ai.direction_z * cos_a
+                            alt_x = transform.x + new_dx * speed * delta_time
+                            alt_z = transform.z + new_dz * speed * delta_time
+                            if not _mob_collides(alt_x, transform.y, alt_z, collider, is_solid):
+                                ai.direction_x, ai.direction_z = new_dx, new_dz
+                                transform.x = alt_x
+                                transform.z = alt_z
+                                avoided = True
+                                break
+                        if not avoided:
+                            ai.direction_x *= -1.0
+                            ai.direction_z *= -1.0
+                            ai.state_time = 0.5
                 else:
                     transform.x = next_x
                     transform.z = next_z
@@ -415,8 +436,8 @@ def _update_vertical(
     block_z = math.floor(transform.z)
     in_water = is_fluid(block_x, math.floor(transform.y + 0.35), block_z)
     if in_water:
-        velocity.y = min(3.0, velocity.y + 16.0 * delta_time)
-        velocity.y *= max(0.0, 1.0 - 2.5 * delta_time)
+        target_float_speed = 1.5
+        velocity.y += (target_float_speed - velocity.y) * min(1.0, 5.0 * delta_time)
     else:
         velocity.y = max(-24.0, velocity.y - 20.0 * delta_time)
     displacement = velocity.y * delta_time
