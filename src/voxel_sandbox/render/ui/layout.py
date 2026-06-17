@@ -20,9 +20,10 @@ class VBox(Panel):
         if not self.children:
             return
 
-        total_child_height = sum(c.bounds.height for c in self.children) + self.spacing * (
-            len(self.children) - 1
-        )
+        total_child_height = sum(
+            (c.bounds.height if c.bounds.height > 0 else self.theme.button_height)
+            for c in self.children
+        ) + self.spacing * max(0, len(self.children) - 1)
 
         # Start placing from the top, moving downwards. (In Pyglet, Y is up, so top is higher Y)
         # We center the whole block vertically by default if it fits
@@ -64,9 +65,10 @@ class HBox(Panel):
         if not self.children:
             return
 
-        total_child_width = sum(c.bounds.width for c in self.children) + self.spacing * (
-            len(self.children) - 1
-        )
+        total_child_width = sum(
+            (c.bounds.width if c.bounds.width > 0 else self.theme.button_width)
+            for c in self.children
+        ) + self.spacing * max(0, len(self.children) - 1)
 
         # Start placing from the left, moving right
         if self.alignment == "center":

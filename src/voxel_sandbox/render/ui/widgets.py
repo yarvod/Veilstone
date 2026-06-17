@@ -37,6 +37,9 @@ class Widget:
         return self.hovered != was_hovered
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool:
+        from pyglet.window import mouse
+        if button != mouse.LEFT:
+            return False
         if self.contains(x, y) and self.enabled:
             self.pressed = True
             return True
@@ -254,6 +257,8 @@ class WorldCard(Widget):
         super().__init__(theme)
         self.name = name
         self.is_selected = is_selected
+        self.bounds.width = theme.button_width + 180
+        self.bounds.height = theme.button_height
         self._rect = pyglet.shapes.BorderedRectangle(
             0,
             0,

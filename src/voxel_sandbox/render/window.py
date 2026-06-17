@@ -216,6 +216,8 @@ class GameWindow(pyglet.window.Window):
             font_name=UI_FONT_NAME,
             font_size=11,
             color=(255, 255, 255, 255),
+            batch=self.hud_batch,
+            group=self.hud_text_group,
         )
         self.player_name_label = pyglet.text.Label(
             "",
