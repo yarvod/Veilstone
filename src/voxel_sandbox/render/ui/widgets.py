@@ -72,15 +72,25 @@ class Label(Widget):
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y
         self.font_size = font_size or theme.body_size
-        self.color = color or theme.text_color
+        self._color = color or theme.text_color
         self._label = pyglet.text.Label(
             text,
             font_name=theme.font_name,
             font_size=self.font_size,
-            color=self.color,
+            color=self._color,
             anchor_x=anchor_x,
             anchor_y=anchor_y,
         )
+
+    @property
+    def color(self) -> tuple[int, int, int, int]:
+        return self._color
+
+    @color.setter
+    def color(self, value: tuple[int, int, int, int]) -> None:
+        if self._color != value:
+            self._color = value
+            self._label.color = value
 
     @property
     def text(self) -> str:
@@ -287,14 +297,20 @@ class WorldCard(Widget):
             return
 
         if self.is_selected:
+            self._rect.color = self.theme.button_hover_color
             self._rect.border_color = self.theme.accent_color
             self._rect.opacity = 255
+            self._label.color = self.theme.accent_color
         elif self.hovered:
+            self._rect.color = self.theme.button_color
             self._rect.border_color = self.theme.button_hover_color
             self._rect.opacity = 255
+            self._label.color = self.theme.text_color
         else:
+            self._rect.color = self.theme.panel_color
             self._rect.border_color = self.theme.panel_border_color
             self._rect.opacity = 200
+            self._label.color = self.theme.muted_text_color
 
         if batch is not None:
             self._rect.batch = batch

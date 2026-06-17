@@ -907,27 +907,34 @@ class GameWindow(pyglet.window.Window):
                 self.text_input = None
             elif symbol == key.BACKSPACE:
                 self.text_input.backspace()
-            elif symbol in {key.UP, key.W}:
-                # navigate world list in singleplayer
-                if self.menu.screen is Screen.SINGLEPLAYER:
-                    self.world_list_index = max(0, self.world_list_index - 1)
-            elif symbol in {key.DOWN, key.S}:
-                if self.menu.screen is Screen.SINGLEPLAYER:
-                    self.world_list_index = min(
-                        max(0, len(self.world_list_items) - 1), self.world_list_index + 1
-                    )
             self._sync_mouse_capture()
             return
         if not self.menu.in_game:
             if symbol in {key.UP, key.W}:
-                self.menu.move_selection(-1)
+                if self.menu.screen is Screen.SINGLEPLAYER and self.world_list_items:
+                    self.world_list_index = max(0, self.world_list_index - 1)
+                else:
+                    self.menu.move_selection(-1)
                 self._play_ui_sound()
             elif symbol in {key.DOWN, key.S}:
-                self.menu.move_selection(1)
+                if self.menu.screen is Screen.SINGLEPLAYER and self.world_list_items:
+                    self.world_list_index = min(
+                        len(self.world_list_items) - 1, self.world_list_index + 1
+                    )
+                else:
+                    self.menu.move_selection(1)
                 self._play_ui_sound()
             elif symbol in {key.ENTER, key.RETURN, key.SPACE}:
                 self._play_ui_sound()
-                self._handle_menu_command(self.menu.activate())
+                if (
+                    self.menu.screen is Screen.SINGLEPLAYER
+                    and self.world_list_items
+                    and 0 <= self.world_list_index < len(self.world_list_items)
+                ):
+                    name, _ = self.world_list_items[self.world_list_index]
+                    self.load_world(name)
+                else:
+                    self._handle_menu_command(self.menu.activate())
             elif symbol == key.ESCAPE:
                 self._play_ui_sound()
                 self.menu.back()
@@ -1145,11 +1152,11 @@ class GameWindow(pyglet.window.Window):
             self._handle_menu_command(self.menu.activate())
 
         self.ui_renderer.update(self.menu, self._menu_item_label, on_item_click)
-        self.ui_renderer.draw()
 
-        # If we're on the singleplayer world screen, draw a selectable world list below the buttons
         if self.menu.screen is Screen.SINGLEPLAYER:
             self._draw_world_list(center_x)
+
+        self.ui_renderer.draw()
         if self.text_input is not None:
             self._draw_text_input_modal()
         elif self.text_input is None:
@@ -1203,7 +1210,7 @@ class GameWindow(pyglet.window.Window):
                 self.load_world(name)
         
         def on_create():
-            self._handle_menu_command("create_world")
+            self._handle_menu_command(MenuCommand.CREATE_WORLD)
 
         def on_edit():
             if self.world_list_items and 0 <= self.world_list_index < count:
@@ -1224,7 +1231,7 @@ class GameWindow(pyglet.window.Window):
                 )
                 
         def on_cancel():
-            self._handle_menu_command("main_menu")
+            self.menu.back()
 
         if count == 0:
             self.ui_renderer.update_world_list([], -1, on_select, on_play, on_create, on_edit, on_delete, on_cancel)

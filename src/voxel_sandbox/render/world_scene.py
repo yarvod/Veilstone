@@ -329,6 +329,12 @@ class DemoWorldRenderer:
             for loaded_chunk in batch.loaded:
                 for chunk in self._relight_neighborhood((loaded_chunk.coord,)):
                     affected_chunks[chunk.coord] = chunk
+                for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    nc = ChunkCoord(loaded_chunk.coord.x + dx, loaded_chunk.coord.z + dz)
+                    if nc not in affected_chunks:
+                        neighbor = self.streamer.get_chunk(nc)
+                        if neighbor is not None:
+                            affected_chunks[nc] = neighbor
             for unloaded_coord in batch.unloaded:
                 for chunk in self._relight_neighborhood((unloaded_coord,)):
                     affected_chunks[chunk.coord] = chunk

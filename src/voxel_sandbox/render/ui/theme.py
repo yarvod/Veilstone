@@ -1,4 +1,9 @@
+import sys
 from dataclasses import dataclass
+
+
+def _platform_font() -> str:
+    return "Segoe UI" if sys.platform == "win32" else "Menlo"
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,7 +28,7 @@ class UiTheme:
 
 # Veilstone style: dark slate/stone, warm gold accent, soft borders
 VEILSTONE_THEME = UiTheme(
-    font_name="Minecraft",
+    font_name=_platform_font(),
     title_size=38,
     body_size=16,
     button_width=300,
