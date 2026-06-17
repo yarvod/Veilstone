@@ -131,3 +131,26 @@ Bypassing the network layer and directly mutating the local world state via a `L
 - [x] Multiplayer / "Open to LAN" remains functional.
 - [x] Existing protocol and multiplayer tests pass.
 
+### UPERF-007: Remesh/Relight Granularity
+
+Status: doing
+Priority: P2
+Area: render
+
+#### Problem
+Changing a single block indiscriminately triggers relighting or remeshing for entire 3x3 chunk neighborhoods, causing major spikes in frame time during building/mining.
+
+#### Hypothesis
+Using dirty section queues to carefully selectively remesh only the modified section (and adjacent sections if the block touches a border) without full chunk relights for non-light-emitting blocks will eliminate spikes during block placement/breaking.
+
+#### Plan
+- [ ] Implement dirty section queue (`dirty_opaque_sections`, `dirty_water_sections`).
+- [ ] Only mark neighbor sections dirty if a block touches their border.
+- [ ] Skip lighting update if a block change (solid -> air) does not affect light sources or transparency.
+- [ ] Process dirty queues incrementally per frame.
+
+#### Acceptance
+- [ ] Breaking/placing blocks does not cause a massive FPS spike.
+- [ ] Visual boundaries update correctly.
+- [ ] Lighting rules stay intact for skylight/lanterns.
+
