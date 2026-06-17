@@ -74,6 +74,7 @@ class UiRenderer:
         if len(self.world_cards) != len(worlds) or any(
             c.name != w[0] for c, w in zip(self.world_cards, worlds)
         ):
+            self.batch = pyglet.graphics.Batch()
             self.world_cards.clear()
             self.world_list_vbox.children.clear()
             for i, w in enumerate(worlds):
@@ -110,6 +111,7 @@ class UiRenderer:
     def _rebuild_tree(
         self, menu: MenuController, on_item_click: Callable[[int], None] | None
     ) -> None:
+        self.batch = pyglet.graphics.Batch()
         self.root_panel.children.clear()
         self.vbox.children.clear()
         self.buttons.clear()
@@ -155,7 +157,8 @@ class UiRenderer:
             self.vbox.layout(0, 0, self.width, self.height)
 
     def draw(self) -> None:
-        self.root_panel.draw()
+        self.root_panel.draw(self.batch)
+        self.batch.draw()
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool:
         return self.root_panel.on_mouse_motion(x, y, dx, dy)

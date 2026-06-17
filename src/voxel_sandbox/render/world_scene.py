@@ -558,8 +558,23 @@ class DemoWorldRenderer:
         return relight_chunks(chunks, self.registry)
 
     def _schedule_chunk(self, chunk: Chunk) -> None:
+        tasks = {}
         for section_y, section in enumerate(chunk.sections):
-            self._schedule_section(SectionCoord(chunk.coord.x, section_y, chunk.coord.z), chunk)
+            key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
+            if not np.any(section.blocks):
+                self.mesh_cache.remove(key)
+                self.water_mesh_cache.remove(key)
+                continue
+            tasks[key] = self._build_neighborhood(key)
+        
+        if tasks:
+            self.mesh_worker.submit_chunk(
+                chunk.coord,
+                tasks,
+                greedy=self.greedy_meshing,
+                smooth_lighting=self.smooth_lighting,
+                ambient_occlusion=self.ambient_occlusion,
+            )
 
     def _schedule_section(self, key: SectionCoord, chunk: Chunk | None = None) -> None:
         if chunk is None:
