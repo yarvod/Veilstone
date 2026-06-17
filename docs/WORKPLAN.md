@@ -43,10 +43,10 @@
 - [x] Dispatch events → контроллерам через callbacks
 - [x] Тесты: unit (42 теста)
 
-### 1.3 NetworkController (~12 методов)
-- [ ] Извлечь connect_remote, process_network_*, sync_remote_*
-- [ ] Извлечь lan_*, open_to_lan, _send_block_action
-- [ ] Тесты: unit + integration
+### 1.3 NetworkController (~12 методов) ✅
+- [x] Извлечь connect_remote, process_network_*, sync_remote_*
+- [x] Извлечь lan_*, open_to_lan, _send_block_action
+- [x] Тесты: unit (33 теста)
 
 ### 1.4 WorldManager (~8 методов)
 - [ ] Извлечь create_world, load_world, switch_world, save_player

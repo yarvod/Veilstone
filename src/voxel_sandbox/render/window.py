@@ -57,6 +57,7 @@ from voxel_sandbox.render.input_state import (
     KeyState,
     configure_layout_independent_game_keys,
 )
+from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
@@ -501,6 +502,7 @@ class GameWindow(pyglet.window.Window):
         self.world_list_last_click = 0.0
         self.world_list_items: list[tuple[str, Path]] = list(self._saved_worlds())
         self._world_list_cache_time = time.perf_counter()
+        self._net = NetworkController(self)
         self._start_local_authority()
         if connect is not None:
             self._connect_remote(connect, player_name)
@@ -1845,197 +1847,26 @@ class GameWindow(pyglet.window.Window):
             self.lan_server.save()
 
     def _connect_remote(self, target: str, player_name: str) -> None:
-        host, separator, raw_port = target.rpartition(":")
-        if not separator or not host:
-            raise ValueError("Connect address must use HOST:PORT")
-        session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
-        joined = session.connect(host, int(raw_port), name=player_name[:32] or "Player")
-        self._stop_network_services()
-        self.network_session = session
-        self.structure_world = StructureWorld()
-        self.authority = NetworkWorldAuthority(session, self.structure_world)
-        self.world_renderer.enable_remote_mode()
-        self.last_structure_revision = -1
-        self._replace_structure_snapshots(
-            joined.get("structures", []),
-            joined.get("structure_revision", 0),
-        )
-        self.inventory_status = f"Connected as player {joined['player_id']}"
-        self.authority.request_chunk(0, 0)
-        self.requested_remote_chunks.add(ChunkCoord(0, 0))
-        self.menu.screen = Screen.GAME
-        self._sync_mouse_capture()
+        self._net.connect_remote(target, player_name)
 
     def _process_network_messages(self) -> None:
-        assert self.network_session is not None
-        for message in self.network_session.poll():
-            self._apply_network_message(message)
+        self._net.process_messages()
 
     def _apply_network_message(self, message: Message) -> None:
-        message_type = message.get("type")
-        if message_type == "chunk":
-            coord = message.get("coord")
-            payload = message.get("blocks")
-            if (
-                isinstance(coord, list)
-                and len(cast(list[object], coord)) == 2
-                and all(isinstance(value, int) for value in cast(list[object], coord))
-                and isinstance(payload, bytes)
-            ):
-                values = cast(list[int], coord)
-                self.world_renderer.install_remote_chunk(
-                    decode_chunk_blocks(ChunkCoord(values[0], values[1]), payload)
-                )
-                self.remote_chunks_received += 1
-        elif message_type == "block_delta":
-            position = message.get("position")
-            block_id = message.get("block_id")
-            if (
-                isinstance(position, list)
-                and len(cast(list[object], position)) == 3
-                and all(isinstance(value, int) for value in cast(list[object], position))
-                and isinstance(block_id, int)
-            ):
-                values = cast(list[int], position)
-                self.world_renderer.set_block((values[0], values[1], values[2]), block_id)
-        elif message_type == "entity_snapshot":
-            players = message.get("players")
-            sequence = message.get("sequence", 0)
-            full = message.get("full", True)
-            removed = message.get("removed", [])
-            if (
-                isinstance(players, dict)
-                and isinstance(sequence, int)
-                and sequence > self.last_snapshot_sequence
-            ):
-                self.last_snapshot_sequence = sequence
-                normalized_players = self._normalize_network_players(players)
-                if full is True:
-                    self.network_players = normalized_players
-                else:
-                    self.network_players.update(normalized_players)
-                    if isinstance(removed, list):
-                        for player_id in cast(list[object], removed):
-                            if isinstance(player_id, int):
-                                self.network_players.pop(player_id, None)
-                self._sync_remote_players(self.network_players)
-        elif message_type == "structure_snapshot":
-            self._replace_structure_snapshots(
-                message.get("structures", []),
-                message.get("revision", 0),
-            )
-        elif message_type == "chat":
-            self.inventory_status = f"Chat: {message.get('text', '')}"
-        elif message_type == "session_reconnecting":
-            self.inventory_status = "Connection interrupted; reconnecting..."
-        elif message_type == "session_reconnected":
-            self.last_snapshot_sequence = 0
-            self.network_players.clear()
-            self.requested_remote_chunks.clear()
-            joined = message.get("joined")
-            if isinstance(joined, dict):
-                self.last_structure_revision = -1
-                self._replace_structure_snapshots(
-                    joined.get("structures", []),
-                    joined.get("structure_revision", 0),
-                )
-            self.inventory_status = "Reconnected to server"
-            self._request_remote_chunk()
-        elif message_type == "session_disconnected":
-            assert self.network_session is not None
-            self.network_session.close()
-            self.network_session = None
-            for entity in self.remote_player_entities.values():
-                self.entities.world.destroy(entity)
-            self.remote_player_entities.clear()
-            self.remote_player_interpolation.clear()
-            self.menu.screen = Screen.MULTIPLAYER
-            self.menu.status = "Disconnected: reconnect attempts exhausted."
-            self._sync_mouse_capture()
+        self._net.apply_message(message)
 
     @staticmethod
     def _normalize_network_players(raw_players: object) -> dict[int, dict[str, object]]:
-        if not isinstance(raw_players, dict):
-            return {}
-        players: dict[int, dict[str, object]] = {}
-        for raw_id, raw_player in cast(dict[object, object], raw_players).items():
-            if isinstance(raw_id, int) and isinstance(raw_player, dict):
-                players[raw_id] = {
-                    str(key_name): value
-                    for key_name, value in cast(dict[object, object], raw_player).items()
-                }
-        return players
+        return NetworkController.normalize_players(raw_players)
 
     def _sync_remote_players(self, players: dict[int, dict[str, object]]) -> None:
-        local_id = self.network_session.player_id if self.network_session is not None else None
-        visible_ids: set[int] = set()
-        for raw_id, raw_player in players.items():
-            player = raw_player
-            position = player.get("position")
-            if not isinstance(position, list) or len(cast(list[object], position)) != 3:
-                continue
-            values = cast(list[object], position)
-            if not all(isinstance(value, int | float) for value in values):
-                continue
-            coordinates = cast(list[int | float], values)
-            position_tuple = (
-                float(coordinates[0]),
-                float(coordinates[1]),
-                float(coordinates[2]),
-            )
-            if raw_id == local_id:
-                continue
-            entity = self.remote_player_entities.get(raw_id)
-            if entity is None:
-                entity = self.entities.world.create()
-                self.remote_player_entities[raw_id] = entity
-                self.remote_player_interpolation[raw_id] = SnapshotInterpolator()
-                self.entities.world.render_models.set(
-                    entity,
-                    RenderModel("remote_player", (0.72, 0.58, 0.88), (0.65, 1.8, 0.65)),
-                )
-                self.entities.world.transforms.set(
-                    entity,
-                    Transform(float(coordinates[0]), float(coordinates[1]), float(coordinates[2])),
-                )
-                self.entities.world.animations.set(entity, AnimationState())
-            animation = self.entities.world.animations.get(entity)
-            transform = self.entities.world.transforms.get(entity)
-            raw_yaw = player.get("yaw", 0.0)
-            if transform is not None and isinstance(raw_yaw, int | float):
-                transform.yaw = float(raw_yaw)
-            if animation is not None:
-                raw_phase = player.get("animation_phase", 0.0)
-                animation.phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0
-                animation.speed = 1.8 if player.get("animation_state") == "walk" else 0.0
-            self.remote_player_interpolation[raw_id].push(
-                time.monotonic(),
-                position_tuple,
-            )
-            visible_ids.add(raw_id)
-        for player_id in set(self.remote_player_entities) - visible_ids:
-            self.entities.world.destroy(self.remote_player_entities.pop(player_id))
-            self.remote_player_interpolation.pop(player_id, None)
+        self._net.sync_remote_players(players)
 
     def _update_remote_players(self) -> None:
-        now = time.monotonic()
-        for player_id, interpolation in self.remote_player_interpolation.items():
-            position = interpolation.sample(now)
-            entity = self.remote_player_entities.get(player_id)
-            if position is None or entity is None:
-                continue
-            transform = self.entities.world.transforms.get(entity)
-            if transform is not None:
-                transform.x, transform.y, transform.z = position
+        self._net.update_remote_players()
 
     def _send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
-        if self.authority is not None:
-            try:
-                self.authority.apply_block_action(block, block_id)
-            except (ConnectionError, OSError):
-                self.inventory_status = "Block action pending reconnect"
-        elif self.lan_server is not None:
-            self.lan_server.apply_block_action(block, block_id)
+        self._net.send_block_action(block, block_id)
 
     def _toggle_structure(self, entity_id: int) -> None:
         if self.world_renderer.remote_mode and self.authority is not None:
@@ -2056,95 +1887,16 @@ class GameWindow(pyglet.window.Window):
                 self.inventory_status = f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
 
     def open_to_lan(self) -> None:
-        if self.lan_server is not None:
-            self.menu.status = f"World already open to LAN on port {self.lan_server.address[1]}"
-            return
-        if self.network_session is not None:
-            self.menu.status = "Cannot open a multiplayer game to LAN."
-            return
-        self.world_renderer.autosave()
-        
-        if self.world_renderer.storage is not None:
-            self.world_renderer.storage.save_structure_world(self.structure_world)
-        
-        server = LanServer(
-            "0.0.0.0",
-            25565,
-            seed=self.world_renderer.seed_text,
-            storage=self.world_renderer.storage,
-            block_action_sink=lambda position, block_id: self.lan_block_actions.put((position, block_id)),
-        )
-        server.start()
-        self.lan_server = server
-        
-        session = ClientSession(auto_reconnect=True, reconnect_attempts=10, reconnect_delay=0.1)
-        try:
-            session.connect(
-                "127.0.0.1",
-                server.address[1],
-                name=self.player_name,
-                position=(self.player.x, self.player.y, self.player.z),
-            )
-        except OSError as error:
-            server.stop()
-            self.menu.status = f"Failed to connect to local server: {error}"
-            self.lan_server = None
-            return
-            
-        self.network_session = session
-        self.authority = NetworkWorldAuthority(session, self.structure_world)
-        
-        try:
-            discovery = DiscoveryResponder(
-                "0.0.0.0",
-                25565,
-                world_name="Veilstone Singleplayer World",
-                game_port=self.lan_server.address[1],
-                player_count=lambda: self.lan_server.player_count if self.lan_server else 0,
-            )
-            discovery.start()
-        except OSError as error:
-            self.menu.status = f"Could not open LAN discovery port 25565: {error}"
-            return
-        self.lan_discovery = discovery
-        self.menu.world_open_to_lan = True
-        self.menu.status = f"Open to LAN on port {self.lan_server.address[1]}"
+        self._net.open_to_lan()
 
     def _apply_lan_block_actions(self) -> None:
-        while True:
-            try:
-                block, block_id = self.lan_block_actions.get_nowait()
-            except queue.Empty:
-                return
-            self.world_renderer.set_block(block, block_id)
+        self._net.apply_lan_block_actions()
 
     def _start_local_authority(self) -> None:
-        self.structure_world = (
-            self.world_renderer.storage.load_structure_world()
-            if self.world_renderer.storage is not None
-            else StructureWorld()
-        )
-        self.last_structure_revision = self.structure_world.revision
-        self.authority = LocalWorldAuthority(
-            self.structure_world,
-            lambda position, block_id: self.lan_block_actions.put((position, block_id))
-        )
+        self._net.start_local_authority()
 
     def _replace_structure_snapshots(self, raw_snapshots: object, raw_revision: object) -> None:
-        if not isinstance(raw_snapshots, list) or not isinstance(raw_revision, int):
-            return
-        if raw_revision < self.last_structure_revision:
-            return
-        if self.structure_world is None:
-            return
-        snapshots: list[StructureSnapshot] = []
-        for raw in cast("list[object]", raw_snapshots):
-            if not isinstance(raw, dict):
-                return
-            snapshots.append(cast("StructureSnapshot", raw))
-        self.structure_world.replace_from_snapshots(snapshots)
-        self.structure_world.revision = raw_revision
-        self.last_structure_revision = raw_revision
+        self._net.replace_structure_snapshots(raw_snapshots, raw_revision)
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
@@ -2249,32 +2001,10 @@ class GameWindow(pyglet.window.Window):
         return slug or "world"
 
     def _stop_network_services(self) -> None:
-        if self.network_session is not None:
-            self.network_session.close()
-            self.network_session = None
-        if self.lan_discovery is not None:
-            self.lan_discovery.stop()
-            self.lan_discovery = None
-        if self.lan_server is not None:
-            self.lan_server.stop()
-            self.lan_server = None
+        self._net.stop_services()
 
     def _request_remote_chunk(self) -> None:
-        if self.network_session is None:
-            return
-        center = ChunkCoord(int(self.player.x) // 16, int(self.player.z) // 16)
-        desired = [
-            ChunkCoord(center.x + dx, center.z + dz) for dx in range(-2, 3) for dz in range(-2, 3)
-        ]
-        for coord in sorted(
-            desired,
-            key=lambda item: (item.x - center.x) ** 2 + (item.z - center.z) ** 2,
-        ):
-            if coord in self.requested_remote_chunks:
-                continue
-            if self.authority is not None:
-                self.authority.request_chunk(coord.x, coord.z)
-            return
+        self._net.request_remote_chunk()
 
 
 def run_window(
