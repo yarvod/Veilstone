@@ -154,3 +154,26 @@ Using dirty section queues to carefully selectively remesh only the modified sec
 - [x] Visual boundaries update correctly.
 - [x] Lighting rules stay intact for skylight/lanterns.
 
+### UPERF-008: Mesh task batching
+
+Status: done
+Priority: P2
+Area: render
+
+#### Problem
+Section-level process tasks may be too fine-grained. IPC and serialization can negate multiprocessing benefits.
+
+#### Hypothesis
+Batching sections into chunks (`submit_chunk`) will reduce IPC overhead and improve overall sections/sec generated, especially on process backend.
+
+#### Plan
+- [x] Update `benchmark_mesher` to support testing section vs chunk batching across backends.
+- [x] Run benchmarks.
+- [x] Implement `submit_chunk` in `SectionMeshWorker` returning multiple sections.
+- [x] Switch `_schedule_chunk` to use `submit_chunk`.
+
+#### Acceptance
+- [x] Fewer futures generated.
+- [x] IPC overhead reduced, proven by benchmarks (process batching -> 1718 sections/sec vs 1650).
+- [x] Tests pass without regression.
+

@@ -6,7 +6,16 @@ from time import perf_counter
 
 from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
 from voxel_sandbox.engine.chunks import ChunkSection
+import time
+from collections.abc import Callable
+from statistics import mean
+
+from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
+from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
 from voxel_sandbox.render.meshes import MeshData, build_greedy_mesh, build_visible_face_mesh
+from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
+from voxel_sandbox.render.meshes.worker import SectionMeshWorker
+import numpy as np
 
 UVS = {
     "stone": (0.0, 0.0, 0.5, 0.5),
@@ -16,40 +25,60 @@ UVS = {
 }
 
 
-def create_benchmark_section() -> ChunkSection:
-    section = ChunkSection()
-    section.blocks[:, :8, :] = 1
-    return section
+def create_benchmark_neighborhood() -> MeshingNeighborhood:
+    blocks = np.zeros((20, 20, 20), dtype=np.uint16)
+    blocks[2:18, 2:10, 2:18] = 1
+    sky_light = np.zeros((20, 20, 20), dtype=np.uint8)
+    sky_light[2:18, 10:18, 2:18] = 15
+    block_light = np.zeros((20, 20, 20), dtype=np.uint8)
+    metadata = np.zeros((20, 20, 20), dtype=np.uint8)
+    return MeshingNeighborhood(blocks, sky_light, block_light, metadata)
 
 
-def run_benchmark(iterations: int = 25) -> int:
-    section = create_benchmark_section()
+def run_benchmark(iterations: int = 250) -> int:
     registry = create_core_block_registry()
-    visible_time, visible_mesh = _measure(build_visible_face_mesh, section, registry, iterations)
-    greedy_time, greedy_mesh = _measure(build_greedy_mesh, section, registry, iterations)
-    reduction = 1.0 - greedy_mesh.triangle_count / max(visible_mesh.triangle_count, 1)
-    print(
-        f"visible-face 16^3: avg={visible_time:.3f} ms "
-        f"faces={visible_mesh.face_count} triangles={visible_mesh.triangle_count}"
-    )
-    print(
-        f"greedy 16^3: avg={greedy_time:.3f} ms "
-        f"quads={greedy_mesh.face_count} triangles={greedy_mesh.triangle_count} "
-        f"reduction={reduction:.1%}"
-    )
+    neighborhood = create_benchmark_neighborhood()
+    
+    # 1. Single Section Mesh Time
+    start = time.perf_counter()
+    mesh = build_greedy_mesh(neighborhood, registry, UVS, smooth_lighting=False, ambient_occlusion=False)
+    single_mesh_time = (time.perf_counter() - start) * 1000.0
+    print(f"greedy 16^3 single section: {single_mesh_time:.3f} ms. Mesh bytes: {mesh.vertices.nbytes + mesh.indices.nbytes}")
+
+    # 2. Worker comparison
+    for backend in ["thread", "process"]:
+        worker = SectionMeshWorker(registry, UVS, workers=4, backend=backend) # type: ignore
+        
+        # Test individual sections (current)
+        start = time.perf_counter()
+        for i in range(iterations):
+            key = SectionCoord(i % 10, i % 16, i // 16)
+            worker.submit(key, neighborhood, greedy=True, smooth_lighting=False, ambient_occlusion=False)
+        
+        completed = 0
+        while completed < iterations:
+            results = worker.poll(100)
+            completed += len(results)
+            time.sleep(0.001)
+        duration = time.perf_counter() - start
+        print(f"{backend} backend, 1 section/future: {iterations / duration:.1f} sections/sec ({duration:.3f}s total)")
+        
+        # Test chunk batching
+        start = time.perf_counter()
+        chunks = iterations // 16
+        for i in range(chunks):
+            coord = ChunkCoord(i % 10, i // 10)
+            tasks = {SectionCoord(coord.x, y, coord.z): neighborhood for y in range(16)}
+            worker.submit_chunk(coord, tasks, greedy=True, smooth_lighting=False, ambient_occlusion=False)
+            
+        completed = 0
+        while completed < chunks * 16:
+            results = worker.poll(100)
+            completed += len(results)
+            time.sleep(0.001)
+        duration = time.perf_counter() - start
+        print(f"{backend} backend, 16 sections/future: {(chunks * 16) / duration:.1f} sections/sec ({duration:.3f}s total)")
+        
+        worker.close()
+    
     return 0
-
-
-def _measure(
-    builder: Callable[..., MeshData],
-    section: ChunkSection,
-    registry: BlockRegistry,
-    iterations: int,
-) -> tuple[float, MeshData]:
-    timings: list[float] = []
-    mesh = builder(section, registry, UVS)
-    for _ in range(iterations):
-        start = perf_counter()
-        mesh = builder(section, registry, UVS)
-        timings.append((perf_counter() - start) * 1000.0)
-    return mean(timings), mesh

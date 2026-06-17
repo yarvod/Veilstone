@@ -11,6 +11,7 @@ from voxel_sandbox.render.meshes.greedy import build_greedy_mesh
 from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
 from voxel_sandbox.render.meshes.visible_faces import build_visible_face_mesh
 from voxel_sandbox.render.meshes.water import build_water_mesh
+from voxel_sandbox.engine.chunks import ChunkCoord
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,11 +49,12 @@ class SectionMeshWorker:
         else:
             self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="meshing")
         self._pending: dict[SectionCoord, Future[CompletedMesh]] = {}
+        self._pending_chunks: dict[tuple[int, int], Future[tuple[CompletedMesh, ...]]] = {}
         self._revisions: dict[SectionCoord, int] = {}
 
     @property
     def pending_count(self) -> int:
-        return len(self._pending)
+        return len(self._pending) + len(self._pending_chunks)
 
     def submit(
         self,
@@ -89,10 +91,52 @@ class SectionMeshWorker:
                 ambient_occlusion,
             )
 
+    def submit_chunk(
+        self,
+        coord: ChunkCoord,
+        tasks: dict[SectionCoord, MeshingNeighborhood],
+        *,
+        greedy: bool,
+        smooth_lighting: bool,
+        ambient_occlusion: bool,
+    ) -> None:
+        batch_args = []
+        for key, neighborhood in tasks.items():
+            revision = self._revisions.get(key, 0) + 1
+            self._revisions[key] = revision
+            previous = self._pending.get(key)
+            if previous is not None:
+                previous.cancel()
+                del self._pending[key]
+            batch_args.append((key, revision, neighborhood))
+            
+        previous_chunk = self._pending_chunks.get((coord.x, coord.z))
+        if previous_chunk is not None:
+            previous_chunk.cancel()
+            
+        if self._backend == "process":
+            self._pending_chunks[(coord.x, coord.z)] = self._executor.submit(
+                _build_chunk_process_mesh,
+                tuple(batch_args),
+                greedy,
+                smooth_lighting,
+                ambient_occlusion,
+            )
+        else:
+            self._pending_chunks[(coord.x, coord.z)] = self._executor.submit(
+                self._build_chunk,
+                tuple(batch_args),
+                greedy,
+                smooth_lighting,
+                ambient_occlusion,
+            )
+
     def poll(self, limit: int) -> tuple[CompletedMesh, ...]:
         completed: list[CompletedMesh] = []
         for key, future in tuple(self._pending.items()):
-            if len(completed) >= limit or not future.done():
+            if len(completed) >= limit:
+                break
+            if not future.done():
                 continue
             del self._pending[key]
             if future.cancelled():
@@ -100,9 +144,27 @@ class SectionMeshWorker:
             result = future.result()
             if self._revisions.get(key) == result.revision:
                 completed.append(result)
+                
+        for key, future in tuple(self._pending_chunks.items()):
+            if len(completed) >= limit:
+                break
+            if not future.done():
+                continue
+            del self._pending_chunks[key]
+            if future.cancelled():
+                continue
+            results = future.result()
+            for result in results:
+                if self._revisions.get(result.key) == result.revision:
+                    completed.append(result)
+                    
         return tuple(completed)
 
     def invalidate_chunk(self, chunk_x: int, chunk_z: int) -> None:
+        chunk_future = self._pending_chunks.pop((chunk_x, chunk_z), None)
+        if chunk_future is not None:
+            chunk_future.cancel()
+            
         for key in tuple(self._revisions):
             if key.x != chunk_x or key.z != chunk_z:
                 continue
@@ -114,8 +176,11 @@ class SectionMeshWorker:
     def close(self) -> None:
         for future in self._pending.values():
             future.cancel()
+        for future in self._pending_chunks.values():
+            future.cancel()
         self._executor.shutdown(wait=True, cancel_futures=True)
         self._pending.clear()
+        self._pending_chunks.clear()
 
     def _build(
         self,
@@ -136,6 +201,20 @@ class SectionMeshWorker:
         )
         transparent_mesh = build_water_mesh(neighborhood, self.registry, self.texture_uvs)
         return CompletedMesh(key, revision, mesh, transparent_mesh)
+
+    def _build_chunk(
+        self,
+        tasks: tuple[tuple[SectionCoord, int, MeshingNeighborhood], ...],
+        greedy: bool,
+        smooth_lighting: bool,
+        ambient_occlusion: bool,
+    ) -> tuple[CompletedMesh, ...]:
+        results = []
+        for key, revision, neighborhood in tasks:
+            results.append(
+                self._build(key, revision, neighborhood, greedy, smooth_lighting, ambient_occlusion)
+            )
+        return tuple(results)
 
 
 _process_registry: BlockRegistry | None = None
@@ -175,6 +254,22 @@ def _build_process_mesh(
         _process_texture_uvs,
     )
     return CompletedMesh(key, revision, mesh, transparent_mesh)
+
+
+def _build_chunk_process_mesh(
+    tasks: tuple[tuple[SectionCoord, int, MeshingNeighborhood], ...],
+    greedy: bool,
+    smooth_lighting: bool,
+    ambient_occlusion: bool,
+) -> tuple[CompletedMesh, ...]:
+    results = []
+    for key, revision, neighborhood in tasks:
+        results.append(
+            _build_process_mesh(
+                key, revision, neighborhood, greedy, smooth_lighting, ambient_occlusion
+            )
+        )
+    return tuple(results)
 
 
 def _warm_process_pool(executor: Executor, workers: int) -> None:
