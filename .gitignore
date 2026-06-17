@@ -130,3 +130,8 @@ assets/**/.DS_Store
 
 # Keep empty folders when needed
 !.gitkeep
+
+# Serena MCP — commit project.yml only; ignore generated/local artifacts
+.serena/cache/
+.serena/memories/
+.serena/project.local.yml
