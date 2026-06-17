@@ -489,6 +489,7 @@ class GameWindow(pyglet.window.Window):
         self.world_list_index = 0
         self.world_list_last_click = 0.0
         self.world_list_items: list[tuple[str, Path]] = list(self._saved_worlds())
+        self._world_list_cache_time = time.perf_counter()
         self._start_local_authority()
         if connect is not None:
             self._connect_remote(connect, player_name)
@@ -1203,8 +1204,14 @@ class GameWindow(pyglet.window.Window):
 
         self._draw_text_input()
 
+    def _refresh_world_list(self) -> None:
+        now = time.perf_counter()
+        if now - self._world_list_cache_time > 2.0:
+            self.world_list_items = list(self._saved_worlds())
+            self._world_list_cache_time = now
+
     def _draw_world_list(self, center_x: int) -> None:
-        self.world_list_items = list(self._saved_worlds())
+        self._refresh_world_list()
         count = len(self.world_list_items)
         if count > 0:
             self.world_list_index = min(self.world_list_index, max(0, count - 1))
@@ -1579,7 +1586,8 @@ class GameWindow(pyglet.window.Window):
                 return
             storage.ensure_world(name=value or meta.name, seed=meta.seed)
             self.menu.status = f"Renamed world to {value or meta.name}."
-            self.world_list_items = list(self._saved_worlds())
+            self._world_list_cache_time = 0.0
+            self._refresh_world_list()
             self.text_input = None
         elif field.purpose is TextPurpose.DELETE_WORLD:
             # require typing DELETE exactly to delete selected
@@ -1593,7 +1601,8 @@ class GameWindow(pyglet.window.Window):
                 # remove directory
                 shutil.rmtree(path)
                 self.menu.status = f"Deleted world {name}."
-                self.world_list_items = list(self._saved_worlds())
+                self._world_list_cache_time = 0.0
+                self._refresh_world_list()
                 self.world_list_index = max(
                     0, min(self.world_list_index, len(self.world_list_items) - 1)
                 )
