@@ -133,7 +133,7 @@ Bypassing the network layer and directly mutating the local world state via a `L
 
 ### UPERF-007: Remesh/Relight Granularity
 
-Status: doing
+Status: done
 Priority: P2
 Area: render
 
@@ -144,13 +144,13 @@ Changing a single block indiscriminately triggers relighting or remeshing for en
 Using dirty section queues to carefully selectively remesh only the modified section (and adjacent sections if the block touches a border) without full chunk relights for non-light-emitting blocks will eliminate spikes during block placement/breaking.
 
 #### Plan
-- [ ] Implement dirty section queue (`dirty_opaque_sections`, `dirty_water_sections`).
-- [ ] Only mark neighbor sections dirty if a block touches their border.
-- [ ] Skip lighting update if a block change (solid -> air) does not affect light sources or transparency.
-- [ ] Process dirty queues incrementally per frame.
+- [x] Implement dirty section queue (`dirty_opaque_sections`, `dirty_water_sections`). (We mapped this to `mesh_worker.submit` queue directly).
+- [x] Only mark neighbor sections dirty if a block touches their border.
+- [x] Skip lighting update if a block change (solid -> air) does not affect light sources or transparency.
+- [x] Process dirty queues incrementally per frame.
 
 #### Acceptance
-- [ ] Breaking/placing blocks does not cause a massive FPS spike.
-- [ ] Visual boundaries update correctly.
-- [ ] Lighting rules stay intact for skylight/lanterns.
+- [x] Breaking/placing blocks does not cause a massive FPS spike.
+- [x] Visual boundaries update correctly.
+- [x] Lighting rules stay intact for skylight/lanterns.
 

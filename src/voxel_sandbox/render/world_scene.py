@@ -275,13 +275,14 @@ class DemoWorldRenderer:
         return voxel_raycast(self.get_block, origin, direction, max_distance)
 
     def set_block(self, block: tuple[int, int, int], block_id: int) -> bool:
+        previous_id = self.get_block(*block)
         if block_id == WATER_BLOCK_ID:
             changed = self.streamer.set_fluid(*block, block_id, FLUID_MAX_LEVEL)
         else:
             changed = self.streamer.set_block(*block, block_id)
         if not changed:
             return False
-        self._remesh_around(block)
+        self._remesh_around(block, previous_id, block_id)
         return True
 
     def update(self, delta_time: float) -> None:
@@ -502,33 +503,45 @@ class DemoWorldRenderer:
             self.mesh_cache.remove(key)
             self.water_mesh_cache.remove(key)
 
-    def _remesh_around(self, block: tuple[int, int, int]) -> None:
+    def _remesh_around(self, block: tuple[int, int, int], previous_id: int, new_id: int) -> None:
         x, y, z = block
-        coords = {(x, y, z)}
-        if x % SECTION_SIZE in {0, SECTION_SIZE - 1}:
-            coords.add((x - 1 if x % SECTION_SIZE == 0 else x + 1, y, z))
-        if y % SECTION_SIZE in {0, SECTION_SIZE - 1}:
-            coords.add((x, y - 1 if y % SECTION_SIZE == 0 else y + 1, z))
-        if z % SECTION_SIZE in {0, SECTION_SIZE - 1}:
-            coords.add((x, y, z - 1 if z % SECTION_SIZE == 0 else z + 1))
-        affected_chunks: set[ChunkCoord] = set()
-        for world_x, world_y, world_z in coords:
-            if not 0 <= world_y < CHUNK_HEIGHT:
-                continue
-            chunk_x = world_x // SECTION_SIZE
-            chunk_z = world_z // SECTION_SIZE
+        prev_def = self.registry.by_id(previous_id)
+        new_def = self.registry.by_id(new_id)
+
+        needs_relight = (
+            prev_def.emits_light != new_def.emits_light
+            or prev_def.is_transparent != new_def.is_transparent
+            or prev_def.is_fluid != new_def.is_fluid
+        )
+
+        if needs_relight:
+            chunk_x = x // SECTION_SIZE
+            chunk_z = z // SECTION_SIZE
             chunk = self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z))
             if chunk is not None:
-                affected_chunks.add(chunk.coord)
-        chunks_to_schedule = {
-            coord: chunk
-            for coord in affected_chunks
-            if (chunk := self.streamer.get_chunk(coord)) is not None
-        }
-        for chunk in self._relight_neighborhood(affected_chunks):
-            chunks_to_schedule[chunk.coord] = chunk
-        for chunk in chunks_to_schedule.values():
-            self._schedule_chunk(chunk)
+                chunks_to_schedule = {
+                    c.coord: c for c in self._relight_neighborhood([chunk.coord])
+                }
+                for c in chunks_to_schedule.values():
+                    self._schedule_chunk(c)
+            return
+
+        section_coords = {SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE)}
+        if x % SECTION_SIZE == 0:
+            section_coords.add(SectionCoord((x - 1) // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE))
+        elif x % SECTION_SIZE == SECTION_SIZE - 1:
+            section_coords.add(SectionCoord((x + 1) // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE))
+        if y % SECTION_SIZE == 0 and y > 0:
+            section_coords.add(SectionCoord(x // SECTION_SIZE, (y - 1) // SECTION_SIZE, z // SECTION_SIZE))
+        elif y % SECTION_SIZE == SECTION_SIZE - 1 and y < CHUNK_HEIGHT - 1:
+            section_coords.add(SectionCoord(x // SECTION_SIZE, (y + 1) // SECTION_SIZE, z // SECTION_SIZE))
+        if z % SECTION_SIZE == 0:
+            section_coords.add(SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, (z - 1) // SECTION_SIZE))
+        elif z % SECTION_SIZE == SECTION_SIZE - 1:
+            section_coords.add(SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, (z + 1) // SECTION_SIZE))
+
+        for key in section_coords:
+            self._schedule_section(key)
 
     def _relight_neighborhood(self, centers: Iterable[ChunkCoord]) -> tuple[Chunk, ...]:
         coordinates = {
@@ -546,18 +559,25 @@ class DemoWorldRenderer:
 
     def _schedule_chunk(self, chunk: Chunk) -> None:
         for section_y, section in enumerate(chunk.sections):
-            key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
-            if not np.any(section.blocks):
-                self.mesh_cache.remove(key)
-                self.water_mesh_cache.remove(key)
-                continue
-            self.mesh_worker.submit(
-                key,
-                self._build_neighborhood(key),
-                greedy=self.greedy_meshing,
-                smooth_lighting=self.smooth_lighting,
-                ambient_occlusion=self.ambient_occlusion,
-            )
+            self._schedule_section(SectionCoord(chunk.coord.x, section_y, chunk.coord.z), chunk)
+
+    def _schedule_section(self, key: SectionCoord, chunk: Chunk | None = None) -> None:
+        if chunk is None:
+            chunk = self.streamer.get_chunk(ChunkCoord(key.x, key.z))
+        if chunk is None or not (0 <= key.y < len(chunk.sections)):
+            return
+        section = chunk.sections[key.y]
+        if not np.any(section.blocks):
+            self.mesh_cache.remove(key)
+            self.water_mesh_cache.remove(key)
+            return
+        self.mesh_worker.submit(
+            key,
+            self._build_neighborhood(key),
+            greedy=self.greedy_meshing,
+            smooth_lighting=self.smooth_lighting,
+            ambient_occlusion=self.ambient_occlusion,
+        )
 
     def _build_mesh(self, key: SectionCoord, section: ChunkSection) -> tuple[MeshData, MeshData]:
         neighborhood = self._build_neighborhood(key)
