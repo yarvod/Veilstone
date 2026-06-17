@@ -16,10 +16,10 @@ from voxel_sandbox.engine.generation.structures import (
 
 
 class Biome(Enum):
-    CALM_PLAINS = "calm_plains"
-    OLD_FOREST = "old_forest"
-    ASH_SWAMP = "ash_swamp"
-    MOONLIT_HIGHLANDS = "moonlit_highlands"
+    TWILIGHT_PLAINS = "twilight_plains"
+    TWILIGHT_WOODS = "twilight_woods"
+    GLOOM_SWAMP = "gloom_swamp"
+    DUSK_HIGHLANDS = "dusk_highlands"
 
 
 class TerrainGenerator:
@@ -32,20 +32,22 @@ class TerrainGenerator:
         )
 
     def height_at(self, world_x: int, world_z: int) -> int:
-        broad = self._value_noise(world_x / 64.0, world_z / 64.0, 0)
-        detail = self._value_noise(world_x / 20.0, world_z / 20.0, 1)
-        return 24 + int(broad * 18.0 + detail * 7.0)
+        broad = self._value_noise(world_x / 128.0, world_z / 128.0, 0)
+        detail = self._value_noise(world_x / 32.0, world_z / 32.0, 1)
+        # Twilight Forest: mostly flat, occasionally dropping below water level (32) for pools/swamps
+        hill_factor = broad * broad * broad
+        return 25 + int(hill_factor * 30.0 + detail * 10.0)
 
     def biome_at(self, world_x: int, world_z: int) -> Biome:
         temperature = self._value_noise(world_x / 96.0, world_z / 96.0, 2)
         moisture = self._value_noise(world_x / 96.0, world_z / 96.0, 3)
         if temperature < 0.32:
-            return Biome.MOONLIT_HIGHLANDS
+            return Biome.DUSK_HIGHLANDS
         if moisture > 0.68:
-            return Biome.ASH_SWAMP
+            return Biome.GLOOM_SWAMP
         if moisture > 0.46:
-            return Biome.OLD_FOREST
-        return Biome.CALM_PLAINS
+            return Biome.TWILIGHT_WOODS
+        return Biome.TWILIGHT_PLAINS
 
     def generate_chunk(self, coord: ChunkCoord) -> Chunk:
         chunk = Chunk(coord)
@@ -154,8 +156,8 @@ class TerrainGenerator:
                 biome = self.biome_at(world_x, world_z)
                 if self.height_at(world_x, world_z) < self.WATER_LEVEL:
                     continue
-                threshold = 0.982 if biome is Biome.OLD_FOREST else 0.994
-                if biome is Biome.ASH_SWAMP:
+                threshold = 0.982 if biome is Biome.TWILIGHT_WOODS else 0.994
+                if biome is Biome.GLOOM_SWAMP:
                     threshold = 0.989
                 if self._hash3(world_x, 0, world_z, 20) <= threshold:
                     continue

@@ -17,8 +17,9 @@
 - Cow grazing lowers the head with the correct rotation sign.
 - Windows UI labels select Segoe UI through one platform-font policy.
 - The player list omits the duplicated local network snapshot.
-- Menu text now renders with alpha blending and depth test disabled during menu rendering on Windows.
 - Removed post-processing renderer and settings to prepare for new lighting and world generation (Twilight Forest update).
+- **Twilight Forest Generation:** Overhauled biomes and heightmaps for a magical Twilight Forest setting (Phase 2), featuring deeper ravines, flat canopies, and new biome identifiers.
+- Re-colored vegetation textures (grass and veilwood leaves) in the texture atlas to a more mystical blue/purple palette.
 
 ### Fixed
 

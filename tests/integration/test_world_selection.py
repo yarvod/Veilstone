@@ -28,6 +28,7 @@ def test_create_and_load_world_keep_separate_player_state(
         window.create_world("Alpha Realm", "alpha-seed")
         alpha_root = window.active_save_root
         window.player.x = 12.5
+        window.player.y = 100.0
         window.player.z = 9.5
 
         window.create_world("Beta Realm", "beta-seed")
