@@ -35,6 +35,7 @@ from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureW
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
+from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
 from voxel_sandbox.engine.ecs import AnimationState, EntitySimulation, RenderModel, Transform
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
@@ -192,6 +193,12 @@ class GameWindow(pyglet.window.Window):
             "Recovered invalid saved position" if recovered_saved_position is not None else ""
         )
         self.cursor_stack: ItemStack | None = None
+        self._inv_state = InventoryState(
+            inventory=self.inventory,
+            item_registry=self.item_registry,
+            recipe_book=self.recipe_book,
+        )
+        self._inv = InventoryLogic(self._inv_state)
         self.mouse_x = 0
         self.mouse_y = 0
         self.mouse_captured = False
@@ -1912,8 +1919,8 @@ class GameWindow(pyglet.window.Window):
         return slot_x <= x <= slot_x + 56 and slot_y <= y <= slot_y + 56
 
     def _crafting_result_stack(self) -> ItemStack | None:
-        recipe = self.recipe_book.match(self.crafting_grid)
-        return recipe.result if recipe is not None else None
+        self._sync_to_inv()
+        return self._inv.crafting_result()
 
     def _draw_item_slot(
         self,
@@ -1952,144 +1959,44 @@ class GameWindow(pyglet.window.Window):
         if getattr(count_label, "batch", None) is None:
             count_label.draw()
 
+    def _sync_to_inv(self) -> None:
+        self._inv_state.crafting_grid = self.crafting_grid
+        self._inv_state.crafting_grid_size = self.crafting_grid_size
+        self._inv_state.cursor_stack = self.cursor_stack
+        self._inv_state.inventory_open = self.inventory_open
+        self._inv_state.status = self.inventory_status
+
+    def _sync_from_inv(self) -> None:
+        self.crafting_grid = self._inv_state.crafting_grid
+        self.crafting_grid_size = self._inv_state.crafting_grid_size
+        self.cursor_stack = self._inv_state.cursor_stack
+        self.inventory_open = self._inv_state.inventory_open
+        self.inventory_status = self._inv_state.status
+
     def _open_inventory(self, grid_size: int) -> None:
-        self.inventory_open = True
-        self.crafting_grid_size = grid_size
-        self.crafting_grid = CraftingGrid(grid_size, grid_size)
-        self.inventory_status = "Place ingredients in the grid; click the result to craft."
+        self._sync_to_inv()
+        self._inv.open(grid_size)
+        self._sync_from_inv()
 
     def _handle_crafting_click(self, index: int, button: int) -> None:
-        current = self.crafting_grid[index]
-        if button == mouse.LEFT:
-            if self.cursor_stack is None:
-                self.cursor_stack = self.crafting_grid.take(index)
-            elif current is None:
-                self.crafting_grid.set_index(index, self.cursor_stack)
-                self.cursor_stack = None
-            elif current.item_id == self.cursor_stack.item_id:
-                maximum = self.item_registry.by_id(current.item_id).max_stack
-                moved = min(maximum - current.count, self.cursor_stack.count)
-                if moved > 0:
-                    self.crafting_grid.set_index(index, current.with_count(current.count + moved))
-                    remaining = self.cursor_stack.count - moved
-                    self.cursor_stack = (
-                        self.cursor_stack.with_count(remaining) if remaining else None
-                    )
-            else:
-                self.crafting_grid.set_index(index, self.cursor_stack)
-                self.cursor_stack = current
-            return
-        if button != mouse.RIGHT:
-            return
-        if self.cursor_stack is None:
-            if current is None:
-                return
-            take_count = (current.count + 1) // 2
-            remaining = current.count - take_count
-            self.cursor_stack = current.with_count(take_count)
-            self.crafting_grid.set_index(
-                index, current.with_count(remaining) if remaining else None
-            )
-            return
-        maximum = self.item_registry.by_id(self.cursor_stack.item_id).max_stack
-        if current is None:
-            self.crafting_grid.set_index(index, self.cursor_stack.with_count(1))
-        elif current.item_id == self.cursor_stack.item_id and current.count < maximum:
-            self.crafting_grid.set_index(index, current.with_count(current.count + 1))
-        else:
-            return
-        remaining = self.cursor_stack.count - 1
-        self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
+        self._sync_to_inv()
+        self._inv.handle_crafting_click(index, button)
+        self._sync_from_inv()
 
     def _take_crafting_result(self) -> None:
-        result = self._crafting_result_stack()
-        if result is None:
-            self.inventory_status = "The current pattern has no recipe."
-            return
-        maximum = self.item_registry.by_id(result.item_id).max_stack
-        if self.cursor_stack is not None and (
-            self.cursor_stack.item_id != result.item_id
-            or self.cursor_stack.count + result.count > maximum
-        ):
-            self.inventory_status = "Clear the cursor before taking this result."
-            return
-        crafted = self.recipe_book.craft(self.crafting_grid)
-        if crafted is None:
-            return
-        self.cursor_stack = (
-            crafted
-            if self.cursor_stack is None
-            else self.cursor_stack.with_count(self.cursor_stack.count + crafted.count)
-        )
-        definition = self.item_registry.by_id(crafted.item_id)
-        self.inventory_status = f"Crafted {definition.name} x{crafted.count}."
+        self._sync_to_inv()
+        self._inv.take_crafting_result()
+        self._sync_from_inv()
 
     def _handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
-        if quick_move and button == mouse.LEFT and self.cursor_stack is None:
-            target_range = range(9, len(self.inventory)) if index < 9 else range(9)
-            for target in target_range:
-                self.inventory.move(index, target, self.item_registry)
-                if self.inventory[index] is None:
-                    break
-            return
-        current = self.inventory[index]
-        if button == mouse.LEFT:
-            if self.cursor_stack is None:
-                if current is not None:
-                    self.cursor_stack = self.inventory.take_from_slot(index, current.count)
-                return
-            if current is None:
-                self.inventory.set(index, self.cursor_stack, self.item_registry)
-                self.cursor_stack = None
-                return
-            if current.item_id != self.cursor_stack.item_id:
-                self.inventory.set(index, self.cursor_stack, self.item_registry)
-                self.cursor_stack = current
-                return
-            maximum = self.item_registry.by_id(current.item_id).max_stack
-            moved = min(maximum - current.count, self.cursor_stack.count)
-            if moved:
-                self.inventory.set(
-                    index,
-                    current.with_count(current.count + moved),
-                    self.item_registry,
-                )
-                remaining = self.cursor_stack.count - moved
-                self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
-        elif button == mouse.RIGHT:
-            if self.cursor_stack is None:
-                self.cursor_stack = self.inventory.split(index)
-                return
-            if current is None:
-                self.inventory.set(
-                    index,
-                    self.cursor_stack.with_count(1),
-                    self.item_registry,
-                )
-            elif (
-                current.item_id == self.cursor_stack.item_id
-                and current.count < self.item_registry.by_id(current.item_id).max_stack
-            ):
-                self.inventory.set(
-                    index,
-                    current.with_count(current.count + 1),
-                    self.item_registry,
-                )
-            else:
-                return
-            remaining = self.cursor_stack.count - 1
-            self.cursor_stack = self.cursor_stack.with_count(remaining) if remaining else None
+        self._sync_to_inv()
+        self._inv.handle_inventory_click(index, button, quick_move=quick_move)
+        self._sync_from_inv()
 
     def _close_inventory(self) -> None:
-        for index in range(len(self.crafting_grid)):
-            stack = self.crafting_grid.take(index)
-            if stack is not None:
-                self._return_or_drop_stack(stack)
-        if self.cursor_stack is not None:
-            self._return_or_drop_stack(self.cursor_stack)
-            self.cursor_stack = None
-        self.inventory_open = False
-        self.inventory_status = ""
+        self._sync_to_inv()
+        self._inv.close(self._return_or_drop_stack)
+        self._sync_from_inv()
 
     def _return_or_drop_stack(self, stack: ItemStack) -> None:
         remainder = self.inventory.add(stack, self.item_registry)
