@@ -1,0 +1,48 @@
+# Veilstone biome definitions — loaded at runtime by BiomeRegistry
+# Fields: key, name, surface_block, subsurface_block, deep_block,
+#         water_level, base_height, height_variation, tree_density
+# Block fields reference block keys from blocks.toml
+
+[[biome]]
+key = "twilight_plains"
+name = "Twilight Plains"
+surface_block = "grass"
+subsurface_block = "dirt"
+deep_block = "stone"
+water_level = 62
+base_height = 64
+height_variation = 12
+tree_density = 0.02
+
+[[biome]]
+key = "twilight_woods"
+name = "Twilight Woods"
+surface_block = "grass"
+subsurface_block = "dirt"
+deep_block = "stone"
+water_level = 62
+base_height = 66
+height_variation = 10
+tree_density = 0.15
+
+[[biome]]
+key = "gloom_swamp"
+name = "Gloom Swamp"
+surface_block = "dirt"
+subsurface_block = "dirt"
+deep_block = "stone"
+water_level = 65
+base_height = 60
+height_variation = 6
+tree_density = 0.08
+
+[[biome]]
+key = "dusk_highlands"
+name = "Dusk Highlands"
+surface_block = "stone"
+subsurface_block = "stone"
+deep_block = "stone"
+water_level = 58
+base_height = 80
+height_variation = 24
+tree_density = 0.01

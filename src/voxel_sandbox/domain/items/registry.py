@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tomllib
 from collections.abc import Iterable, Iterator
+from pathlib import Path
 from types import MappingProxyType
 
 from voxel_sandbox.domain.items.definitions import ItemDef, ItemStack, ItemType
@@ -55,6 +57,31 @@ class ItemRegistry:
 
     def __len__(self) -> int:
         return len(self._by_id)
+
+
+def load_item_registry_from_toml(path: Path) -> ItemRegistry:
+    with open(path, "rb") as f:
+        data = tomllib.load(f)
+    next_id = 1
+    definitions: list[ItemDef] = []
+    for raw in data.get("item", []):
+        item_id = raw.get("id", next_id)
+        next_id = item_id + 1
+        definitions.append(
+            ItemDef(
+                item_id,
+                raw["key"],
+                raw["name"],
+                ItemType(raw["item_type"]),
+                max_stack=raw.get("max_stack", 64),
+                block_id=raw.get("block_id"),
+            )
+        )
+    drops = {
+        d["block_id"]: ItemStack(d["item_id"], d.get("count", 1))
+        for d in data.get("drop", [])
+    }
+    return ItemRegistry(definitions, block_drops=drops)
 
 
 def create_core_item_registry() -> ItemRegistry:

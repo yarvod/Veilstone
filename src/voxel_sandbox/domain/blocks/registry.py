@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tomllib
 from collections.abc import Iterable, Iterator
+from pathlib import Path
 from types import MappingProxyType
 
 from voxel_sandbox.domain.blocks.definitions import BlockDef, Material
@@ -39,6 +41,34 @@ class BlockRegistry:
 
     def __len__(self) -> int:
         return len(self._by_id)
+
+
+def load_block_registry_from_toml(path: Path) -> BlockRegistry:
+    with open(path, "rb") as f:
+        data = tomllib.load(f)
+    next_id = 0
+    definitions: list[BlockDef] = []
+    for raw in data.get("block", []):
+        block_id = raw.get("id", next_id)
+        next_id = block_id + 1
+        definitions.append(
+            BlockDef(
+                block_id,
+                raw["key"],
+                raw["name"],
+                Material(raw["material"]),
+                raw.get("hardness", 0.0),
+                is_solid=raw.get("is_solid", True),
+                is_opaque=raw.get("is_opaque", True),
+                is_transparent=raw.get("is_transparent", False),
+                is_fluid=raw.get("is_fluid", False),
+                emits_light=raw.get("emits_light", 0),
+                texture_top=raw.get("texture_top", "missing"),
+                texture_side=raw.get("texture_side", "missing"),
+                texture_bottom=raw.get("texture_bottom", "missing"),
+            )
+        )
+    return BlockRegistry(definitions)
 
 
 def create_core_block_registry() -> BlockRegistry:

@@ -1,5 +1,9 @@
 from voxel_sandbox.domain.items.definitions import ItemDef, ItemStack, ItemType
-from voxel_sandbox.domain.items.registry import ItemRegistry, create_core_item_registry
+from voxel_sandbox.domain.items.registry import (
+    ItemRegistry,
+    create_core_item_registry,
+    load_item_registry_from_toml,
+)
 
 __all__ = [
     "ItemDef",
@@ -7,4 +11,5 @@ __all__ = [
     "ItemStack",
     "ItemType",
     "create_core_item_registry",
+    "load_item_registry_from_toml",
 ]

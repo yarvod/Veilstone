@@ -9,7 +9,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import cast
 
-from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
+from voxel_sandbox.app.paths import resource_path
+from voxel_sandbox.domain.blocks import BlockRegistry, load_block_registry_from_toml
 from voxel_sandbox.domain.blocks.structures import StructureEntity, StructureWorld, Vec3i
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, Chunk, ChunkCoord, split_world_axis
 from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
@@ -39,7 +40,7 @@ class ServerState:
 
     def __post_init__(self) -> None:
         self.generator = TerrainGenerator(WorldSeed.parse(self.seed))
-        self.block_registry = create_core_block_registry()
+        self.block_registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
         self.structure_world = (
             self.storage.load_structure_world() if self.storage is not None else StructureWorld()
         )

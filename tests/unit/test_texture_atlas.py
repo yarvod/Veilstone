@@ -23,6 +23,8 @@ def test_generated_atlas_contains_core_textures() -> None:
         "veilwood_planks",
         "runecraft_top",
         "runecraft_side",
+        "glowing_mushroom",
+        "fireflies",
     }
     assert all(0.0 <= coordinate <= 1.0 for uv in atlas.uvs.values() for coordinate in uv)
     assert repeated.pixels == atlas.pixels

@@ -9,7 +9,8 @@ from typing import Literal, cast
 import moderngl
 import numpy as np
 
-from voxel_sandbox.domain.blocks import create_core_block_registry
+from voxel_sandbox.app.paths import resource_path
+from voxel_sandbox.domain.blocks import load_block_registry_from_toml
 from voxel_sandbox.engine.chunks import (
     CHUNK_HEIGHT,
     SECTION_SIZE,
@@ -90,7 +91,7 @@ class DemoWorldRenderer:
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.texture.build_mipmaps()
-        self.registry = create_core_block_registry()
+        self.registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
         self.atlas_uvs = atlas.uvs
         self.uploads_per_frame = uploads_per_frame
         self.mesh_uploads_per_frame = mesh_uploads_per_frame

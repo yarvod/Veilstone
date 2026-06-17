@@ -1,0 +1,120 @@
+# Veilstone item definitions — loaded at runtime by ItemRegistry
+# Fields: id, key, name, item_type
+# Optional: max_stack (64), block_id (null)
+# item_type: "block" | "resource" | "tool" | "food" | "fluid_container"
+
+[[item]]
+id = 1
+key = "stone"
+name = "Stone"
+item_type = "block"
+block_id = 1
+
+[[item]]
+id = 2
+key = "dirt"
+name = "Dirt"
+item_type = "block"
+block_id = 2
+
+[[item]]
+id = 3
+key = "grass"
+name = "Grass"
+item_type = "block"
+block_id = 3
+
+[[item]]
+id = 4
+key = "veilwood_log"
+name = "Veilwood Log"
+item_type = "block"
+block_id = 4
+
+[[item]]
+id = 5
+key = "veilwood_leaves"
+name = "Veilwood Leaves"
+item_type = "block"
+block_id = 5
+
+[[item]]
+id = 6
+key = "dusk_crystal"
+name = "Dusk Crystal"
+item_type = "resource"
+
+[[item]]
+id = 7
+key = "gloam_lantern"
+name = "Gloam Lantern"
+item_type = "block"
+block_id = 7
+
+[[item]]
+id = 8
+key = "water_vessel"
+name = "Water Vessel"
+item_type = "fluid_container"
+max_stack = 1
+
+[[item]]
+id = 9
+key = "veilwood_planks"
+name = "Veilwood Planks"
+item_type = "block"
+block_id = 9
+
+[[item]]
+id = 10
+key = "workbench"
+name = "Runecraft Table"
+item_type = "block"
+block_id = 10
+
+# Block drop table: which item drops when a block is broken
+# count: item stack size
+[[drop]]
+block_id = 1
+item_id = 1
+count = 1
+
+[[drop]]
+block_id = 2
+item_id = 2
+count = 1
+
+[[drop]]
+block_id = 3
+item_id = 3
+count = 1
+
+[[drop]]
+block_id = 4
+item_id = 4
+count = 1
+
+[[drop]]
+block_id = 5
+item_id = 5
+count = 1
+
+[[drop]]
+block_id = 6
+item_id = 6
+count = 1
+
+[[drop]]
+block_id = 7
+item_id = 7
+count = 1
+
+[[drop]]
+block_id = 9
+item_id = 9
+count = 1
+
+[[drop]]
+block_id = 10
+item_id = 10
+count = 1
