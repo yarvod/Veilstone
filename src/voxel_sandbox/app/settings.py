@@ -77,7 +77,7 @@ class GraphicsSettings:
     fog: bool = True
     fog_start: float = 24.0
     fog_end: float = 56.0
-    day_cycle_seconds: float = 240.0
+    day_cycle_seconds: float = 0.0
     shadow_quality: str = "medium"
     shadow_bias: float = 0.0015
     clouds: bool = True

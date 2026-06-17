@@ -11,6 +11,7 @@ class CommandError(ValueError):
 class SetTimeCommand:
     time_of_day: float
     label: str
+    freeze: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +26,7 @@ class HelpCommand:
 
 @dataclass(frozen=True, slots=True)
 class SpawnStructureCommand:
-    key: str
+    template_name: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +58,7 @@ _NAMED_TIMES = {
     "sunrise": 0,
     "day": 6000,
     "noon": 6000,
+    "twilight": 13800,
     "sunset": 12000,
     "night": 13000,
     "midnight": 18000,
@@ -99,7 +101,7 @@ def parse_command(source: str) -> GameCommand:
 def _parse_time(value: str) -> SetTimeCommand:
     named_ticks = _NAMED_TIMES.get(value)
     if named_ticks is not None:
-        return SetTimeCommand(named_ticks / 24000.0, value)
+        return SetTimeCommand(named_ticks / 24000.0, value, freeze=(value == "twilight"))
     try:
         ticks = int(value)
     except ValueError as error:

@@ -20,6 +20,7 @@
 - Removed post-processing renderer and settings to prepare for new lighting and world generation (Twilight Forest update).
 - **Twilight Forest Generation:** Overhauled biomes and heightmaps for a magical Twilight Forest setting (Phase 2), featuring deeper ravines, flat canopies, and new biome identifiers.
 - Re-colored vegetation textures (grass and veilwood leaves) in the texture atlas to a more mystical blue/purple palette.
+- **Twilight Time & Atmosphere:** Time is now frozen by default in a new "twilight" state. The moon provides additional ambient lighting, and the fog/sky color reflects a deep twilight blue (Phase 3). Added `/time twilight` command to explicitly lock time to this state.
 
 ### Fixed
 

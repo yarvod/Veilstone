@@ -1593,7 +1593,11 @@ class GameWindow(pyglet.window.Window):
             return
         if isinstance(command, SetTimeCommand):
             self.world_renderer.time_of_day = command.time_of_day
-            self.inventory_status = f"Time set to {command.label}."
+            if command.freeze:
+                self.world_renderer.day_cycle_seconds = 0.0
+            else:
+                self.world_renderer.day_cycle_seconds = self.settings.graphics.day_cycle_seconds
+            self.inventory_status = f"Time set to {command.label}{' (frozen)' if command.freeze else ''}."
         elif isinstance(command, SetDifficultyCommand):
             self._set_difficulty(command.difficulty)
             self.inventory_status = f"Difficulty set to {command.difficulty}."

@@ -100,12 +100,12 @@ class DemoWorldRenderer:
         self.fog_enabled = fog
         self.fog_start = fog_start
         self.fog_end = fog_end
-        self.day_cycle_seconds = max(day_cycle_seconds, 1.0)
+        self.day_cycle_seconds = day_cycle_seconds
         self.shadow_quality = shadow_quality
         self.shadow_bias = shadow_bias
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
-        self.time_of_day = 0.25
+        self.time_of_day = 0.575
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
         self._fluid_chunk_cursor = 0
@@ -286,7 +286,8 @@ class DemoWorldRenderer:
         return True
 
     def update(self, delta_time: float) -> None:
-        self.time_of_day = (self.time_of_day + delta_time / self.day_cycle_seconds) % 1.0
+        if self.day_cycle_seconds > 0.0:
+            self.time_of_day = (self.time_of_day + delta_time / self.day_cycle_seconds) % 1.0
         self.animation_time += delta_time
         self._fluid_accumulator += delta_time
         if self._fluid_accumulator < 0.2:

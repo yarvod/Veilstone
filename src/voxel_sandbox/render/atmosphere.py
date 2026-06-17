@@ -17,7 +17,10 @@ def celestial_light_direction(time_of_day: float) -> tuple[float, float, float]:
 
 def daylight_factor(time_of_day: float) -> float:
     """Return ambient daylight for a normalized day position."""
-    return 0.12 + 0.88 * max(0.0, math.sin((time_of_day % 1.0) * math.tau))
+    sun_sin = math.sin((time_of_day % 1.0) * math.tau)
+    moon_sin = max(0.0, -sun_sin)
+    # The night (moonlight) now provides extra ambient light (up to +0.25)
+    return 0.12 + 0.88 * max(0.0, sun_sin) + 0.25 * moon_sin
 
 
 def sky_color(daylight: float) -> tuple[float, float, float, float]:
