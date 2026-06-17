@@ -21,6 +21,7 @@
 - **Twilight Forest Generation:** Overhauled biomes and heightmaps for a magical Twilight Forest setting (Phase 2), featuring deeper ravines, flat canopies, and new biome identifiers.
 - Re-colored vegetation textures (grass and veilwood leaves) in the texture atlas to a more mystical blue/purple palette.
 - **Twilight Time & Atmosphere:** Time is now frozen by default in a new "twilight" state. The moon provides additional ambient lighting, and the fog/sky color reflects a deep twilight blue (Phase 3). Added `/time twilight` command to explicitly lock time to this state.
+- **Glowing Blocks:** Added Twilight Fireflies and Glowing Mushrooms to the block registry, which generate beneath tree canopies and around tree bases, illuminating the twilight forest (Phase 3).
 
 ### Fixed
 

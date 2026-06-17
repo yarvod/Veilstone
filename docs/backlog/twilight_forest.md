@@ -24,7 +24,7 @@ This document tracks the backlog and phases for upgrading the world generator to
 ### Phase 3: Lighting and Atmosphere
 - [x] Alter sky shader to lock the time of day to twilight (or modify the `day_cycle_seconds` / `time` uniforms).
 - [x] Introduce magical or blue-ish ambient fog (via updated moonlight and sky colors).
-- [ ] Implement glowing/luminescent blocks (e.g., fireflies, glowing mushrooms) and update the lighting engine to handle them efficiently.
+- [x] Implement glowing/luminescent blocks (e.g., fireflies, glowing mushrooms) and update the lighting engine to handle them efficiently.
 
 ### Phase 4: Entities (Future)
 - [ ] Implement custom Twilight Forest mobs.

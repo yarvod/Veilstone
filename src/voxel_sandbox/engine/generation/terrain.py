@@ -218,6 +218,31 @@ class TerrainGenerator:
                             touched_sections,
                             replace_air_only=True,
                         )
+                        if dy < 0 and self._hash3(world_x + dx, crown_y + dy, world_z + dz, 40) < 0.08:
+                            self._set_if_inside(
+                                chunk,
+                                coord,
+                                world_x + dx,
+                                crown_y + dy - 1,
+                                world_z + dz,
+                                12,  # fireflies
+                                touched_sections,
+                                replace_air_only=True,
+                            )
+        for dx in range(-2, 4):
+            for dz in range(-2, 4):
+                if max(abs(dx - 0.5), abs(dz - 0.5)) > 1.0:
+                    if self._hash3(world_x + dx, ground_y + 1, world_z + dz, 50) < 0.15:
+                        self._set_if_inside(
+                            chunk,
+                            coord,
+                            world_x + dx,
+                            ground_y + 1,
+                            world_z + dz,
+                            11,  # glowing mushroom
+                            touched_sections,
+                            replace_air_only=True,
+                        )
 
     @staticmethod
     def _set_if_inside(
