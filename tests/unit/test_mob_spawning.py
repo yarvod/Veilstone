@@ -116,6 +116,34 @@ class TestZombieAttackHeightCheck:
         damage = sim.update(1 / 60, player_pos, self._ground, self._hazard, is_solid=self._solid)
         assert damage > 0.0
 
+    def test_zombie_cannot_attack_player_2_blocks_below(self):
+        sim = EntitySimulation(seed=42)
+        entity = sim.spawn_mob(MobKind.HOSTILE, (5.0, 35.0, 5.0))
+        ai = sim.world.mob_ai[entity]
+        ai.state = MobState.CHASE
+        ai.attack_cooldown = 0.0
+
+        transform = sim.world.transforms[entity]
+        player_below = (transform.x + 0.5, 30.0, transform.z)
+
+        damage = sim.update(1 / 60, player_below, self._ground, self._hazard, is_solid=self._solid)
+        assert damage == 0.0
+
+    def test_attack_animation_resets_on_each_hit(self):
+        from voxel_sandbox.engine.ecs.components import AnimationState
+        sim = EntitySimulation(seed=42)
+        entity = sim.spawn_mob(MobKind.HOSTILE, (5.0, 30.0, 5.0))
+        ai = sim.world.mob_ai[entity]
+        ai.state = MobState.CHASE
+        ai.attack_cooldown = 0.0
+
+        transform = sim.world.transforms[entity]
+        player_pos = (transform.x + 0.5, transform.y, transform.z)
+
+        sim.update(1 / 60, player_pos, self._ground, self._hazard, is_solid=self._solid)
+        anim = sim.world.animations[entity]
+        assert anim.state_phase == 0.0
+
 
 class TestMobObstacleAvoidance:
     def test_mob_does_not_reverse_immediately_on_wall(self):
