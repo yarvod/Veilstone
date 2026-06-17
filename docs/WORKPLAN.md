@@ -48,40 +48,46 @@
 - [x] Извлечь lan_*, open_to_lan, _send_block_action
 - [x] Тесты: unit (33 теста)
 
-### 1.4 WorldManager (~8 методов)
-- [ ] Извлечь create_world, load_world, switch_world, save_player
-- [ ] Извлечь _saved_worlds (+ кеширование!)
+### 1.4 WorldManager (~8 методов) ✅
+- [x] Извлечь create_world, load_world, switch_world, save_player
+- [x] Извлечь _saved_worlds, _world_slug → render/world_manager.py
 - [ ] Тесты: unit
 
-### 1.5 GameplayController (~8 методов)
-- [ ] Извлечь maintain_population, execute_command, difficulty
-- [ ] Command registry вместо if/elif chain
+### 1.5 GameplayController (~8 методов) ✅
+- [x] Извлечь maintain_population, execute_command, _set_difficulty
+- [x] Извлечь _hostile_spawn_allowed, _is_entity_hazard → render/gameplay_controller.py
+- [x] match/case dispatch вместо 80-строчного if/elif chain
 - [ ] Тесты: unit
 
-### 1.6 Slim GameWindow
-- [ ] GameWindow → координатор (on_draw, fixed_update)
-- [ ] ~500 строк вместо 2614
+### 1.6 Slim GameWindow ✅ (partial)
+- [x] Extract MenuUI (menu rendering, text input, world list, audio helpers) → render/menu_ui.py
+- [x] GameWindow delegates _draw_menu/_prepare_ui_draw/_draw_text_input to menu_ui
+- [ ] GameWindow → чистый координатор (on_draw, fixed_update)
+- [ ] ~500 строк вместо 1488
 - [ ] Integration тесты
 
 ---
 
 ## Phase 2: Data-Driven Content
 
-### 2.1 Blocks from TOML/JSON
-- [ ] `data/blocks.toml` — определения блоков
-- [ ] BlockRegistry загружает из файла
-- [ ] Auto-ID assignment
-- [ ] Тесты: unit
+### 2.1 Blocks from TOML ✅
+- [x] `data/blocks.toml` — определения блоков
+- [x] `load_block_registry_from_toml()` — загрузка из файла
+- [x] Auto-ID assignment (если id не указан)
+- [x] window.py, world_scene.py, server.py загружают из TOML
+- [x] Тесты: unit (3 теста)
 
-### 2.2 Biomes from TOML
-- [ ] `data/biomes.toml` — параметры биомов
-- [ ] BiomeRegistry с настраиваемыми параметрами
-- [ ] Тесты: unit
+### 2.2 Biomes from TOML ✅
+- [x] `data/biomes.toml` — параметры биомов
+- [x] `BiomeDef` + `BiomeRegistry` в domain/biomes/
+- [x] `load_biome_registry_from_toml()` — загрузка из файла
+- [x] Тесты: unit (7 тестов)
 
-### 2.3 Items from TOML
-- [ ] `data/items.toml` — определения предметов
-- [ ] ItemRegistry загружает из файла
-- [ ] Тесты: unit
+### 2.3 Items from TOML ✅
+- [x] `data/items.toml` — определения предметов + drop table
+- [x] `load_item_registry_from_toml()` — загрузка из файла
+- [x] window.py загружает из TOML
+- [x] Тесты: unit (2 теста)
 
 ---
 

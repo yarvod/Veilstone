@@ -65,3 +65,4 @@ audio/        — bus, director, backend
 - Magic numbers scattered in window.py
 - No event bus — everything through direct method calls
 - No proper game state machine
+- Never add AI attribution, Co-Authored-By trailers, Generated-By text, or Claude-related metadata to commit messages or pull request descriptions.
