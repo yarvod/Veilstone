@@ -1,13 +1,13 @@
-# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportPrivateUsage=false
 
 from __future__ import annotations
 
 import logging
 import math
 import queue
+import shutil
 import sys
 import time
-from contextlib import suppress
 from dataclasses import replace
 from pathlib import Path
 from typing import Final, cast
@@ -15,7 +15,7 @@ from typing import Final, cast
 import moderngl
 import numpy as np
 import pyglet
-from pyglet.window import key, mouse
+from pyglet.window import key
 
 from voxel_sandbox.app.commands import (
     CommandError,
@@ -31,25 +31,24 @@ from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import create_audio_bus, volume_map
-from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureWorld
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
-from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
+from voxel_sandbox.engine.authority import (
+    WorldAuthority,
+)
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
-from voxel_sandbox.engine.ecs import AnimationState, EntitySimulation, RenderModel, Transform
+from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
-from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
+from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import (
     ClientSession,
     LanServer,
     Message,
-    decode_chunk_blocks,
     discover_worlds,
 )
 from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
-from voxel_sandbox.engine.authority import WorldAuthority, LocalWorldAuthority, NetworkWorldAuthority
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.input_state import (
@@ -57,6 +56,7 @@ from voxel_sandbox.render.input_state import (
     KeyState,
     configure_layout_independent_game_keys,
 )
+from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
@@ -71,7 +71,7 @@ from voxel_sandbox.render.ui.item_icons import (
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen, platform_font_name
 from voxel_sandbox.render.ui.renderer import UiRenderer
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
-import shutil
+from voxel_sandbox.render.world_manager import WorldManager
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
 LOGGER = logging.getLogger(__name__)
@@ -500,9 +500,10 @@ class GameWindow(pyglet.window.Window):
         # World list UI state
         self.world_list_index = 0
         self.world_list_last_click = 0.0
-        self.world_list_items: list[tuple[str, Path]] = list(self._saved_worlds())
+        self.world_list_items: list[tuple[str, Path]] = list(WorldManager._saved_worlds())
         self._world_list_cache_time = time.perf_counter()
         self._net = NetworkController(self)
+        self._worlds = WorldManager(self)
         self._start_local_authority()
         if connect is not None:
             self._connect_remote(connect, player_name)
@@ -1835,16 +1836,7 @@ class GameWindow(pyglet.window.Window):
         self.player.on_ground = False
 
     def _save_player(self) -> None:
-        self.world_renderer.storage.save_player(
-            PlayerSnapshot(
-                (self.player.x, self.player.y, self.player.z),
-                self.player_health,
-                self.hotbar.selected_index,
-                tuple(self.inventory),
-            )
-        )
-        if self.lan_server is not None:
-            self.lan_server.save()
+        self._worlds._save_player()
 
     def _connect_remote(self, target: str, player_name: str) -> None:
         self._net.connect_remote(target, player_name)
@@ -1923,82 +1915,21 @@ class GameWindow(pyglet.window.Window):
         )
 
     def create_world(self, name: str, seed: str) -> None:
-        root = application_data_root() / self._world_slug(name)
-        WorldStorage(root).ensure_world(name=name, seed=seed)
-        self._switch_world(root)
+        self._worlds.create_world(name, seed)
 
     def load_world(self, name: str) -> bool:
-        match = next(
-            (
-                path
-                for world_name, path in self._saved_worlds()
-                if name.casefold() in {world_name.casefold(), path.name.casefold()}
-            ),
-            None,
-        )
-        if match is None:
-            return False
-        self._switch_world(match)
-        return True
+        return self._worlds.load_world(name)
 
     def _switch_world(self, save_root: Path) -> None:
-        self._save_player()
-        self.world_renderer.autosave()
-        self._stop_network_services()
-        self.world_renderer.release()
-        self.active_save_root = save_root
-        self.world_renderer = self._create_world_renderer(save_root)
-        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
-        self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
-        self.inventory = Inventory()
-        self.hotbar = Hotbar(self.inventory)
-        self.inventory.set(0, ItemStack(3, 32), self.item_registry)
-        self.inventory.set(1, ItemStack(7, 8), self.item_registry)
-        self.inventory.set(2, ItemStack(8, 1), self.item_registry)
-        self.inventory.set(3, ItemStack(4, 4), self.item_registry)
-        self.player_health = 20.0
-        saved = self.world_renderer.storage.load_player(self.item_registry)
-        if saved is not None:
-            self.world_renderer.storage.restore_inventory(saved, self.inventory, self.item_registry)
-            self.player_health = saved.health
-            self.hotbar.select(saved.selected_slot)
-            self._restore_player_position(saved.position)
-        self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
-        self._maintain_population((self.player.x, self.player.y, self.player.z))
-        self.network_players.clear()
-        self.remote_player_entities.clear()
-        self.remote_player_interpolation.clear()
-        self.requested_remote_chunks.clear()
-        self.last_snapshot_sequence = 0
-        self.structure_world = self.world_renderer.storage.load_structure_world()
-        self.last_structure_revision = self.structure_world.revision
-        self._start_local_authority()
-        self.menu.screen = Screen.GAME
-        self.menu.status = ""
-        self._sync_camera_to_player()
-        self._sync_mouse_capture()
+        self._worlds._switch_world(save_root)
 
     @staticmethod
     def _saved_worlds() -> tuple[tuple[str, Path], ...]:
-        saves_root = application_data_root()
-        if not saves_root.exists():
-            return ()
-        worlds: list[tuple[str, Path]] = []
-        for path in sorted(saves_root.iterdir()):
-            if not path.is_dir():
-                continue
-            metadata = WorldStorage(path).load_metadata()
-            if metadata is not None:
-                worlds.append((metadata.name, path))
-        return tuple(worlds)
+        return WorldManager._saved_worlds()
 
     @staticmethod
     def _world_slug(name: str) -> str:
-        slug = "-".join(
-            "".join(character.lower() for character in part if character.isalnum())
-            for part in name.split()
-        )
-        return slug or "world"
+        return WorldManager._world_slug(name)
 
     def _stop_network_services(self) -> None:
         self._net.stop_services()
