@@ -69,7 +69,7 @@ class InputHandler:
             return
         if win.text_input is not None:
             if symbol in {key.ENTER, key.RETURN}:
-                win._submit_text_input()
+                win.menu_ui._submit_text_input()
             elif symbol == key.ESCAPE:
                 win.text_input = None
             elif symbol == key.BACKSPACE:
@@ -82,7 +82,7 @@ class InputHandler:
                     win.world_list_index = max(0, win.world_list_index - 1)
                 else:
                     win.menu.move_selection(-1)
-                win._play_ui_sound()
+                win.menu_ui._play_ui_sound()
             elif symbol in {key.DOWN, key.S}:
                 if win.menu.screen is Screen.SINGLEPLAYER and win.world_list_items:
                     win.world_list_index = min(
@@ -90,9 +90,9 @@ class InputHandler:
                     )
                 else:
                     win.menu.move_selection(1)
-                win._play_ui_sound()
+                win.menu_ui._play_ui_sound()
             elif symbol in {key.ENTER, key.RETURN, key.SPACE}:
-                win._play_ui_sound()
+                win.menu_ui._play_ui_sound()
                 if (
                     win.menu.screen is Screen.SINGLEPLAYER
                     and win.world_list_items
@@ -101,9 +101,9 @@ class InputHandler:
                     name, _ = win.world_list_items[win.world_list_index]
                     win.load_world(name)
                 else:
-                    win._handle_menu_command(win.menu.activate())
+                    win.menu_ui._handle_menu_command(win.menu.activate())
             elif symbol == key.ESCAPE:
-                win._play_ui_sound()
+                win.menu_ui._play_ui_sound()
                 win.menu.back()
             win._sync_mouse_capture()
             return
@@ -197,7 +197,7 @@ class InputHandler:
         if not win.menu.in_game:
             if hasattr(win, "ui_renderer") and win.ui_renderer:
                 if win.ui_renderer.on_mouse_press(x, y, button, modifiers):
-                    win._play_ui_sound()
+                    win.menu_ui._play_ui_sound()
             return
         if win.menu.in_game and win.inventory_open:
             crafting_slot = win._crafting_slot_at(x, y)
@@ -248,7 +248,7 @@ class InputHandler:
                 win.inventory_status = "Water cannot be mined"
                 return
             if win.world_renderer.set_block(hit.block, 0):
-                win._play_block_sound(block_id, hit.block)
+                win.menu_ui._play_block_sound(block_id, hit.block)
                 win._send_block_action(hit.block, 0)
                 drop = win.item_registry.drop_for_block(block_id)
                 if drop is not None:
@@ -272,7 +272,7 @@ class InputHandler:
             if definition.block_id is None:
                 return
             if win.world_renderer.set_block(hit.previous, definition.block_id):
-                win._play_block_sound(definition.block_id, hit.previous)
+                win.menu_ui._play_block_sound(definition.block_id, hit.previous)
                 win._send_block_action(hit.previous, definition.block_id)
                 win.inventory.take_from_slot(win.hotbar.selected_index)
 
@@ -307,7 +307,7 @@ class InputHandler:
         if not win.menu.in_game:
             if hasattr(win, "ui_renderer") and win.ui_renderer:
                 if win.ui_renderer.on_mouse_motion(x, y, dx, dy):
-                    win._play_ui_sound()
+                    win.menu_ui._play_ui_sound()
             return
         if win.mouse_captured:
             win.camera.rotate(

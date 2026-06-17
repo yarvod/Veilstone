@@ -47,7 +47,7 @@ class TestOnKeyPress:
         win.text_input = MagicMock(spec=TextInput)
         h = InputHandler(win)
         h.on_key_press(key.ENTER, 0)
-        win._submit_text_input.assert_called_once()
+        win.menu_ui._submit_text_input.assert_called_once()
 
     def test_text_input_escape_clears(self):
         win = _make_win()
@@ -69,7 +69,7 @@ class TestOnKeyPress:
         h = InputHandler(win)
         h.on_key_press(key.UP, 0)
         win.menu.move_selection.assert_called_once_with(-1)
-        win._play_ui_sound.assert_called_once()
+        win.menu_ui._play_ui_sound.assert_called_once()
 
     def test_menu_down_navigates_selection(self):
         win = _make_win(in_game=False, screen=Screen.MAIN)
@@ -81,7 +81,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=False, screen=Screen.MAIN)
         h = InputHandler(win)
         h.on_key_press(key.ENTER, 0)
-        win._handle_menu_command.assert_called_once_with(win.menu.activate.return_value)
+        win.menu_ui._handle_menu_command.assert_called_once_with(win.menu.activate.return_value)
 
     def test_menu_singleplayer_enter_loads_selected_world(self):
         win = _make_win(in_game=False, screen=Screen.SINGLEPLAYER)
@@ -97,7 +97,7 @@ class TestOnKeyPress:
         h = InputHandler(win)
         h.on_key_press(key.ESCAPE, 0)
         win.menu.back.assert_called_once()
-        win._play_ui_sound.assert_called_once()
+        win.menu_ui._play_ui_sound.assert_called_once()
 
     def test_e_opens_inventory_when_closed(self):
         win = _make_win(in_game=True)

@@ -23,7 +23,7 @@ from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import create_audio_bus, volume_map
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
-from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
+from voxel_sandbox.domain.items import ItemStack, load_item_registry_from_toml
 from voxel_sandbox.engine.authority import (
     WorldAuthority,
 )
@@ -42,6 +42,7 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
+from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.input_state import (
     InputHandler,
     KeyState,
@@ -133,7 +134,7 @@ class GameWindow(pyglet.window.Window):
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
         self.key_state = KeyState()
-        self.item_registry = create_core_item_registry()
+        self.item_registry = load_item_registry_from_toml(resource_path("data/items.toml"))
         self.inventory = Inventory()
         self.hotbar = Hotbar(self.inventory)
         self.inventory.set(0, ItemStack(3, 32), self.item_registry)
@@ -496,6 +497,7 @@ class GameWindow(pyglet.window.Window):
         self._world_list_cache_time = time.perf_counter()
         self._net = NetworkController(self)
         self._worlds = WorldManager(self)
+        self.menu_ui = MenuUI(self)
         self._start_local_authority()
         if connect is not None:
             self._connect_remote(connect, player_name)
@@ -684,8 +686,8 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context.screen.use()
             self.mgl_context.viewport = (0, 0, max(self.width, 1), max(self.height, 1))
             self.mgl_context.clear(*clear_color, depth=1.0)
-            self._prepare_ui_draw()
-            self._draw_menu()
+            self.menu_ui._prepare_ui_draw()
+            self.menu_ui._draw_menu()
             self.mgl_context.disable(moderngl.BLEND)
             self.mgl_context.enable(moderngl.DEPTH_TEST)
             return
@@ -771,7 +773,7 @@ class GameWindow(pyglet.window.Window):
             transparent_underlay=render_entities,
         )
         self.mgl_context.disable(moderngl.DEPTH_TEST)
-        self._prepare_ui_draw()
+        self.menu_ui._prepare_ui_draw()
         x, y, z = self.camera.position
         fps = pyglet.clock.get_frequency()
         now = time.perf_counter()
@@ -897,7 +899,7 @@ class GameWindow(pyglet.window.Window):
             if self.inventory_open:
                 self._draw_inventory()
             if self.text_input is not None:
-                self._draw_text_input()
+                self.menu_ui._draw_text_input()
 
             self.hud_batch.draw()
 
@@ -937,296 +939,6 @@ class GameWindow(pyglet.window.Window):
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         self._input.on_mouse_motion(x, y, dx, dy)
 
-    def _draw_menu(self) -> None:
-        center_x = self.width // 2
-
-        def on_item_click(index: int):
-            self.menu.select(index)
-            self._handle_menu_command(self.menu.activate())
-
-        self.ui_renderer.update(self.menu, self._menu_item_label, on_item_click)
-
-        if self.menu.screen is Screen.SINGLEPLAYER:
-            self._draw_world_list(center_x)
-
-        self.ui_renderer.draw()
-        if self.text_input is not None:
-            self._draw_text_input_modal()
-        elif self.text_input is None:
-            self.text_input_overlay.opacity = 0
-            self.text_input_panel.opacity = 0
-
-    def _draw_text_input_modal(self) -> None:
-        assert self.text_input is not None
-        overlay_margin = 40
-        panel_width = min(680, self.width - overlay_margin * 2)
-        panel_height = min(220, self.height // 2)
-        panel_x = (self.width - panel_width) // 2
-        panel_y = (self.height - panel_height) // 2
-
-        self.text_input_overlay.x = 0
-        self.text_input_overlay.y = 0
-        self.text_input_overlay.width = self.width
-        self.text_input_overlay.height = self.height
-        self.text_input_overlay.color = (0, 0, 0)
-        self.text_input_overlay.opacity = 150
-        self.text_input_overlay.draw()
-
-        self.text_input_panel.x = panel_x
-        self.text_input_panel.y = panel_y
-        self.text_input_panel.width = panel_width
-        self.text_input_panel.height = panel_height
-        self.text_input_panel.draw()
-
-        title = self.text_input.purpose.name.replace("_", " ").title()
-        self.text_input_title_label.text = title
-        self.text_input_title_label.x = self.width // 2
-        self.text_input_title_label.y = panel_y + panel_height - 16
-        self.text_input_title_label.draw()
-
-        self._draw_text_input()
-
-    def _refresh_world_list(self) -> None:
-        now = time.perf_counter()
-        if now - self._world_list_cache_time > 2.0:
-            self.world_list_items = list(self._saved_worlds())
-            self._world_list_cache_time = now
-
-    def _draw_world_list(self, center_x: int) -> None:
-        self._refresh_world_list()
-        count = len(self.world_list_items)
-        if count > 0:
-            self.world_list_index = min(self.world_list_index, max(0, count - 1))
-        else:
-            self.world_list_index = -1
-        
-        def on_select(idx: int):
-            self.world_list_index = idx
-        
-        def on_play():
-            if self.world_list_items and 0 <= self.world_list_index < count:
-                name, _ = self.world_list_items[self.world_list_index]
-                self.load_world(name)
-        
-        def on_create():
-            self._handle_menu_command(MenuCommand.CREATE_WORLD)
-
-        def on_edit():
-            if self.world_list_items and 0 <= self.world_list_index < count:
-                name, _ = self.world_list_items[self.world_list_index]
-                self._begin_text_input(
-                    TextPurpose.RENAME_WORLD,
-                    "Rename world",
-                    initial=name,
-                    maximum_length=48,
-                )
-
-        def on_delete():
-            if self.world_list_items and 0 <= self.world_list_index < count:
-                self._begin_text_input(
-                    TextPurpose.DELETE_WORLD,
-                    "Type DELETE to confirm deleting:",
-                    maximum_length=6,
-                )
-                
-        def on_cancel():
-            self.menu.back()
-
-        if count == 0:
-            self.ui_renderer.update_world_list([], -1, on_select, on_play, on_create, on_edit, on_delete, on_cancel)
-            return
-
-        start_index = max(0, self.world_list_index - 3)
-        end_index = start_index + 8
-        if end_index > count:
-            end_index = count
-            start_index = max(0, end_index - 8)
-
-        visible_items = self.world_list_items[start_index:end_index]
-        
-        def mapped_on_select(visible_idx: int):
-            on_select(start_index + visible_idx)
-
-        self.ui_renderer.update_world_list(
-            visible_items,
-            self.world_list_index - start_index,
-            mapped_on_select,
-            on_play,
-            on_create,
-            on_edit,
-            on_delete,
-            on_cancel,
-        )
-
-    def _prepare_ui_draw(self) -> None:
-        self.mgl_context.disable(moderngl.DEPTH_TEST)
-        self.mgl_context.enable(moderngl.BLEND)
-        self.mgl_context.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
-
-    def _draw_text_input(self) -> None:
-        assert self.text_input is not None
-        if self.menu.in_game and self.text_input.purpose in {TextPurpose.CHAT, TextPurpose.COMMAND}:
-            self.command_input_label.text = self.text_input.display
-            self.command_input_label.width = min(760, self.width - 40)
-            self.command_input_label.x = 20
-            self.command_input_label.y = 76
-            self.command_input_label.draw()
-        else:
-            self.text_input_label.text = self.text_input.display
-            self.text_input_label.anchor_x = "center"
-            self.text_input_label.anchor_y = "center"
-            self.text_input_label.width = 600
-            self.text_input_label.x = self.width // 2
-            self.text_input_label.y = self.height // 3
-            self.text_input_label.draw()
-
-    def _menu_item_label(self, index: int) -> str:
-        item = self.menu.items[index]
-        values = {
-            "cycle_shadows": self.settings.graphics.shadow_quality,
-            "toggle_clouds": "on" if self.settings.graphics.clouds else "off",
-            "toggle_vsync": "on" if self.settings.window.vsync else "off",
-            "cycle_difficulty": self.settings.gameplay.difficulty,
-            "rebind_forward": self.settings.controls.forward,
-            "rebind_backward": self.settings.controls.backward,
-            "rebind_left": self.settings.controls.left,
-            "rebind_right": self.settings.controls.right,
-            "rebind_jump": self.settings.controls.jump,
-            "cycle_master_volume": f"{self.settings.audio.master:.0%}",
-            "cycle_effects_volume": f"{self.settings.audio.effects:.0%}",
-            "cycle_music_volume": f"{self.settings.audio.music:.0%}",
-            "cycle_ambience_volume": f"{self.settings.audio.ambience:.0%}",
-        }
-        value = values.get(item.action or "")
-        return item.label if value is None else f"{item.label}: {value}"
-
-    def _play_ui_sound(self) -> None:
-        self.audio.emit(AudioEvent(AudioEventKind.SOUND, "ui.click"))
-
-    def _play_block_sound(
-        self,
-        block_id: int,
-        position: tuple[int, int, int],
-    ) -> None:
-        material = self.world_renderer.registry.by_id(block_id).material.value
-        key_name = f"block.{material}"
-        key_name = key_name if key_name in self.audio.registry else "footstep"
-        self.audio.emit(
-            AudioEvent(
-                AudioEventKind.SOUND,
-                key_name,
-                (
-                    float(position[0]) + 0.5,
-                    float(position[1]) + 0.5,
-                    float(position[2]) + 0.5,
-                ),
-            )
-        )
-
-    def _cycle_audio_volume(self, command: MenuCommand) -> None:
-        fields = {
-            MenuCommand.CYCLE_MASTER_VOLUME: "master",
-            MenuCommand.CYCLE_EFFECTS_VOLUME: "effects",
-            MenuCommand.CYCLE_MUSIC_VOLUME: "music",
-            MenuCommand.CYCLE_AMBIENCE_VOLUME: "ambience",
-        }
-        field = fields[command]
-        current = getattr(self.settings.audio, field)
-        next_volume = 0.0 if current >= 0.99 else round(current + 0.1, 1)
-        audio_settings = replace(self.settings.audio, **{field: next_volume})
-        self.settings = replace(self.settings, audio=audio_settings)
-        self.audio.set_volumes(volume_map(audio_settings))
-        self.menu.status = f"{field.title()} volume saved as {next_volume:.0%}."
-        save_user_settings(self.settings)
-
-    def _handle_menu_command(self, command: MenuCommand) -> None:
-        if command is MenuCommand.CLOSE:
-            self.close()
-        elif command is MenuCommand.DISCOVER_LAN:
-            worlds = discover_worlds()
-            if not worlds:
-                self.menu.status = "No LAN worlds found. Start Open to LAN or a dedicated server."
-                return
-            world = worlds[0]
-            try:
-                self._connect_remote(f"{world.host}:{world.port}", self.player_name)
-            except (OSError, ValueError) as error:
-                self.menu.status = f"LAN connection failed: {error}"
-        elif command is MenuCommand.DIRECT_CONNECT:
-            self._begin_text_input(
-                TextPurpose.DIRECT_CONNECT,
-                "Server address (HOST:PORT)",
-                initial="127.0.0.1:25565",
-            )
-        elif command is MenuCommand.EDIT_NICKNAME:
-            self._begin_text_input(
-                TextPurpose.NICKNAME,
-                "Nickname",
-                initial=self.player_name,
-                maximum_length=32,
-            )
-        elif command is MenuCommand.OPEN_LAN:
-            self.open_to_lan()
-        elif command is MenuCommand.CYCLE_SHADOWS:
-            qualities = ("off", "low", "medium")
-            current = self.settings.graphics.shadow_quality
-            current_index = qualities.index(current) if current in qualities else 1
-            next_quality = qualities[(current_index + 1) % len(qualities)]
-            self.settings = replace(
-                self.settings,
-                graphics=replace(self.settings.graphics, shadow_quality=next_quality),
-            )
-            self.menu.status = f"Shadow quality saved as {next_quality}; applies after restart."
-            save_user_settings(self.settings)
-        elif command is MenuCommand.TOGGLE_CLOUDS:
-            enabled = not self.settings.graphics.clouds
-            self.settings = replace(
-                self.settings,
-                graphics=replace(self.settings.graphics, clouds=enabled),
-            )
-            self.sky_renderer.clouds = enabled
-            save_user_settings(self.settings)
-        elif command is MenuCommand.TOGGLE_VSYNC:
-            enabled = not self.settings.window.vsync
-            self.settings = replace(
-                self.settings,
-                window=replace(self.settings.window, vsync=enabled),
-            )
-            self.set_vsync(enabled)
-            save_user_settings(self.settings)
-        elif command is MenuCommand.CYCLE_DIFFICULTY:
-            difficulty = "peaceful" if self.settings.gameplay.difficulty == "normal" else "normal"
-            self._set_difficulty(difficulty)
-            self.menu.status = f"Difficulty saved as {difficulty}."
-        elif command in {
-            MenuCommand.CYCLE_MASTER_VOLUME,
-            MenuCommand.CYCLE_EFFECTS_VOLUME,
-            MenuCommand.CYCLE_MUSIC_VOLUME,
-            MenuCommand.CYCLE_AMBIENCE_VOLUME,
-        }:
-            self._cycle_audio_volume(command)
-        elif command is MenuCommand.CREATE_WORLD:
-            self._begin_text_input(
-                TextPurpose.WORLD_NAME,
-                "World name",
-                initial="New World",
-                maximum_length=48,
-            )
-        elif command in {
-            MenuCommand.REBIND_FORWARD,
-            MenuCommand.REBIND_BACKWARD,
-            MenuCommand.REBIND_LEFT,
-            MenuCommand.REBIND_RIGHT,
-            MenuCommand.REBIND_JUMP,
-        }:
-            self.rebinding_action = {
-                MenuCommand.REBIND_FORWARD: "forward",
-                MenuCommand.REBIND_BACKWARD: "backward",
-                MenuCommand.REBIND_LEFT: "left",
-                MenuCommand.REBIND_RIGHT: "right",
-                MenuCommand.REBIND_JUMP: "jump",
-            }[command]
-            self.menu.status = f"Press a key for {self.rebinding_action}."
 
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
@@ -1290,107 +1002,6 @@ class GameWindow(pyglet.window.Window):
         definition = self.item_registry.by_id(selected.item_id)
         return f"{definition.name} x{selected.count}"
 
-    def _begin_text_input(
-        self,
-        purpose: TextPurpose,
-        prompt: str,
-        *,
-        initial: str = "",
-        maximum_length: int = 128,
-    ) -> None:
-        self.text_input = TextInput(purpose, prompt, initial, maximum_length)
-        self.key_state.clear()
-        self._sync_mouse_capture()
-
-    def _submit_text_input(self) -> None:
-        field = self.text_input
-        if field is None:
-            return
-        value = field.value.strip()
-        if field.purpose is TextPurpose.NICKNAME:
-            self.player_name = value[:32] or "Player"
-            if self.authority is not None:
-                self.authority.set_player_name(self.player_name)
-            self.menu.status = f"Nickname: {self.player_name}"
-            self.text_input = None
-        elif field.purpose is TextPurpose.DIRECT_CONNECT:
-            if not value:
-                self.menu.status = "Server address is required."
-                return
-            try:
-                self._connect_remote(value, self.player_name)
-            except (OSError, ValueError) as error:
-                self.menu.status = f"Connection failed: {error}"
-                return
-            self.text_input = None
-        elif field.purpose is TextPurpose.CHAT:
-            if value and self.authority is not None:
-                try:
-                    self.authority.send_chat(value)
-                except (ConnectionError, OSError) as error:
-                    self.inventory_status = f"Chat failed: {error}"
-            elif value:
-                self.inventory_status = "Chat is available in multiplayer."
-            self.text_input = None
-        elif field.purpose is TextPurpose.COMMAND:
-            self.execute_command(value)
-            self.text_input = None
-        elif field.purpose is TextPurpose.WORLD_NAME:
-            if not value:
-                self.menu.status = "World name is required."
-                return
-            self.pending_world_name = value[:48]
-            self.text_input = TextInput(
-                TextPurpose.WORLD_SEED,
-                "World seed",
-                self.pending_world_name,
-                64,
-            )
-            return
-        elif field.purpose is TextPurpose.WORLD_SEED:
-            seed = value or self.pending_world_name
-            self.create_world(self.pending_world_name, seed)
-            self.text_input = None
-        elif field.purpose is TextPurpose.RENAME_WORLD:
-            # rename selected saved world
-            if not (0 <= self.world_list_index < len(self.world_list_items)):
-                self.menu.status = "No world selected to rename."
-                self.text_input = None
-                self._sync_mouse_capture()
-                return
-            name, path = self.world_list_items[self.world_list_index]
-            storage = WorldStorage(path)
-            meta = storage.load_metadata()
-            if meta is None:
-                self.menu.status = "Failed to read world metadata."
-                self.text_input = None
-                self._sync_mouse_capture()
-                return
-            storage.ensure_world(name=value or meta.name, seed=meta.seed)
-            self.menu.status = f"Renamed world to {value or meta.name}."
-            self._world_list_cache_time = 0.0
-            self._refresh_world_list()
-            self.text_input = None
-        elif field.purpose is TextPurpose.DELETE_WORLD:
-            # require typing DELETE exactly to delete selected
-            if value == "DELETE":
-                if not (0 <= self.world_list_index < len(self.world_list_items)):
-                    self.menu.status = "No world selected to delete."
-                    self.text_input = None
-                    self._sync_mouse_capture()
-                    return
-                name, path = self.world_list_items[self.world_list_index]
-                # remove directory
-                shutil.rmtree(path)
-                self.menu.status = f"Deleted world {name}."
-                self._world_list_cache_time = 0.0
-                self._refresh_world_list()
-                self.world_list_index = max(
-                    0, min(self.world_list_index, len(self.world_list_items) - 1)
-                )
-            else:
-                self.menu.status = "Delete cancelled (type DELETE to confirm)."
-            self.text_input = None
     def execute_command(self, source: str) -> None:
         self._gameplay.execute_command(source)
 
