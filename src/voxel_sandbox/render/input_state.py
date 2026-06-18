@@ -109,18 +109,18 @@ class InputHandler:
             return
         if symbol == key.E:
             if win.inventory_open:
-                win._close_inventory()
+                win._inv_ctrl.close()
             else:
-                win._open_inventory(2)
+                win._inv_ctrl.open(2)
             win.key_state.clear()
             win._sync_mouse_capture()
             return
         if win.inventory_open:
             if symbol == key.ESCAPE:
-                win._close_inventory()
+                win._inv_ctrl.close()
                 win._sync_mouse_capture()
             elif symbol == key.C:
-                win._take_crafting_result()
+                win._inv_ctrl.take_crafting_result()
             elif ord("1") <= symbol <= ord("9"):
                 win.hotbar.select(symbol - ord("1"))
             return
@@ -150,7 +150,7 @@ class InputHandler:
             win.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.Q:
-            win._drop_selected_item()
+            win._inv_ctrl.drop_selected_item()
             return
         if symbol == key.T:
             win._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
@@ -200,13 +200,13 @@ class InputHandler:
                     win.menu_ui._play_ui_sound()
             return
         if win.menu.in_game and win.inventory_open:
-            crafting_slot = win._crafting_slot_at(x, y)
+            crafting_slot = win._inv_ctrl.crafting_slot_at(x, y)
             if crafting_slot is not None:
-                win._handle_crafting_click(crafting_slot, button)
-            elif win._crafting_result_at(x, y):
-                win._take_crafting_result()
-            elif (slot := win._inventory_slot_at(x, y)) is not None:
-                win._handle_inventory_click(
+                win._inv_ctrl.handle_crafting_click(crafting_slot, button)
+            elif win._inv_ctrl.crafting_result_at(x, y):
+                win._inv_ctrl.take_crafting_result()
+            elif (slot := win._inv_ctrl.slot_at(x, y)) is not None:
+                win._inv_ctrl.handle_inventory_click(
                     slot,
                     button,
                     quick_move=bool(modifiers & key.MOD_SHIFT),
@@ -262,7 +262,7 @@ class InputHandler:
                     )
         elif button == mouse.RIGHT:
             if win.world_renderer.get_block(*hit.block) == 10:
-                win._open_inventory(3)
+                win._inv_ctrl.open(3)
                 win._sync_mouse_capture()
                 return
             selected = win.hotbar.selected

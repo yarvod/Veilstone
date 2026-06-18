@@ -103,7 +103,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(key.E, 0)
-        win._open_inventory.assert_called_once_with(2)
+        win._inv_ctrl.open.assert_called_once_with(2)
         win.key_state.press(key.E)  # shouldn't error; key_state cleared
         win._sync_mouse_capture.assert_called_once()
 
@@ -112,14 +112,14 @@ class TestOnKeyPress:
         win.inventory_open = True
         h = InputHandler(win)
         h.on_key_press(key.E, 0)
-        win._close_inventory.assert_called_once()
+        win._inv_ctrl.close.assert_called_once()
 
     def test_inventory_escape_closes(self):
         win = _make_win(in_game=True)
         win.inventory_open = True
         h = InputHandler(win)
         h.on_key_press(key.ESCAPE, 0)
-        win._close_inventory.assert_called_once()
+        win._inv_ctrl.close.assert_called_once()
         win._sync_mouse_capture.assert_called_once()
 
     def test_inventory_c_takes_crafting_result(self):
@@ -127,7 +127,7 @@ class TestOnKeyPress:
         win.inventory_open = True
         h = InputHandler(win)
         h.on_key_press(key.C, 0)
-        win._take_crafting_result.assert_called_once()
+        win._inv_ctrl.take_crafting_result.assert_called_once()
 
     def test_inventory_digit_selects_hotbar(self):
         win = _make_win(in_game=True)
@@ -160,7 +160,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(key.Q, 0)
-        win._drop_selected_item.assert_called_once()
+        win._inv_ctrl.drop_selected_item.assert_called_once()
 
     def test_t_begins_chat_input(self):
         win = _make_win(in_game=True)

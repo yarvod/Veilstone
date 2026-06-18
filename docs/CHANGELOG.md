@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- **InventoryController extracted from GameWindow** — all inventory sprites, hotbar, health bar, held-item hand, and crafting UI moved to `render/inventory_ui.py:InventoryController`; GameWindow delegates via `self._inv_ctrl`
+
 ### Added
 - **Player swimming** — buoyancy, swim_speed, in_water state in PlayerController
 - **Water flow physics** — drain logic removes flowing water without source

@@ -32,11 +32,11 @@
 
 Разбить `window.py` (2614 строк, 92 метода) на контроллеры.
 
-### 1.1 InventoryController (~15 методов)
-- [ ] Извлечь draw_hotbar, draw_health, draw_inventory
-- [ ] Извлечь crafting_*, inventory_slot_*, handle_crafting_click
-- [ ] Все pyglet спрайты инвентаря → в контроллер
-- [ ] Тесты: unit + integration
+### 1.1 InventoryController (~15 методов) ✅
+- [x] Извлечь draw_hotbar, draw_health, draw_inventory
+- [x] Извлечь crafting_*, inventory_slot_*, handle_crafting_click
+- [x] Все pyglet спрайты инвентаря → в контроллер
+- [x] Тесты: unit + integration
 
 ### 1.2 InputHandler (~10 методов) ✅
 - [x] Извлечь on_key_press, on_mouse_*, on_text, on_scroll
