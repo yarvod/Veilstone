@@ -231,14 +231,14 @@ def test_game_commands_change_time_and_remove_hostile_mobs(
         window = window_module.GameWindow(AppSettings(), visible=False, save_root=Path(directory))
         try:
             hostile = window.entities.spawn_mob(MobKind.HOSTILE, window.camera.position)
-            window.execute_command("/time set midnight")
+            window._gameplay.execute_command("/time set midnight")
             assert window.world_renderer.time_of_day == 0.75
 
-            window.execute_command("/difficulty peaceful")
+            window._gameplay.execute_command("/difficulty peaceful")
             assert window.settings.gameplay.difficulty == "peaceful"
             assert hostile not in window.entities.world.alive
 
-            window.execute_command("/help")
+            window._gameplay.execute_command("/help")
             assert window.inventory_status.startswith("/time set")
         finally:
             window.close()

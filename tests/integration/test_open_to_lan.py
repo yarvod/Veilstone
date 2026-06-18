@@ -32,7 +32,7 @@ def test_open_to_lan_exposes_active_world_and_applies_remote_edits(tmp_path: Pat
     window = GameWindow(settings, visible=False, save_root=tmp_path)
     client = LanClient()
     try:
-        window.open_to_lan()
+        window._net.open_to_lan()
         assert window.lan_server is not None
         worlds = discover_worlds(port=25565, timeout=0.2, target="127.0.0.1")
         assert any(world.port == window.lan_server.address[1] for world in worlds)

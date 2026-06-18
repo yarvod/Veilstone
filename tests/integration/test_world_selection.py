@@ -25,17 +25,17 @@ def test_create_and_load_world_keep_separate_player_state(
     )
     window = GameWindow(settings, visible=False, save_root=tmp_path / "initial")
     try:
-        window.create_world("Alpha Realm", "alpha-seed")
+        window._worlds.create_world("Alpha Realm", "alpha-seed")
         alpha_root = window.active_save_root
         window.player.x = 12.5
         window.player.y = 100.0
         window.player.z = 9.5
 
-        window.create_world("Beta Realm", "beta-seed")
+        window._worlds.create_world("Beta Realm", "beta-seed")
         assert window.active_save_root != alpha_root
         assert window.world_renderer.seed_text == "beta-seed"
 
-        assert window.load_world("Alpha Realm")
+        assert window._worlds.load_world("Alpha Realm")
         assert window.active_save_root == alpha_root
         assert window.world_renderer.seed_text == "alpha-seed"
         assert window.player.x == 12.5

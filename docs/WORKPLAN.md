@@ -62,9 +62,11 @@
 ### 1.6 Slim GameWindow ✅ (partial)
 - [x] Extract MenuUI (menu rendering, text input, world list, audio helpers) → render/menu_ui.py
 - [x] GameWindow delegates _draw_menu/_prepare_ui_draw/_draw_text_input to menu_ui
+- [x] ~25 thin wrapper methods deleted; callers updated to use controllers directly
+- [x] window.py: 2614 → 869 строк
 - [ ] GameWindow → чистый координатор (on_draw, fixed_update)
-- [ ] ~500 строк вместо 1488
-- [ ] Integration тесты
+- [ ] ~500 строк вместо 869
+- [x] Integration тесты (311/311)
 
 ---
 

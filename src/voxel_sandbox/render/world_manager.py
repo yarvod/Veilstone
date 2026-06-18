@@ -47,7 +47,7 @@ class WorldManager:
         win = self.win
         self._save_player()
         win.world_renderer.autosave()
-        win._stop_network_services()
+        win._net.stop_services()
         win.world_renderer.release()
         win.active_save_root = save_root
         win.world_renderer = win._create_world_renderer(save_root)
@@ -67,7 +67,7 @@ class WorldManager:
             win.hotbar.select(saved.selected_slot)
             win._restore_player_position(saved.position)
         win.entities = EntitySimulation(seed=win.world_renderer.generator.seed.value)
-        win._maintain_population((win.player.x, win.player.y, win.player.z))
+        win._gameplay._maintain_population((win.player.x, win.player.y, win.player.z))
         win.network_players.clear()
         win.remote_player_entities.clear()
         win.remote_player_interpolation.clear()
@@ -75,7 +75,7 @@ class WorldManager:
         win.last_snapshot_sequence = 0
         win.structure_world = win.world_renderer.storage.load_structure_world()
         win.last_structure_revision = win.structure_world.revision
-        win._start_local_authority()
+        win._net.start_local_authority()
         win.menu.screen = Screen.GAME
         win.menu.status = ""
         win._sync_camera_to_player()

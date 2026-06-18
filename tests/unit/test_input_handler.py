@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
-import pytest
-from pyglet.window import key, mouse
+from pyglet.window import key
 
 from voxel_sandbox.render.input_state import InputHandler, KeyState
 from voxel_sandbox.render.ui.menu import Screen
@@ -90,7 +89,7 @@ class TestOnKeyPress:
         win.menu_ui.world_list_index = 0
         h = InputHandler(win)
         h.on_key_press(key.ENTER, 0)
-        win.load_world.assert_called_once_with("TestWorld")
+        win._worlds.load_world.assert_called_once_with("TestWorld")
 
     def test_menu_escape_calls_back(self):
         win = _make_win(in_game=False, screen=Screen.MAIN)
