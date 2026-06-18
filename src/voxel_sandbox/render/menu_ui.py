@@ -191,7 +191,7 @@ class MenuUI:
         def on_play() -> None:
             if self.world_list_items and 0 <= self.world_list_index < count:
                 name, _ = self.world_list_items[self.world_list_index]
-                win.load_world(name)
+                win._worlds.load_world(name)
 
         def on_create() -> None:
             self._handle_menu_command(MenuCommand.CREATE_WORLD)
@@ -258,7 +258,7 @@ class MenuUI:
                 return
             world = worlds[0]
             try:
-                win._connect_remote(f"{world.host}:{world.port}", win.player_name)
+                win._net.connect_remote(f"{world.host}:{world.port}", win.player_name)
             except (OSError, ValueError) as error:
                 win.menu.status = f"LAN connection failed: {error}"
         elif command is MenuCommand.DIRECT_CONNECT:
@@ -275,7 +275,7 @@ class MenuUI:
                 maximum_length=32,
             )
         elif command is MenuCommand.OPEN_LAN:
-            win.open_to_lan()
+            win._net.open_to_lan()
         elif command is MenuCommand.CYCLE_SHADOWS:
             qualities = ("off", "low", "medium")
             current = win.settings.graphics.shadow_quality
@@ -305,7 +305,7 @@ class MenuUI:
             save_user_settings(win.settings)
         elif command is MenuCommand.CYCLE_DIFFICULTY:
             difficulty = "peaceful" if win.settings.gameplay.difficulty == "normal" else "normal"
-            win._set_difficulty(difficulty)
+            win._gameplay._set_difficulty(difficulty)
             win.menu.status = f"Difficulty saved as {difficulty}."
         elif command in {
             MenuCommand.CYCLE_MASTER_VOLUME,
@@ -408,7 +408,7 @@ class MenuUI:
                 win.menu.status = "Server address is required."
                 return
             try:
-                win._connect_remote(value, win.player_name)
+                win._net.connect_remote(value, win.player_name)
             except (OSError, ValueError) as error:
                 win.menu.status = f"Connection failed: {error}"
                 return
@@ -423,7 +423,7 @@ class MenuUI:
                 win.inventory_status = "Chat is available in multiplayer."
             win.text_input = None
         elif field.purpose is TextPurpose.COMMAND:
-            win.execute_command(value)
+            win._gameplay.execute_command(value)
             win.text_input = None
         elif field.purpose is TextPurpose.WORLD_NAME:
             if not value:
@@ -439,7 +439,7 @@ class MenuUI:
             return
         elif field.purpose is TextPurpose.WORLD_SEED:
             seed = value or win.pending_world_name
-            win.create_world(win.pending_world_name, seed)
+            win._worlds.create_world(win.pending_world_name, seed)
             win.text_input = None
         elif field.purpose is TextPurpose.RENAME_WORLD:
             if not (0 <= self.world_list_index < len(self.world_list_items)):

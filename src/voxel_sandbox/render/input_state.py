@@ -99,7 +99,7 @@ class InputHandler:
                     and 0 <= win.menu_ui.world_list_index < len(win.menu_ui.world_list_items)
                 ):
                     name, _ = win.menu_ui.world_list_items[win.menu_ui.world_list_index]
-                    win.load_world(name)
+                    win._worlds.load_world(name)
                 else:
                     win.menu_ui._handle_menu_command(win.menu.activate())
             elif symbol == key.ESCAPE:
@@ -249,7 +249,7 @@ class InputHandler:
                 return
             if win.world_renderer.set_block(hit.block, 0):
                 win.menu_ui._play_block_sound(block_id, hit.block)
-                win._send_block_action(hit.block, 0)
+                win._net.send_block_action(hit.block, 0)
                 drop = win.item_registry.drop_for_block(block_id)
                 if drop is not None:
                     win.entities.spawn_item(
@@ -273,7 +273,7 @@ class InputHandler:
                 return
             if win.world_renderer.set_block(hit.previous, definition.block_id):
                 win.menu_ui._play_block_sound(definition.block_id, hit.previous)
-                win._send_block_action(hit.previous, definition.block_id)
+                win._net.send_block_action(hit.previous, definition.block_id)
                 win.inventory.take_from_slot(win.hotbar.selected_index)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:

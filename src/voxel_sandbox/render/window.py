@@ -151,7 +151,7 @@ class GameWindow(pyglet.window.Window):
         recipes_path = resource_path("config/recipes.toml")
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
-        self._maintain_population((spawn_x, spawn_y, spawn_z))
+        self._gameplay._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
         self.structure_world = self.world_renderer.storage.load_structure_world()
         self.structure_renderer = StructureRenderer(
@@ -260,12 +260,12 @@ class GameWindow(pyglet.window.Window):
         self._net = NetworkController(self)
         self._worlds = WorldManager(self)
         self.menu_ui = MenuUI(self)
-        self._start_local_authority()
+        self._net.start_local_authority()
         if connect is not None:
-            self._connect_remote(connect, player_name)
+            self._net.connect_remote(connect, player_name)
         if recovered_saved_position is not None:
             LOGGER.warning("Recovered invalid saved player position: %s", recovered_saved_position)
-            self._save_player()
+            self._worlds._save_player()
         pyglet.clock.schedule_interval(self.fixed_update, FIXED_UPDATE_SECONDS)
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
@@ -275,8 +275,8 @@ class GameWindow(pyglet.window.Window):
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
         pyglet.clock.unschedule(self.reload_shaders)
-        self._stop_network_services()
-        self._save_player()
+        self._net.stop_services()
+        self._worlds._save_player()
         self.world_renderer.autosave()
         self.debug_shader.release()
         self.sky_renderer.release()
@@ -305,7 +305,7 @@ class GameWindow(pyglet.window.Window):
 
     def fixed_update(self, delta_time: float) -> None:
         _prof_start = time.perf_counter()
-        self._apply_lan_block_actions()
+        self._net.apply_lan_block_actions()
         if not self.menu.in_game:
             self.audio_director.set_game_state("menu")
             self.audio_director.set_biome("")
@@ -343,8 +343,8 @@ class GameWindow(pyglet.window.Window):
         self.world_renderer.update_streaming(center)
         self._network_accumulator += delta_time
         if self.network_session is not None:
-            self._process_network_messages()
-            self._update_remote_players()
+            self._net.process_messages()
+            self._net.update_remote_players()
             if self._network_accumulator >= 0.05:
                 self._network_accumulator %= 0.05
                 try:
@@ -354,23 +354,23 @@ class GameWindow(pyglet.window.Window):
                             math.radians(self.camera.yaw_degrees) + math.pi / 2.0,
                         )
                     if self.world_renderer.remote_mode:
-                        self._request_remote_chunk()
+                        self._net.request_remote_chunk()
                 except (ConnectionError, OSError):
                     self.inventory_status = "Connection interrupted; reconnecting..."
         self._autosave_accumulator += delta_time
         if self._autosave_accumulator >= 5.0:
             self._autosave_accumulator %= 5.0
-            self._save_player()
+            self._worlds._save_player()
             self.world_renderer.autosave()
         self._population_accumulator += delta_time
         if self._population_accumulator >= 5.0:
             self._population_accumulator %= 5.0
-            self._maintain_population((self.player.x, self.player.y, self.player.z))
+            self._gameplay._maintain_population((self.player.x, self.player.y, self.player.z))
         player_damage = self.entities.update(
             delta_time,
             (self.player.x, self.player.y, self.player.z),
             self.world_renderer.generator.height_at,
-            self._is_entity_hazard,
+            self._gameplay._is_entity_hazard,
             self._is_solid_combined,
         )
         if player_damage > 0.0:
@@ -742,21 +742,6 @@ class GameWindow(pyglet.window.Window):
         definition = self.item_registry.by_id(selected.item_id)
         return f"{definition.name} x{selected.count}"
 
-    def execute_command(self, source: str) -> None:
-        self._gameplay.execute_command(source)
-
-    def _set_difficulty(self, difficulty: str) -> None:
-        self._gameplay._set_difficulty(difficulty)
-
-    def _maintain_population(self, center: tuple[float, float, float]) -> None:
-        self._gameplay._maintain_population(center)
-
-    def _hostile_spawn_allowed(self, x: int, y: int, z: int) -> bool:
-        return self._gameplay._hostile_spawn_allowed(x, y, z)
-
-    def _is_entity_hazard(self, x: int, y: int, z: int) -> bool:
-        return self._gameplay._is_entity_hazard(x, y, z)
-
     def _restore_player_position(self, position: tuple[float, float, float]) -> bool:
         if not self._position_within_world(position):
             self._move_player_to_spawn()
@@ -770,9 +755,6 @@ class GameWindow(pyglet.window.Window):
             self._move_player_to_spawn()
             return False
         return True
-
-    def _player_position_within_world(self) -> bool:
-        return self._invalid_player_position_reason() is None
 
     def _invalid_player_position_reason(self) -> str | None:
         position = (self.player.x, self.player.y, self.player.z)
@@ -799,31 +781,6 @@ class GameWindow(pyglet.window.Window):
         self.player.velocity_y = 0.0
         self.player.on_ground = False
 
-    def _save_player(self) -> None:
-        self._worlds._save_player()
-
-    def _connect_remote(self, target: str, player_name: str) -> None:
-        self._net.connect_remote(target, player_name)
-
-    def _process_network_messages(self) -> None:
-        self._net.process_messages()
-
-    def _apply_network_message(self, message: Message) -> None:
-        self._net.apply_message(message)
-
-    @staticmethod
-    def _normalize_network_players(raw_players: object) -> dict[int, dict[str, object]]:
-        return NetworkController.normalize_players(raw_players)
-
-    def _sync_remote_players(self, players: dict[int, dict[str, object]]) -> None:
-        self._net.sync_remote_players(players)
-
-    def _update_remote_players(self) -> None:
-        self._net.update_remote_players()
-
-    def _send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
-        self._net.send_block_action(block, block_id)
-
     def _toggle_structure(self, entity_id: int) -> None:
         if self.world_renderer.remote_mode and self.authority is not None:
             try:
@@ -841,18 +798,6 @@ class GameWindow(pyglet.window.Window):
             entity = self.authority.toggle_structure(entity_id)
             if entity is not None:
                 self.inventory_status = f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
-
-    def open_to_lan(self) -> None:
-        self._net.open_to_lan()
-
-    def _apply_lan_block_actions(self) -> None:
-        self._net.apply_lan_block_actions()
-
-    def _start_local_authority(self) -> None:
-        self._net.start_local_authority()
-
-    def _replace_structure_snapshots(self, raw_snapshots: object, raw_revision: object) -> None:
-        self._net.replace_structure_snapshots(raw_snapshots, raw_revision)
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
@@ -878,28 +823,6 @@ class GameWindow(pyglet.window.Window):
             save_root=save_root,
         )
 
-    def create_world(self, name: str, seed: str) -> None:
-        self._worlds.create_world(name, seed)
-
-    def load_world(self, name: str) -> bool:
-        return self._worlds.load_world(name)
-
-    def _switch_world(self, save_root: Path) -> None:
-        self._worlds._switch_world(save_root)
-
-    @staticmethod
-    def _saved_worlds() -> tuple[tuple[str, Path], ...]:
-        return WorldManager._saved_worlds()
-
-    @staticmethod
-    def _world_slug(name: str) -> str:
-        return WorldManager._world_slug(name)
-
-    def _stop_network_services(self) -> None:
-        self._net.stop_services()
-
-    def _request_remote_chunk(self) -> None:
-        self._net.request_remote_chunk()
 
 
 def run_window(

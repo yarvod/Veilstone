@@ -1,11 +1,21 @@
-# Project Knowledge — Veilstone (voxel_sandbox)
+# Project Knowledge — Veilstone
 
 ## Purpose
 
-Veilstone is a Python voxel sandbox project built around a Minecraft-like world model.
+Veilstone is a Python voxel sandbox engine prototype built with Pyglet, ModernGL, NumPy, and `uv`.
 
 This file is not the project history and not the active workplan. Keep it stable and high-level.
-Detailed current state should live in `docs/WORKPLAN.md`, known issues in `docs/BUGS.md`, and completed changes in `docs/CHANGELOG.md`.
+
+Detailed current state belongs in:
+
+- `docs/WORKPLAN.md` — current phase, next actions, active refactor plan;
+- `docs/BUGS.md` — known bugs, regressions, flaky tests, unresolved issues;
+- `docs/CHANGELOG.md` — completed meaningful changes;
+- `.serena/memories/` — durable project knowledge, not task history.
+
+Do not store fast-changing implementation details in this file unless they are stable project rules.
+
+---
 
 ## Startup / "начинай" protocol
 
@@ -17,25 +27,28 @@ When the session starts, or when the user says "начинай", "продолж
    - `docs/BUGS.md`
    - `docs/CHANGELOG.md`
    - any other relevant docs in `docs/`
-3. Activate Serena and call `mcp__serena__initial_instructions`.
-4. List Serena memories and read only the relevant ones before touching code.
+3. If coding work is expected, activate Serena and call `mcp__serena__initial_instructions` once per session.
+4. List Serena memories and read only the relevant ones before touching code. Skip memories unrelated to the current task.
 5. Check `git status` and recent diff if the current task/phase is unclear.
 6. Infer the next step from `WORKPLAN.md`, docs, memories, and git state before asking the user.
-7. Work in small coherent phases.
-8. Before finishing a phase:
-   - run relevant tests;
+7. If docs contradict each other, resolve obvious docs state conflicts before starting new code work.
+8. Work in small coherent phases.
+9. Before finishing a phase:
+   - run relevant tests/checks;
    - review git diff;
    - update `docs/WORKPLAN.md` if the active state changed;
-   - update `docs/BUGS.md` if bugs were discovered, fixed, or reclassified;
+   - update `docs/BUGS.md` if bugs were discovered, fixed, reclassified, or proven obsolete;
    - update `docs/CHANGELOG.md` for completed user-visible, architectural, or phase-level changes;
    - if any Serena memory appears stale, verify it against code/docs/tests/git and update or delete it;
    - update Serena memories only if stable project knowledge changed;
    - refresh Serena index only after large refactors, file moves, module renames, or stale symbol results.
-9. Commit only completed coherent phases with passing relevant checks. Never add Claude/AI attribution.
+10. Commit only completed coherent phases with passing relevant checks. Never add Claude/AI attribution.
+
+---
 
 ## Architecture Overview
 
-Python voxel sandbox built with Pyglet, ModernGL, and NumPy.
+Python voxel sandbox built with Pyglet, ModernGL, NumPy, and `uv`.
 
 ### Layer Structure
 
@@ -46,9 +59,10 @@ app/             — bootstrap, settings, commands, paths
 render/          — window, world scene, meshes, UI, entities, shaders
 engine/          — chunks, generation, ECS, physics, lighting, water
 domain/          — blocks, items, inventory, crafting; pure domain layer
-infrastructure/  — storage, logging
+infrastructure/  — storage, logging, assets, profiling adapters
 network/         — server, client, discovery, protocol
 audio/           — bus, director, backend
+tests/           — unit, integration, smoke, performance coverage
 ```
 
 Rules:
@@ -57,6 +71,9 @@ Rules:
 - Avoid upward dependencies.
 - Avoid cross-layer shortcuts unless explicitly justified.
 - Prefer extracting focused modules over growing large orchestration classes.
+- Avoid adding more responsibility to historically large classes.
+
+---
 
 ## Docs workflow
 
@@ -116,6 +133,54 @@ Update it when:
 
 Do not put noisy implementation details into changelog. Keep it useful for humans.
 
+---
+
+## Docs consistency policy
+
+`docs/WORKPLAN.md`, `docs/BUGS.md`, and `docs/CHANGELOG.md` must not contradict each other.
+
+If `WORKPLAN.md` or `CHANGELOG.md` says a bug is fixed, but `BUGS.md` still marks it open, update `BUGS.md`.
+
+If `BUGS.md` says an issue is open, but tests/code show it is fixed, verify the current behavior and update `BUGS.md`.
+
+If current code/tests contradict docs, trust code/tests, then update docs.
+
+On "начинай", resolve obvious docs state conflicts before starting new code work.
+
+---
+
+## Project command policy
+
+This project uses `uv`. Prefer `uv run ...` commands over direct `.venv/bin/python ...`.
+
+Primary checks:
+
+```bash
+uv run pytest
+uv run pytest -m unit
+uv run pytest -m integration
+uv run pytest -m smoke
+uv run ruff check .
+uv run ruff format --check .
+uv run pyright
+```
+
+For focused work, run the narrow relevant test first.
+
+Before committing a completed phase, run at least:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+```
+
+Run `uv run pyright` for signature, architecture, public API, or cross-module changes.
+
+Do not attempt to fix unrelated project-wide Pyright/Ruff failures unless they are caused by the current change or explicitly requested.
+
+---
+
 ## MCP Tools — Usage Policy
 
 ### Session launch
@@ -137,9 +202,11 @@ hccs() {
 Start from project root:
 
 ```bash
-cd /path/to/voxel_sandbox
+cd /path/to/Veilstone
 hccs
 ```
+
+This starts the Headroom wrapper and applies Serena's Claude Code system prompt override.
 
 ### Headroom
 
@@ -153,7 +220,7 @@ Headroom is used for token/context efficiency.
 
 ### Serena
 
-Before coding work, call:
+Before coding work, call once per session:
 
 - `mcp__serena__initial_instructions`
 
@@ -186,6 +253,34 @@ For targeted edits, prefer Serena symbolic edit tools when appropriate:
 - `mcp__serena__rename_symbol`
 
 Before changing public APIs, exported classes, widely used methods, or central systems, use `find_referencing_symbols`.
+
+### Serena token discipline
+
+The goal of Serena is to reduce token usage by using symbolic navigation instead of reading large raw files.
+
+Serena is a scalpel, not a full-project scanner.
+
+Use Serena when it avoids reading large files or helps make precise edits:
+
+- find a known symbol;
+- inspect a specific class/function;
+- find references before changing an API;
+- get diagnostics for a touched file;
+- perform targeted symbolic edits.
+
+Do not use Serena for broad exploration unless necessary:
+
+- avoid repeated full-project searches;
+- avoid large symbol overviews for many files;
+- avoid broad references on generic symbols;
+- avoid reading many memories when only one is relevant;
+- do not repeat `initial_instructions` in the same session.
+
+If Serena output becomes large, stop, summarize the useful findings, then run `/compact` before continuing.
+
+If a normal `Read` of a small config, docs file, or short test is cheaper and clearer, use normal `Read` instead.
+
+---
 
 ## Serena memory/index policy
 
@@ -260,6 +355,44 @@ When reading a memory, verify task-critical claims against:
 
 If a memory contains outdated implementation details, replace them with stable architecture/convention-level knowledge or delete the memory.
 
+---
+
+## Context discipline
+
+Serena and other MCP tool results stay in context. Use tools precisely.
+
+Do not repeatedly call broad tools when a narrower query is possible.
+
+Avoid repeated:
+
+- `initial_instructions`;
+- full-project searches;
+- broad references on generic symbols;
+- large symbol overviews;
+- unnecessary memory reads;
+- huge raw logs;
+- full-file reads of large files.
+
+After large exploration phases:
+
+1. summarize the useful findings;
+2. run `/compact`;
+3. continue with implementation using the summary and focused code context.
+
+Recommended rhythm:
+
+```text
+focused discovery
+→ summary
+→ /compact
+→ implementation
+→ tests/checks
+→ docs/memory updates if needed
+→ commit
+```
+
+---
+
 ## Work style
 
 Work in small coherent phases.
@@ -269,7 +402,7 @@ Before editing:
 1. Understand the task.
 2. Check `docs/WORKPLAN.md`, `docs/BUGS.md`, and `docs/CHANGELOG.md`.
 3. Read relevant Serena memories.
-4. Use Serena symbol tools to locate code.
+4. Use Serena symbol tools to locate code when coding work is expected.
 5. Inspect tests related to the target behavior.
 
 During implementation:
@@ -279,27 +412,18 @@ During implementation:
 - avoid large diffs unless the phase explicitly requires it;
 - prefer focused extraction over adding more responsibility to large classes;
 - keep domain layer pure;
-- avoid introducing upward dependencies.
+- avoid introducing upward dependencies;
+- avoid "fixing everything" outside the current task.
 
 After implementation:
 
-- run relevant tests;
-- run broader tests when the phase touches shared systems;
+- run relevant tests/checks;
+- run broader checks when the phase touches shared systems;
 - review `git diff`;
 - update docs if project state changed;
 - update memories only if stable knowledge changed.
 
-## Tests
-
-Primary test command:
-
-```bash
-.venv/bin/python -m pytest tests/ -x -q
-```
-
-Use narrower test commands for focused work when appropriate.
-
-If a test failure appears pre-existing, verify and document it in `docs/BUGS.md` or `docs/WORKPLAN.md` rather than ignoring it.
+---
 
 ## Commit workflow
 
@@ -309,7 +433,7 @@ A phase is complete only when:
 
 - implementation is done;
 - relevant tests are added or updated when appropriate;
-- relevant tests pass, except for documented pre-existing failures;
+- relevant tests/checks pass, except for documented pre-existing failures;
 - diff has been reviewed;
 - docs are updated if phase/project state changed;
 - Serena memories are updated if stable project knowledge changed.
@@ -343,6 +467,8 @@ After committing, show:
 - commit hash
 - commit message
 - final `git status`
+
+---
 
 ## Known recurring pitfalls
 
