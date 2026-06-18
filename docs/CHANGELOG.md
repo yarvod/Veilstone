@@ -4,6 +4,8 @@
 
 ### Changed
 - **InventoryController extracted from GameWindow** — all inventory sprites, hotbar, health bar, held-item hand, and crafting UI moved to `render/inventory_ui.py:InventoryController`; GameWindow delegates via `self._inv_ctrl`
+- **MenuUI owns its widgets** — text input overlays, panels, labels, world list state moved from `GameWindow.__init__` into `MenuUI.__init__`; dead code (`menu_labels`, `world_list_labels`, `world_list_last_click`) deleted
+- **Fix `_begin_text_input` call path** — `input_state.py` now calls `win.menu_ui._begin_text_input()` instead of the missing `win._begin_text_input()` (was an AttributeError at runtime)
 
 ### Added
 - **Player swimming** — buoyancy, swim_speed, in_water state in PlayerController

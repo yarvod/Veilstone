@@ -22,8 +22,8 @@ def _make_win(*, in_game: bool = True, screen: Screen = Screen.SINGLEPLAYER) -> 
     win.inventory_open = False
     win.mouse_captured = False
     win.debug_overlay_visible = False
-    win.world_list_items = []
-    win.world_list_index = 0
+    win.menu_ui.world_list_items = []
+    win.menu_ui.world_list_index = 0
     win.key_state = KeyState()
     return win
 
@@ -86,8 +86,8 @@ class TestOnKeyPress:
     def test_menu_singleplayer_enter_loads_selected_world(self):
         win = _make_win(in_game=False, screen=Screen.SINGLEPLAYER)
         from pathlib import Path
-        win.world_list_items = [("TestWorld", Path("/tmp/test"))]
-        win.world_list_index = 0
+        win.menu_ui.world_list_items = [("TestWorld", Path("/tmp/test"))]
+        win.menu_ui.world_list_index = 0
         h = InputHandler(win)
         h.on_key_press(key.ENTER, 0)
         win.load_world.assert_called_once_with("TestWorld")
@@ -166,7 +166,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(key.T, 0)
-        win._begin_text_input.assert_called_once_with(
+        win.menu_ui._begin_text_input.assert_called_once_with(
             TextPurpose.CHAT, "Chat message", maximum_length=256
         )
 
@@ -174,7 +174,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(key.SLASH, 0)
-        win._begin_text_input.assert_called_once_with(
+        win.menu_ui._begin_text_input.assert_called_once_with(
             TextPurpose.COMMAND, "Command (/help)", initial="/", maximum_length=256
         )
 
@@ -285,20 +285,20 @@ class TestOnMouseScroll:
     def test_singleplayer_scroll_navigates_world_list(self):
         win = _make_win(in_game=False, screen=Screen.SINGLEPLAYER)
         win.menu.screen = Screen.SINGLEPLAYER
-        win.world_list_items = [("a", None), ("b", None), ("c", None)]
-        win.world_list_index = 1
+        win.menu_ui.world_list_items = [("a", None), ("b", None), ("c", None)]
+        win.menu_ui.world_list_index = 1
         h = InputHandler(win)
         h.on_mouse_scroll(0, 0, 0, 1)
-        assert win.world_list_index == 0
+        assert win.menu_ui.world_list_index == 0
 
     def test_singleplayer_scroll_down_navigates_world_list(self):
         win = _make_win(in_game=False, screen=Screen.SINGLEPLAYER)
         win.menu.screen = Screen.SINGLEPLAYER
-        win.world_list_items = [("a", None), ("b", None), ("c", None)]
-        win.world_list_index = 1
+        win.menu_ui.world_list_items = [("a", None), ("b", None), ("c", None)]
+        win.menu_ui.world_list_index = 1
         h = InputHandler(win)
         h.on_mouse_scroll(0, 0, 0, -1)
-        assert win.world_list_index == 2
+        assert win.menu_ui.world_list_index == 2
 
 
 class TestOnMouseMotion:

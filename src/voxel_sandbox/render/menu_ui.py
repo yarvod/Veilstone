@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import shutil
+import sys
 import time
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+import pyglet
 import moderngl
 
 from voxel_sandbox.app.settings import save_user_settings
@@ -14,16 +16,57 @@ from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import discover_worlds
-from voxel_sandbox.render.ui.menu import MenuCommand, Screen
+from voxel_sandbox.render.ui.menu import MenuCommand, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
+from voxel_sandbox.render.world_manager import WorldManager
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
 
 
 class MenuUI:
+    _FONT = platform_font_name(sys.platform)
+
     def __init__(self, win: GameWindow) -> None:
         self.win = win
+        self.text_input_overlay = pyglet.shapes.Rectangle(0, 0, 0, 0, color=(0, 0, 0))
+        self.text_input_overlay.opacity = 128
+        self.text_input_panel = pyglet.shapes.BorderedRectangle(
+            0, 0, 0, 0, 4, color=(24, 28, 38), border_color=(120, 130, 150)
+        )
+        self.text_input_title_label = pyglet.text.Label(
+            "",
+            anchor_x="center",
+            anchor_y="top",
+            font_name=self._FONT,
+            font_size=15,
+            color=(235, 235, 245, 255),
+        )
+        self.text_input_label = pyglet.text.Label(
+            "",
+            anchor_x="center",
+            anchor_y="center",
+            align="center",
+            multiline=True,
+            width=600,
+            font_name=self._FONT,
+            font_size=17,
+            color=(245, 220, 140, 255),
+        )
+        self.command_input_label = pyglet.text.Label(
+            "",
+            anchor_x="left",
+            anchor_y="bottom",
+            align="left",
+            multiline=True,
+            width=760,
+            font_name=self._FONT,
+            font_size=17,
+            color=(245, 220, 140, 255),
+        )
+        self.world_list_index = 0
+        self.world_list_items: list[tuple[str, ...]] = list(WorldManager._saved_worlds())
+        self._world_list_cache_time = time.perf_counter()
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -51,8 +94,8 @@ class MenuUI:
         if win.text_input is not None:
             self._draw_text_input_modal()
         elif win.text_input is None:
-            win.text_input_overlay.opacity = 0
-            win.text_input_panel.opacity = 0
+            self.text_input_overlay.opacity = 0
+            self.text_input_panel.opacity = 0
 
     def _draw_text_input_modal(self) -> None:
         win = self.win
@@ -63,25 +106,25 @@ class MenuUI:
         panel_x = (win.width - panel_width) // 2
         panel_y = (win.height - panel_height) // 2
 
-        win.text_input_overlay.x = 0
-        win.text_input_overlay.y = 0
-        win.text_input_overlay.width = win.width
-        win.text_input_overlay.height = win.height
-        win.text_input_overlay.color = (0, 0, 0)
-        win.text_input_overlay.opacity = 150
-        win.text_input_overlay.draw()
+        self.text_input_overlay.x = 0
+        self.text_input_overlay.y = 0
+        self.text_input_overlay.width = win.width
+        self.text_input_overlay.height = win.height
+        self.text_input_overlay.color = (0, 0, 0)
+        self.text_input_overlay.opacity = 150
+        self.text_input_overlay.draw()
 
-        win.text_input_panel.x = panel_x
-        win.text_input_panel.y = panel_y
-        win.text_input_panel.width = panel_width
-        win.text_input_panel.height = panel_height
-        win.text_input_panel.draw()
+        self.text_input_panel.x = panel_x
+        self.text_input_panel.y = panel_y
+        self.text_input_panel.width = panel_width
+        self.text_input_panel.height = panel_height
+        self.text_input_panel.draw()
 
         title = win.text_input.purpose.name.replace("_", " ").title()
-        win.text_input_title_label.text = title
-        win.text_input_title_label.x = win.width // 2
-        win.text_input_title_label.y = panel_y + panel_height - 16
-        win.text_input_title_label.draw()
+        self.text_input_title_label.text = title
+        self.text_input_title_label.x = win.width // 2
+        self.text_input_title_label.y = panel_y + panel_height - 16
+        self.text_input_title_label.draw()
 
         self._draw_text_input()
 
@@ -89,19 +132,19 @@ class MenuUI:
         win = self.win
         assert win.text_input is not None
         if win.menu.in_game and win.text_input.purpose in {TextPurpose.CHAT, TextPurpose.COMMAND}:
-            win.command_input_label.text = win.text_input.display
-            win.command_input_label.width = min(760, win.width - 40)
-            win.command_input_label.x = 20
-            win.command_input_label.y = 76
-            win.command_input_label.draw()
+            self.command_input_label.text = win.text_input.display
+            self.command_input_label.width = min(760, win.width - 40)
+            self.command_input_label.x = 20
+            self.command_input_label.y = 76
+            self.command_input_label.draw()
         else:
-            win.text_input_label.text = win.text_input.display
-            win.text_input_label.anchor_x = "center"
-            win.text_input_label.anchor_y = "center"
-            win.text_input_label.width = 600
-            win.text_input_label.x = win.width // 2
-            win.text_input_label.y = win.height // 3
-            win.text_input_label.draw()
+            self.text_input_label.text = win.text_input.display
+            self.text_input_label.anchor_x = "center"
+            self.text_input_label.anchor_y = "center"
+            self.text_input_label.width = 600
+            self.text_input_label.x = win.width // 2
+            self.text_input_label.y = win.height // 3
+            self.text_input_label.draw()
 
     def _menu_item_label(self, index: int) -> str:
         win = self.win
@@ -129,33 +172,33 @@ class MenuUI:
     def _refresh_world_list(self) -> None:
         win = self.win
         now = time.perf_counter()
-        if now - win._world_list_cache_time > 2.0:
-            win.world_list_items = list(win._saved_worlds())
-            win._world_list_cache_time = now
+        if now - self._world_list_cache_time > 2.0:
+            self.world_list_items = list(win._saved_worlds())
+            self._world_list_cache_time = now
 
     def _draw_world_list(self, center_x: int) -> None:
         win = self.win
         self._refresh_world_list()
-        count = len(win.world_list_items)
+        count = len(self.world_list_items)
         if count > 0:
-            win.world_list_index = min(win.world_list_index, max(0, count - 1))
+            self.world_list_index = min(self.world_list_index, max(0, count - 1))
         else:
-            win.world_list_index = -1
+            self.world_list_index = -1
 
         def on_select(idx: int) -> None:
-            win.world_list_index = idx
+            self.world_list_index = idx
 
         def on_play() -> None:
-            if win.world_list_items and 0 <= win.world_list_index < count:
-                name, _ = win.world_list_items[win.world_list_index]
+            if self.world_list_items and 0 <= self.world_list_index < count:
+                name, _ = self.world_list_items[self.world_list_index]
                 win.load_world(name)
 
         def on_create() -> None:
             self._handle_menu_command(MenuCommand.CREATE_WORLD)
 
         def on_edit() -> None:
-            if win.world_list_items and 0 <= win.world_list_index < count:
-                name, _ = win.world_list_items[win.world_list_index]
+            if self.world_list_items and 0 <= self.world_list_index < count:
+                name, _ = self.world_list_items[self.world_list_index]
                 self._begin_text_input(
                     TextPurpose.RENAME_WORLD,
                     "Rename world",
@@ -164,7 +207,7 @@ class MenuUI:
                 )
 
         def on_delete() -> None:
-            if win.world_list_items and 0 <= win.world_list_index < count:
+            if self.world_list_items and 0 <= self.world_list_index < count:
                 self._begin_text_input(
                     TextPurpose.DELETE_WORLD,
                     "Type DELETE to confirm deleting:",
@@ -180,20 +223,20 @@ class MenuUI:
             )
             return
 
-        start_index = max(0, win.world_list_index - 3)
+        start_index = max(0, self.world_list_index - 3)
         end_index = start_index + 8
         if end_index > count:
             end_index = count
             start_index = max(0, end_index - 8)
 
-        visible_items = win.world_list_items[start_index:end_index]
+        visible_items = self.world_list_items[start_index:end_index]
 
         def mapped_on_select(visible_idx: int) -> None:
             on_select(start_index + visible_idx)
 
         win.ui_renderer.update_world_list(
             visible_items,
-            win.world_list_index - start_index,
+            self.world_list_index - start_index,
             mapped_on_select,
             on_play,
             on_create,
@@ -399,12 +442,12 @@ class MenuUI:
             win.create_world(win.pending_world_name, seed)
             win.text_input = None
         elif field.purpose is TextPurpose.RENAME_WORLD:
-            if not (0 <= win.world_list_index < len(win.world_list_items)):
+            if not (0 <= self.world_list_index < len(self.world_list_items)):
                 win.menu.status = "No world selected to rename."
                 win.text_input = None
                 win._sync_mouse_capture()
                 return
-            name, path = win.world_list_items[win.world_list_index]
+            name, path = self.world_list_items[self.world_list_index]
             storage = WorldStorage(path)
             meta = storage.load_metadata()
             if meta is None:
@@ -414,23 +457,23 @@ class MenuUI:
                 return
             storage.ensure_world(name=value or meta.name, seed=meta.seed)
             win.menu.status = f"Renamed world to {value or meta.name}."
-            win._world_list_cache_time = 0.0
+            self._world_list_cache_time = 0.0
             self._refresh_world_list()
             win.text_input = None
         elif field.purpose is TextPurpose.DELETE_WORLD:
             if value == "DELETE":
-                if not (0 <= win.world_list_index < len(win.world_list_items)):
+                if not (0 <= self.world_list_index < len(self.world_list_items)):
                     win.menu.status = "No world selected to delete."
                     win.text_input = None
                     win._sync_mouse_capture()
                     return
-                name, path = win.world_list_items[win.world_list_index]
+                name, path = self.world_list_items[self.world_list_index]
                 shutil.rmtree(path)
                 win.menu.status = f"Deleted world {name}."
-                win._world_list_cache_time = 0.0
+                self._world_list_cache_time = 0.0
                 self._refresh_world_list()
-                win.world_list_index = max(
-                    0, min(win.world_list_index, len(win.world_list_items) - 1)
+                self.world_list_index = max(
+                    0, min(self.world_list_index, len(self.world_list_items) - 1)
                 )
             else:
                 win.menu.status = "Delete cancelled (type DELETE to confirm)."

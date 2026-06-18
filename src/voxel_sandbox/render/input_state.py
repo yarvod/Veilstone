@@ -78,15 +78,15 @@ class InputHandler:
             return
         if not win.menu.in_game:
             if symbol in {key.UP, key.W}:
-                if win.menu.screen is Screen.SINGLEPLAYER and win.world_list_items:
-                    win.world_list_index = max(0, win.world_list_index - 1)
+                if win.menu.screen is Screen.SINGLEPLAYER and win.menu_ui.world_list_items:
+                    win.menu_ui.world_list_index = max(0, win.menu_ui.world_list_index - 1)
                 else:
                     win.menu.move_selection(-1)
                 win.menu_ui._play_ui_sound()
             elif symbol in {key.DOWN, key.S}:
-                if win.menu.screen is Screen.SINGLEPLAYER and win.world_list_items:
-                    win.world_list_index = min(
-                        len(win.world_list_items) - 1, win.world_list_index + 1
+                if win.menu.screen is Screen.SINGLEPLAYER and win.menu_ui.world_list_items:
+                    win.menu_ui.world_list_index = min(
+                        len(win.menu_ui.world_list_items) - 1, win.menu_ui.world_list_index + 1
                     )
                 else:
                     win.menu.move_selection(1)
@@ -95,10 +95,10 @@ class InputHandler:
                 win.menu_ui._play_ui_sound()
                 if (
                     win.menu.screen is Screen.SINGLEPLAYER
-                    and win.world_list_items
-                    and 0 <= win.world_list_index < len(win.world_list_items)
+                    and win.menu_ui.world_list_items
+                    and 0 <= win.menu_ui.world_list_index < len(win.menu_ui.world_list_items)
                 ):
-                    name, _ = win.world_list_items[win.world_list_index]
+                    name, _ = win.menu_ui.world_list_items[win.menu_ui.world_list_index]
                     win.load_world(name)
                 else:
                     win.menu_ui._handle_menu_command(win.menu.activate())
@@ -153,10 +153,10 @@ class InputHandler:
             win._inv_ctrl.drop_selected_item()
             return
         if symbol == key.T:
-            win._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
+            win.menu_ui._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
             return
         if symbol == key.SLASH:
-            win._begin_text_input(
+            win.menu_ui._begin_text_input(
                 TextPurpose.COMMAND,
                 "Command (/help)",
                 initial="/",
@@ -283,10 +283,10 @@ class InputHandler:
             return
         if win.menu.screen is Screen.SINGLEPLAYER:
             if scroll_y > 0:
-                win.world_list_index = max(0, win.world_list_index - 1)
+                win.menu_ui.world_list_index = max(0, win.menu_ui.world_list_index - 1)
             elif scroll_y < 0:
-                win.world_list_index = min(
-                    max(0, len(win.world_list_items) - 1), win.world_list_index + 1
+                win.menu_ui.world_list_index = min(
+                    max(0, len(win.menu_ui.world_list_items) - 1), win.menu_ui.world_list_index + 1
                 )
             return
         if win.menu.in_game and not win.inventory_open and scroll_y:
