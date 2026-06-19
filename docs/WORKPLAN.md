@@ -246,30 +246,31 @@ Resolver `<namespace>:<kind>/<name>` → `assets/<namespace>/textures/<kind>/<na
 - [x] Подключить audio через event bus
 - [x] Тесты: unit
 
-### 3.2 World Generation Pipeline
-- [ ] DimensionDef → [HeightProvider, SurfacePlacer, FeatureDecorator]
-- [ ] TerrainGenerator использует pipeline
-- [ ] Новый биом = новый decorator
-- [ ] Тесты: unit + integration
+### 3.2 World Generation Pipeline ✅
+- [x] DimensionDef → [HeightProvider, SurfacePlacer, FeatureDecorator] в `pipeline.py`
+- [x] TerrainGenerator использует DimensionDef; BiomeSurfacePlacer читает block IDs из BlockRegistry
+- [x] Новый биом = новый decorator или новый BiomeDef; wired in world_scene.py
+- [x] Тесты: 15 unit
 
-### 3.3 Game State Machine
-- [ ] GameState enum: LOADING, MENU, PLAYING, PAUSED
-- [ ] State transitions с валидацией
-- [ ] Тесты: unit
+### 3.3 Game State Machine ✅
+- [x] GameState enum: MENU, PLAYING, PAUSED в `engine/game_state.py`
+- [x] GameStateMachine: transition validation, InvalidTransition, try_transition
+- [x] _sync_game_state() в GameWindow; wired at all screen transitions
+- [x] Тесты: 19 unit
 
 ---
 
 ## Phase 4: Quality & Testing
 
-### 4.1 Missing Unit Tests
-- [ ] Unit тесты для WorldManager (Phase 1.4)
-- [ ] Unit тесты для GameplayController (Phase 1.5)
+### 4.1 Missing Unit Tests ✅
+- [x] 26 unit тестов для WorldManager (slug, position bounds, restore, spawn, saved_worlds)
+- [x] 19 unit тестов для GameplayController (/time, /difficulty, /resourcepack, /structure)
 - [ ] E2E тесты со скриншотами (verify skill)
 
-### 4.2 Performance
-- [ ] Кеширование `_saved_worlds()`
+### 4.2 Performance ✅
+- [x] Кеширование `_saved_worlds()` — class-level cache, invalidate on create_world
 - [ ] Профилирование chunk loading
-- [ ] Magic numbers → GameplayConstants
+- [x] Magic numbers → `engine/gameplay_constants.py` (position bounds, tree/ore density, terrain)
 
 ---
 

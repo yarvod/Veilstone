@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **World generation pipeline** — `HeightProvider`, `SurfacePlacer`, `FeatureDecorator` protocols + `DimensionDef` in `engine/generation/pipeline.py`; `BiomeSurfacePlacer` reads block IDs from `BlockRegistry`+`BiomeRegistry` so biome surface blocks come from `data/biomes.toml` (highlands = stone, swamp = dirt, etc.); wired in world_scene.py.
+- **GameState machine** — `GameState` enum (MENU / PLAYING / PAUSED) + `GameStateMachine` with validated transitions in `engine/game_state.py`; `GameWindow.game_state` field synced at all screen transitions via `_sync_game_state()`.
+- **Gameplay constants** — named constants extracted to `engine/gameplay_constants.py` (player position bounds, world limits, terrain heights, tree/ore density thresholds) replacing scattered magic numbers.
+- **`_saved_worlds()` cache** — `WorldManager._saved_worlds()` caches filesystem scan at class level; invalidated on `create_world()`.
 - **Minecraft Java resource pack MVP** — block texture IDs now use `minecraft:block/*` resource locations; folder/ZIP packs can be imported for block atlases, and `/resourcepack <path|default>` hot-swaps the active atlas in an open world.
 - **Texture pack picker** — Settings now includes a Texture Packs screen with Default plus discovered folder/ZIP packs from `resource_packs/`, apply/default actions, and import fallback/missing status.
 - **Texture atlas cache** — imported resource pack atlases are cached as PNG+JSON under `texture_cache` and invalidated when pack file size/mtime changes.
