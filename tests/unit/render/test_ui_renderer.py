@@ -32,8 +32,10 @@ def _make_renderer(w: int = 800, h: int = 600):
 
 
 def test_action_buttons_are_persistent_across_update_world_list_calls() -> None:
+    from voxel_sandbox.render.ui.menu import Screen
+
     r = _make_renderer()
-    r._current_screen = "singleplayer_stub"  # skip add-to-root logic for this test
+    r._current_screen = Screen.SINGLEPLAYER
 
     cb = MagicMock()
     r.update_world_list(
@@ -50,8 +52,10 @@ def test_action_buttons_are_persistent_across_update_world_list_calls() -> None:
 
 
 def test_action_button_callback_is_updated_without_recreating() -> None:
+    from voxel_sandbox.render.ui.menu import Screen
+
     r = _make_renderer()
-    r._current_screen = "singleplayer_stub"
+    r._current_screen = Screen.SINGLEPLAYER
 
     cb_first = MagicMock()
     r.update_world_list(
@@ -70,8 +74,10 @@ def test_pressed_state_survives_across_frames() -> None:
     """Simulate: press on frame N, render frame N+1, release on frame N+1 → click fires."""
     from pyglet.window import mouse
 
-    r = _make_renderer()
-    r._current_screen = "singleplayer_stub"
+    from voxel_sandbox.render.ui.menu import Screen
+
+    r = _make_renderer(800, 600)
+    r._current_screen = Screen.SINGLEPLAYER
 
     fired = []
     r.update_world_list(
@@ -85,11 +91,11 @@ def test_pressed_state_survives_across_frames() -> None:
         lambda: None,
         primary_label="Play",
     )
-    r._layout()  # lay out so bounds are set
+    # Layout is called inside update_world_list; action hboxes are positioned.
 
-    # Find the play button and simulate its bounds being at a clickable position.
     play_btn = r._action_primary
     assert play_btn.on_click_callback is not None
+    assert play_btn.bounds.width > 0, "Button must have non-zero bounds after layout"
 
     # Simulate press at button centre.
     cx = int(play_btn.bounds.x + play_btn.bounds.width / 2)

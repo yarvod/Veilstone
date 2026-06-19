@@ -75,7 +75,8 @@ class MenuUI:
         self._world_list_cache_time = time.perf_counter()
         self.texture_pack_items: list[tuple[str, Path | None]] = self._discover_texture_packs()
         self._texture_pack_cache_time = time.perf_counter()
-        self.texture_pack_index = 0  # will be synced to active pack on first draw
+        self.texture_pack_index = 0
+        self._tp_screen_active = False  # True while TEXTURE_PACKS screen is open
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -271,14 +272,11 @@ class MenuUI:
     def _refresh_texture_pack_list(self) -> None:
         now = time.perf_counter()
         if now - self._texture_pack_cache_time > 2.0:
-            active = self.win.settings.graphics.resource_pack_path
             self.texture_pack_items = self._discover_texture_packs()
             self._texture_pack_cache_time = now
-            # Keep selection on the active pack after refresh.
-            for i, (_, path) in enumerate(self.texture_pack_items):
-                if (str(path) if path else "") == active:
-                    self.texture_pack_index = i
-                    break
+            # Clamp index in case pack count changed.
+            count = len(self.texture_pack_items)
+            self.texture_pack_index = max(0, min(self.texture_pack_index, count - 1))
 
     def _draw_texture_pack_list(self) -> None:
         win = self.win
@@ -288,17 +286,16 @@ class MenuUI:
             return
         self.texture_pack_index = max(0, min(self.texture_pack_index, count - 1))
 
-        active_path = win.settings.graphics.resource_pack_path
-        # Sync selection to active pack if not already pointing at it.
-        if self.texture_pack_items[self.texture_pack_index][1] is None:
-            currently_selected_path = ""
-        else:
-            currently_selected_path = str(self.texture_pack_items[self.texture_pack_index][1])
-        if currently_selected_path != active_path:
+        # Sync selection to active pack only on first entry into this screen.
+        if not self._tp_screen_active:
+            self._tp_screen_active = True
+            active_path = win.settings.graphics.resource_pack_path
             for i, (_, path) in enumerate(self.texture_pack_items):
                 if (str(path) if path else "") == active_path:
                     self.texture_pack_index = i
                     break
+
+        active_path = win.settings.graphics.resource_pack_path
 
         def on_select(idx: int) -> None:
             self.texture_pack_index = idx
@@ -306,7 +303,11 @@ class MenuUI:
         def on_apply() -> None:
             self._apply_selected_texture_pack()
 
+        def on_import() -> None:
+            self._import_texture_pack()
+
         def on_cancel() -> None:
+            self._tp_screen_active = False
             win.menu.back()
             win._sync_game_state()
 
@@ -330,12 +331,12 @@ class MenuUI:
             self.texture_pack_index - start_index,
             mapped_on_select,
             on_apply,
-            lambda: None,
+            on_import,
             lambda: None,
             lambda: None,
             on_cancel,
             primary_label="Apply Pack",
-            secondary_label="",
+            secondary_label="Import...",
             edit_label="",
             delete_label="",
             cancel_label="Back",
@@ -375,6 +376,67 @@ class MenuUI:
         )
         save_user_settings(win.settings)
         win.menu.status = self._texture_pack_status(label, report)
+
+    def _import_texture_pack(self) -> None:
+        win = self.win
+        dest_dir = self._resource_packs_dir()
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+        except ImportError:
+            win.menu.status = "Import requires tkinter (not available)."
+            return
+
+        root_tk = tk.Tk()
+        root_tk.withdraw()
+        root_tk.lift()
+        root_tk.attributes("-topmost", True)
+
+        # Ask for ZIP first; fall back to directory selection.
+        path_str = filedialog.askopenfilename(
+            parent=root_tk,
+            title="Select Resource Pack ZIP",
+            filetypes=[("Resource Pack", "*.zip"), ("All Files", "*.*")],
+        )
+        if not path_str:
+            path_str = filedialog.askdirectory(
+                parent=root_tk,
+                title="Select Resource Pack Folder",
+            )
+        root_tk.destroy()
+
+        if not path_str:
+            return
+
+        src = Path(path_str)
+        if not src.exists():
+            win.menu.status = "Selected path does not exist."
+            return
+
+        dest = dest_dir / src.name
+        try:
+            if src.is_file():
+                import shutil
+
+                shutil.copy2(src, dest)
+            else:
+                import shutil
+
+                shutil.copytree(src, dest, dirs_exist_ok=True)
+        except OSError as error:
+            win.menu.status = f"Import failed: {error}"
+            return
+
+        # Refresh list and select the imported pack.
+        self.texture_pack_items = self._discover_texture_packs()
+        self._texture_pack_cache_time = time.perf_counter()
+        for i, (_, path) in enumerate(self.texture_pack_items):
+            if path is not None and path.name == src.name:
+                self.texture_pack_index = i
+                break
+        win.menu.status = f"Imported: {src.name}"
 
     def _texture_pack_status(self, label: str, report: ImportReport | None) -> str:
         if report is None:
