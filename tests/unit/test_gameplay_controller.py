@@ -142,7 +142,9 @@ def test_resourcepack_nonexistent_path_sets_error(ctrl, win) -> None:
 def test_resourcepack_default_calls_apply(ctrl, win) -> None:
     mock_atlas = MagicMock(return_value=MagicMock())
     settings_store = MagicMock()
-    ctrl._apply_resource_pack = ApplyResourcePackUseCase(mock_atlas, settings_store)
+    texture_packs = MagicMock()
+    texture_packs.load_block_atlas = mock_atlas
+    ctrl._apply_resource_pack = ApplyResourcePackUseCase(texture_packs, settings_store)
 
     ctrl.execute_command("/resourcepack default")
 

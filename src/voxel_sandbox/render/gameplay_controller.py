@@ -19,7 +19,6 @@ from voxel_sandbox.app.commands import (
 )
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
-from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -29,7 +28,7 @@ class GameplayController:
     def __init__(self, win: GameWindow) -> None:
         self.win = win
         self._apply_resource_pack = ApplyResourcePackUseCase(
-            atlas_loader=load_active_block_atlas,
+            texture_packs=win.app_runtime.texture_packs,
             settings_store=win.app_runtime.settings_store,
         )
 

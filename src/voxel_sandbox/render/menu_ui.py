@@ -18,8 +18,6 @@ from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import discover_worlds
-from voxel_sandbox.render.texture_packs.discovery import discover_texture_packs
-from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 from voxel_sandbox.render.texture_packs.models import ImportReport
 from voxel_sandbox.render.ui.menu import MenuCommand, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
@@ -266,7 +264,7 @@ class MenuUI:
         return Path("resource_packs")
 
     def _discover_texture_packs(self) -> list[tuple[str, Path | None]]:
-        return discover_texture_packs(self._resource_packs_dir())
+        return self.win.app_runtime.texture_packs.discover(self._resource_packs_dir())
 
     def _refresh_texture_pack_list(self) -> None:
         now = time.perf_counter()
@@ -355,7 +353,7 @@ class MenuUI:
             report = next_report
 
         result = ApplyResourcePackUseCase(
-            atlas_loader=load_active_block_atlas,
+            texture_packs=win.app_runtime.texture_packs,
             settings_store=win.app_runtime.settings_store,
         ).execute(
             path=None if pack_path is None else str(pack_path),

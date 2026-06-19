@@ -21,6 +21,19 @@ class WorldRenderPort(Protocol):
     def apply_texture_pack(self, atlas: Any) -> None: ...
 
 
+class TexturePackServicePort(Protocol):
+    def discover(self, root: Path) -> list[tuple[str, Path | None]]: ...
+
+    def load_block_atlas(
+        self,
+        path: Path | None,
+        *,
+        registry: Any,
+        cache_root: Path,
+        report_callback: Any | None = None,
+    ) -> Any: ...
+
+
 @dataclass(frozen=True, slots=True)
 class ApplyResourcePackResult:
     applied: bool
@@ -28,12 +41,9 @@ class ApplyResourcePackResult:
     status: str
 
 
-AtlasLoader = Callable[..., Any]
-
-
 @dataclass(frozen=True, slots=True)
 class ApplyResourcePackUseCase:
-    atlas_loader: AtlasLoader
+    texture_packs: TexturePackServicePort
     settings_store: SettingsStorePort
 
     def execute(
@@ -54,7 +64,7 @@ class ApplyResourcePackUseCase:
             )
 
         try:
-            atlas = self.atlas_loader(
+            atlas = self.texture_packs.load_block_atlas(
                 pack_path,
                 registry=renderer.registry,
                 cache_root=cache_root,

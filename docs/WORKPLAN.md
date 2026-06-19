@@ -41,21 +41,21 @@
   - [x] A6.2 Replace `HudController(self)` with `HudController(HudWindowAdapter(self))`, localizing the window compatibility adapter.
   - [x] A6.3 Move HUD frame/layout reads (`width`, `height`, `inventory_open`) to `HudFrameSnapshot` view data.
   - [ ] A6.4 Continue replacing HUD direct adapter reads with snapshots where useful.
-- [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
+- [x] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
   - [x] A7.1 Add `application.resource_packs.ApplyResourcePackUseCase` with `WorldRenderPort`, `SettingsStorePort`, injected atlas loader, and unit tests.
   - [x] A7.2 Route `/resourcepack` command through `ApplyResourcePackUseCase`.
   - [x] A7.3 Route Settings Texture Packs UI through the same use case.
-  - [ ] A7.4 Move texture pack discovery/loading/cache ownership behind a service port.
+  - [x] A7.4 Move texture pack discovery/loading/cache ownership behind a service port.
 - [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
 - [ ] A9 Add isolated tests for use cases/systems: resource pack apply, player movement, fluid step, mob spawning, generation pipeline без Pyglet/OpenGL.
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: continue A7 by moving texture pack discovery/loading/cache ownership behind a service port.
+Следующий кодовый шаг: start A8 renderer/world ownership boundary split.
 
 1. Do not move storage/generation out of `DemoWorldRenderer` until A8.
-2. Keep command and UI resource pack behavior identical through the use case.
-3. Test command unit path and texture pack UI/menu path.
+2. Start with a low-risk ownership boundary, not a renderer rewrite.
+3. Keep command and UI resource pack behavior covered by use case tests.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 
 ## Architecture Guardrails

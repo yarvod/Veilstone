@@ -53,6 +53,7 @@ from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
+from voxel_sandbox.render.texture_packs.service import RenderTexturePackService
 from voxel_sandbox.render.ui.menu import MenuController
 from voxel_sandbox.render.ui.renderer import UiRenderer
 from voxel_sandbox.render.ui.text_input import TextInput
@@ -98,6 +99,8 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
         self.app_runtime = app_runtime or build_app_runtime(settings)
+        if self.app_runtime.texture_packs is None:
+            self.app_runtime.texture_packs = RenderTexturePackService()
         self._gameplay = GameplayController(self)
         self.audio = self.app_runtime.audio
         self.audio_director = self.app_runtime.audio_director
