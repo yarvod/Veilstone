@@ -22,6 +22,16 @@ def test_player_facing_menu_tree() -> None:
         "Nickname",
         "Back",
     ]
+    assert labels(Screen.SETTINGS) == [
+        "Shadow Quality",
+        "Clouds",
+        "VSync",
+        "Difficulty",
+        "Texture Packs",
+        "Audio",
+        "Controls",
+        "Back",
+    ]
     assert labels(Screen.PAUSE) == ["Resume", "Open to LAN", "Settings", "Main Menu"]
 
 
@@ -59,7 +69,7 @@ def test_audio_back_does_not_replace_settings_return_screen() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(4)
+    menu.select(5)
     menu.activate()
     assert menu.screen is Screen.AUDIO
     menu.select(len(menu.items) - 1)
@@ -71,12 +81,27 @@ def test_audio_back_does_not_replace_settings_return_screen() -> None:
     assert menu.screen is Screen.MAIN
 
 
+def test_texture_pack_back_returns_to_settings() -> None:
+    menu = MenuController()
+    menu.select(2)
+    menu.activate()
+    assert menu.screen is Screen.SETTINGS
+
+    menu.select(4)
+    menu.activate()
+    assert menu.screen is Screen.TEXTURE_PACKS
+
+    menu.back()
+    assert menu.screen is Screen.SETTINGS
+
+
 def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert labels(Screen.SETTINGS) == [
         "Shadow Quality",
         "Clouds",
         "VSync",
         "Difficulty",
+        "Texture Packs",
         "Audio",
         "Controls",
         "Back",

@@ -205,9 +205,9 @@ Acceptance: `uv run pytest -m integration`
 ---
 
 ### T7 — UI Texture Pack picker (отдельно, после T1-T6)
-- [ ] Settings → Texture Packs screen
-- [ ] Список: Default + ZIP/folders из `resource_packs/`
-- [ ] Apply выбранного pack; показывать missing/warnings; сохранять выбор
+- [x] Settings → Texture Packs screen
+- [x] Список: Default + ZIP/folders из `resource_packs/`
+- [x] Apply выбранного pack; показывать missing/warnings; сохранять выбор
 
 ---
 

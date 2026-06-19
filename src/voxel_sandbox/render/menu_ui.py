@@ -5,17 +5,23 @@ from __future__ import annotations
 import shutil
 import sys
 import time
+import zipfile
 from dataclasses import replace
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import moderngl
 import pyglet
+from PIL import UnidentifiedImageError
 
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import discover_worlds
+from voxel_sandbox.render.texture_packs.discovery import discover_texture_packs
+from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
+from voxel_sandbox.render.texture_packs.models import ImportReport
 from voxel_sandbox.render.ui.menu import MenuCommand, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_manager import WorldManager
@@ -67,6 +73,9 @@ class MenuUI:
         self.world_list_index = 0
         self.world_list_items: list[tuple[str, ...]] = list(WorldManager._saved_worlds())
         self._world_list_cache_time = time.perf_counter()
+        self.texture_pack_index = 0
+        self.texture_pack_items: list[tuple[str, Path | None]] = self._discover_texture_packs()
+        self._texture_pack_cache_time = time.perf_counter()
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -94,6 +103,8 @@ class MenuUI:
 
         if win.menu.screen is Screen.SINGLEPLAYER:
             self._draw_world_list(win.width // 2)
+        elif win.menu.screen is Screen.TEXTURE_PACKS:
+            self._draw_texture_pack_list()
 
         win.ui_renderer.draw()
         if win.text_input is not None:
@@ -248,6 +259,113 @@ class MenuUI:
             on_delete,
             on_cancel,
         )
+
+    # ── Texture pack list ───────────────────────────────────────────────────
+
+    def _resource_packs_dir(self) -> Path:
+        return Path("resource_packs")
+
+    def _discover_texture_packs(self) -> list[tuple[str, Path | None]]:
+        return discover_texture_packs(self._resource_packs_dir())
+
+    def _refresh_texture_pack_list(self) -> None:
+        now = time.perf_counter()
+        if now - self._texture_pack_cache_time > 2.0:
+            self.texture_pack_items = self._discover_texture_packs()
+            self._texture_pack_cache_time = now
+
+    def _draw_texture_pack_list(self) -> None:
+        win = self.win
+        self._refresh_texture_pack_list()
+        count = len(self.texture_pack_items)
+        self.texture_pack_index = min(self.texture_pack_index, max(0, count - 1))
+
+        def on_select(idx: int) -> None:
+            self.texture_pack_index = idx
+
+        def on_apply() -> None:
+            self._apply_selected_texture_pack()
+
+        def on_default() -> None:
+            self.texture_pack_index = 0
+            self._apply_selected_texture_pack()
+
+        def noop() -> None:
+            return
+
+        def on_cancel() -> None:
+            win.menu.back()
+
+        start_index = max(0, self.texture_pack_index - 3)
+        end_index = min(count, start_index + 8)
+        start_index = max(0, end_index - 8)
+        visible_items = self.texture_pack_items[start_index:end_index]
+
+        def mapped_on_select(visible_idx: int) -> None:
+            on_select(start_index + visible_idx)
+
+        win.ui_renderer.update_world_list(
+            visible_items,
+            self.texture_pack_index - start_index,
+            mapped_on_select,
+            on_apply,
+            on_default,
+            noop,
+            noop,
+            on_cancel,
+            primary_label="Apply",
+            secondary_label="Default",
+            edit_label="",
+            delete_label="",
+            cancel_label="Back",
+        )
+
+    def _apply_selected_texture_pack(self) -> None:
+        win = self.win
+        if not (0 <= self.texture_pack_index < len(self.texture_pack_items)):
+            win.menu.status = "No texture pack selected."
+            return
+
+        label, pack_path = self.texture_pack_items[self.texture_pack_index]
+        report: ImportReport | None = None
+
+        def capture_report(next_report: ImportReport) -> None:
+            nonlocal report
+            report = next_report
+
+        try:
+            atlas = load_active_block_atlas(
+                pack_path,
+                registry=win.world_renderer.registry,
+                report_callback=capture_report,
+            )
+        except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
+            win.menu.status = f"Texture pack failed: {error}"
+            return
+
+        win.world_renderer.apply_texture_pack(atlas)
+        win.settings = replace(
+            win.settings,
+            graphics=replace(
+                win.settings.graphics,
+                resource_pack_path="" if pack_path is None else str(pack_path),
+            ),
+        )
+        save_user_settings(win.settings)
+        win.menu.status = self._texture_pack_status(label, report)
+
+    def _texture_pack_status(self, label: str, report: ImportReport | None) -> str:
+        if report is None:
+            return "Default texture pack applied."
+        details: list[str] = []
+        if report.fallback:
+            details.append(f"{len(report.fallback)} fallback")
+        if report.missing:
+            details.append(f"{len(report.missing)} missing")
+        if report.warnings:
+            details.append(f"{len(report.warnings)} warnings")
+        suffix = f" ({', '.join(details)})" if details else ""
+        return f"Texture pack applied: {label}{suffix}."
 
     # ── Menu command handler ──────────────────────────────────────────────────
 

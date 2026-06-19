@@ -17,6 +17,7 @@ class Screen(Enum):
     PAUSE = auto()
     CONTROLS = auto()
     AUDIO = auto()
+    TEXTURE_PACKS = auto()
 
 
 class MenuCommand(Enum):
@@ -71,6 +72,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Clouds", action="toggle_clouds"),
         MenuItem("VSync", action="toggle_vsync"),
         MenuItem("Difficulty", action="cycle_difficulty"),
+        MenuItem("Texture Packs", target=Screen.TEXTURE_PACKS),
         MenuItem("Audio", target=Screen.AUDIO),
         MenuItem("Controls", target=Screen.CONTROLS),
         MenuItem("Back", action="settings_back"),
@@ -121,6 +123,7 @@ class MenuController:
             Screen.PAUSE: "PAUSED",
             Screen.CONTROLS: "CONTROLS",
             Screen.AUDIO: "AUDIO",
+            Screen.TEXTURE_PACKS: "TEXTURE PACKS",
         }
         return titles.get(self.screen, "")
 
@@ -155,6 +158,7 @@ class MenuController:
             Screen.PAUSE: Screen.GAME,
             Screen.CONTROLS: Screen.SETTINGS,
             Screen.AUDIO: Screen.SETTINGS,
+            Screen.TEXTURE_PACKS: Screen.SETTINGS,
             Screen.GAME: Screen.PAUSE,
         }
         target = targets.get(self.screen)

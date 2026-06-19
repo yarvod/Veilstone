@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 from voxel_sandbox.domain.blocks import BlockRegistry
@@ -30,6 +31,7 @@ def load_active_block_atlas(
     *,
     registry: BlockRegistry,
     fallback_tile_size: int = 32,
+    report_callback: Callable[[ImportReport], None] | None = None,
 ) -> GeneratedAtlas:
     """Build the active block atlas for the given registry.
 
@@ -45,6 +47,8 @@ def load_active_block_atlas(
     imported_tiles, report = load_block_textures(resource_pack_path, texture_ids, fallback_tiles)
 
     _log_report(report, resource_pack_path)
+    if report_callback is not None:
+        report_callback(report)
 
     merged = {**fallback_tiles, **imported_tiles}
     tile_size = _detect_tile_size(imported_tiles, fallback_tile_size)

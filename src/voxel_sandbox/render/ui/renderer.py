@@ -74,6 +74,12 @@ class UiRenderer:
         on_edit: Callable[[], None],
         on_delete: Callable[[], None],
         on_cancel: Callable[[], None],
+        *,
+        primary_label: str = "Play Selected World",
+        secondary_label: str = "Create New World",
+        edit_label: str = "Edit",
+        delete_label: str = "Delete",
+        cancel_label: str = "Cancel",
     ) -> None:
         if len(self.world_cards) != len(worlds) or any(
             c.name != w[0] for c, w in zip(self.world_cards, worlds, strict=False)
@@ -94,14 +100,19 @@ class UiRenderer:
                 self.world_cards.append(card)
                 self.world_list_vbox.add_child(card)
 
-            self.world_actions_hbox1.children.clear()
-            self.world_actions_hbox1.add_child(Button("Play Selected World", on_play))
-            self.world_actions_hbox1.add_child(Button("Create New World", on_create))
+        self.world_actions_hbox1.children.clear()
+        if primary_label:
+            self.world_actions_hbox1.add_child(Button(primary_label, on_play))
+        if secondary_label:
+            self.world_actions_hbox1.add_child(Button(secondary_label, on_create))
 
-            self.world_actions_hbox2.children.clear()
-            self.world_actions_hbox2.add_child(Button("Edit", on_edit))
-            self.world_actions_hbox2.add_child(Button("Delete", on_delete))
-            self.world_actions_hbox2.add_child(Button("Cancel", on_cancel))
+        self.world_actions_hbox2.children.clear()
+        if edit_label:
+            self.world_actions_hbox2.add_child(Button(edit_label, on_edit))
+        if delete_label:
+            self.world_actions_hbox2.add_child(Button(delete_label, on_delete))
+        if cancel_label:
+            self.world_actions_hbox2.add_child(Button(cancel_label, on_cancel))
 
             self._layout()
 
