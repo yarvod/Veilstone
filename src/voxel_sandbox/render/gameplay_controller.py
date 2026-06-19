@@ -3,12 +3,8 @@
 from __future__ import annotations
 
 import math
-import zipfile
 from dataclasses import replace
-from pathlib import Path
 from typing import TYPE_CHECKING, cast
-
-from PIL import UnidentifiedImageError
 
 from voxel_sandbox.app.commands import (
     CommandError,
@@ -22,6 +18,7 @@ from voxel_sandbox.app.commands import (
     parse_command,
 )
 from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
 from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 
 if TYPE_CHECKING:
@@ -31,6 +28,10 @@ if TYPE_CHECKING:
 class GameplayController:
     def __init__(self, win: GameWindow) -> None:
         self.win = win
+        self._apply_resource_pack = ApplyResourcePackUseCase(
+            atlas_loader=load_active_block_atlas,
+            settings_store=win.app_runtime.settings_store,
+        )
 
     def execute_command(self, source: str) -> None:
         win = self.win
@@ -77,35 +78,15 @@ class GameplayController:
 
     def _handle_resource_pack(self, command: ResourcePackCommand) -> None:
         win = self.win
-        pack_path = Path(command.path) if command.path is not None else None
-        if pack_path is not None and not pack_path.exists():
-            win.inventory_status = f"Resource pack not found: {pack_path}"
-            return
-
-        try:
-            atlas = load_active_block_atlas(
-                pack_path,
-                registry=win.world_renderer.registry,
-                cache_root=win.active_save_root.parent / "texture_cache",
-            )
-        except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
-            win.inventory_status = f"Resource pack failed: {error}"
-            return
-
-        win.world_renderer.apply_texture_pack(atlas)
-        win.settings = replace(
-            win.settings,
-            graphics=replace(
-                win.settings.graphics,
-                resource_pack_path="" if command.path is None else str(pack_path),
-            ),
+        result = self._apply_resource_pack.execute(
+            path=command.path,
+            settings=win.settings,
+            renderer=win.world_renderer,
+            cache_root=win.active_save_root.parent / "texture_cache",
         )
-        save_user_settings(win.settings)
-        win.inventory_status = (
-            "Resource pack reset to default."
-            if command.path is None
-            else f"Resource pack applied: {pack_path}"
-        )
+        if result.applied:
+            win.settings = result.settings
+        win.inventory_status = result.status
 
     def _handle_teleport(self, command: TeleportCommand) -> None:
         win = self.win

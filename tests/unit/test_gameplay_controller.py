@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
 from voxel_sandbox.render.gameplay_controller import GameplayController
 
 # ---------------------------------------------------------------------------
@@ -139,14 +140,15 @@ def test_resourcepack_nonexistent_path_sets_error(ctrl, win) -> None:
 
 
 def test_resourcepack_default_calls_apply(ctrl, win) -> None:
-    with (
-        patch("voxel_sandbox.render.gameplay_controller.load_active_block_atlas") as mock_atlas,
-        patch("voxel_sandbox.render.gameplay_controller.save_user_settings"),
-    ):
-        mock_atlas.return_value = MagicMock()
-        ctrl.execute_command("/resourcepack default")
-        mock_atlas.assert_called_once()
-        win.world_renderer.apply_texture_pack.assert_called_once()
+    mock_atlas = MagicMock(return_value=MagicMock())
+    settings_store = MagicMock()
+    ctrl._apply_resource_pack = ApplyResourcePackUseCase(mock_atlas, settings_store)
+
+    ctrl.execute_command("/resourcepack default")
+
+    mock_atlas.assert_called_once()
+    win.world_renderer.apply_texture_pack.assert_called_once()
+    settings_store.save.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
