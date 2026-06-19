@@ -37,16 +37,19 @@
   - [x] A5.3 Refresh `world_runtime` during world switching so compatibility fields stay synchronized after renderer/player/entity replacement.
   - [ ] A5.4 Keep compatibility fields until controllers/renderers are migrated.
 - [ ] A6 Replace one controller from `Controller(GameWindow)` to explicit dependencies. Начать с самого узкого участка, сохранить compatibility adapter при необходимости.
+  - [x] A6.1 Narrow `HudController` from nominal `GameWindow` type to explicit `HudView` Protocol listing the HUD-facing surface.
+  - [ ] A6.2 Replace `HudController(self)` with a concrete HUD context object instead of passing the window adapter directly.
+  - [ ] A6.3 Move at least one HUD read path from window field access to snapshot/view data.
 - [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
 - [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
 - [ ] A9 Add isolated tests for use cases/systems: resource pack apply, player movement, fluid step, mob spawning, generation pipeline без Pyglet/OpenGL.
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: decide whether A5 is enough for now or continue with A6 controller dependency narrowing.
+Следующий кодовый шаг: continue A6 by replacing the direct HUD window adapter with a concrete context object.
 
-1. Do not move storage/generation out of `DemoWorldRenderer` until A8.
-2. Prefer A6 next: replace one `Controller(GameWindow)` path with explicit dependencies.
+1. Keep HUD changes presentation-only.
+2. Do not move storage/generation out of `DemoWorldRenderer` until A8.
 3. Avoid touching texture-pack service until A7 starts.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import time
-from typing import TYPE_CHECKING
+from typing import Any, Protocol
 
 import numpy as np
 import pyglet
@@ -11,16 +11,33 @@ from pyglet.window import key
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.ui.menu import platform_font_name
 
-if TYPE_CHECKING:
-    from voxel_sandbox.render.window import GameWindow
-
 _UI_FONT = platform_font_name(sys.platform)
+
+
+class HudView(Protocol):
+    """Narrow window-facing surface used by HUD rendering."""
+
+    width: int
+    height: int
+    hud_batch: Any
+    hud_text_group: Any
+    world_renderer: Any
+    player: Any
+    camera: Any
+    settings: Any
+    game_state: Any
+    network_session: Any
+    network_players: Any
+    remote_player_entities: Any
+    entities: Any
+    inventory_open: bool
+    _inv_ctrl: Any
 
 
 class HudController:
     """Owns HUD labels and draws the in-game overlay."""
 
-    def __init__(self, win: GameWindow) -> None:
+    def __init__(self, win: HudView) -> None:
         self.win = win
         self._last_update_time = time.time()
         self.debug_label = pyglet.text.Label(
