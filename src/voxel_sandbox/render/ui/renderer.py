@@ -1,9 +1,12 @@
+from collections.abc import Callable
+from typing import Any
+
 import pyglet
-from typing import Callable, Any
+
+from .layout import HBox, VBox
 from .menu import MenuController, Screen
-from .widgets import Button, Label, Panel, WorldCard
-from .layout import VBox, HBox
 from .theme import VEILSTONE_THEME
+from .widgets import Button, Label, Panel, WorldCard
 
 
 class UiRenderer:
@@ -26,7 +29,7 @@ class UiRenderer:
 
         self.buttons: list[Button] = []
         self.vbox = VBox(theme=VEILSTONE_THEME, spacing=16)
-        
+
         self.world_cards: list[WorldCard] = []
         self.world_list_vbox = VBox(theme=VEILSTONE_THEME, spacing=8)
         self.world_actions_hbox1 = HBox(theme=VEILSTONE_THEME, spacing=16)
@@ -72,21 +75,24 @@ class UiRenderer:
         on_cancel: Callable[[], None],
     ) -> None:
         if len(self.world_cards) != len(worlds) or any(
-            c.name != w[0] for c, w in zip(self.world_cards, worlds)
+            c.name != w[0] for c, w in zip(self.world_cards, worlds, strict=False)
         ):
             self.batch = pyglet.graphics.Batch()
             self.world_cards.clear()
             self.world_list_vbox.children.clear()
             for i, w in enumerate(worlds):
+
                 def make_cb(idx=i):
                     def cb():
                         on_select(idx)
+
                     return cb
+
                 card = WorldCard(w[0])
                 card.on_click = make_cb()
                 self.world_cards.append(card)
                 self.world_list_vbox.add_child(card)
-            
+
             self.world_actions_hbox1.children.clear()
             self.world_actions_hbox1.add_child(Button("Play Selected World", on_play))
             self.world_actions_hbox1.add_child(Button("Create New World", on_create))
@@ -95,18 +101,20 @@ class UiRenderer:
             self.world_actions_hbox2.add_child(Button("Edit", on_edit))
             self.world_actions_hbox2.add_child(Button("Delete", on_delete))
             self.world_actions_hbox2.add_child(Button("Cancel", on_cancel))
-            
+
             self._layout()
 
         for i, card in enumerate(self.world_cards):
             card.is_selected = i == selected_index
-            
+
         # Rebuild tree logic for singleplayer screen adds these to root panel
-        if self._current_screen == Screen.SINGLEPLAYER:
-            if self.world_list_vbox not in self.root_panel.children:
-                self.root_panel.add_child(self.world_list_vbox)
-                self.root_panel.add_child(self.world_actions_hbox1)
-                self.root_panel.add_child(self.world_actions_hbox2)
+        if (
+            self._current_screen == Screen.SINGLEPLAYER
+            and self.world_list_vbox not in self.root_panel.children
+        ):
+            self.root_panel.add_child(self.world_list_vbox)
+            self.root_panel.add_child(self.world_actions_hbox1)
+            self.root_panel.add_child(self.world_actions_hbox2)
 
     def _rebuild_tree(
         self, menu: MenuController, on_item_click: Callable[[int], None] | None
@@ -115,29 +123,32 @@ class UiRenderer:
         self.root_panel.children.clear()
         self.vbox.children.clear()
         self.buttons.clear()
-        
+
         # We always add common widgets to root_panel
         self.root_panel.add_child(self.title_label)
         self.root_panel.add_child(self.status_label)
 
         if menu.screen != Screen.SINGLEPLAYER:
             for i, item in enumerate(menu.items):
+
                 def make_callback(index: int = i) -> Callable[[], None]:
                     def cb():
                         if on_item_click:
                             on_item_click(index)
+
                     return cb
 
                 def make_hover(index: int = i) -> Callable[[], None]:
                     def cb():
                         menu.select(index)
+
                     return cb
 
                 btn = Button(text=item.label, on_click_callback=make_callback())
                 btn.on_hover = make_hover()
                 self.buttons.append(btn)
                 self.vbox.add_child(btn)
-            
+
             self.root_panel.add_child(self.vbox)
 
         self._layout()

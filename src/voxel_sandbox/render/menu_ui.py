@@ -8,8 +8,8 @@ import time
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-import pyglet
 import moderngl
+import pyglet
 
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind

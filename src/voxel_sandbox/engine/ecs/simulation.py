@@ -95,9 +95,10 @@ class EntitySimulation:
                 ground = ground_height(block_x, block_z)
                 if is_hazard(block_x, ground, block_z):
                     continue
-                if is_solid is not None:
-                    if is_solid(block_x, ground, block_z) or is_solid(block_x, ground + 1, block_z):
-                        continue
+                if is_solid is not None and (
+                    is_solid(block_x, ground, block_z) or is_solid(block_x, ground + 1, block_z)
+                ):
+                    continue
                 if (
                     kind is MobKind.HOSTILE
                     and hostile_spawn_allowed is not None

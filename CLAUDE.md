@@ -43,6 +43,11 @@ When the session starts, or when the user says "начинай", "продолж
    - update Serena memories only if stable project knowledge changed;
    - refresh Serena index only after large refactors, file moves, module renames, or stale symbol results.
 10. Commit only completed coherent phases with passing relevant checks. Never add Claude/AI attribution.
+11. For refactors, run coverage when deciding whether to add tests:
+```bash
+uv run pytest --cov=src/voxel_sandbox --cov-report=term-missing
+```
+12. После extraction проверь vulture и вручную оцени findings, не удаляй автоматически.
 
 ---
 
@@ -170,6 +175,7 @@ For focused work, run the narrow relevant test first.
 Before committing a completed phase, run at least:
 
 ```bash
+uv run pre-commit run --all-files
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest

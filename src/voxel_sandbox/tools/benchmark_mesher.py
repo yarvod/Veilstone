@@ -1,21 +1,14 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from statistics import mean
-from time import perf_counter
-
-from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
-from voxel_sandbox.engine.chunks import ChunkSection
 import time
-from collections.abc import Callable
-from statistics import mean
 
-from voxel_sandbox.domain.blocks import BlockRegistry, create_core_block_registry
+import numpy as np
+
+from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
-from voxel_sandbox.render.meshes import MeshData, build_greedy_mesh, build_visible_face_mesh
+from voxel_sandbox.render.meshes import build_greedy_mesh
 from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
-import numpy as np
 
 UVS = {
     "stone": (0.0, 0.0, 0.5, 0.5),
@@ -38,47 +31,62 @@ def create_benchmark_neighborhood() -> MeshingNeighborhood:
 def run_benchmark(iterations: int = 250) -> int:
     registry = create_core_block_registry()
     neighborhood = create_benchmark_neighborhood()
-    
+
     # 1. Single Section Mesh Time
     start = time.perf_counter()
-    mesh = build_greedy_mesh(neighborhood, registry, UVS, smooth_lighting=False, ambient_occlusion=False)
+    mesh = build_greedy_mesh(
+        neighborhood, registry, UVS, smooth_lighting=False, ambient_occlusion=False
+    )
     single_mesh_time = (time.perf_counter() - start) * 1000.0
-    print(f"greedy 16^3 single section: {single_mesh_time:.3f} ms. Mesh bytes: {mesh.vertices.nbytes + mesh.indices.nbytes}")
+    print(
+        f"greedy 16^3 single section: {single_mesh_time:.3f} ms. "
+        f"Mesh bytes: {mesh.vertices.nbytes + mesh.indices.nbytes}"
+    )
 
     # 2. Worker comparison
     for backend in ["thread", "process"]:
-        worker = SectionMeshWorker(registry, UVS, workers=4, backend=backend) # type: ignore
-        
+        worker = SectionMeshWorker(registry, UVS, workers=4, backend=backend)  # type: ignore
+
         # Test individual sections (current)
         start = time.perf_counter()
         for i in range(iterations):
             key = SectionCoord(i % 10, i % 16, i // 16)
-            worker.submit(key, neighborhood, greedy=True, smooth_lighting=False, ambient_occlusion=False)
-        
+            worker.submit(
+                key, neighborhood, greedy=True, smooth_lighting=False, ambient_occlusion=False
+            )
+
         completed = 0
         while completed < iterations:
             results = worker.poll(100)
             completed += len(results)
             time.sleep(0.001)
         duration = time.perf_counter() - start
-        print(f"{backend} backend, 1 section/future: {iterations / duration:.1f} sections/sec ({duration:.3f}s total)")
-        
+        print(
+            f"{backend} backend, 1 section/future: "
+            f"{iterations / duration:.1f} sections/sec ({duration:.3f}s total)"
+        )
+
         # Test chunk batching
         start = time.perf_counter()
         chunks = iterations // 16
         for i in range(chunks):
             coord = ChunkCoord(i % 10, i // 10)
             tasks = {SectionCoord(coord.x, y, coord.z): neighborhood for y in range(16)}
-            worker.submit_chunk(coord, tasks, greedy=True, smooth_lighting=False, ambient_occlusion=False)
-            
+            worker.submit_chunk(
+                coord, tasks, greedy=True, smooth_lighting=False, ambient_occlusion=False
+            )
+
         completed = 0
         while completed < chunks * 16:
             results = worker.poll(100)
             completed += len(results)
             time.sleep(0.001)
         duration = time.perf_counter() - start
-        print(f"{backend} backend, 16 sections/future: {(chunks * 16) / duration:.1f} sections/sec ({duration:.3f}s total)")
-        
+        print(
+            f"{backend} backend, 16 sections/future: "
+            f"{(chunks * 16) / duration:.1f} sections/sec ({duration:.3f}s total)"
+        )
+
         worker.close()
-    
+
     return 0

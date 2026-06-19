@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import math
 import queue
-import shutil
 import sys
 import time
 from dataclasses import replace
@@ -20,7 +19,7 @@ from pyglet.window import key
 from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
-from voxel_sandbox.audio.runtime import create_audio_bus, volume_map
+from voxel_sandbox.audio.runtime import create_audio_bus
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack, load_item_registry_from_toml
@@ -30,32 +29,29 @@ from voxel_sandbox.engine.authority import (
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
 from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
-from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import (
     ClientSession,
     LanServer,
-    Message,
-    discover_worlds,
 )
 from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
-from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.input_state import (
     InputHandler,
     KeyState,
     configure_layout_independent_game_keys,
 )
 from voxel_sandbox.render.inventory_ui import InventoryController, InventoryLogic, InventoryState
+from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
-from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen, platform_font_name
+from voxel_sandbox.render.ui.menu import MenuController, platform_font_name
 from voxel_sandbox.render.ui.renderer import UiRenderer
-from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
+from voxel_sandbox.render.ui.text_input import TextInput
 from voxel_sandbox.render.world_manager import WorldManager
 from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
@@ -291,11 +287,9 @@ class GameWindow(pyglet.window.Window):
         self.debug_shader.reload_if_changed()
 
     def _is_solid_combined(self, x: int, y: int, z: int) -> bool:
-        if self.world_renderer.is_solid_block(x, y, z):
-            return True
-        if hasattr(self, "structure_world") and self.structure_world.is_solid_cell(x, y, z):
-            return True
-        return False
+        return self.world_renderer.is_solid_block(x, y, z) or (
+            hasattr(self, "structure_world") and self.structure_world.is_solid_cell(x, y, z)
+        )
 
     def _is_fluid_at(self, x: int, y: int, z: int) -> bool:
         block_id = self.world_renderer.get_block(x, y, z)
@@ -679,7 +673,6 @@ class GameWindow(pyglet.window.Window):
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         self._input.on_mouse_motion(x, y, dx, dy)
 
-
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
         if not should_capture:
@@ -797,7 +790,9 @@ class GameWindow(pyglet.window.Window):
         elif self.authority is not None:
             entity = self.authority.toggle_structure(entity_id)
             if entity is not None:
-                self.inventory_status = f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+                self.inventory_status = (
+                    f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+                )
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
@@ -822,7 +817,6 @@ class GameWindow(pyglet.window.Window):
             shadow_bias=settings.graphics.shadow_bias,
             save_root=save_root,
         )
-
 
 
 def run_window(

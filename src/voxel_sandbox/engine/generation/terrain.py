@@ -34,7 +34,7 @@ class TerrainGenerator:
     def height_at(self, world_x: int, world_z: int) -> int:
         broad = self._value_noise(world_x / 128.0, world_z / 128.0, 0)
         detail = self._value_noise(world_x / 32.0, world_z / 32.0, 1)
-        # Twilight Forest: mostly flat, occasionally dropping below water level (32) for pools/swamps
+        # Twilight Forest: mostly flat, occasionally drops below water level (32) for pools
         hill_factor = broad * broad * broad
         return 25 + int(hill_factor * 30.0 + detail * 10.0)
 
@@ -164,7 +164,9 @@ class TerrainGenerator:
                 ground_y = self.height_at(world_x, world_z) - 1
                 is_giant = self._hash3(world_x, 2, world_z, 25) > 0.85
                 if is_giant:
-                    self._place_giant_tree(chunk, coord, world_x, ground_y, world_z, touched_sections)
+                    self._place_giant_tree(
+                        chunk, coord, world_x, ground_y, world_z, touched_sections
+                    )
                 else:
                     trunk_height = 4 + int(self._hash3(world_x, 1, world_z, 21) * 3)
                     for y in range(ground_y + 1, ground_y + trunk_height + 1):
@@ -185,7 +187,9 @@ class TerrainGenerator:
                                     touched_sections,
                                     replace_air_only=True,
                                 )
-                    self._set_if_inside(chunk, coord, world_x, crown_y, world_z, 4, touched_sections)
+                    self._set_if_inside(
+                        chunk, coord, world_x, crown_y, world_z, 4, touched_sections
+                    )
 
     def _place_giant_tree(
         self,
@@ -200,14 +204,19 @@ class TerrainGenerator:
         for dx in (0, 1):
             for dz in (0, 1):
                 for y in range(ground_y + 1, ground_y + trunk_height + 1):
-                    self._set_if_inside(chunk, coord, world_x + dx, y, world_z + dz, 4, touched_sections)
-        
+                    self._set_if_inside(
+                        chunk, coord, world_x + dx, y, world_z + dz, 4, touched_sections
+                    )
+
         crown_y = ground_y + trunk_height
         for dx in range(-4, 6):
             for dy in range(-3, 4):
                 for dz in range(-4, 6):
-                    dist = math.sqrt((dx - 0.5)**2 + (dy * 1.5)**2 + (dz - 0.5)**2)
-                    if dist <= 4.5 + self._hash3(world_x + dx, crown_y + dy, world_z + dz, 30) * 1.5:
+                    dist = math.sqrt((dx - 0.5) ** 2 + (dy * 1.5) ** 2 + (dz - 0.5) ** 2)
+                    if (
+                        dist
+                        <= 4.5 + self._hash3(world_x + dx, crown_y + dy, world_z + dz, 30) * 1.5
+                    ):
                         self._set_if_inside(
                             chunk,
                             coord,
@@ -218,7 +227,10 @@ class TerrainGenerator:
                             touched_sections,
                             replace_air_only=True,
                         )
-                        if dy < 0 and self._hash3(world_x + dx, crown_y + dy, world_z + dz, 40) < 0.08:
+                        if (
+                            dy < 0
+                            and self._hash3(world_x + dx, crown_y + dy, world_z + dz, 40) < 0.08
+                        ):
                             self._set_if_inside(
                                 chunk,
                                 coord,
@@ -231,18 +243,20 @@ class TerrainGenerator:
                             )
         for dx in range(-2, 4):
             for dz in range(-2, 4):
-                if max(abs(dx - 0.5), abs(dz - 0.5)) > 1.0:
-                    if self._hash3(world_x + dx, ground_y + 1, world_z + dz, 50) < 0.15:
-                        self._set_if_inside(
-                            chunk,
-                            coord,
-                            world_x + dx,
-                            ground_y + 1,
-                            world_z + dz,
-                            11,  # glowing mushroom
-                            touched_sections,
-                            replace_air_only=True,
-                        )
+                if (
+                    max(abs(dx - 0.5), abs(dz - 0.5)) > 1.0
+                    and self._hash3(world_x + dx, ground_y + 1, world_z + dz, 50) < 0.15
+                ):
+                    self._set_if_inside(
+                        chunk,
+                        coord,
+                        world_x + dx,
+                        ground_y + 1,
+                        world_z + dz,
+                        11,  # glowing mushroom
+                        touched_sections,
+                        replace_air_only=True,
+                    )
 
     @staticmethod
     def _set_if_inside(

@@ -530,26 +530,36 @@ class DemoWorldRenderer:
             chunk_z = z // SECTION_SIZE
             chunk = self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z))
             if chunk is not None:
-                chunks_to_schedule = {
-                    c.coord: c for c in self._relight_neighborhood([chunk.coord])
-                }
+                chunks_to_schedule = {c.coord: c for c in self._relight_neighborhood([chunk.coord])}
                 for c in chunks_to_schedule.values():
                     self._schedule_chunk(c)
             return
 
         section_coords = {SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE)}
         if x % SECTION_SIZE == 0:
-            section_coords.add(SectionCoord((x - 1) // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE))
+            section_coords.add(
+                SectionCoord((x - 1) // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE)
+            )
         elif x % SECTION_SIZE == SECTION_SIZE - 1:
-            section_coords.add(SectionCoord((x + 1) // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE))
+            section_coords.add(
+                SectionCoord((x + 1) // SECTION_SIZE, y // SECTION_SIZE, z // SECTION_SIZE)
+            )
         if y % SECTION_SIZE == 0 and y > 0:
-            section_coords.add(SectionCoord(x // SECTION_SIZE, (y - 1) // SECTION_SIZE, z // SECTION_SIZE))
+            section_coords.add(
+                SectionCoord(x // SECTION_SIZE, (y - 1) // SECTION_SIZE, z // SECTION_SIZE)
+            )
         elif y % SECTION_SIZE == SECTION_SIZE - 1 and y < CHUNK_HEIGHT - 1:
-            section_coords.add(SectionCoord(x // SECTION_SIZE, (y + 1) // SECTION_SIZE, z // SECTION_SIZE))
+            section_coords.add(
+                SectionCoord(x // SECTION_SIZE, (y + 1) // SECTION_SIZE, z // SECTION_SIZE)
+            )
         if z % SECTION_SIZE == 0:
-            section_coords.add(SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, (z - 1) // SECTION_SIZE))
+            section_coords.add(
+                SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, (z - 1) // SECTION_SIZE)
+            )
         elif z % SECTION_SIZE == SECTION_SIZE - 1:
-            section_coords.add(SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, (z + 1) // SECTION_SIZE))
+            section_coords.add(
+                SectionCoord(x // SECTION_SIZE, y // SECTION_SIZE, (z + 1) // SECTION_SIZE)
+            )
 
         for key in section_coords:
             self._schedule_section(key)
@@ -577,7 +587,7 @@ class DemoWorldRenderer:
                 self.water_mesh_cache.remove(key)
                 continue
             tasks[key] = self._build_neighborhood(key)
-        
+
         if tasks:
             self.mesh_worker.submit_chunk(
                 chunk.coord,

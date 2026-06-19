@@ -195,9 +195,12 @@ class InputHandler:
         if win.text_input is not None:
             return
         if not win.menu.in_game:
-            if hasattr(win, "ui_renderer") and win.ui_renderer:
-                if win.ui_renderer.on_mouse_press(x, y, button, modifiers):
-                    win.menu_ui._play_ui_sound()
+            if (
+                hasattr(win, "ui_renderer")
+                and win.ui_renderer
+                and win.ui_renderer.on_mouse_press(x, y, button, modifiers)
+            ):
+                win.menu_ui._play_ui_sound()
             return
         if win.menu.in_game and win.inventory_open:
             crafting_slot = win._inv_ctrl.crafting_slot_at(x, y)
@@ -294,9 +297,8 @@ class InputHandler:
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
         win = self.win
-        if not win.menu.in_game:
-            if hasattr(win, "ui_renderer") and win.ui_renderer:
-                win.ui_renderer.on_mouse_release(x, y, button, modifiers)
+        if not win.menu.in_game and hasattr(win, "ui_renderer") and win.ui_renderer:
+            win.ui_renderer.on_mouse_release(x, y, button, modifiers)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         win = self.win
@@ -305,9 +307,12 @@ class InputHandler:
         if win.text_input is not None:
             return
         if not win.menu.in_game:
-            if hasattr(win, "ui_renderer") and win.ui_renderer:
-                if win.ui_renderer.on_mouse_motion(x, y, dx, dy):
-                    win.menu_ui._play_ui_sound()
+            if (
+                hasattr(win, "ui_renderer")
+                and win.ui_renderer
+                and win.ui_renderer.on_mouse_motion(x, y, dx, dy)
+            ):
+                win.menu_ui._play_ui_sound()
             return
         if win.mouse_captured:
             win.camera.rotate(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .widgets import Panel
 from .theme import VEILSTONE_THEME, UiTheme
+from .widgets import Panel
 
 
 class VBox(Panel):
@@ -35,7 +35,7 @@ class VBox(Panel):
                 child.bounds.height if child.bounds.height > 0 else self.theme.button_height
             )
 
-            # Top-left of the child should be placed at current_y, so its bottom Y is current_y - child_height
+            # Top-left placed at current_y, so bottom Y is current_y - child_height
             child_y = current_y - child_height
 
             if self.alignment == "center":

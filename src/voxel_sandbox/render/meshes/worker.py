@@ -5,13 +5,12 @@ from dataclasses import dataclass
 from typing import Literal
 
 from voxel_sandbox.domain.blocks import BlockDef, BlockRegistry
-from voxel_sandbox.engine.chunks import SectionCoord
+from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
 from voxel_sandbox.render.meshes.data import MeshData
 from voxel_sandbox.render.meshes.greedy import build_greedy_mesh
 from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
 from voxel_sandbox.render.meshes.visible_faces import build_visible_face_mesh
 from voxel_sandbox.render.meshes.water import build_water_mesh
-from voxel_sandbox.engine.chunks import ChunkCoord
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,11 +108,11 @@ class SectionMeshWorker:
                 previous.cancel()
                 del self._pending[key]
             batch_args.append((key, revision, neighborhood))
-            
+
         previous_chunk = self._pending_chunks.get((coord.x, coord.z))
         if previous_chunk is not None:
             previous_chunk.cancel()
-            
+
         if self._backend == "process":
             self._pending_chunks[(coord.x, coord.z)] = self._executor.submit(
                 _build_chunk_process_mesh,
@@ -144,7 +143,7 @@ class SectionMeshWorker:
             result = future.result()
             if self._revisions.get(key) == result.revision:
                 completed.append(result)
-                
+
         for key, future in tuple(self._pending_chunks.items()):
             if len(completed) >= limit:
                 break
@@ -157,14 +156,14 @@ class SectionMeshWorker:
             for result in results:
                 if self._revisions.get(result.key) == result.revision:
                     completed.append(result)
-                    
+
         return tuple(completed)
 
     def invalidate_chunk(self, chunk_x: int, chunk_z: int) -> None:
         chunk_future = self._pending_chunks.pop((chunk_x, chunk_z), None)
         if chunk_future is not None:
             chunk_future.cancel()
-            
+
         for key in tuple(self._revisions):
             if key.x != chunk_x or key.z != chunk_z:
                 continue

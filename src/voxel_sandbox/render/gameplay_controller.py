@@ -79,8 +79,7 @@ class GameplayController:
                     isinstance(raw_position, list)
                     and len(raw_position) == 3
                     and all(
-                        isinstance(value, int | float)
-                        for value in cast(list[object], raw_position)
+                        isinstance(value, int | float) for value in cast(list[object], raw_position)
                     )
                 ):
                     values = cast(list[int | float], raw_position)

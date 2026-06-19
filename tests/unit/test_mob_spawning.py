@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import math
-
-from voxel_sandbox.engine.ecs.components import MobAI, MobKind, MobState
+from voxel_sandbox.engine.ecs.components import MobKind, MobState
 from voxel_sandbox.engine.ecs.simulation import EntitySimulation
-
 
 STONE = 1
 
@@ -27,9 +24,7 @@ class TestMobSpawnValidation:
         def is_solid(x: int, y: int, z: int) -> bool:
             if y < 30:
                 return True
-            if y in (30, 31):
-                return True
-            return False
+            return y in (30, 31)
 
         sim.maintain_population(
             (8.0, 32.0, 8.0),
@@ -130,7 +125,6 @@ class TestZombieAttackHeightCheck:
         assert damage == 0.0
 
     def test_attack_animation_resets_on_each_hit(self):
-        from voxel_sandbox.engine.ecs.components import AnimationState
         sim = EntitySimulation(seed=42)
         entity = sim.spawn_mob(MobKind.HOSTILE, (5.0, 30.0, 5.0))
         ai = sim.world.mob_ai[entity]
@@ -164,12 +158,11 @@ class TestMobObstacleAvoidance:
         def is_solid(x: int, y: int, z: int) -> bool:
             if y < 30:
                 return True
-            if x >= 6:
-                return True
-            return False
+            return x >= 6
 
         for _ in range(10):
             sim.update(1 / 60, (100.0, 100.0, 100.0), ground_height, is_hazard, is_solid=is_solid)
 
-        assert not (ai.direction_x == -1.0 and ai.direction_z == 0.0), \
+        assert not (ai.direction_x == -1.0 and ai.direction_z == 0.0), (
             "Mob should try to go around, not just reverse"
+        )

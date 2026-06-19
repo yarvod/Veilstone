@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import queue
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
-import pytest
-
-from voxel_sandbox.domain.blocks.structures import StructureWorld
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.ui.menu import Screen
@@ -207,9 +204,7 @@ class TestRequestRemoteChunk:
         win.network_session = MagicMock()
         win.authority = MagicMock()
         # All nearby chunks already requested
-        win.requested_remote_chunks = {
-            ChunkCoord(x, z) for x in range(-2, 3) for z in range(-2, 3)
-        }
+        win.requested_remote_chunks = {ChunkCoord(x, z) for x in range(-2, 3) for z in range(-2, 3)}
         nc = NetworkController(win)
         nc.request_remote_chunk()
         win.authority.request_chunk.assert_not_called()
@@ -242,11 +237,13 @@ class TestApplyMessage:
     def test_block_delta_message_sets_block(self):
         win = _make_win()
         nc = NetworkController(win)
-        nc.apply_message({
-            "type": "block_delta",
-            "position": [1, 2, 3],
-            "block_id": 5,
-        })
+        nc.apply_message(
+            {
+                "type": "block_delta",
+                "position": [1, 2, 3],
+                "block_id": 5,
+            }
+        )
         win.world_renderer.set_block.assert_called_once_with((1, 2, 3), 5)
 
     def test_block_delta_ignores_bad_position(self):
@@ -269,12 +266,14 @@ class TestApplyMessage:
         win = _make_win()
         win.last_snapshot_sequence = 10
         nc = NetworkController(win)
-        nc.apply_message({
-            "type": "entity_snapshot",
-            "players": {},
-            "sequence": 5,
-            "full": True,
-        })
+        nc.apply_message(
+            {
+                "type": "entity_snapshot",
+                "players": {},
+                "sequence": 5,
+                "full": True,
+            }
+        )
         # sequence 5 < 10, should be ignored
         assert win.last_snapshot_sequence == 10
 
@@ -282,12 +281,14 @@ class TestApplyMessage:
         win = _make_win()
         win.last_snapshot_sequence = 0
         nc = NetworkController(win)
-        nc.apply_message({
-            "type": "entity_snapshot",
-            "players": {},
-            "sequence": 1,
-            "full": True,
-        })
+        nc.apply_message(
+            {
+                "type": "entity_snapshot",
+                "players": {},
+                "sequence": 1,
+                "full": True,
+            }
+        )
         assert win.last_snapshot_sequence == 1
 
     def test_unknown_message_type_is_ignored(self):

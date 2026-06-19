@@ -1,4 +1,6 @@
-from typing import Protocol, Any, Callable
+from collections.abc import Callable
+from typing import Any, Protocol
+
 from voxel_sandbox.domain.blocks.structures import StructureWorld
 from voxel_sandbox.network import ClientSession
 

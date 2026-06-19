@@ -77,9 +77,7 @@ class InventoryLogic:
                 maximum = self.s.item_registry.by_id(current.item_id).max_stack
                 moved = min(maximum - current.count, self.s.cursor_stack.count)
                 if moved > 0:
-                    self.s.crafting_grid.set_index(
-                        index, current.with_count(current.count + moved)
-                    )
+                    self.s.crafting_grid.set_index(index, current.with_count(current.count + moved))
                     remaining = self.s.cursor_stack.count - moved
                     self.s.cursor_stack = (
                         self.s.cursor_stack.with_count(remaining) if remaining else None
@@ -108,9 +106,7 @@ class InventoryLogic:
         else:
             return
         remaining = self.s.cursor_stack.count - 1
-        self.s.cursor_stack = (
-            self.s.cursor_stack.with_count(remaining) if remaining else None
-        )
+        self.s.cursor_stack = self.s.cursor_stack.with_count(remaining) if remaining else None
 
     def take_crafting_result(self) -> None:
         result = self.crafting_result()
@@ -135,9 +131,7 @@ class InventoryLogic:
         definition = self.s.item_registry.by_id(crafted.item_id)
         self.s.status = f"Crafted {definition.name} x{crafted.count}."
 
-    def handle_inventory_click(
-        self, index: int, button: int, *, quick_move: bool
-    ) -> None:
+    def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
         inv = self.s.inventory
         reg = self.s.item_registry
         if quick_move and button == mouse.LEFT and self.s.cursor_stack is None:
@@ -183,13 +177,9 @@ class InventoryLogic:
             else:
                 return
             remaining = self.s.cursor_stack.count - 1
-            self.s.cursor_stack = (
-                self.s.cursor_stack.with_count(remaining) if remaining else None
-            )
+            self.s.cursor_stack = self.s.cursor_stack.with_count(remaining) if remaining else None
 
-    def _return_or_drop(
-        self, stack: ItemStack, drop_callback: Callable[[ItemStack], None]
-    ) -> None:
+    def _return_or_drop(self, stack: ItemStack, drop_callback: Callable[[ItemStack], None]) -> None:
         remainder = self.s.inventory.add(stack, self.s.item_registry)
         if remainder is not None:
             drop_callback(remainder)
@@ -207,9 +197,7 @@ class InventoryController:
         self.item_icon_images = create_item_icons(win.item_registry, win.world_renderer.registry)
         self.heart_images = create_heart_icons()
         self.heart_sprites = [
-            pyglet.sprite.Sprite(
-                self.heart_images[0], batch=win.hud_batch, group=win.hud_fg_group
-            )
+            pyglet.sprite.Sprite(self.heart_images[0], batch=win.hud_batch, group=win.hud_fg_group)
             for _ in range(10)
         ]
 
@@ -280,9 +268,7 @@ class InventoryController:
             )
             for _ in range(len(win.inventory))
         ]
-        self.crafting_slots = [
-            pyglet.shapes.BorderedRectangle(0, 0, 48, 48, 2) for _ in range(9)
-        ]
+        self.crafting_slots = [pyglet.shapes.BorderedRectangle(0, 0, 48, 48, 2) for _ in range(9)]
         self.crafting_icons = [pyglet.sprite.Sprite(default_icon) for _ in range(9)]
         self.crafting_count_labels = [
             pyglet.text.Label(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pyglet.window import mouse
 
-from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
+from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
@@ -12,7 +12,6 @@ from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
 
 def _make_logic() -> InventoryLogic:
     registry = create_core_item_registry()
-    recipes_path = None
     state = InventoryState(
         inventory=Inventory(),
         item_registry=registry,

@@ -9,7 +9,9 @@ from voxel_sandbox.domain.biomes import BiomeDef, BiomeRegistry, load_biome_regi
 
 def test_biome_registry_basic() -> None:
     plains = BiomeDef("twilight_plains", "Twilight Plains", "grass", "dirt", "stone")
-    woods = BiomeDef("twilight_woods", "Twilight Woods", "grass", "dirt", "stone", tree_density=0.15)
+    woods = BiomeDef(
+        "twilight_woods", "Twilight Woods", "grass", "dirt", "stone", tree_density=0.15
+    )
 
     registry = BiomeRegistry((plains, woods))
 

@@ -94,8 +94,6 @@ class WorldManager:
         if win.lan_server is not None:
             win.lan_server.save()
 
-    
-
     @staticmethod
     def _saved_worlds() -> tuple[tuple[str, Path], ...]:
         saves_root = application_data_root()

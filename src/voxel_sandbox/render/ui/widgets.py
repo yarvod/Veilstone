@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Literal
+
 import pyglet
-from typing import Callable, Literal
+
 from .geometry import Rect
 from .theme import VEILSTONE_THEME, UiTheme
 
@@ -38,6 +41,7 @@ class Widget:
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool:
         from pyglet.window import mouse
+
         if button != mouse.LEFT:
             return False
         if self.contains(x, y) and self.enabled:

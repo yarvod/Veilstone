@@ -18,7 +18,9 @@ def test_time_command_accepts_minecraft_names_and_ticks() -> None:
     assert parse_command("/time set day") == SetTimeCommand(0.25, "day")
     assert parse_command("/time set noon") == SetTimeCommand(0.25, "noon")
     assert parse_command("/time set night") == SetTimeCommand(13000 / 24000, "night")
-    assert parse_command("/time set twilight") == SetTimeCommand(13800 / 24000, "twilight", freeze=True)
+    assert parse_command("/time set twilight") == SetTimeCommand(
+        13800 / 24000, "twilight", freeze=True
+    )
     assert parse_command("/time set 30000") == SetTimeCommand(0.25, "6000")
 
 

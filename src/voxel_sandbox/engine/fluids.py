@@ -41,20 +41,21 @@ def simulate_water_step(chunk: Chunk, *, water_id: int = WATER_BLOCK_ID) -> Flui
             if not has_support:
                 for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     nx, nz = x + dx, z + dz
-                    if 0 <= nx < SECTION_SIZE and 0 <= nz < SECTION_SIZE:
-                        if int(blocks[nx, y, nz]) == water_id:
-                            neighbor_level = int(metadata[nx, y, nz]) or FLUID_MAX_LEVEL
-                            if neighbor_level > level:
-                                has_support = True
-                                break
+                    if (
+                        0 <= nx < SECTION_SIZE
+                        and 0 <= nz < SECTION_SIZE
+                        and int(blocks[nx, y, nz]) == water_id
+                    ):
+                        neighbor_level = int(metadata[nx, y, nz]) or FLUID_MAX_LEVEL
+                        if neighbor_level > level:
+                            has_support = True
+                            break
             if not has_support:
                 drain.append((x, y, z))
                 continue
 
         if y > 0 and int(blocks[x, y - 1, z]) == 0:
-            proposals[(x, y - 1, z)] = max(
-                proposals.get((x, y - 1, z), 0), FLUID_MAX_LEVEL
-            )
+            proposals[(x, y - 1, z)] = max(proposals.get((x, y - 1, z), 0), FLUID_MAX_LEVEL)
             continue
         if level <= 1:
             continue

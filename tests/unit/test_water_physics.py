@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import math
-
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
 from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
 from voxel_sandbox.engine.physics.player import PlayerController, PlayerInput
-from voxel_sandbox.engine.physics.raycast import RaycastHit, voxel_raycast
-
+from voxel_sandbox.engine.physics.raycast import voxel_raycast
 
 STONE = 1
 AIR = 0
@@ -24,6 +21,7 @@ def _flat_world(water_y: int | None = None):
         if water_y is not None and 30 <= y <= water_y:
             return WATER
         return AIR
+
     return get_block
 
 
@@ -34,16 +32,20 @@ def _is_solid(x: int, y: int, z: int) -> bool:
 
 def _is_solid_with_water(water_y: int):
     get = _flat_world(water_y)
+
     def check(x: int, y: int, z: int) -> bool:
         block = get(x, y, z)
         return block != 0 and block != WATER
+
     return check
 
 
 def _is_fluid(water_y: int):
     get = _flat_world(water_y)
+
     def check(x: int, y: int, z: int) -> bool:
         return get(x, y, z) == WATER
+
     return check
 
 
@@ -150,7 +152,9 @@ class TestRaycastThroughWater:
 
 
 class TestWaterSimulation:
-    def _make_chunk_with_water(self, positions: list[tuple[int, int, int]], level: int = FLUID_MAX_LEVEL) -> Chunk:
+    def _make_chunk_with_water(
+        self, positions: list[tuple[int, int, int]], level: int = FLUID_MAX_LEVEL
+    ) -> Chunk:
         chunk = Chunk(ChunkCoord(0, 0))
         for x in range(16):
             for z in range(16):
@@ -183,7 +187,7 @@ class TestWaterSimulation:
 
     def test_flowing_water_drains_without_source(self):
         chunk = self._make_chunk_with_water([(5, 1, 5)], level=3)
-        result = simulate_water_step(chunk)
+        simulate_water_step(chunk)
         assert chunk.get_block(5, 1, 5) == AIR
 
     def test_source_water_does_not_drain(self):

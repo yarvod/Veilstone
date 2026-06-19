@@ -78,8 +78,7 @@ def load_item_registry_from_toml(path: Path) -> ItemRegistry:
             )
         )
     drops = {
-        d["block_id"]: ItemStack(d["item_id"], d.get("count", 1))
-        for d in data.get("drop", [])
+        d["block_id"]: ItemStack(d["item_id"], d.get("count", 1)) for d in data.get("drop", [])
     }
     return ItemRegistry(definitions, block_drops=drops)
 

@@ -85,6 +85,7 @@ class TestOnKeyPress:
     def test_menu_singleplayer_enter_loads_selected_world(self):
         win = _make_win(in_game=False, screen=Screen.SINGLEPLAYER)
         from pathlib import Path
+
         win.menu_ui.world_list_items = [("TestWorld", Path("/tmp/test"))]
         win.menu_ui.world_list_index = 0
         h = InputHandler(win)
@@ -314,9 +315,7 @@ class TestOnMouseMotion:
         win.mouse_captured = True
         h = InputHandler(win)
         h.on_mouse_motion(0, 0, 3, 4)
-        win.camera.rotate.assert_called_once_with(
-            3.0, 4.0, win.settings.camera.mouse_sensitivity
-        )
+        win.camera.rotate.assert_called_once_with(3.0, 4.0, win.settings.camera.mouse_sensitivity)
 
     def test_no_rotation_when_not_captured(self):
         win = _make_win(in_game=True)
