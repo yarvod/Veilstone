@@ -37,15 +37,13 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(
         "voxel_sandbox.render.menu_ui.load_active_block_atlas",
         fake_load_active_block_atlas,
     )
-    monkeypatch.setattr(
-        "voxel_sandbox.render.menu_ui.save_user_settings",
-        lambda settings: saved_settings.append(settings),
-    )
-
     applied: list[GeneratedAtlas] = []
     win = SimpleNamespace(
         menu=SimpleNamespace(status=""),
         settings=AppSettings(),
+        app_runtime=SimpleNamespace(
+            settings_store=SimpleNamespace(save=lambda settings: saved_settings.append(settings)),
+        ),
         active_save_root=tmp_path / "save",
         world_renderer=SimpleNamespace(
             registry="registry",

@@ -36,7 +36,9 @@ def test_apply_resource_pack_updates_renderer_and_settings(tmp_path: Path) -> No
         *,
         registry: object,
         cache_root: Path,
+        report_callback: object | None = None,
     ) -> object:
+        assert report_callback is None
         calls.append((path, registry, cache_root))
         return atlas
 

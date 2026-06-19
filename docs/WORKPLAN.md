@@ -44,17 +44,17 @@
 - [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
   - [x] A7.1 Add `application.resource_packs.ApplyResourcePackUseCase` with `WorldRenderPort`, `SettingsStorePort`, injected atlas loader, and unit tests.
   - [x] A7.2 Route `/resourcepack` command through `ApplyResourcePackUseCase`.
-  - [ ] A7.3 Route Settings Texture Packs UI through the same use case.
+  - [x] A7.3 Route Settings Texture Packs UI through the same use case.
   - [ ] A7.4 Move texture pack discovery/loading/cache ownership behind a service port.
 - [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
 - [ ] A9 Add isolated tests for use cases/systems: resource pack apply, player movement, fluid step, mob spawning, generation pipeline без Pyglet/OpenGL.
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: continue A7 by routing Settings Texture Packs UI through `ApplyResourcePackUseCase`.
+Следующий кодовый шаг: continue A7 by moving texture pack discovery/loading/cache ownership behind a service port.
 
 1. Do not move storage/generation out of `DemoWorldRenderer` until A8.
-2. Keep command and UI resource pack behavior identical.
+2. Keep command and UI resource pack behavior identical through the use case.
 3. Test command unit path and texture pack UI/menu path.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 

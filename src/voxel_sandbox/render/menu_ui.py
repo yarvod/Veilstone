@@ -5,16 +5,15 @@ from __future__ import annotations
 import shutil
 import sys
 import time
-import zipfile
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import moderngl
 import pyglet
-from PIL import UnidentifiedImageError
 
 from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
 from voxel_sandbox.infrastructure.storage import WorldStorage
@@ -355,26 +354,21 @@ class MenuUI:
             nonlocal report
             report = next_report
 
-        try:
-            atlas = load_active_block_atlas(
-                pack_path,
-                registry=win.world_renderer.registry,
-                report_callback=capture_report,
-                cache_root=win.active_save_root.parent / "texture_cache",
-            )
-        except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
-            win.menu.status = f"Texture pack failed: {error}"
+        result = ApplyResourcePackUseCase(
+            atlas_loader=load_active_block_atlas,
+            settings_store=win.app_runtime.settings_store,
+        ).execute(
+            path=None if pack_path is None else str(pack_path),
+            settings=win.settings,
+            renderer=win.world_renderer,
+            cache_root=win.active_save_root.parent / "texture_cache",
+            report_callback=capture_report,
+        )
+        if not result.applied:
+            win.menu.status = result.status.replace("Resource pack", "Texture pack", 1)
             return
 
-        win.world_renderer.apply_texture_pack(atlas)
-        win.settings = replace(
-            win.settings,
-            graphics=replace(
-                win.settings.graphics,
-                resource_pack_path="" if pack_path is None else str(pack_path),
-            ),
-        )
-        save_user_settings(win.settings)
+        win.settings = result.settings
         win.menu.status = self._texture_pack_status(label, report)
 
     def _import_texture_pack(self) -> None:

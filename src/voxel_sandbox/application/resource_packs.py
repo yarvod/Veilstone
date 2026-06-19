@@ -43,6 +43,7 @@ class ApplyResourcePackUseCase:
         settings: AppSettings,
         renderer: WorldRenderPort,
         cache_root: Path,
+        report_callback: Callable[[Any], None] | None = None,
     ) -> ApplyResourcePackResult:
         pack_path = Path(path) if path is not None else None
         if pack_path is not None and not pack_path.exists():
@@ -57,6 +58,7 @@ class ApplyResourcePackUseCase:
                 pack_path,
                 registry=renderer.registry,
                 cache_root=cache_root,
+                report_callback=report_callback,
             )
         except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
             return ApplyResourcePackResult(
