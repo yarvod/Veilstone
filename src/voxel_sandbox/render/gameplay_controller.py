@@ -83,7 +83,11 @@ class GameplayController:
             return
 
         try:
-            atlas = load_active_block_atlas(pack_path, registry=win.world_renderer.registry)
+            atlas = load_active_block_atlas(
+                pack_path,
+                registry=win.world_renderer.registry,
+                cache_root=win.active_save_root.parent / "texture_cache",
+            )
         except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
             win.inventory_status = f"Resource pack failed: {error}"
             return

@@ -338,6 +338,7 @@ class MenuUI:
                 pack_path,
                 registry=win.world_renderer.registry,
                 report_callback=capture_report,
+                cache_root=win.active_save_root.parent / "texture_cache",
             )
         except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
             win.menu.status = f"Texture pack failed: {error}"

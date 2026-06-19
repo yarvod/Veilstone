@@ -91,7 +91,11 @@ class DemoWorldRenderer:
         )
         self.registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
         pack_path = Path(resource_pack_path) if resource_pack_path else None
-        atlas = load_active_block_atlas(pack_path, registry=self.registry)
+        atlas = load_active_block_atlas(
+            pack_path,
+            registry=self.registry,
+            cache_root=save_root.parent / "texture_cache",
+        )
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.texture.build_mipmaps()

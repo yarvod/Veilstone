@@ -18,9 +18,10 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(
     atlas = GeneratedAtlas(1, 1, b"\x00\x00\x00\xff", {})
     saved_settings: list[AppSettings] = []
 
-    def fake_load_active_block_atlas(path, *, registry, report_callback=None):
+    def fake_load_active_block_atlas(path, *, registry, report_callback=None, cache_root=None):
         assert path == pack
         assert registry == "registry"
+        assert cache_root == win.active_save_root.parent / "texture_cache"
         if report_callback is not None:
             report_callback(
                 ImportReport(
@@ -45,6 +46,7 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(
     win = SimpleNamespace(
         menu=SimpleNamespace(status=""),
         settings=AppSettings(),
+        active_save_root=tmp_path / "save",
         world_renderer=SimpleNamespace(
             registry="registry",
             apply_texture_pack=lambda next_atlas: applied.append(next_atlas),

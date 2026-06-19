@@ -5,6 +5,7 @@
 ### Added
 - **Minecraft Java resource pack MVP** — block texture IDs now use `minecraft:block/*` resource locations; folder/ZIP packs can be imported for block atlases, and `/resourcepack <path|default>` hot-swaps the active atlas in an open world.
 - **Texture pack picker** — Settings now includes a Texture Packs screen with Default plus discovered folder/ZIP packs from `resource_packs/`, apply/default actions, and import fallback/missing status.
+- **Texture atlas cache** — imported resource pack atlases are cached as PNG+JSON under `texture_cache` and invalidated when pack file size/mtime changes.
 
 ### Changed
 - **HudController extracted from GameWindow** — all HUD labels (debug, position, player list, crosshair, nametags), debug text building, and `on_draw` HUD block moved to `render/hud_controller.py`; GameWindow delegates via `self._hud`

@@ -10,6 +10,7 @@ from voxel_sandbox.render.texture_atlas.generated import (
     build_texture_atlas,
     create_default_block_tiles,
 )
+from voxel_sandbox.render.texture_packs.cache import load_cached_atlas, save_cached_atlas
 from voxel_sandbox.render.texture_packs.minecraft_java import load_block_textures
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
@@ -32,6 +33,7 @@ def load_active_block_atlas(
     registry: BlockRegistry,
     fallback_tile_size: int = 32,
     report_callback: Callable[[ImportReport], None] | None = None,
+    cache_root: Path | None = None,
 ) -> GeneratedAtlas:
     """Build the active block atlas for the given registry.
 
@@ -43,6 +45,15 @@ def load_active_block_atlas(
     if resource_pack_path is None:
         return build_texture_atlas(fallback_tiles, tile_size=fallback_tile_size)
 
+    if cache_root is not None:
+        try:
+            cached = load_cached_atlas(cache_root, resource_pack_path)
+        except OSError:
+            cached = None
+        if cached is not None:
+            LOGGER.info("Texture pack %s: loaded atlas from cache", resource_pack_path.name)
+            return cached
+
     texture_ids = _collect_texture_ids(registry)
     imported_tiles, report = load_block_textures(resource_pack_path, texture_ids, fallback_tiles)
 
@@ -52,7 +63,17 @@ def load_active_block_atlas(
 
     merged = {**fallback_tiles, **imported_tiles}
     tile_size = _detect_tile_size(imported_tiles, fallback_tile_size)
-    return build_texture_atlas(merged, tile_size=tile_size)
+    atlas = build_texture_atlas(merged, tile_size=tile_size)
+    if cache_root is not None:
+        try:
+            save_cached_atlas(cache_root, resource_pack_path, atlas)
+        except OSError as error:
+            LOGGER.warning(
+                "Texture pack %s: failed to write atlas cache: %s",
+                resource_pack_path.name,
+                error,
+            )
+    return atlas
 
 
 def _detect_tile_size(imported_tiles: dict, fallback: int) -> int:

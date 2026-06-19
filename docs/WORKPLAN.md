@@ -212,8 +212,8 @@ Acceptance: `uv run pytest -m integration`
 ---
 
 ### T8 — Cache (опционально, после T7)
-- [ ] `saves/texture_cache/<pack-id>-<hash>/` — atlas PNG + JSON
-- [ ] Инвалидация по mtime + размеру пака
+- [x] `saves/texture_cache/<pack-id>-<hash>/` — atlas PNG + JSON
+- [x] Инвалидация по mtime + размеру пака
 
 ---
 
