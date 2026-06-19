@@ -8,6 +8,8 @@ from .menu import MenuController, Screen
 from .theme import VEILSTONE_THEME
 from .widgets import Button, Label, Panel, WorldCard
 
+_LIST_SCREENS = {Screen.SINGLEPLAYER, Screen.TEXTURE_PACKS}
+
 
 class UiRenderer:
     def __init__(self, window_width: int, window_height: int):
@@ -34,6 +36,13 @@ class UiRenderer:
         self.world_list_vbox = VBox(theme=VEILSTONE_THEME, spacing=8)
         self.world_actions_hbox1 = HBox(theme=VEILSTONE_THEME, spacing=16)
         self.world_actions_hbox2 = HBox(theme=VEILSTONE_THEME, spacing=16)
+
+        # Persistent action buttons — preserved between frames so pressed state survives.
+        self._action_primary = Button("", theme=VEILSTONE_THEME)
+        self._action_secondary = Button("", theme=VEILSTONE_THEME)
+        self._action_edit = Button("", theme=VEILSTONE_THEME)
+        self._action_delete = Button("", theme=VEILSTONE_THEME)
+        self._action_cancel = Button("", theme=VEILSTONE_THEME)
 
     def resize(self, width: int, height: int) -> None:
         self.width = width
@@ -81,6 +90,7 @@ class UiRenderer:
         delete_label: str = "Delete",
         cancel_label: str = "Cancel",
     ) -> None:
+        # Rebuild world card list only when its contents actually change.
         if len(self.world_cards) != len(worlds) or any(
             c.name != w[0] for c, w in zip(self.world_cards, worlds, strict=False)
         ):
@@ -100,33 +110,51 @@ class UiRenderer:
                 self.world_cards.append(card)
                 self.world_list_vbox.add_child(card)
 
-        self.world_actions_hbox1.children.clear()
-        if primary_label:
-            self.world_actions_hbox1.add_child(Button(primary_label, on_play))
-        if secondary_label:
-            self.world_actions_hbox1.add_child(Button(secondary_label, on_create))
-
-        self.world_actions_hbox2.children.clear()
-        if edit_label:
-            self.world_actions_hbox2.add_child(Button(edit_label, on_edit))
-        if delete_label:
-            self.world_actions_hbox2.add_child(Button(delete_label, on_delete))
-        if cancel_label:
-            self.world_actions_hbox2.add_child(Button(cancel_label, on_cancel))
-
-            self._layout()
+        # Update persistent action buttons: update labels and callbacks without
+        # recreating button objects, so the pressed state survives between frames.
+        self._rebuild_action_row(
+            self.world_actions_hbox1,
+            [(primary_label, on_play), (secondary_label, on_create)],
+            [self._action_primary, self._action_secondary],
+        )
+        self._rebuild_action_row(
+            self.world_actions_hbox2,
+            [(edit_label, on_edit), (delete_label, on_delete), (cancel_label, on_cancel)],
+            [self._action_edit, self._action_delete, self._action_cancel],
+        )
 
         for i, card in enumerate(self.world_cards):
             card.is_selected = i == selected_index
 
-        # Rebuild tree logic for singleplayer screen adds these to root panel
+        # Add list widgets to root panel on first appearance.
         if (
-            self._current_screen == Screen.SINGLEPLAYER
+            self._current_screen in _LIST_SCREENS
             and self.world_list_vbox not in self.root_panel.children
         ):
             self.root_panel.add_child(self.world_list_vbox)
             self.root_panel.add_child(self.world_actions_hbox1)
             self.root_panel.add_child(self.world_actions_hbox2)
+
+        self._layout()
+
+    def _rebuild_action_row(
+        self,
+        hbox: HBox,
+        entries: list[tuple[str, Callable[[], None]]],
+        pool: list[Button],
+    ) -> None:
+        hbox.children.clear()
+        visible_count = 0
+        for btn, (label, cb) in zip(pool, entries, strict=False):
+            if not label:
+                continue
+            btn.text = label
+            btn.on_click_callback = cb
+            btn.visible = True
+            hbox.add_child(btn)
+            visible_count += 1
+        for btn in pool[visible_count:]:
+            btn.visible = False
 
     def _rebuild_tree(
         self,
@@ -139,11 +167,10 @@ class UiRenderer:
         self.vbox.children.clear()
         self.buttons.clear()
 
-        # We always add common widgets to root_panel
         self.root_panel.add_child(self.title_label)
         self.root_panel.add_child(self.status_label)
 
-        if menu.screen != Screen.SINGLEPLAYER:
+        if menu.screen not in _LIST_SCREENS:
             for i, _item in enumerate(menu.items):
 
                 def make_callback(index: int = i) -> Callable[[], None]:
@@ -175,7 +202,7 @@ class UiRenderer:
         self.title_label.layout(0, title_y - 20, self.width, 40)
         self.status_label.layout(0, self.height // 4 - 20, self.width, 40)
 
-        if self._current_screen == Screen.SINGLEPLAYER:
+        if self._current_screen in _LIST_SCREENS:
             list_y = 120
             list_height = self.height - 220
             self.world_list_vbox.layout(0, list_y, self.width, list_height)

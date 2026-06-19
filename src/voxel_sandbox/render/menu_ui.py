@@ -73,9 +73,9 @@ class MenuUI:
         self.world_list_index = 0
         self.world_list_items: list[tuple[str, ...]] = list(WorldManager._saved_worlds())
         self._world_list_cache_time = time.perf_counter()
-        self.texture_pack_index = 0
         self.texture_pack_items: list[tuple[str, Path | None]] = self._discover_texture_packs()
         self._texture_pack_cache_time = time.perf_counter()
+        self.texture_pack_index = 0  # will be synced to active pack on first draw
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -271,14 +271,34 @@ class MenuUI:
     def _refresh_texture_pack_list(self) -> None:
         now = time.perf_counter()
         if now - self._texture_pack_cache_time > 2.0:
+            active = self.win.settings.graphics.resource_pack_path
             self.texture_pack_items = self._discover_texture_packs()
             self._texture_pack_cache_time = now
+            # Keep selection on the active pack after refresh.
+            for i, (_, path) in enumerate(self.texture_pack_items):
+                if (str(path) if path else "") == active:
+                    self.texture_pack_index = i
+                    break
 
     def _draw_texture_pack_list(self) -> None:
         win = self.win
         self._refresh_texture_pack_list()
         count = len(self.texture_pack_items)
-        self.texture_pack_index = min(self.texture_pack_index, max(0, count - 1))
+        if count == 0:
+            return
+        self.texture_pack_index = max(0, min(self.texture_pack_index, count - 1))
+
+        active_path = win.settings.graphics.resource_pack_path
+        # Sync selection to active pack if not already pointing at it.
+        if self.texture_pack_items[self.texture_pack_index][1] is None:
+            currently_selected_path = ""
+        else:
+            currently_selected_path = str(self.texture_pack_items[self.texture_pack_index][1])
+        if currently_selected_path != active_path:
+            for i, (_, path) in enumerate(self.texture_pack_items):
+                if (str(path) if path else "") == active_path:
+                    self.texture_pack_index = i
+                    break
 
         def on_select(idx: int) -> None:
             self.texture_pack_index = idx
@@ -286,20 +306,21 @@ class MenuUI:
         def on_apply() -> None:
             self._apply_selected_texture_pack()
 
-        def on_default() -> None:
-            self.texture_pack_index = 0
-            self._apply_selected_texture_pack()
-
-        def noop() -> None:
-            return
-
         def on_cancel() -> None:
             win.menu.back()
+            win._sync_game_state()
 
         start_index = max(0, self.texture_pack_index - 3)
         end_index = min(count, start_index + 8)
         start_index = max(0, end_index - 8)
-        visible_items = self.texture_pack_items[start_index:end_index]
+
+        # Build display items: mark the active pack with ✓
+        visible_raw = self.texture_pack_items[start_index:end_index]
+        visible_items: list[tuple[str, Path | None]] = []
+        for name, path in visible_raw:
+            pack_path_str = "" if path is None else str(path)
+            marker = " [active]" if pack_path_str == active_path else ""
+            visible_items.append((name + marker, path))
 
         def mapped_on_select(visible_idx: int) -> None:
             on_select(start_index + visible_idx)
@@ -309,12 +330,12 @@ class MenuUI:
             self.texture_pack_index - start_index,
             mapped_on_select,
             on_apply,
-            on_default,
-            noop,
-            noop,
+            lambda: None,
+            lambda: None,
+            lambda: None,
             on_cancel,
-            primary_label="Apply",
-            secondary_label="Default",
+            primary_label="Apply Pack",
+            secondary_label="",
             edit_label="",
             delete_label="",
             cancel_label="Back",
