@@ -208,21 +208,6 @@ Prefer launching Claude Code through Headroom:
 headroom wrap claude
 ```
 
-Recommended shell function:
-
-```sh
-hcc() {
-  headroom wrap claude "$@"
-}
-```
-
-Start from project root:
-
-```bash
-cd /path/to/Veilstone
-hcc
-```
-
 ### Headroom
 
 Headroom is used for token/context efficiency.
