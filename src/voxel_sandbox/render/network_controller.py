@@ -47,6 +47,7 @@ class NetworkController:
         win.authority.request_chunk(0, 0)
         win.requested_remote_chunks.add(ChunkCoord(0, 0))
         win.menu.screen = Screen.GAME
+        win._sync_game_state()
         win._sync_mouse_capture()
 
     def process_messages(self) -> None:
@@ -135,6 +136,7 @@ class NetworkController:
             win.remote_player_entities.clear()
             win.remote_player_interpolation.clear()
             win.menu.screen = Screen.MULTIPLAYER
+            win._sync_game_state()
             win.menu.status = "Disconnected: reconnect attempts exhausted."
             win._sync_mouse_capture()
 

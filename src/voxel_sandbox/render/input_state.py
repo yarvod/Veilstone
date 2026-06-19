@@ -107,6 +107,7 @@ class InputHandler:
             elif symbol == key.ESCAPE:
                 win.menu_ui._play_ui_sound()
                 win.menu.back()
+                win._sync_game_state()
             win._sync_mouse_capture()
             return
         if symbol == key.E:
@@ -128,6 +129,7 @@ class InputHandler:
             return
         if symbol == key.ESCAPE:
             win.menu.back()
+            win._sync_game_state()
             win._sync_mouse_capture()
             return
         if symbol == key.F5:

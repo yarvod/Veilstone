@@ -32,6 +32,7 @@ from voxel_sandbox.engine.events import (
     EntityDied,
     EventBus,
 )
+from voxel_sandbox.engine.game_state import GameState, GameStateMachine
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.network import (
     ClientSession,
@@ -114,6 +115,7 @@ class GameWindow(pyglet.window.Window):
         self.sky_renderer = SkyRenderer(self.mgl_context, clouds=settings.graphics.clouds)
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
+        self.game_state = GameStateMachine()
         self.ui_renderer = UiRenderer(self.width, self.height)
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
@@ -498,6 +500,16 @@ class GameWindow(pyglet.window.Window):
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         self._input.on_mouse_motion(x, y, dx, dy)
 
+    def _sync_game_state(self) -> None:
+        from voxel_sandbox.render.ui.menu import Screen
+
+        if self.menu.screen is Screen.GAME:
+            self.game_state.try_transition(GameState.PLAYING)
+        elif self.menu.screen is Screen.PAUSE:
+            self.game_state.try_transition(GameState.PAUSED)
+        else:
+            self.game_state.try_transition(GameState.MENU)
+
     def _sync_mouse_capture(self) -> None:
         should_capture = self.menu.in_game and not self.inventory_open and self.text_input is None
         if not should_capture:
@@ -612,6 +624,7 @@ def run_window(
         from voxel_sandbox.render.ui.menu import Screen
 
         window.menu.screen = Screen.GAME
+        window._sync_game_state()
         window.dispatch_event("on_draw")
         window.flip()
         window.dispatch_event("on_key_press", key.E, 0)

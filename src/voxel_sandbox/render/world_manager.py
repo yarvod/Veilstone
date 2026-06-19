@@ -78,6 +78,7 @@ class WorldManager:
         win.last_structure_revision = win.structure_world.revision
         win._net.start_local_authority()
         win.menu.screen = Screen.GAME
+        win._sync_game_state()
         win.menu.status = ""
         win._sync_camera_to_player()
         win._sync_mouse_capture()
