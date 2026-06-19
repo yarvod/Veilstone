@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from voxel_sandbox.app.composition import UserSettingsStore, build_app_runtime
+from voxel_sandbox.app.composition import UserSettingsStore, build_app_runtime, build_world_runtime
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio.backend import NullAudioBackend
 from voxel_sandbox.audio.bus import AudioBus
@@ -39,3 +39,31 @@ def test_user_settings_store_round_trips_user_settings(tmp_path: Path) -> None:
 
     assert settings_path.exists()
     assert store.load().graphics.resource_pack_path == settings.graphics.resource_pack_path
+
+
+def test_build_world_runtime_records_active_world_dependencies() -> None:
+    storage = object()
+    block_registry = object()
+    generation = object()
+    streaming = object()
+    player_state = object()
+    entity_world = object()
+    renderer = object()
+
+    runtime = build_world_runtime(
+        storage=storage,
+        block_registry=block_registry,
+        generation=generation,
+        streaming=streaming,
+        player_state=player_state,
+        entity_world=entity_world,
+        renderer=renderer,
+    )
+
+    assert runtime.storage is storage
+    assert runtime.block_registry is block_registry
+    assert runtime.generation is generation
+    assert runtime.streaming is streaming
+    assert runtime.player_state is player_state
+    assert runtime.entity_world is entity_world
+    assert runtime.renderer is renderer

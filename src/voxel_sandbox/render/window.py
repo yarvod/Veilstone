@@ -13,7 +13,7 @@ import numpy as np
 import pyglet
 from pyglet.window import key
 
-from voxel_sandbox.app.composition import AppRuntime, build_app_runtime
+from voxel_sandbox.app.composition import AppRuntime, build_app_runtime, build_world_runtime
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
@@ -149,6 +149,15 @@ class GameWindow(pyglet.window.Window):
         recipes_path = resource_path("config/recipes.toml")
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
+        self.world_runtime = build_world_runtime(
+            storage=self.world_renderer.storage,
+            block_registry=self.world_renderer.registry,
+            generation=self.world_renderer.generator,
+            streaming=self.world_renderer.streamer,
+            player_state=self.player,
+            entity_world=self.entities.world,
+            renderer=self.world_renderer,
+        )
         self._gameplay._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
         self.structure_world = self.world_renderer.storage.load_structure_world()

@@ -76,6 +76,31 @@ class WorldRuntime:
     renderer: Any | None = None
 
 
+def build_world_runtime(
+    *,
+    storage: Any | None = None,
+    block_registry: Any | None = None,
+    generation: Any | None = None,
+    streaming: Any | None = None,
+    player_state: Any | None = None,
+    entity_world: Any | None = None,
+    simulation_systems: tuple[Any, ...] = (),
+    renderer: Any | None = None,
+) -> WorldRuntime:
+    """Record active-world dependencies behind a single runtime context."""
+
+    return WorldRuntime(
+        storage=storage,
+        block_registry=block_registry,
+        generation=generation,
+        streaming=streaming,
+        player_state=player_state,
+        entity_world=entity_world,
+        simulation_systems=simulation_systems,
+        renderer=renderer,
+    )
+
+
 def build_app_runtime(
     settings: AppSettings,
     *,

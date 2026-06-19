@@ -32,6 +32,9 @@
   - [x] A4.3 Move existing `GameWindow` app-level construction calls for data root, audio, event bus, and item registry to the runtime path.
   - [ ] A4.4 Extract texture pack service ownership; likely finish together with A7 `ApplyResourcePackUseCase`.
 - [ ] A5 WorldRuntime extraction: перенести world-level зависимости: active world storage, block registry, generation/streaming, player state, entity world, simulation systems, renderer facade/port.
+  - [x] A5.1 Add `build_world_runtime()` and attach `GameWindow.world_runtime` as an explicit map of current active-world dependencies without changing runtime behavior.
+  - [ ] A5.2 Move one world-level construction path behind `WorldRuntime` instead of direct `GameWindow` field construction.
+  - [ ] A5.3 Keep compatibility fields until controllers/renderers are migrated.
 - [ ] A6 Replace one controller from `Controller(GameWindow)` to explicit dependencies. Начать с самого узкого участка, сохранить compatibility adapter при необходимости.
 - [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
 - [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
@@ -39,11 +42,11 @@
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: continue with A5 only after deciding whether A4.4 should be bundled into A7.
+Следующий кодовый шаг: continue A5 with one small world-level ownership move.
 
-1. Map the first `WorldRuntime` extraction target that does not require renderer ownership changes.
-2. Prefer player/entity/world storage state over texture-pack work unless A7 is started.
-3. Keep old constructor APIs as compatibility adapters.
+1. Choose a target that does not require renderer ownership changes; likely player/entity state rather than storage/generation.
+2. Move construction behind `WorldRuntime` while preserving existing `GameWindow` compatibility fields.
+3. Avoid touching texture-pack service until A7 starts.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 
 ## Architecture Guardrails
