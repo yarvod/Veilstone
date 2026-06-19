@@ -61,6 +61,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.importlinter]
 root_packages = ["voxel_sandbox"]
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "Domain layer stays independent from external adapters"
@@ -73,6 +74,18 @@ forbidden_modules = [
     "voxel_sandbox.network",
     "voxel_sandbox.render",
 ]
+
+[[tool.importlinter.contracts]]
+name = "Engine layer stays independent from render adapters"
+type = "forbidden"
+source_modules = ["voxel_sandbox.engine"]
+forbidden_modules = ["voxel_sandbox.render"]
+
+[[tool.importlinter.contracts]]
+name = "Application layer stays independent from graphics APIs"
+type = "forbidden"
+source_modules = ["voxel_sandbox.application"]
+forbidden_modules = ["pyglet", "moderngl"]
 
 [tool.pyright]
 include = ["src", "tests"]

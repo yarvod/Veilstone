@@ -128,12 +128,14 @@ uv run lint-imports
 Current enforced contract:
 
 - `voxel_sandbox.domain` must not import `app`, `audio`, `infrastructure`, `network`, or `render`.
+- `voxel_sandbox.engine` must not import `render`.
+- `voxel_sandbox.application` must not import Pyglet or ModernGL.
 
 Staged contracts to add as migrations land:
 
 1. `domain` remains independent from all external adapters. This is enforced now.
-2. `engine` / future `simulation` must not import render window, menu UI, render controllers, Pyglet, or ModernGL.
-3. `application` must not import Pyglet or ModernGL.
+2. `engine` / future `simulation` must not import render window, menu UI, render controllers, Pyglet, or ModernGL. `render` is enforced now; external graphics APIs can be added once checked.
+3. `application` must not import Pyglet or ModernGL. This is enforced now.
 4. `presentation` may import `application`; `application` must not import `presentation`.
 5. `domain` and `simulation` must not import `infrastructure` directly. Storage and settings access goes through ports wired in composition.
 

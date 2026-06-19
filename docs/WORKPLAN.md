@@ -63,11 +63,11 @@
 Enforced now:
 
 - `voxel_sandbox.domain` must not import `app`, `audio`, `infrastructure`, `network`, or `render`.
+- `voxel_sandbox.engine` must not import `render`.
+- `voxel_sandbox.application` must not import Pyglet or ModernGL.
 
 Staged next:
 
-- Engine/simulation must not import window/UI/render controllers.
-- Application must not import Pyglet/ModernGL.
 - Presentation may import application; application must not import presentation.
 - Domain/simulation must not import infrastructure directly except through composition/adapters.
 

@@ -18,6 +18,7 @@
 - **ApplyResourcePackUseCase** — added an application use case with explicit render/settings ports and routed `/resourcepack` command handling through it.
 - **Texture pack UI use case wiring** — Settings Texture Packs apply now routes through the same `ApplyResourcePackUseCase` as `/resourcepack`, preserving UI import report status.
 - **Texture pack service port** — resource pack discovery/loading/cache access now goes through a texture pack service port with a render adapter, keeping command/UI paths off direct importer/discovery functions.
+- **Stronger architecture guardrails** — import-linter now also enforces that `engine` does not import `render`, and `application` does not import Pyglet or ModernGL.
 
 ### Fixed
 
