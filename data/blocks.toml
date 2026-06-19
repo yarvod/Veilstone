@@ -2,7 +2,7 @@
 # Fields: id, key, name, material, hardness
 # Optional: is_solid (true), is_opaque (true), is_transparent (false),
 #           is_fluid (false), emits_light (0),
-#           texture_top/side/bottom ("missing")
+#           texture_top/side/bottom — Minecraft-style resource locations: "namespace:kind/name"
 
 [[block]]
 id = 0
@@ -20,9 +20,9 @@ key = "stone"
 name = "Stone"
 material = "stone"
 hardness = 1.5
-texture_top = "stone"
-texture_side = "stone"
-texture_bottom = "stone"
+texture_top = "minecraft:block/stone"
+texture_side = "minecraft:block/stone"
+texture_bottom = "minecraft:block/stone"
 
 [[block]]
 id = 2
@@ -30,9 +30,9 @@ key = "dirt"
 name = "Dirt"
 material = "earth"
 hardness = 0.5
-texture_top = "dirt"
-texture_side = "dirt"
-texture_bottom = "dirt"
+texture_top = "minecraft:block/dirt"
+texture_side = "minecraft:block/dirt"
+texture_bottom = "minecraft:block/dirt"
 
 [[block]]
 id = 3
@@ -40,9 +40,9 @@ key = "grass"
 name = "Grass"
 material = "earth"
 hardness = 0.6
-texture_top = "grass_top"
-texture_side = "grass_side"
-texture_bottom = "dirt"
+texture_top = "minecraft:block/grass_block_top"
+texture_side = "minecraft:block/grass_block_side"
+texture_bottom = "minecraft:block/dirt"
 
 [[block]]
 id = 4
@@ -50,9 +50,9 @@ key = "veilwood_log"
 name = "Veilwood Log"
 material = "wood"
 hardness = 1.8
-texture_top = "veilwood_cut"
-texture_side = "veilwood_bark"
-texture_bottom = "veilwood_cut"
+texture_top = "minecraft:block/oak_log_top"
+texture_side = "minecraft:block/oak_log"
+texture_bottom = "minecraft:block/oak_log_top"
 
 [[block]]
 id = 5
@@ -60,9 +60,9 @@ key = "veilwood_leaves"
 name = "Veilwood Leaves"
 material = "plant"
 hardness = 0.2
-texture_top = "veilwood_leaves"
-texture_side = "veilwood_leaves"
-texture_bottom = "veilwood_leaves"
+texture_top = "minecraft:block/oak_leaves"
+texture_side = "minecraft:block/oak_leaves"
+texture_bottom = "minecraft:block/oak_leaves"
 
 [[block]]
 id = 6
@@ -70,9 +70,9 @@ key = "dusk_crystal_ore"
 name = "Dusk Crystal Ore"
 material = "stone"
 hardness = 3.0
-texture_top = "dusk_crystal_ore"
-texture_side = "dusk_crystal_ore"
-texture_bottom = "dusk_crystal_ore"
+texture_top = "minecraft:block/diamond_ore"
+texture_side = "minecraft:block/diamond_ore"
+texture_bottom = "minecraft:block/diamond_ore"
 
 [[block]]
 id = 7
@@ -84,9 +84,9 @@ is_solid = false
 is_opaque = false
 is_transparent = true
 emits_light = 14
-texture_top = "gloam_lantern"
-texture_side = "gloam_lantern"
-texture_bottom = "gloam_lantern"
+texture_top = "minecraft:block/lantern"
+texture_side = "minecraft:block/lantern"
+texture_bottom = "minecraft:block/lantern"
 
 [[block]]
 id = 8
@@ -98,9 +98,9 @@ is_solid = false
 is_opaque = false
 is_transparent = true
 is_fluid = true
-texture_top = "water"
-texture_side = "water"
-texture_bottom = "water"
+texture_top = "minecraft:block/water_still"
+texture_side = "minecraft:block/water_still"
+texture_bottom = "minecraft:block/water_still"
 
 [[block]]
 id = 9
@@ -108,9 +108,9 @@ key = "veilwood_planks"
 name = "Veilwood Planks"
 material = "wood"
 hardness = 1.2
-texture_top = "veilwood_planks"
-texture_side = "veilwood_planks"
-texture_bottom = "veilwood_planks"
+texture_top = "minecraft:block/oak_planks"
+texture_side = "minecraft:block/oak_planks"
+texture_bottom = "minecraft:block/oak_planks"
 
 [[block]]
 id = 10
@@ -118,9 +118,9 @@ key = "workbench"
 name = "Runecraft Table"
 material = "wood"
 hardness = 1.8
-texture_top = "runecraft_top"
-texture_side = "runecraft_side"
-texture_bottom = "veilwood_planks"
+texture_top = "minecraft:block/crafting_table_top"
+texture_side = "minecraft:block/crafting_table_side"
+texture_bottom = "minecraft:block/oak_planks"
 
 [[block]]
 id = 11
@@ -132,9 +132,9 @@ is_solid = false
 is_opaque = false
 is_transparent = true
 emits_light = 10
-texture_top = "glowing_mushroom"
-texture_side = "glowing_mushroom"
-texture_bottom = "glowing_mushroom"
+texture_top = "minecraft:block/red_mushroom"
+texture_side = "minecraft:block/red_mushroom"
+texture_bottom = "minecraft:block/red_mushroom"
 
 [[block]]
 id = 12
@@ -146,6 +146,6 @@ is_solid = false
 is_opaque = false
 is_transparent = true
 emits_light = 6
-texture_top = "fireflies"
-texture_side = "fireflies"
-texture_bottom = "fireflies"
+texture_top = "minecraft:block/glow_lichen"
+texture_side = "minecraft:block/glow_lichen"
+texture_bottom = "minecraft:block/glow_lichen"

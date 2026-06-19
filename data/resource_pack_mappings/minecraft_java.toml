@@ -1,0 +1,33 @@
+# Minecraft Java Edition resource pack mapping
+# Maps Veilstone texture keys → Minecraft Java texture references (namespace:kind/name)
+# Resolver: minecraft:block/stone → assets/minecraft/textures/block/stone.png
+
+[metadata]
+format = "minecraft_java"
+default_namespace = "minecraft"
+
+[textures]
+# Standard blocks
+stone            = "minecraft:block/stone"
+dirt             = "minecraft:block/dirt"
+grass_top        = "minecraft:block/grass_block_top"
+grass_side       = "minecraft:block/grass_block_side"
+
+# Veilstone wood (mapped to oak equivalents)
+veilwood_cut     = "minecraft:block/oak_log_top"
+veilwood_bark    = "minecraft:block/oak_log"
+veilwood_leaves  = "minecraft:block/oak_leaves"
+veilwood_planks  = "minecraft:block/oak_planks"
+
+# Fluids
+water            = "minecraft:block/water_still"
+
+# Crafting table
+runecraft_top    = "minecraft:block/crafting_table_top"
+runecraft_side   = "minecraft:block/crafting_table_side"
+
+# Special blocks (closest visual substitutes)
+dusk_crystal_ore = "minecraft:block/diamond_ore"
+gloam_lantern    = "minecraft:block/lantern"
+glowing_mushroom = "minecraft:block/red_mushroom"
+fireflies        = "minecraft:block/glow_lichen"

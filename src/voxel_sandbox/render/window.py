@@ -532,6 +532,7 @@ class GameWindow(pyglet.window.Window):
             shadow_quality=settings.graphics.shadow_quality,
             shadow_bias=settings.graphics.shadow_bias,
             save_root=save_root,
+            resource_pack_path=settings.graphics.resource_pack_path,
         )
 
 

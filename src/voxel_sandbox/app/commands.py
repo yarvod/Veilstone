@@ -20,6 +20,11 @@ class SetDifficultyCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class ResourcePackCommand:
+    path: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class HelpCommand:
     pass
 
@@ -47,6 +52,7 @@ class TeleportCommand:
 type GameCommand = (
     SetTimeCommand
     | SetDifficultyCommand
+    | ResourcePackCommand
     | HelpCommand
     | SpawnStructureCommand
     | ToggleStructureCommand
@@ -70,7 +76,8 @@ def parse_command(source: str) -> GameCommand:
     if not parts:
         raise CommandError("Enter a command. Use /help for available commands.")
     command = parts[0].casefold()
-    arguments = [part.casefold() for part in parts[1:]]
+    raw_arguments = parts[1:]
+    arguments = [part.casefold() for part in raw_arguments]
     if command == "help" and not arguments:
         return HelpCommand()
     if command == "time" and len(arguments) == 2 and arguments[0] == "set":
@@ -80,6 +87,10 @@ def parse_command(source: str) -> GameCommand:
         if difficulty not in {"peaceful", "normal"}:
             raise CommandError("Difficulty must be peaceful or normal.")
         return SetDifficultyCommand(difficulty)
+    if command == "resourcepack" and len(arguments) == 1:
+        if arguments[0] == "default":
+            return ResourcePackCommand(None)
+        return ResourcePackCommand(raw_arguments[0])
     if command == "structure" and arguments[:1] == ["spawn"] and len(arguments) == 2:
         key = arguments[1]
         if key not in {"gate", "altar", "bridge"}:

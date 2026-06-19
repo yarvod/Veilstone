@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Minecraft Java resource pack MVP** — block texture IDs now use `minecraft:block/*` resource locations; folder/ZIP packs can be imported for block atlases, and `/resourcepack <path|default>` hot-swaps the active atlas in an open world.
+
 ### Changed
 - **HudController extracted from GameWindow** — all HUD labels (debug, position, player list, crosshair, nametags), debug text building, and `on_draw` HUD block moved to `render/hud_controller.py`; GameWindow delegates via `self._hud`
 - **Player position helpers moved to WorldManager** — `restore_player_position`, `invalid_player_position_reason`, `move_player_to_spawn` are now on `WorldManager`; `GameWindow.__init__` creates `_worlds` early to enable this
@@ -26,6 +29,8 @@
 - **8 mob/combat tests** — spawn validation, height check, avoidance, animation
 
 ### Fixed
+- **Saved world loading after MenuUI extraction** — refreshed world lists now use `WorldManager`, fixing `GameWindow._saved_worlds` AttributeError.
+- **Menu hover sound spam** — UI hover audio now plays only on button hover entry instead of every handled mouse-motion event.
 - **Font crash on Windows** — replaced hardcoded "Minecraft" font with platform font (Segoe UI / Menlo)
 - **World selection buttons broken** — "Create New World" and "Cancel" passed strings instead of MenuCommand enum
 - **Enter key doesn't load world** — on Singleplayer screen, Enter now loads selected world

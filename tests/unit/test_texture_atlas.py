@@ -1,30 +1,96 @@
 from __future__ import annotations
 
-from voxel_sandbox.render.texture_atlas import create_block_atlas
+from PIL import Image
+
+from voxel_sandbox.render.texture_atlas import (
+    GeneratedAtlas,
+    build_texture_atlas,
+    create_block_atlas,
+    create_default_block_tiles,
+)
+
+_EXPECTED_KEYS = {
+    "minecraft:block/stone",
+    "minecraft:block/dirt",
+    "minecraft:block/grass_block_top",
+    "minecraft:block/grass_block_side",
+    "minecraft:block/oak_log_top",
+    "minecraft:block/oak_log",
+    "minecraft:block/oak_leaves",
+    "minecraft:block/oak_planks",
+    "minecraft:block/diamond_ore",
+    "minecraft:block/lantern",
+    "minecraft:block/water_still",
+    "minecraft:block/crafting_table_top",
+    "minecraft:block/crafting_table_side",
+    "minecraft:block/red_mushroom",
+    "minecraft:block/glow_lichen",
+}
 
 
-def test_generated_atlas_contains_core_textures() -> None:
+def test_default_tiles_returns_all_texture_keys() -> None:
+    tiles = create_default_block_tiles(tile_size=8)
+    assert set(tiles) == _EXPECTED_KEYS
+    for name, img in tiles.items():
+        assert img.size == (8, 8), f"{name}: expected 8x8, got {img.size}"
+        assert img.mode == "RGBA"
+
+
+def test_build_texture_atlas_contains_all_keys() -> None:
+    tiles = create_default_block_tiles(tile_size=8)
+    atlas = build_texture_atlas(tiles, tile_size=8)
+    assert set(atlas.uvs) == _EXPECTED_KEYS
+
+
+def test_build_texture_atlas_uv_coords_in_range() -> None:
+    tiles = create_default_block_tiles(tile_size=8)
+    atlas = build_texture_atlas(tiles, tile_size=8)
+    for name, (u0, v0, u1, v1) in atlas.uvs.items():
+        assert 0.0 <= u0 < u1 <= 1.0, f"{name}: bad U range {u0} {u1}"
+        assert 0.0 <= v0 < v1 <= 1.0, f"{name}: bad V range {v0} {v1}"
+
+
+def test_build_texture_atlas_half_pixel_inset() -> None:
+    """UV borders must be inset by 0.5/atlas_dimension to avoid bleeding."""
+    tiles = create_default_block_tiles(tile_size=8)
+    atlas = build_texture_atlas(tiles, tile_size=8)
+    inset_u = 0.5 / atlas.width
+    inset_v = 0.5 / atlas.height
+    for u0, v0, u1, v1 in atlas.uvs.values():
+        assert u0 > inset_u * 0.5
+        assert v0 > inset_v * 0.5
+        assert u1 < 1.0 - inset_u * 0.5
+        assert v1 < 1.0 - inset_v * 0.5
+
+
+def test_build_texture_atlas_dimensions_are_multiples_of_tile_size() -> None:
+    tiles = create_default_block_tiles(tile_size=8)
+    atlas = build_texture_atlas(tiles, tile_size=8)
+    assert atlas.width % 8 == 0
+    assert atlas.height % 8 == 0
+    assert len(atlas.pixels) == atlas.width * atlas.height * 4
+
+
+def test_build_texture_atlas_is_deterministic() -> None:
+    tiles = create_default_block_tiles(tile_size=8)
+    a = build_texture_atlas(tiles, tile_size=8)
+    b = build_texture_atlas(tiles, tile_size=8)
+    assert a.pixels == b.pixels
+    assert a.uvs == b.uvs
+
+
+def test_build_texture_atlas_accepts_external_tiles() -> None:
+    """Custom tiles override the atlas; any resource location key is accepted."""
+    custom = {"minecraft:block/cobblestone": Image.new("RGBA", (16, 16), (140, 130, 120, 255))}
+    atlas = build_texture_atlas(custom, tile_size=16)
+    assert "minecraft:block/cobblestone" in atlas.uvs
+    assert atlas.width == 16
+    assert atlas.height == 16
+
+
+def test_create_block_atlas_backward_compatible() -> None:
     atlas = create_block_atlas(tile_size=16)
-    repeated = create_block_atlas(tile_size=16)
-
-    assert (atlas.width, atlas.height) == (80, 48)
-    assert len(atlas.pixels) == 80 * 48 * 4
-    assert set(atlas.uvs) == {
-        "stone",
-        "dirt",
-        "grass_top",
-        "grass_side",
-        "veilwood_cut",
-        "veilwood_bark",
-        "veilwood_leaves",
-        "dusk_crystal_ore",
-        "gloam_lantern",
-        "water",
-        "veilwood_planks",
-        "runecraft_top",
-        "runecraft_side",
-        "glowing_mushroom",
-        "fireflies",
-    }
-    assert all(0.0 <= coordinate <= 1.0 for uv in atlas.uvs.values() for coordinate in uv)
-    assert repeated.pixels == atlas.pixels
+    assert isinstance(atlas, GeneratedAtlas)
+    assert set(atlas.uvs) == _EXPECTED_KEYS
+    assert all(0.0 <= c <= 1.0 for uv in atlas.uvs.values() for c in uv)
+    assert len(atlas.pixels) == atlas.width * atlas.height * 4

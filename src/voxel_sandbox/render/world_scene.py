@@ -51,7 +51,8 @@ from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
-from voxel_sandbox.render.texture_atlas import create_block_atlas
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas
+from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 
 
 class DemoWorldRenderer:
@@ -77,6 +78,7 @@ class DemoWorldRenderer:
         shadow_quality: str,
         shadow_bias: float,
         save_root: Path,
+        resource_pack_path: str = "",
     ) -> None:
         self.context = context
         shader_root = Path(__file__).parent / "shaders" / "glsl"
@@ -87,11 +89,12 @@ class DemoWorldRenderer:
         self.shadow_shader = ShaderProgram(
             context, ShaderFiles.from_directory(shader_root, "shadow_depth")
         )
-        atlas = create_block_atlas()
+        self.registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
+        pack_path = Path(resource_pack_path) if resource_pack_path else None
+        atlas = load_active_block_atlas(pack_path, registry=self.registry)
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.texture.build_mipmaps()
-        self.registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
         self.atlas_uvs = atlas.uvs
         self.uploads_per_frame = uploads_per_frame
         self.mesh_uploads_per_frame = mesh_uploads_per_frame
@@ -139,11 +142,13 @@ class DemoWorldRenderer:
             self.shadow_shader.program if self.shadow_map is not None else None,
         )
         self.water_mesh_cache = SectionMeshCache(context, self.water_shader.program)
+        self._meshing_workers = meshing_workers
+        self._meshing_backend = cast(Literal["thread", "process"], meshing_backend)
         self.mesh_worker = SectionMeshWorker(
             self.registry,
             self.atlas_uvs,
-            workers=meshing_workers,
-            backend=cast(Literal["thread", "process"], meshing_backend),
+            workers=self._meshing_workers,
+            backend=self._meshing_backend,
         )
         self.highlight = BlockHighlightRenderer(context)
         self.visible_sections = 0
@@ -465,6 +470,32 @@ class DemoWorldRenderer:
         self.selection = self.raycast(camera.position, camera.direction)
         if self.selection is not None:
             self.highlight.render(matrix, self.selection.block)
+
+    def apply_texture_pack(self, atlas: GeneratedAtlas) -> None:
+        """Hot-swap the block texture atlas and remesh all loaded chunks."""
+        old_texture = self.texture
+        self.texture = self.context.texture((atlas.width, atlas.height), 4, atlas.pixels)
+        self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self.texture.build_mipmaps()
+        old_texture.release()
+
+        self.atlas_uvs = atlas.uvs
+        if self._meshing_backend == "thread":
+            self.mesh_worker.texture_uvs = atlas.uvs
+        else:
+            self.mesh_worker.close()
+            self.mesh_worker = SectionMeshWorker(
+                self.registry,
+                atlas.uvs,
+                workers=self._meshing_workers,
+                backend=self._meshing_backend,
+            )
+
+        self.water_mesh_cache.release()
+        self.mesh_cache.release()
+        self.mesh_cache = SectionMeshCache(self.context, self.shader.program)
+        self.water_mesh_cache = SectionMeshCache(self.context, self.water_shader.program)
+        self._remesh_all()
 
     def release(self) -> None:
         self.mesh_worker.close()

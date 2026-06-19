@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
@@ -81,6 +81,7 @@ class GraphicsSettings:
     shadow_quality: str = "medium"
     shadow_bias: float = 0.0015
     clouds: bool = True
+    resource_pack_path: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,15 +94,15 @@ class AudioSettings:
 
 @dataclass(frozen=True, slots=True)
 class AppSettings:
-    window: WindowSettings = WindowSettings()
-    camera: CameraSettings = CameraSettings()
-    logging: LoggingSettings = LoggingSettings()
-    development: DevelopmentSettings = DevelopmentSettings()
-    world: WorldSettings = WorldSettings()
-    gameplay: GameplaySettings = GameplaySettings()
-    graphics: GraphicsSettings = GraphicsSettings()
-    audio: AudioSettings = AudioSettings()
-    controls: ControlsSettings = ControlsSettings()
+    window: WindowSettings = field(default_factory=WindowSettings)
+    camera: CameraSettings = field(default_factory=CameraSettings)
+    logging: LoggingSettings = field(default_factory=LoggingSettings)
+    development: DevelopmentSettings = field(default_factory=DevelopmentSettings)
+    world: WorldSettings = field(default_factory=WorldSettings)
+    gameplay: GameplaySettings = field(default_factory=GameplaySettings)
+    graphics: GraphicsSettings = field(default_factory=GraphicsSettings)
+    audio: AudioSettings = field(default_factory=AudioSettings)
+    controls: ControlsSettings = field(default_factory=ControlsSettings)
 
 
 def _section(data: dict[str, Any], key: str) -> dict[str, Any]:

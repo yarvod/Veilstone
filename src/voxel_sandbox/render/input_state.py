@@ -308,13 +308,12 @@ class InputHandler:
         win.mouse_y = y
         if win.text_input is not None:
             return
-        if not win.menu.in_game:
-            if (
-                hasattr(win, "ui_renderer")
-                and win.ui_renderer
-                and win.ui_renderer.on_mouse_motion(x, y, dx, dy)
-            ):
-                win.menu_ui._play_ui_sound()
+        if (
+            not win.menu.in_game
+            and hasattr(win, "ui_renderer")
+            and win.ui_renderer
+            and win.ui_renderer.on_mouse_motion(x, y, dx, dy)
+        ):
             return
         if win.mouse_captured:
             win.camera.rotate(

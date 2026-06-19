@@ -45,11 +45,12 @@ class UiRenderer:
         menu: MenuController,
         get_item_label: Callable[[int], str] | None = None,
         on_item_click: Callable[[int], None] | None = None,
+        on_item_hover: Callable[[], None] | None = None,
     ) -> None:
         if self._current_screen != menu.screen or self._current_items != menu.items:
             self._current_screen = menu.screen
             self._current_items = menu.items
-            self._rebuild_tree(menu, on_item_click)
+            self._rebuild_tree(menu, on_item_click, on_item_hover)
 
         if self._selected_index != menu.selected_index:
             self._selected_index = menu.selected_index
@@ -117,7 +118,10 @@ class UiRenderer:
             self.root_panel.add_child(self.world_actions_hbox2)
 
     def _rebuild_tree(
-        self, menu: MenuController, on_item_click: Callable[[int], None] | None
+        self,
+        menu: MenuController,
+        on_item_click: Callable[[int], None] | None,
+        on_item_hover: Callable[[], None] | None,
     ) -> None:
         self.batch = pyglet.graphics.Batch()
         self.root_panel.children.clear()
@@ -129,7 +133,7 @@ class UiRenderer:
         self.root_panel.add_child(self.status_label)
 
         if menu.screen != Screen.SINGLEPLAYER:
-            for i, item in enumerate(menu.items):
+            for i, _item in enumerate(menu.items):
 
                 def make_callback(index: int = i) -> Callable[[], None]:
                     def cb():
@@ -141,10 +145,12 @@ class UiRenderer:
                 def make_hover(index: int = i) -> Callable[[], None]:
                     def cb():
                         menu.select(index)
+                        if on_item_hover is not None:
+                            on_item_hover()
 
                     return cb
 
-                btn = Button(text=item.label, on_click_callback=make_callback())
+                btn = Button(text=_item.label, on_click_callback=make_callback())
                 btn.on_hover = make_hover()
                 self.buttons.append(btn)
                 self.vbox.add_child(btn)

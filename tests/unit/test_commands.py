@@ -6,6 +6,7 @@ from voxel_sandbox.app.commands import (
     CommandError,
     HelpCommand,
     ListStructuresCommand,
+    ResourcePackCommand,
     SetDifficultyCommand,
     SetTimeCommand,
     SpawnStructureCommand,
@@ -27,6 +28,12 @@ def test_time_command_accepts_minecraft_names_and_ticks() -> None:
 def test_difficulty_and_help_commands_parse() -> None:
     assert parse_command("/difficulty peaceful") == SetDifficultyCommand("peaceful")
     assert parse_command("help") == HelpCommand()
+
+
+def test_resource_pack_commands_parse() -> None:
+    assert parse_command("/resourcepack default") == ResourcePackCommand(None)
+    command = parse_command("/resourcepack resource_packs/Faithful-32x-1.21.11")
+    assert command == ResourcePackCommand("resource_packs/Faithful-32x-1.21.11")
 
 
 def test_structure_debug_commands_parse() -> None:

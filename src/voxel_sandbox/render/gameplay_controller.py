@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import math
+import zipfile
 from dataclasses import replace
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
+
+from PIL import UnidentifiedImageError
 
 from voxel_sandbox.app.commands import (
     CommandError,
     ListStructuresCommand,
+    ResourcePackCommand,
     SetDifficultyCommand,
     SetTimeCommand,
     SpawnStructureCommand,
@@ -17,6 +22,7 @@ from voxel_sandbox.app.commands import (
     parse_command,
 )
 from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -38,6 +44,8 @@ class GameplayController:
                 self._handle_set_time(command)
             case SetDifficultyCommand():
                 self._handle_set_difficulty(command)
+            case ResourcePackCommand():
+                self._handle_resource_pack(command)
             case TeleportCommand():
                 self._handle_teleport(command)
             case SpawnStructureCommand():
@@ -48,7 +56,8 @@ class GameplayController:
                 self._handle_list_structures()
             case _:
                 win.inventory_status = (
-                    "/time set <...>; /difficulty <...>; /structure <spawn|toggle|list>"
+                    "/time set <...>; /difficulty <...>; "
+                    "/resourcepack <path|default>; /structure <spawn|toggle|list>"
                 )
 
     def _handle_set_time(self, command: SetTimeCommand) -> None:
@@ -65,6 +74,34 @@ class GameplayController:
     def _handle_set_difficulty(self, command: SetDifficultyCommand) -> None:
         self._set_difficulty(command.difficulty)
         self.win.inventory_status = f"Difficulty set to {command.difficulty}."
+
+    def _handle_resource_pack(self, command: ResourcePackCommand) -> None:
+        win = self.win
+        pack_path = Path(command.path) if command.path is not None else None
+        if pack_path is not None and not pack_path.exists():
+            win.inventory_status = f"Resource pack not found: {pack_path}"
+            return
+
+        try:
+            atlas = load_active_block_atlas(pack_path, registry=win.world_renderer.registry)
+        except (OSError, ValueError, zipfile.BadZipFile, UnidentifiedImageError) as error:
+            win.inventory_status = f"Resource pack failed: {error}"
+            return
+
+        win.world_renderer.apply_texture_pack(atlas)
+        win.settings = replace(
+            win.settings,
+            graphics=replace(
+                win.settings.graphics,
+                resource_pack_path="" if command.path is None else str(pack_path),
+            ),
+        )
+        save_user_settings(win.settings)
+        win.inventory_status = (
+            "Resource pack reset to default."
+            if command.path is None
+            else f"Resource pack applied: {pack_path}"
+        )
 
     def _handle_teleport(self, command: TeleportCommand) -> None:
         win = self.win

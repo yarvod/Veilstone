@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+import zipfile
+from collections.abc import Mapping
+from pathlib import Path
+
+from PIL import Image
+
+from voxel_sandbox.render.texture_packs.models import ImportReport
+
+
+def resource_location_to_texture_path(resource: str) -> str:
+    """Convert a resource location to its path inside a resource pack.
+
+    Examples:
+        "minecraft:block/stone" -> "assets/minecraft/textures/block/stone.png"
+        "veilstone:block/my_block" -> "assets/veilstone/textures/block/my_block.png"
+    """
+    if ":" not in resource:
+        raise ValueError(
+            f"Invalid resource location {resource!r}: "
+            "missing namespace (expected 'namespace:kind/name')"
+        )
+    namespace, rest = resource.split(":", 1)
+    if "/" not in rest:
+        raise ValueError(
+            f"Invalid resource location {resource!r}: "
+            "missing kind separator (expected 'namespace:kind/name')"
+        )
+    return f"assets/{namespace}/textures/{rest}.png"
+
+
+def is_minecraft_java_pack(path: Path) -> bool:
+    """Return True if path is a Minecraft Java resource pack (folder or ZIP)."""
+    if path.is_dir():
+        return (path / "pack.mcmeta").exists()
+    if path.is_file() and path.suffix.lower() == ".zip":
+        try:
+            with zipfile.ZipFile(path) as zf:
+                return "pack.mcmeta" in zf.namelist()
+        except zipfile.BadZipFile:
+            return False
+    return False
+
+
+def _load_png_from_folder(folder: Path, asset_path: str) -> Image.Image | None:
+    full = folder / asset_path
+    if not full.exists():
+        return None
+    return Image.open(full).convert("RGBA")
+
+
+def _load_png_from_zip(zf: zipfile.ZipFile, asset_path: str) -> Image.Image | None:
+    try:
+        with zf.open(asset_path) as f:
+            return Image.open(f).convert("RGBA")
+    except KeyError:
+        return None
+
+
+def _first_frame(image: Image.Image) -> tuple[Image.Image, bool]:
+    """Crop the first frame if the image is a vertical animation strip."""
+    w, h = image.size
+    if h > w and h % w == 0:
+        return image.crop((0, 0, w, w)), True
+    return image, False
+
+
+def load_block_textures(
+    source: Path,
+    resource_ids: Mapping[str, None],
+    fallback_tiles: Mapping[str, Image.Image],
+) -> tuple[dict[str, Image.Image], ImportReport]:
+    """Load textures for the given resource IDs from a pack folder or ZIP.
+
+    resource_ids: set of resource locations to import (e.g. {"minecraft:block/stone", ...})
+    fallback_tiles: tiles to use when a texture is missing from the pack
+    """
+    report = ImportReport(pack_id=source.name)
+    result: dict[str, Image.Image] = {}
+
+    use_zip = source.is_file() and source.suffix.lower() == ".zip"
+
+    def _load(asset_path: str) -> Image.Image | None:
+        if use_zip:
+            with zipfile.ZipFile(source) as zf:
+                return _load_png_from_zip(zf, asset_path)
+        return _load_png_from_folder(source, asset_path)
+
+    for resource_id in resource_ids:
+        try:
+            asset_path = resource_location_to_texture_path(resource_id)
+        except ValueError:
+            report.warnings.append(f"Skipped invalid resource ID: {resource_id!r}")
+            continue
+
+        image = _load(asset_path)
+
+        if image is None:
+            if resource_id in fallback_tiles:
+                result[resource_id] = fallback_tiles[resource_id].copy()
+                report.fallback.append(resource_id)
+            else:
+                report.missing.append(resource_id)
+            continue
+
+        image, animated = _first_frame(image)
+        if animated:
+            report.ignored_animations.append(resource_id)
+
+        result[resource_id] = image
+        report.imported.append(resource_id)
+
+    return result, report

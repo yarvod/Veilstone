@@ -85,7 +85,12 @@ class MenuUI:
             win.menu.select(index)
             self._handle_menu_command(win.menu.activate())
 
-        win.ui_renderer.update(win.menu, self._menu_item_label, on_item_click)
+        win.ui_renderer.update(
+            win.menu,
+            self._menu_item_label,
+            on_item_click,
+            self._play_ui_sound,
+        )
 
         if win.menu.screen is Screen.SINGLEPLAYER:
             self._draw_world_list(win.width // 2)
@@ -170,10 +175,9 @@ class MenuUI:
     # ── World list ────────────────────────────────────────────────────────────
 
     def _refresh_world_list(self) -> None:
-        win = self.win
         now = time.perf_counter()
         if now - self._world_list_cache_time > 2.0:
-            self.world_list_items = list(win._saved_worlds())
+            self.world_list_items = list(WorldManager._saved_worlds())
             self._world_list_cache_time = now
 
     def _draw_world_list(self, center_x: int) -> None:

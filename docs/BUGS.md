@@ -34,3 +34,9 @@
 
 ### BUG-R003: Chunk lighting seams ✅
 - **Fixed in:** commit 501e26e
+
+### BUG-R004: Cannot load saved worlds after MenuUI extraction ✅
+- **Fixed:** `MenuUI._refresh_world_list()` no longer calls removed `GameWindow._saved_worlds`; it reads saved worlds through `WorldManager`.
+
+### BUG-R005: Menu hover sound loops while moving mouse ✅
+- **Fixed:** hover audio is emitted from button hover entry callbacks, not from every handled menu mouse-motion event.

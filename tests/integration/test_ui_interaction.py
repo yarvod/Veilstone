@@ -3,6 +3,8 @@ from __future__ import annotations
 from pyglet.window import mouse
 
 from voxel_sandbox.render.ui.layout import VBox
+from voxel_sandbox.render.ui.menu import MenuController
+from voxel_sandbox.render.ui.renderer import UiRenderer
 from voxel_sandbox.render.ui.widgets import Button
 
 
@@ -52,6 +54,31 @@ def test_ui_button_hover_and_click():
     vbox.on_mouse_release(260, 280, mouse.LEFT, 0)
     assert not btn.pressed
     assert clicked
+
+
+def test_ui_renderer_hover_callback_only_on_hover_entry():
+    menu = MenuController()
+    renderer = UiRenderer(800, 600)
+    hover_count = 0
+
+    def on_hover():
+        nonlocal hover_count
+        hover_count += 1
+
+    renderer.update(menu, on_item_hover=on_hover)
+    button = renderer.buttons[1]
+    x = button.bounds.x + 10
+    y = button.bounds.y + 10
+
+    renderer.on_mouse_motion(x, y, 0, 0)
+    assert hover_count == 1
+
+    renderer.on_mouse_motion(x + 10, y, 10, 0)
+    assert hover_count == 1
+
+    renderer.on_mouse_motion(0, 0, -270, -345)
+    renderer.on_mouse_motion(x, y, x, y)
+    assert hover_count == 2
 
 
 def test_ui_world_card_click():

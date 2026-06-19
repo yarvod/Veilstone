@@ -136,4 +136,10 @@ assets/**/.DS_Store
 .serena/memories/
 .serena/project.local.yml
 
-resource_packs/
+# Resource packs — user-supplied, must not be committed
+resource_packs/*
+!resource_packs/README.md
+
+# Texture atlas cache — generated locally, never committed
+texture_cache/
+*.texture-cache/

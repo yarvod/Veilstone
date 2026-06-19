@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import ceil, sqrt
 
 from PIL import Image, ImageDraw
 
@@ -13,64 +14,76 @@ class GeneratedAtlas:
     uvs: dict[str, tuple[float, float, float, float]]
 
 
-def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
-    columns = 5
-    rows = 3
-    image = Image.new("RGBA", (tile_size * columns, tile_size * rows))
-    draw = ImageDraw.Draw(image)
-    colors = {
-        "stone": (92, 100, 112, 255),
-        "dirt": (102, 68, 45, 255),
-        "grass_top": (60, 90, 110, 255),
-        "grass_side": (50, 75, 90, 255),
-        "veilwood_cut": (126, 104, 83, 255),
-        "veilwood_bark": (64, 55, 72, 255),
-        "veilwood_leaves": (90, 60, 130, 255),
-        "dusk_crystal_ore": (90, 72, 122, 255),
-        "gloam_lantern": (226, 154, 72, 255),
-        "water": (46, 105, 157, 180),
-        "veilwood_planks": (112, 87, 72, 255),
-        "runecraft_top": (87, 70, 98, 255),
-        "runecraft_side": (72, 58, 82, 255),
-        "glowing_mushroom": (60, 200, 180, 255),
-        "fireflies": (200, 255, 100, 150),
-    }
-    positions = {
-        "stone": (0, 0),
-        "dirt": (1, 0),
-        "grass_top": (0, 1),
-        "grass_side": (1, 1),
-        "veilwood_cut": (2, 0),
-        "veilwood_bark": (3, 0),
-        "veilwood_leaves": (2, 1),
-        "dusk_crystal_ore": (3, 1),
-        "gloam_lantern": (4, 0),
-        "water": (4, 1),
-        "veilwood_planks": (0, 2),
-        "runecraft_top": (1, 2),
-        "runecraft_side": (2, 2),
-        "glowing_mushroom": (3, 2),
-        "fireflies": (4, 2),
-    }
-    uvs: dict[str, tuple[float, float, float, float]] = {}
-    for name, (tile_x, tile_y) in positions.items():
-        x0, y0 = tile_x * tile_size, tile_y * tile_size
-        draw.rectangle((x0, y0, x0 + tile_size - 1, y0 + tile_size - 1), fill=colors[name])
-        seed = sum((index + 1) * ord(character) for index, character in enumerate(name))
-        for point_y in range(1, tile_size - 1):
-            for point_x in range(1, tile_size - 1):
+# Default procedural tiles keyed by Minecraft-style resource locations.
+# Colors are approximate; real textures come from user-supplied resource packs.
+_DEFAULT_COLORS: dict[str, tuple[int, int, int, int]] = {
+    "minecraft:block/stone": (92, 100, 112, 255),
+    "minecraft:block/dirt": (102, 68, 45, 255),
+    "minecraft:block/grass_block_top": (60, 90, 110, 255),
+    "minecraft:block/grass_block_side": (50, 75, 90, 255),
+    "minecraft:block/oak_log_top": (126, 104, 83, 255),
+    "minecraft:block/oak_log": (64, 55, 72, 255),
+    "minecraft:block/oak_leaves": (90, 60, 130, 255),
+    "minecraft:block/oak_planks": (112, 87, 72, 255),
+    "minecraft:block/diamond_ore": (90, 72, 122, 255),
+    "minecraft:block/lantern": (226, 154, 72, 255),
+    "minecraft:block/water_still": (46, 105, 157, 180),
+    "minecraft:block/crafting_table_top": (87, 70, 98, 255),
+    "minecraft:block/crafting_table_side": (72, 58, 82, 255),
+    "minecraft:block/red_mushroom": (60, 200, 180, 255),
+    "minecraft:block/glow_lichen": (200, 255, 100, 150),
+}
+
+
+def create_default_block_tiles(tile_size: int = 32) -> dict[str, Image.Image]:
+    """Return procedurally generated PIL images keyed by resource location."""
+    tiles: dict[str, Image.Image] = {}
+    for name, color in _DEFAULT_COLORS.items():
+        image = Image.new("RGBA", (tile_size, tile_size))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((0, 0, tile_size - 1, tile_size - 1), fill=color)
+        seed = sum((i + 1) * ord(c) for i, c in enumerate(name))
+        for py in range(1, tile_size - 1):
+            for px in range(1, tile_size - 1):
                 seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
                 offset = int(seed >> 29) - 3
                 shade = (
-                    *tuple(min(255, max(0, channel + offset)) for channel in colors[name][:3]),
+                    *tuple(min(255, max(0, ch + offset)) for ch in color[:3]),
                     255,
                 )
-                draw.point((x0 + point_x, y0 + point_y), fill=shade)
-        u0, v0 = tile_x / columns, 1.0 - (tile_y + 1) / rows
-        u1, v1 = (tile_x + 1) / columns, 1.0 - tile_y / rows
-        inset_u = 0.5 / (tile_size * columns)
-        inset_v = 0.5 / (tile_size * rows)
+                draw.point((px, py), fill=shade)
+        tiles[name] = image
+    return tiles
+
+
+def build_texture_atlas(tiles: dict[str, Image.Image], *, tile_size: int) -> GeneratedAtlas:
+    """Pack PIL images into a square-ish atlas and return UV coordinates."""
+    names = sorted(tiles)
+    count = len(names)
+    columns = max(1, ceil(sqrt(count)))
+    rows = max(1, ceil(count / columns))
+    atlas_w = columns * tile_size
+    atlas_h = rows * tile_size
+    image = Image.new("RGBA", (atlas_w, atlas_h))
+
+    uvs: dict[str, tuple[float, float, float, float]] = {}
+    for index, name in enumerate(names):
+        tile_x = index % columns
+        tile_y = index // columns
+        tile = tiles[name].convert("RGBA").resize((tile_size, tile_size), Image.NEAREST)
+        image.paste(tile, (tile_x * tile_size, tile_y * tile_size))
+        u0 = tile_x / columns
+        v0 = 1.0 - (tile_y + 1) / rows
+        u1 = (tile_x + 1) / columns
+        v1 = 1.0 - tile_y / rows
+        inset_u = 0.5 / atlas_w
+        inset_v = 0.5 / atlas_h
         uvs[name] = (u0 + inset_u, v0 + inset_v, u1 - inset_u, v1 - inset_v)
 
     pixels = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
     return GeneratedAtlas(image.width, image.height, pixels, uvs)
+
+
+def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
+    """Build the default procedural block atlas (keyed by resource locations)."""
+    return build_texture_atlas(create_default_block_tiles(tile_size), tile_size=tile_size)
