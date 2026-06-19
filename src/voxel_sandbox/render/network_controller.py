@@ -329,6 +329,27 @@ class NetworkController:
             win.lan_server.stop()
             win.lan_server = None
 
+    def toggle_structure(self, entity_id: int) -> None:
+        win = self.win
+        if win.world_renderer.remote_mode and win.authority is not None:
+            try:
+                win.authority.toggle_structure(entity_id)
+                win.inventory_status = f"Requested structure #{entity_id} toggle."
+            except (ConnectionError, OSError):
+                win.inventory_status = "Structure interaction pending reconnect."
+            return
+        if win.lan_server is not None:
+            entity = win.lan_server.toggle_structure(entity_id)
+            win.inventory_status = (
+                f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+            )
+        elif win.authority is not None:
+            entity = win.authority.toggle_structure(entity_id)
+            if entity is not None:
+                win.inventory_status = (
+                    f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
+                )
+
     def request_remote_chunk(self) -> None:
         win = self.win
         if win.network_session is None:

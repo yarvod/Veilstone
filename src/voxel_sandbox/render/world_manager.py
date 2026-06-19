@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -65,7 +66,7 @@ class WorldManager:
             win.world_renderer.storage.restore_inventory(saved, win.inventory, win.item_registry)
             win.player_health = saved.health
             win.hotbar.select(saved.selected_slot)
-            win._restore_player_position(saved.position)
+            self.restore_player_position(saved.position)
         win.entities = EntitySimulation(seed=win.world_renderer.generator.seed.value)
         win._gameplay._maintain_population((win.player.x, win.player.y, win.player.z))
         win.network_players.clear()
@@ -93,6 +94,47 @@ class WorldManager:
         )
         if win.lan_server is not None:
             win.lan_server.save()
+
+    def restore_player_position(self, position: tuple[float, float, float]) -> bool:
+        win = self.win
+        if not self._position_within_world(position):
+            self.move_player_to_spawn()
+            return False
+        x, y, z = position
+        win.world_renderer.ensure_collision_area_loaded(x, z, win.player.width / 2.0)
+        win.player.x, win.player.y, win.player.z = x, y, z
+        win.player.velocity_y = 0.0
+        win.player.on_ground = False
+        if win.player.collides(win.world_renderer.is_solid_block):
+            self.move_player_to_spawn()
+            return False
+        return True
+
+    def invalid_player_position_reason(self) -> str | None:
+        player = self.win.player
+        if not all(math.isfinite(v) for v in (player.x, player.y, player.z)):
+            return "non-finite coordinate"
+        if not -256.0 <= player.y <= 1024.0:
+            return f"vertical coordinate {player.y:.2f} outside safety bounds"
+        if abs(player.x) > 30_000_000.0 or abs(player.z) > 30_000_000.0:
+            return "horizontal coordinate outside safety bounds"
+        return None
+
+    def move_player_to_spawn(self) -> None:
+        win = self.win
+        spawn_x, spawn_y, spawn_z = win.world_renderer.spawn_position
+        win.player.x, win.player.y, win.player.z = spawn_x, spawn_y, spawn_z
+        win.player.velocity_y = 0.0
+        win.player.on_ground = False
+
+    def _position_within_world(self, position: tuple[float, float, float]) -> bool:
+        x, y, z = position
+        return (
+            all(math.isfinite(v) for v in position)
+            and -256.0 <= y <= 1024.0
+            and abs(x) <= 30_000_000.0
+            and abs(z) <= 30_000_000.0
+        )
 
     @staticmethod
     def _saved_worlds() -> tuple[tuple[str, Path], ...]:

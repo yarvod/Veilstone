@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Changed
+- **HudController extracted from GameWindow** — all HUD labels (debug, position, player list, crosshair, nametags), debug text building, and `on_draw` HUD block moved to `render/hud_controller.py`; GameWindow delegates via `self._hud`
+- **Player position helpers moved to WorldManager** — `restore_player_position`, `invalid_player_position_reason`, `move_player_to_spawn` are now on `WorldManager`; `GameWindow.__init__` creates `_worlds` early to enable this
+- **`apply_rebind` moved to InputHandler** — control rebinding logic extracted from GameWindow; InputHandler now owns the full rebind flow
+- **`toggle_structure` moved to NetworkController** — structure toggle network/LAN dispatch no longer lives in GameWindow
+- **Dead profiling state removed** — unused `_prof_*` instance variables and local `_prof_start`/`_prof_frame_start_time` dropped
+- **window.py: 863 → 579 lines** — Phase 1.6 complete; GameWindow is now a thin coordinator
 - **InventoryController extracted from GameWindow** — all inventory sprites, hotbar, health bar, held-item hand, and crafting UI moved to `render/inventory_ui.py:InventoryController`; GameWindow delegates via `self._inv_ctrl`
 - **MenuUI owns its widgets** — text input overlays, panels, labels, world list state moved from `GameWindow.__init__` into `MenuUI.__init__`; dead code (`menu_labels`, `world_list_labels`, `world_list_last_click`) deleted
 - **Fix `_begin_text_input` call path** — `input_state.py` now calls `win.menu_ui._begin_text_input()` instead of the missing `win._begin_text_input()` (was an AttributeError at runtime)

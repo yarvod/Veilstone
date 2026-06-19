@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from pyglet.window import key
 
@@ -30,16 +30,19 @@ def _make_win(*, in_game: bool = True, screen: Screen = Screen.SINGLEPLAYER) -> 
 class TestOnKeyPress:
     def test_none_symbol_is_ignored(self):
         win = _make_win()
+        win.rebinding_action = "forward"
         h = InputHandler(win)
-        h.on_key_press(None, 0)
-        win._apply_rebind.assert_not_called()
+        with patch.object(h, "apply_rebind") as mock_rebind:
+            h.on_key_press(None, 0)
+            mock_rebind.assert_not_called()
 
     def test_rebinding_delegates_to_apply_rebind(self):
         win = _make_win()
-        win.rebinding_action = "move_forward"
+        win.rebinding_action = "forward"
         h = InputHandler(win)
-        h.on_key_press(key.W, 0)
-        win._apply_rebind.assert_called_once_with(key.W)
+        with patch.object(h, "apply_rebind") as mock_rebind:
+            h.on_key_press(key.W, 0)
+            mock_rebind.assert_called_once_with(key.W)
 
     def test_text_input_enter_submits(self):
         win = _make_win()

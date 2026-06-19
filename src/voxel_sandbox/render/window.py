@@ -5,9 +5,6 @@ from __future__ import annotations
 import logging
 import math
 import queue
-import sys
-import time
-from dataclasses import replace
 from pathlib import Path
 from typing import Final, cast
 
@@ -17,7 +14,7 @@ import pyglet
 from pyglet.window import key
 
 from voxel_sandbox.app.paths import application_data_root, resource_path
-from voxel_sandbox.app.settings import AppSettings, save_user_settings
+from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import create_audio_bus
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
@@ -38,6 +35,7 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
+from voxel_sandbox.render.hud_controller import HudController
 from voxel_sandbox.render.input_state import (
     InputHandler,
     KeyState,
@@ -49,7 +47,7 @@ from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
-from voxel_sandbox.render.ui.menu import MenuController, platform_font_name
+from voxel_sandbox.render.ui.menu import MenuController
 from voxel_sandbox.render.ui.renderer import UiRenderer
 from voxel_sandbox.render.ui.text_input import TextInput
 from voxel_sandbox.render.world_manager import WorldManager
@@ -57,9 +55,6 @@ from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
 LOGGER = logging.getLogger(__name__)
 FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
-
-
-UI_FONT_NAME: Final = platform_font_name(sys.platform)
 
 
 class GameWindow(pyglet.window.Window):
@@ -111,14 +106,6 @@ class GameWindow(pyglet.window.Window):
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
         self.ui_renderer = UiRenderer(self.width, self.height)
-        self._prof_frame_start = 0.0
-        self._prof_fixed_update = 0.0
-        self._prof_world_render = 0.0
-        self._prof_ui_render = 0.0
-        self._prof_streaming_update = 0.0
-        self._prof_network_poll = 0.0
-        self._prof_display_text = ""
-        self._prof_last_update_time = time.time()
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
@@ -131,6 +118,7 @@ class GameWindow(pyglet.window.Window):
         self.inventory.set(2, ItemStack(8, 1), self.item_registry)
         self.inventory.set(3, ItemStack(4, 4), self.item_registry)
         self.player_health = 20.0
+        self._worlds = WorldManager(self)
         recovered_saved_position: tuple[float, float, float] | None = None
         saved_player = self.world_renderer.storage.load_player(self.item_registry)
         if saved_player is not None:
@@ -141,7 +129,7 @@ class GameWindow(pyglet.window.Window):
             )
             self.player_health = saved_player.health
             self.hotbar.select(saved_player.selected_slot)
-            if not self._restore_player_position(saved_player.position):
+            if not self._worlds.restore_player_position(saved_player.position):
                 recovered_saved_position = saved_player.position
             self._sync_camera_to_player()
         recipes_path = resource_path("config/recipes.toml")
@@ -194,67 +182,9 @@ class GameWindow(pyglet.window.Window):
         self.hud_bg_group = pyglet.graphics.Group(order=0)
         self.hud_fg_group = pyglet.graphics.Group(order=1)
         self.hud_text_group = pyglet.graphics.Group(order=2)
-        self.debug_label = pyglet.text.Label(
-            "",
-            x=10,
-            y=self.height - 10,
-            anchor_x="left",
-            anchor_y="top",
-            multiline=True,
-            width=500,
-            font_name=UI_FONT_NAME,
-            font_size=11,
-            color=(255, 255, 255, 255),
-            batch=self.hud_batch,
-            group=self.hud_text_group,
-        )
-        self.player_name_label = pyglet.text.Label(
-            "",
-            font_name=UI_FONT_NAME,
-            font_size=14,
-            anchor_x="center",
-            anchor_y="center",
-            color=(255, 255, 255, 255),
-        )
-        self.hud_top_left_label = pyglet.text.Label(
-            "",
-            x=10,
-            y=self.height - 10,
-            anchor_x="left",
-            anchor_y="top",
-            multiline=True,
-            width=500,
-            font_name=UI_FONT_NAME,
-            font_size=13,
-            color=(255, 255, 255, 255),
-            batch=self.hud_batch,
-            group=self.hud_text_group,
-        )
-        self.player_list_label = pyglet.text.Label(
-            "",
-            x=self.width // 2,
-            y=self.height // 2,
-            anchor_x="center",
-            anchor_y="center",
-            multiline=True,
-            width=600,
-            font_name=UI_FONT_NAME,
-            font_size=16,
-            color=(255, 255, 255, 255),
-        )
-        self.crosshair = pyglet.text.Label(
-            "+",
-            anchor_x="center",
-            anchor_y="center",
-            font_name=UI_FONT_NAME,
-            font_size=18,
-            color=(245, 235, 190, 255),
-            batch=self.hud_batch,
-            group=self.hud_text_group,
-        )
+        self._hud = HudController(self)
         self._inv_ctrl = InventoryController(self)
         self._net = NetworkController(self)
-        self._worlds = WorldManager(self)
         self.menu_ui = MenuUI(self)
         self._net.start_local_authority()
         if connect is not None:
@@ -298,7 +228,6 @@ class GameWindow(pyglet.window.Window):
         return self.world_renderer.registry.by_id(block_id).is_fluid
 
     def fixed_update(self, delta_time: float) -> None:
-        _prof_start = time.perf_counter()
         self._net.apply_lan_block_actions()
         if not self.menu.in_game:
             self.audio_director.set_game_state("menu")
@@ -319,10 +248,10 @@ class GameWindow(pyglet.window.Window):
             self.camera.position,
             self.camera.direction,
         )
-        invalid_position_reason = self._invalid_player_position_reason()
+        invalid_position_reason = self._worlds.invalid_player_position_reason()
         if invalid_position_reason is not None:
             previous_position = (self.player.x, self.player.y, self.player.z)
-            self._move_player_to_spawn()
+            self._worlds.move_player_to_spawn()
             self.inventory_status = f"Recovered position: {invalid_position_reason}"
             LOGGER.error(
                 "Player position recovered to spawn: reason=%s position=%s",
@@ -434,7 +363,6 @@ class GameWindow(pyglet.window.Window):
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
-        _prof_frame_start_time = time.perf_counter()
         clear_color = (
             self.world_renderer.clear_color if self.menu.in_game else (0.025, 0.04, 0.075, 1.0)
         )
@@ -530,121 +458,9 @@ class GameWindow(pyglet.window.Window):
         )
         self.mgl_context.disable(moderngl.DEPTH_TEST)
         self.menu_ui._prepare_ui_draw()
-        x, y, z = self.camera.position
-        fps = pyglet.clock.get_frequency()
-        now = time.perf_counter()
-        if now - self._prof_last_update_time >= 0.2:
-            self._prof_last_update_time = now
-            new_debug_text = (
-                f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
-                f"Grounded {self.player.on_ground}  VelocityY {self.player.velocity_y:5.2f}\n"
-                f"Yaw {self.camera.yaw_degrees:6.1f}  Pitch {self.camera.pitch_degrees:5.1f}"
-                f"\nChunks {self.world_renderer.loaded_chunks}  "
-                f"Pending {self.world_renderer.pending_chunks}  "
-                f"Mesh queue {self.world_renderer.pending_meshes}  "
-                f"Visible sections {self.world_renderer.visible_sections}\n"
-                f"Faces {self.world_renderer.face_count}  "
-                f"Triangles {self.world_renderer.triangle_count}  "
-                f"Draws {self.world_renderer.draw_calls}\n"
-                f"Daylight {self.world_renderer.daylight:4.2f}  "
-                f"Smooth {self.world_renderer.smooth_lighting}  "
-                f"AO {self.world_renderer.ambient_occlusion}  "
-                f"Fog {self.world_renderer.fog_enabled}  "
-                f"Mesher {'greedy' if self.world_renderer.greedy_meshing else 'visible'}\n"
-                f"Health {self.player_health:4.1f}  "
-                f"Entities {len(self.entities.world.alive)}  "
-                f"Mobs {len(self.entities.world.mob_ai)}  "
-                f"Drops {len(self.entities.world.items)}  Entity draws {entity_draws}\n"
-                f"Animation states {self._animation_debug_summary()}\n"
-                f"Selected {self._selected_item_name()}  "
-                "[1-9 hotbar, E inventory, C craft, Q drop]"
-            )
-            if self.world_renderer.selection is not None:
-                new_debug_text += f"\nTarget {self.world_renderer.selection.block}"
-            if self.debug_label.text != new_debug_text:
-                self.debug_label.text = new_debug_text
-
-            new_hud_text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
-            if self.hud_top_left_label.text != new_hud_text:
-                self.hud_top_left_label.text = new_hud_text
-
-        _prof_ui_start = time.perf_counter()
         if not getattr(self.settings.development, "disable_hud", False):
-            if self.debug_overlay_visible:
-                self.debug_label.visible = True
-                self.hud_top_left_label.visible = False
-                self.debug_label.y = self.height - 10
-            else:
-                self.debug_label.visible = False
-                self.hud_top_left_label.visible = True
-                self.hud_top_left_label.y = self.height - 10
-
-            if self.key_state.is_pressed(key.TAB):
-                names = ["Players Online:"]
-                if self.network_session is not None:
-                    names.append("You (Local)")
-                    local_id = self.network_session.player_id
-                    for p_id, p in self.network_players.items():
-                        if p_id == local_id:
-                            continue
-                        names.append(str(p.get("name", f"Player {p_id}")))
-                else:
-                    names.append("You (Singleplayer)")
-                self.player_list_label.text = "\n".join(names)
-                self.player_list_label.x = self.width // 2
-                self.player_list_label.y = self.height // 2
-                self.player_list_label.draw()
-
-            from voxel_sandbox.render.math3d import camera_matrix
-
-            matrix = camera_matrix(
-                self.camera,
-                max(self.width, 1) / max(self.height, 1),
-                self.settings.camera.field_of_view,
-            )
-
-            for player_id, entity in self.remote_player_entities.items():
-                transform = self.entities.world.transforms.get(entity)
-                if transform is None:
-                    continue
-                pos = np.array([transform.x, transform.y + 2.1, transform.z, 1.0], dtype=np.float32)
-                clip = matrix @ pos
-                w = clip[3]
-                if w > 0:
-                    ndc_x = clip[0] / w
-                    ndc_y = clip[1] / w
-                    if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
-                        screen_x = (ndc_x + 1) * self.width / 2
-                        screen_y = (ndc_y + 1) * self.height / 2
-                        name = self.network_players.get(player_id, {}).get(
-                            "name", f"Player {player_id}"
-                        )
-                        self.player_name_label.text = str(name)
-                        self.player_name_label.x = screen_x
-                        self.player_name_label.y = screen_y
-                        self.player_name_label.draw()
-            self.crosshair.visible = not self.inventory_open
-            self.crosshair.x = self.width // 2
-            self.crosshair.y = self.height // 2
-            self._inv_ctrl.draw_hotbar()
-            self._inv_ctrl.draw_health()
-            self._inv_ctrl.draw_held_item()
-            self._inv_ctrl.update_hud_status()
-            if self.inventory_open:
-                self._inv_ctrl.draw_inventory()
-            if self.text_input is not None:
-                self.menu_ui._draw_text_input()
-
-            self.hud_batch.draw()
-
-        self._prof_ui_render_last = (time.perf_counter() - _prof_ui_start) * 1000.0
+            self._hud.draw(entity_draws)
         self.mgl_context.enable(moderngl.DEPTH_TEST)
-
-    def _animation_debug_summary(self) -> str:
-        counts: dict[str, int] = {}
-        for _entity, ai in self.entities.world.mob_ai.items():
-            counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
-        return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         self._input.on_key_press(symbol, modifiers)
@@ -691,108 +507,8 @@ class GameWindow(pyglet.window.Window):
             "jump": cast(int, getattr(key, controls.jump, key.SPACE)),
         }
 
-    def _apply_rebind(self, symbol: int) -> None:
-        action = self.rebinding_action
-        if action is None:
-            return
-        conflict = next(
-            (
-                name
-                for name, bound_symbol in self.control_bindings.items()
-                if bound_symbol == symbol
-            ),
-            None,
-        )
-        if conflict is not None and conflict != action:
-            self.menu.status = f"Key already assigned to {conflict}."
-            self.rebinding_action = None
-            return
-        name = key.symbol_string(symbol)
-        controls = self.settings.controls
-        if action == "forward":
-            controls = replace(controls, forward=name)
-        elif action == "backward":
-            controls = replace(controls, backward=name)
-        elif action == "left":
-            controls = replace(controls, left=name)
-        elif action == "right":
-            controls = replace(controls, right=name)
-        else:
-            controls = replace(controls, jump=name)
-        self.settings = replace(self.settings, controls=controls)
-        self.control_bindings[action] = symbol
-        self.rebinding_action = None
-        self.menu.status = f"{action.title()} bound to {name}."
-        save_user_settings(self.settings)
-
     def _sync_camera_to_player(self) -> None:
         self.camera.x, self.camera.y, self.camera.z = self.player.eye_position
-
-    def _selected_item_name(self) -> str:
-        selected = self.hotbar.selected
-        if selected is None:
-            return "empty"
-        definition = self.item_registry.by_id(selected.item_id)
-        return f"{definition.name} x{selected.count}"
-
-    def _restore_player_position(self, position: tuple[float, float, float]) -> bool:
-        if not self._position_within_world(position):
-            self._move_player_to_spawn()
-            return False
-        x, y, z = position
-        self.world_renderer.ensure_collision_area_loaded(x, z, self.player.width / 2.0)
-        self.player.x, self.player.y, self.player.z = x, y, z
-        self.player.velocity_y = 0.0
-        self.player.on_ground = False
-        if self.player.collides(self.world_renderer.is_solid_block):
-            self._move_player_to_spawn()
-            return False
-        return True
-
-    def _invalid_player_position_reason(self) -> str | None:
-        position = (self.player.x, self.player.y, self.player.z)
-        if not all(math.isfinite(value) for value in position):
-            return "non-finite coordinate"
-        if not -256.0 <= self.player.y <= 1024.0:
-            return f"vertical coordinate {self.player.y:.2f} outside safety bounds"
-        if abs(self.player.x) > 30_000_000.0 or abs(self.player.z) > 30_000_000.0:
-            return "horizontal coordinate outside safety bounds"
-        return None
-
-    def _position_within_world(self, position: tuple[float, float, float]) -> bool:
-        x, y, z = position
-        return (
-            all(math.isfinite(value) for value in position)
-            and -256.0 <= y <= 1024.0
-            and abs(x) <= 30_000_000.0
-            and abs(z) <= 30_000_000.0
-        )
-
-    def _move_player_to_spawn(self) -> None:
-        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
-        self.player.x, self.player.y, self.player.z = spawn_x, spawn_y, spawn_z
-        self.player.velocity_y = 0.0
-        self.player.on_ground = False
-
-    def _toggle_structure(self, entity_id: int) -> None:
-        if self.world_renderer.remote_mode and self.authority is not None:
-            try:
-                self.authority.toggle_structure(entity_id)
-                self.inventory_status = f"Requested structure #{entity_id} toggle."
-            except (ConnectionError, OSError):
-                self.inventory_status = "Structure interaction pending reconnect."
-            return
-        if self.lan_server is not None:
-            entity = self.lan_server.toggle_structure(entity_id)
-            self.inventory_status = (
-                f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
-            )
-        elif self.authority is not None:
-            entity = self.authority.toggle_structure(entity_id)
-            if entity is not None:
-                self.inventory_status = (
-                    f"Structure #{entity.entity_id} {'activated' if entity.active else 'stopped'}."
-                )
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings

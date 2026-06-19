@@ -221,12 +221,13 @@ def test_game_commands_change_time_and_remove_hostile_mobs(
     if not pyglet.display.get_display().get_screens():
         pytest.skip("OpenGL smoke requires an active display")
     from voxel_sandbox.engine.ecs import MobKind
+    from voxel_sandbox.render import gameplay_controller as gc_module
     from voxel_sandbox.render import window as window_module
 
-    def discard_settings(_settings: AppSettings) -> None:
+    def discard_settings(_settings: AppSettings, **_kwargs: object) -> None:
         pass
 
-    monkeypatch.setattr(window_module, "save_user_settings", discard_settings)
+    monkeypatch.setattr(gc_module, "save_user_settings", discard_settings)
     with tempfile.TemporaryDirectory(prefix="veilstone-command-test-") as directory:
         window = window_module.GameWindow(AppSettings(), visible=False, save_root=Path(directory))
         try:

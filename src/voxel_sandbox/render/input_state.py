@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 import sys
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from pyglet.window import key, mouse
 
+from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextPurpose
@@ -65,7 +67,7 @@ class InputHandler:
             LOGGER.debug("Ignored key event without a symbol")
             return
         if win.rebinding_action is not None:
-            win._apply_rebind(symbol)
+            self.apply_rebind(symbol)
             return
         if win.text_input is not None:
             if symbol in {key.ENTER, key.RETURN}:
@@ -241,7 +243,7 @@ class InputHandler:
             and structure_hit is not None
             and (hit is None or structure_hit[1] < hit.distance)
         ):
-            win._toggle_structure(structure_hit[0])
+            win._net.toggle_structure(structure_hit[0])
             return
         if hit is None:
             return
@@ -320,3 +322,34 @@ class InputHandler:
                 float(dy),
                 win.settings.camera.mouse_sensitivity,
             )
+
+    def apply_rebind(self, symbol: int) -> None:
+        win = self.win
+        action = win.rebinding_action
+        if action is None:
+            return
+        conflict = next(
+            (name for name, bound_symbol in win.control_bindings.items() if bound_symbol == symbol),
+            None,
+        )
+        if conflict is not None and conflict != action:
+            win.menu.status = f"Key already assigned to {conflict}."
+            win.rebinding_action = None
+            return
+        name = key.symbol_string(symbol)
+        controls = win.settings.controls
+        if action == "forward":
+            controls = replace(controls, forward=name)
+        elif action == "backward":
+            controls = replace(controls, backward=name)
+        elif action == "left":
+            controls = replace(controls, left=name)
+        elif action == "right":
+            controls = replace(controls, right=name)
+        else:
+            controls = replace(controls, jump=name)
+        win.settings = replace(win.settings, controls=controls)
+        win.control_bindings[action] = symbol
+        win.rebinding_action = None
+        win.menu.status = f"{action.title()} bound to {name}."
+        save_user_settings(win.settings)

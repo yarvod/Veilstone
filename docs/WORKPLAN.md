@@ -59,13 +59,14 @@
 - [x] match/case dispatch вместо 80-строчного if/elif chain
 - [ ] Тесты: unit
 
-### 1.6 Slim GameWindow ✅ (partial)
+### 1.6 Slim GameWindow ✅
 - [x] Extract MenuUI (menu rendering, text input, world list, audio helpers) → render/menu_ui.py
 - [x] GameWindow delegates _draw_menu/_prepare_ui_draw/_draw_text_input to menu_ui
 - [x] ~25 thin wrapper methods deleted; callers updated to use controllers directly
-- [x] window.py: 2614 → 869 строк
-- [ ] GameWindow → чистый координатор (on_draw, fixed_update)
-- [ ] ~500 строк вместо 869
+- [x] Extract HudController → render/hud_controller.py (HUD labels, draw, debug text)
+- [x] Player position helpers → WorldManager; apply_rebind → InputHandler; toggle_structure → NetworkController
+- [x] Dead profiling code removed
+- [x] window.py: 2614 → 579 строк
 - [x] Integration тесты (311/311)
 
 ---

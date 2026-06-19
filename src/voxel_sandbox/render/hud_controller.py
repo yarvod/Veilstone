@@ -1,0 +1,198 @@
+from __future__ import annotations
+
+import sys
+import time
+from typing import TYPE_CHECKING
+
+import numpy as np
+import pyglet
+from pyglet.window import key
+
+from voxel_sandbox.render.math3d import camera_matrix
+from voxel_sandbox.render.ui.menu import platform_font_name
+
+if TYPE_CHECKING:
+    from voxel_sandbox.render.window import GameWindow
+
+_UI_FONT = platform_font_name(sys.platform)
+
+
+class HudController:
+    """Owns HUD labels and draws the in-game overlay."""
+
+    def __init__(self, win: GameWindow) -> None:
+        self.win = win
+        self._last_update_time = time.time()
+        self.debug_label = pyglet.text.Label(
+            "",
+            x=10,
+            y=win.height - 10,
+            anchor_x="left",
+            anchor_y="top",
+            multiline=True,
+            width=500,
+            font_name=_UI_FONT,
+            font_size=11,
+            color=(255, 255, 255, 255),
+            batch=win.hud_batch,
+            group=win.hud_text_group,
+        )
+        self.hud_top_left_label = pyglet.text.Label(
+            "",
+            x=10,
+            y=win.height - 10,
+            anchor_x="left",
+            anchor_y="top",
+            multiline=True,
+            width=500,
+            font_name=_UI_FONT,
+            font_size=13,
+            color=(255, 255, 255, 255),
+            batch=win.hud_batch,
+            group=win.hud_text_group,
+        )
+        self.player_list_label = pyglet.text.Label(
+            "",
+            x=win.width // 2,
+            y=win.height // 2,
+            anchor_x="center",
+            anchor_y="center",
+            multiline=True,
+            width=600,
+            font_name=_UI_FONT,
+            font_size=16,
+            color=(255, 255, 255, 255),
+        )
+        self.crosshair = pyglet.text.Label(
+            "+",
+            anchor_x="center",
+            anchor_y="center",
+            font_name=_UI_FONT,
+            font_size=18,
+            color=(245, 235, 190, 255),
+            batch=win.hud_batch,
+            group=win.hud_text_group,
+        )
+        self.player_name_label = pyglet.text.Label(
+            "",
+            font_name=_UI_FONT,
+            font_size=14,
+            anchor_x="center",
+            anchor_y="center",
+            color=(255, 255, 255, 255),
+        )
+
+    def draw(self, entity_draws: int) -> None:
+        win = self.win
+        x, y, z = win.camera.position
+        fps = pyglet.clock.get_frequency()
+        now = time.perf_counter()
+        if now - self._last_update_time >= 0.2:
+            self._last_update_time = now
+            new_debug_text = (
+                f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
+                f"Grounded {win.player.on_ground}  VelocityY {win.player.velocity_y:5.2f}\n"
+                f"Yaw {win.camera.yaw_degrees:6.1f}  Pitch {win.camera.pitch_degrees:5.1f}"
+                f"\nChunks {win.world_renderer.loaded_chunks}  "
+                f"Pending {win.world_renderer.pending_chunks}  "
+                f"Mesh queue {win.world_renderer.pending_meshes}  "
+                f"Visible sections {win.world_renderer.visible_sections}\n"
+                f"Faces {win.world_renderer.face_count}  "
+                f"Triangles {win.world_renderer.triangle_count}  "
+                f"Draws {win.world_renderer.draw_calls}\n"
+                f"Daylight {win.world_renderer.daylight:4.2f}  "
+                f"Smooth {win.world_renderer.smooth_lighting}  "
+                f"AO {win.world_renderer.ambient_occlusion}  "
+                f"Fog {win.world_renderer.fog_enabled}  "
+                f"Mesher {'greedy' if win.world_renderer.greedy_meshing else 'visible'}\n"
+                f"Health {win.player_health:4.1f}  "
+                f"Entities {len(win.entities.world.alive)}  "
+                f"Mobs {len(win.entities.world.mob_ai)}  "
+                f"Drops {len(win.entities.world.items)}  Entity draws {entity_draws}\n"
+                f"Animation states {self._animation_debug_summary()}\n"
+                f"Selected {self._selected_item_name()}  "
+                "[1-9 hotbar, E inventory, C craft, Q drop]"
+            )
+            if win.world_renderer.selection is not None:
+                new_debug_text += f"\nTarget {win.world_renderer.selection.block}"
+            if self.debug_label.text != new_debug_text:
+                self.debug_label.text = new_debug_text
+            new_hud_text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
+            if self.hud_top_left_label.text != new_hud_text:
+                self.hud_top_left_label.text = new_hud_text
+
+        if win.debug_overlay_visible:
+            self.debug_label.visible = True
+            self.hud_top_left_label.visible = False
+            self.debug_label.y = win.height - 10
+        else:
+            self.debug_label.visible = False
+            self.hud_top_left_label.visible = True
+            self.hud_top_left_label.y = win.height - 10
+
+        if win.key_state.is_pressed(key.TAB):
+            names = ["Players Online:"]
+            if win.network_session is not None:
+                names.append("You (Local)")
+                local_id = win.network_session.player_id
+                for p_id, p in win.network_players.items():
+                    if p_id == local_id:
+                        continue
+                    names.append(str(p.get("name", f"Player {p_id}")))
+            else:
+                names.append("You (Singleplayer)")
+            self.player_list_label.text = "\n".join(names)
+            self.player_list_label.x = win.width // 2
+            self.player_list_label.y = win.height // 2
+            self.player_list_label.draw()
+
+        matrix = camera_matrix(
+            win.camera,
+            max(win.width, 1) / max(win.height, 1),
+            win.settings.camera.field_of_view,
+        )
+        for player_id, entity in win.remote_player_entities.items():
+            transform = win.entities.world.transforms.get(entity)
+            if transform is None:
+                continue
+            pos = np.array([transform.x, transform.y + 2.1, transform.z, 1.0], dtype=np.float32)
+            clip = matrix @ pos
+            w = clip[3]
+            if w > 0:
+                ndc_x = clip[0] / w
+                ndc_y = clip[1] / w
+                if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
+                    screen_x = (ndc_x + 1) * win.width / 2
+                    screen_y = (ndc_y + 1) * win.height / 2
+                    name = win.network_players.get(player_id, {}).get("name", f"Player {player_id}")
+                    self.player_name_label.text = str(name)
+                    self.player_name_label.x = screen_x
+                    self.player_name_label.y = screen_y
+                    self.player_name_label.draw()
+
+        self.crosshair.visible = not win.inventory_open
+        self.crosshair.x = win.width // 2
+        self.crosshair.y = win.height // 2
+        win._inv_ctrl.draw_hotbar()
+        win._inv_ctrl.draw_health()
+        win._inv_ctrl.draw_held_item()
+        win._inv_ctrl.update_hud_status()
+        if win.inventory_open:
+            win._inv_ctrl.draw_inventory()
+        if win.text_input is not None:
+            win.menu_ui._draw_text_input()
+        win.hud_batch.draw()
+
+    def _animation_debug_summary(self) -> str:
+        counts: dict[str, int] = {}
+        for _entity, ai in self.win.entities.world.mob_ai.items():
+            counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
+        return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
+
+    def _selected_item_name(self) -> str:
+        win = self.win
+        selected = win.hotbar.selected
+        if selected is None:
+            return "empty"
+        definition = win.item_registry.by_id(selected.item_id)
+        return f"{definition.name} x{selected.count}"
