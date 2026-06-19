@@ -25,6 +25,13 @@ from voxel_sandbox.engine.authority import (
 )
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
 from voxel_sandbox.engine.ecs import EntitySimulation
+from voxel_sandbox.engine.events import (
+    BlockBroken,
+    BlockPlaced,
+    EntityDamaged,
+    EntityDied,
+    EventBus,
+)
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.network import (
     ClientSession,
@@ -91,6 +98,8 @@ class GameWindow(pyglet.window.Window):
         self._gameplay = GameplayController(self)
         self.audio = create_audio_bus(settings.audio)
         self.audio_director = AudioDirector(self.audio)
+        self.events = EventBus()
+        self._subscribe_audio_events()
         self._footstep_accumulator = 0.0
         self.control_bindings = self._control_symbols()
         self.rebinding_action: str | None = None
@@ -496,6 +505,46 @@ class GameWindow(pyglet.window.Window):
         if should_capture != self.mouse_captured:
             self.mouse_captured = should_capture
             self.set_exclusive_mouse(should_capture)
+
+    def _subscribe_audio_events(self) -> None:
+        self.events.subscribe(BlockBroken, self._play_block_event)
+        self.events.subscribe(BlockPlaced, self._play_block_event)
+        self.events.subscribe(EntityDamaged, self._play_entity_damaged_event)
+        self.events.subscribe(EntityDied, self._play_entity_died_event)
+
+    def _play_block_event(self, event: BlockBroken | BlockPlaced) -> None:
+        material = self.world_renderer.registry.by_id(event.block_id).material.value
+        key_name = f"block.{material}"
+        key_name = key_name if key_name in self.audio.registry else "footstep"
+        self.audio.emit(
+            AudioEvent(
+                AudioEventKind.SOUND,
+                key_name,
+                (
+                    float(event.position[0]) + 0.5,
+                    float(event.position[1]) + 0.5,
+                    float(event.position[2]) + 0.5,
+                ),
+            )
+        )
+
+    def _play_entity_damaged_event(self, event: EntityDamaged) -> None:
+        self.audio.emit(
+            AudioEvent(
+                AudioEventKind.SOUND,
+                f"mob.{event.kind}_hurt",
+                event.position,
+            )
+        )
+
+    def _play_entity_died_event(self, event: EntityDied) -> None:
+        self.audio.emit(
+            AudioEvent(
+                AudioEventKind.SOUND,
+                f"mob.{event.kind}_death",
+                event.position,
+            )
+        )
 
     def _control_symbols(self) -> dict[str, int]:
         controls = self.settings.controls

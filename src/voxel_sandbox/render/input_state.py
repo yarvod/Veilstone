@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from pyglet.window import key, mouse
 
 from voxel_sandbox.app.settings import save_user_settings
-from voxel_sandbox.audio import AudioEvent, AudioEventKind
+from voxel_sandbox.engine.events import BlockBroken, BlockPlaced, EntityDamaged, EntityDied
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextPurpose
 
@@ -223,14 +223,12 @@ class InputHandler:
             target = win.entities.target_mob(win.camera.position, win.camera.direction)
             if target is not None:
                 kind = win.entities.world.mob_ai[target].kind.value
+                position = win.entities.world.transforms[target].position
                 drops = win.entities.damage(target, 4.0, win.player.eye_position)
-                win.audio.emit(
-                    AudioEvent(
-                        AudioEventKind.SOUND,
-                        f"mob.{kind}_{'death' if drops else 'hurt'}",
-                        win.entities.world.transforms[target].position,
-                    )
-                )
+                if drops:
+                    win.events.publish(EntityDied(target, kind, position))
+                else:
+                    win.events.publish(EntityDamaged(target, kind, position, 4.0))
                 win.inventory_status = "Mob defeated" if drops else "Hit mob"
                 return
         hit = win.world_renderer.raycast(win.camera.position, win.camera.direction)
@@ -253,7 +251,7 @@ class InputHandler:
                 win.inventory_status = "Water cannot be mined"
                 return
             if win.world_renderer.set_block(hit.block, 0):
-                win.menu_ui._play_block_sound(block_id, hit.block)
+                win.events.publish(BlockBroken(block_id, hit.block))
                 win._net.send_block_action(hit.block, 0)
                 drop = win.item_registry.drop_for_block(block_id)
                 if drop is not None:
@@ -277,7 +275,7 @@ class InputHandler:
             if definition.block_id is None:
                 return
             if win.world_renderer.set_block(hit.previous, definition.block_id):
-                win.menu_ui._play_block_sound(definition.block_id, hit.previous)
+                win.events.publish(BlockPlaced(definition.block_id, hit.previous))
                 win._net.send_block_action(hit.previous, definition.block_id)
                 win.inventory.take_from_slot(win.hotbar.selected_index)
 

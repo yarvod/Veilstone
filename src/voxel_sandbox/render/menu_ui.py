@@ -465,23 +465,6 @@ class MenuUI:
     def _play_ui_sound(self) -> None:
         self.win.audio.emit(AudioEvent(AudioEventKind.SOUND, "ui.click"))
 
-    def _play_block_sound(self, block_id: int, position: tuple[int, int, int]) -> None:
-        win = self.win
-        material = win.world_renderer.registry.by_id(block_id).material.value
-        key_name = f"block.{material}"
-        key_name = key_name if key_name in win.audio.registry else "footstep"
-        win.audio.emit(
-            AudioEvent(
-                AudioEventKind.SOUND,
-                key_name,
-                (
-                    float(position[0]) + 0.5,
-                    float(position[1]) + 0.5,
-                    float(position[2]) + 0.5,
-                ),
-            )
-        )
-
     def _cycle_audio_volume(self, command: MenuCommand) -> None:
         win = self.win
         fields = {

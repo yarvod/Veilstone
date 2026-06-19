@@ -241,10 +241,10 @@ Resolver `<namespace>:<kind>/<name>` → `assets/<namespace>/textures/<kind>/<na
 ## Phase 3: Extensibility Architecture
 
 ### 3.1 Event Bus
-- [ ] `engine/events.py` — EventBus на dataclass events
-- [ ] BlockPlaced, BlockBroken, EntityDamaged, EntityDied
-- [ ] Подключить audio через event bus
-- [ ] Тесты: unit
+- [x] `engine/events.py` — EventBus на dataclass events
+- [x] BlockPlaced, BlockBroken, EntityDamaged, EntityDied
+- [x] Подключить audio через event bus
+- [x] Тесты: unit
 
 ### 3.2 World Generation Pipeline
 - [ ] DimensionDef → [HeightProvider, SurfacePlacer, FeatureDecorator]
