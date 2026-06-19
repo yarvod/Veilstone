@@ -10,8 +10,7 @@ Detailed current state belongs in:
 
 - `docs/WORKPLAN.md` — current phase, next actions, active refactor plan;
 - `docs/BUGS.md` — known bugs, regressions, flaky tests, unresolved issues;
-- `docs/CHANGELOG.md` — completed meaningful changes;
-- `.serena/memories/` — durable project knowledge, not task history.
+- `docs/CHANGELOG.md` — completed meaningful changes.
 
 Do not store fast-changing implementation details in this file unless they are stable project rules.
 
@@ -27,27 +26,17 @@ When the session starts, or when the user says "начинай", "продолж
    - `docs/BUGS.md`
    - `docs/CHANGELOG.md`
    - any other relevant docs in `docs/`
-3. If coding work is expected, activate Serena and call `mcp__serena__initial_instructions` once per session.
-4. List Serena memories and read only the relevant ones before touching code. Skip memories unrelated to the current task.
-5. Check `git status` and recent diff if the current task/phase is unclear.
-6. Infer the next step from `WORKPLAN.md`, docs, memories, and git state before asking the user.
-7. If docs contradict each other, resolve obvious docs state conflicts before starting new code work.
-8. Work in small coherent phases.
-9. Before finishing a phase:
+3. Check `git status` and recent diff if the current task/phase is unclear.
+4. Infer the next step from `WORKPLAN.md`, docs, code, tests, and git state before asking the user.
+5. If docs contradict each other, resolve obvious docs state conflicts before starting new code work.
+6. Work in small coherent phases.
+7. Before finishing a phase:
    - run relevant tests/checks;
    - review git diff;
    - update `docs/WORKPLAN.md` if the active state changed;
    - update `docs/BUGS.md` if bugs were discovered, fixed, reclassified, or proven obsolete;
-   - update `docs/CHANGELOG.md` for completed user-visible, architectural, or phase-level changes;
-   - if any Serena memory appears stale, verify it against code/docs/tests/git and update or delete it;
-   - update Serena memories only if stable project knowledge changed;
-   - refresh Serena index only after large refactors, file moves, module renames, or stale symbol results.
-10. Commit only completed coherent phases with passing relevant checks. Never add Claude/AI attribution.
-11. For refactors, run coverage when deciding whether to add tests:
-```bash
-uv run pytest --cov=src/voxel_sandbox --cov-report=term-missing
-```
-12. После extraction проверь vulture и вручную оцени findings, не удаляй автоматически.
+   - update `docs/CHANGELOG.md` for completed user-visible, architectural, or phase-level changes.
+8. Commit only completed coherent phases with passing relevant checks. Never add Claude/AI attribution.
 
 ---
 
@@ -175,7 +164,6 @@ For focused work, run the narrow relevant test first.
 Before committing a completed phase, run at least:
 
 ```bash
-uv run pre-commit run --all-files
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest
@@ -187,21 +175,44 @@ Do not attempt to fix unrelated project-wide Pyright/Ruff failures unless they a
 
 ---
 
+## Tooling policy
+
+Use simple local tools first. Prefer short, precise commands and compact outputs over broad exploration.
+
+Recommended discovery flow:
+
+1. Use `rg`/`grep` for targeted text search.
+2. Use `sed`, `python`, or focused `Read` for small surrounding context.
+3. Avoid reading large files whole unless necessary.
+4. Use tests, Ruff, Pyright, and git diff as the main feedback loop.
+
+Examples:
+
+```bash
+rg "InventoryController|GameWindow|execute_command" src tests
+git status --short
+git diff --stat
+uv run ruff check .
+uv run pytest -m unit
+```
+
+---
+
 ## MCP Tools — Usage Policy
 
 ### Session launch
 
-Prefer launching Claude Code through Headroom and Serena prompt override:
+Prefer launching Claude Code through Headroom:
 
 ```bash
-headroom wrap claude --system-prompt="$(serena prompts print-cc-system-prompt-override)"
+headroom wrap claude
 ```
 
 Recommended shell function:
 
 ```sh
-hccs() {
-  headroom wrap claude --system-prompt="$(serena prompts print-cc-system-prompt-override)" "$@"
+hcc() {
+  headroom wrap claude "$@"
 }
 ```
 
@@ -209,10 +220,8 @@ Start from project root:
 
 ```bash
 cd /path/to/Veilstone
-hccs
+hcc
 ```
-
-This starts the Headroom wrapper and applies Serena's Claude Code system prompt override.
 
 ### Headroom
 
@@ -224,160 +233,21 @@ Headroom is used for token/context efficiency.
 - Use `mcp__headroom__headroom_stats` when diagnosing context/token pressure.
 - If compressed context is insufficient for precise edits, retrieve the original before changing code.
 
-### Serena
-
-Before coding work, call once per session:
-
-- `mcp__serena__initial_instructions`
-
-Use Serena before broad `Read`/`Grep` exploration. Do not read large files whole when Serena can provide structured symbol context.
-
-Prefer Serena for code navigation:
-
-- `mcp__serena__get_symbols_overview` — file structure / symbol overview
-- `mcp__serena__find_symbol` — find class/function/method by name
-- `mcp__serena__find_declaration` — jump to declaration
-- `mcp__serena__find_implementations` — find implementations
-- `mcp__serena__find_referencing_symbols` — find usages/references
-- `mcp__serena__get_diagnostics_for_file` — static diagnostics for a file
-
-Use normal `Read`/`Grep` when:
-
-- the file is small;
-- the file is config/docs/non-code;
-- exact surrounding text is required;
-- Serena output is insufficient;
-- debugging requires raw text/log context.
-
-For targeted edits, prefer Serena symbolic edit tools when appropriate:
-
-- `mcp__serena__replace_symbol_body`
-- `mcp__serena__insert_after_symbol`
-- `mcp__serena__insert_before_symbol`
-- `mcp__serena__replace_content`
-- `mcp__serena__safe_delete_symbol`
-- `mcp__serena__rename_symbol`
-
-Before changing public APIs, exported classes, widely used methods, or central systems, use `find_referencing_symbols`.
-
-### Serena token discipline
-
-The goal of Serena is to reduce token usage by using symbolic navigation instead of reading large raw files.
-
-Serena is a scalpel, not a full-project scanner.
-
-Use Serena when it avoids reading large files or helps make precise edits:
-
-- find a known symbol;
-- inspect a specific class/function;
-- find references before changing an API;
-- get diagnostics for a touched file;
-- perform targeted symbolic edits.
-
-Do not use Serena for broad exploration unless necessary:
-
-- avoid repeated full-project searches;
-- avoid large symbol overviews for many files;
-- avoid broad references on generic symbols;
-- avoid reading many memories when only one is relevant;
-- do not repeat `initial_instructions` in the same session.
-
-If Serena output becomes large, stop, summarize the useful findings, then run `/compact` before continuing.
-
-If a normal `Read` of a small config, docs file, or short test is cheaper and clearer, use normal `Read` instead.
-
----
-
-## Serena memory/index policy
-
-Serena index and Serena memories are different things.
-
-### Index
-
-Use Serena index/symbol tools for code navigation.
-
-Refresh/rebuild Serena project index only when needed:
-
-- after large refactors;
-- after file moves;
-- after module renames;
-- when symbol results look stale or missing.
-
-Do not rebuild the index after every small edit.
-
-### Memories
-
-Serena memories are not a changelog and not a task tracker. They are durable project knowledge.
-
-At session start, list Serena memories and read only the relevant ones.
-
-Update Serena memories only when stable project knowledge changes.
-
-Good memory candidates:
-
-- architecture decisions;
-- commands for tests/lint/build;
-- coding conventions;
-- important module responsibilities;
-- recurring pitfalls;
-- integration details that will matter later.
-
-Do not write memories for:
-
-- temporary task notes;
-- secrets/tokens/credentials;
-- noisy logs;
-- one-off debugging observations;
-- raw stack traces;
-- obvious facts already visible from code;
-- short-lived implementation details;
-- detailed chronological history.
-
-Project history belongs in `docs/CHANGELOG.md`.
-Current plan belongs in `docs/WORKPLAN.md`.
-Known bugs belong in `docs/BUGS.md`.
-
-Before finishing a coherent phase, check whether stable project knowledge changed. If yes, update the relevant Serena memory before committing.
-
-### Stale memory handling
-
-Serena memories are useful hints, not the source of truth.
-
-If Serena memories conflict with current code, tests, docs, or git state:
-
-- trust current code/tests/docs/git over memory;
-- mention the mismatch briefly;
-- update, rewrite, or delete the stale memory before finishing the phase;
-- do not continue relying on stale memory.
-
-When reading a memory, verify task-critical claims against:
-
-- current code via Serena symbol tools;
-- `docs/WORKPLAN.md`;
-- `docs/BUGS.md`;
-- `docs/CHANGELOG.md`;
-- relevant tests;
-- `git status` / `git diff`.
-
-If a memory contains outdated implementation details, replace them with stable architecture/convention-level knowledge or delete the memory.
-
 ---
 
 ## Context discipline
 
-Serena and other MCP tool results stay in context. Use tools precisely.
+Tool outputs stay in context. Use tools precisely.
 
 Do not repeatedly call broad tools when a narrower query is possible.
 
 Avoid repeated:
 
-- `initial_instructions`;
 - full-project searches;
 - broad references on generic symbols;
-- large symbol overviews;
-- unnecessary memory reads;
 - huge raw logs;
-- full-file reads of large files.
+- full-file reads of large files;
+- unnecessary repeated reads of unchanged docs/configs.
 
 After large exploration phases:
 
@@ -393,7 +263,7 @@ focused discovery
 → /compact
 → implementation
 → tests/checks
-→ docs/memory updates if needed
+→ docs updates if needed
 → commit
 ```
 
@@ -407,9 +277,8 @@ Before editing:
 
 1. Understand the task.
 2. Check `docs/WORKPLAN.md`, `docs/BUGS.md`, and `docs/CHANGELOG.md`.
-3. Read relevant Serena memories.
-4. Use Serena symbol tools to locate code when coding work is expected.
-5. Inspect tests related to the target behavior.
+3. Use targeted search/read commands to locate code.
+4. Inspect tests related to the target behavior.
 
 During implementation:
 
@@ -426,8 +295,7 @@ After implementation:
 - run relevant tests/checks;
 - run broader checks when the phase touches shared systems;
 - review `git diff`;
-- update docs if project state changed;
-- update memories only if stable knowledge changed.
+- update docs if project state changed.
 
 ---
 
@@ -441,8 +309,7 @@ A phase is complete only when:
 - relevant tests are added or updated when appropriate;
 - relevant tests/checks pass, except for documented pre-existing failures;
 - diff has been reviewed;
-- docs are updated if phase/project state changed;
-- Serena memories are updated if stable project knowledge changed.
+- docs are updated if phase/project state changed.
 
 Use concise human conventional commits where appropriate:
 
