@@ -1,42 +1,33 @@
 # Known Bugs & Issues
 
-## Resolved
+This file tracks active bugs, regressions, flaky tests, and unresolved quality issues. Completed historical fixes belong in `docs/CHANGELOG.md`.
 
-### BUG-001: Player cannot swim in water ✅
-- **Fixed:** buoyancy + swim_speed + in_water state added to PlayerController
+## Open
 
-### BUG-002: Cannot break blocks through water ✅
-- **Fixed:** raycast now skips fluid blocks
+### BUG-Q001: Project-wide Pyright is currently red
 
-### BUG-003: Water has no flow physics ✅
-- **Fixed:** drain logic removes flowing water without source; horizontal spread decay
+- **Status:** open
+- **Affected area:** typing / quality gate
+- **Observed:** `uv run pyright` reports existing strict typing errors across engine, render, tests, and infrastructure.
+- **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
+- **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 
-### BUG-004: Mobs get stuck in water and jitter ✅
-- **Fixed:** smooth buoyancy with lerp; mobs surface correctly
+## Watchlist
 
-### BUG-005: Mobs spawn inside solid blocks ✅
-- **Fixed:** 2-block clearance check in spawn validation
+### WATCH-A001: GameWindow still owns runtime construction
 
-### BUG-006: Zombie attacks through height ✅
-- **Fixed:** abs(dy) <= 2.0 check in melee damage calculation
+- **Status:** investigating
+- **Affected area:** `render/window.py`
+- **Notes:** Tracked by Phase A A4/A5. This is architectural debt rather than a user-visible bug.
 
-### BUG-007: Zombie attack has no animation ✅
-- **Fixed:** state_phase resets on each hit for visual feedback
+### WATCH-A002: Controllers still receive full GameWindow
 
-### BUG-008: Mob AI cannot navigate around obstacles ✅
-- **Fixed:** 45°/90° turn attempt before reversing direction
+- **Status:** investigating
+- **Affected area:** `render/gameplay_controller.py`, `render/hud_controller.py`, `render/network_controller.py`
+- **Notes:** Tracked by Phase A A6/A7.
 
-### BUG-R001: Font crash on Windows ✅
-- **Fixed in:** commit 501e26e
+### WATCH-A003: DemoWorldRenderer owns world and rendering concerns
 
-### BUG-R002: World selection buttons broken ✅
-- **Fixed in:** commit 501e26e
-
-### BUG-R003: Chunk lighting seams ✅
-- **Fixed in:** commit 501e26e
-
-### BUG-R004: Cannot load saved worlds after MenuUI extraction ✅
-- **Fixed:** `MenuUI._refresh_world_list()` no longer calls removed `GameWindow._saved_worlds`; it reads saved worlds through `WorldManager`.
-
-### BUG-R005: Menu hover sound loops while moving mouse ✅
-- **Fixed:** hover audio is emitted from button hover entry callbacks, not from every handled menu mouse-motion event.
+- **Status:** investigating
+- **Affected area:** `render/world_scene.py`
+- **Notes:** Tracked by Phase A A8.

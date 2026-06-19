@@ -59,6 +59,21 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
+[tool.importlinter]
+root_packages = ["voxel_sandbox"]
+
+[[tool.importlinter.contracts]]
+name = "Domain layer stays independent from external adapters"
+type = "forbidden"
+source_modules = ["voxel_sandbox.domain"]
+forbidden_modules = [
+    "voxel_sandbox.app",
+    "voxel_sandbox.audio",
+    "voxel_sandbox.infrastructure",
+    "voxel_sandbox.network",
+    "voxel_sandbox.render",
+]
+
 [tool.pyright]
 include = ["src", "tests"]
 pythonVersion = "3.13"

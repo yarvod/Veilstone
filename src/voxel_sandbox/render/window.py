@@ -13,13 +13,13 @@ import numpy as np
 import pyglet
 from pyglet.window import key
 
-from voxel_sandbox.app.paths import application_data_root, resource_path
+from voxel_sandbox.app.composition import AppRuntime, build_app_runtime
+from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
-from voxel_sandbox.audio import AudioDirector, AudioEvent, AudioEventKind
-from voxel_sandbox.audio.runtime import create_audio_bus
+from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
-from voxel_sandbox.domain.items import ItemStack, load_item_registry_from_toml
+from voxel_sandbox.domain.items import ItemStack
 from voxel_sandbox.engine.authority import (
     WorldAuthority,
 )
@@ -30,7 +30,6 @@ from voxel_sandbox.engine.events import (
     BlockPlaced,
     EntityDamaged,
     EntityDied,
-    EventBus,
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
 from voxel_sandbox.engine.physics import PlayerController, PlayerInput
@@ -74,7 +73,10 @@ class GameWindow(pyglet.window.Window):
         save_root: Path | None = None,
         connect: str | None = None,
         player_name: str = "Player",
+        app_runtime: AppRuntime | None = None,
     ) -> None:
+        if app_runtime is not None:
+            settings = app_runtime.settings
         configure_layout_independent_game_keys()
         config = pyglet.gl.Config(
             major_version=3,
@@ -96,15 +98,16 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context = moderngl.create_context(require=330)
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
+        self.app_runtime = app_runtime or build_app_runtime(settings)
         self._gameplay = GameplayController(self)
-        self.audio = create_audio_bus(settings.audio)
-        self.audio_director = AudioDirector(self.audio)
-        self.events = EventBus()
+        self.audio = self.app_runtime.audio
+        self.audio_director = self.app_runtime.audio_director
+        self.events = self.app_runtime.event_bus
         self._subscribe_audio_events()
         self._footstep_accumulator = 0.0
         self.control_bindings = self._control_symbols()
         self.rebinding_action: str | None = None
-        self.active_save_root = save_root or application_data_root() / "dev_world"
+        self.active_save_root = save_root or self.app_runtime.data_root / "dev_world"
         self.pending_world_name = ""
         shader_root = Path(__file__).parent / "shaders" / "glsl"
         self.debug_shader = ShaderProgram(
@@ -121,7 +124,7 @@ class GameWindow(pyglet.window.Window):
         self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
         self._sync_camera_to_player()
         self.key_state = KeyState()
-        self.item_registry = load_item_registry_from_toml(resource_path("data/items.toml"))
+        self.item_registry = self.app_runtime.content_registries.item_registry
         self.inventory = Inventory()
         self.hotbar = Hotbar(self.inventory)
         self.inventory.set(0, ItemStack(3, 32), self.item_registry)

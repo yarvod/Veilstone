@@ -1,280 +1,81 @@
-# Veilstone — Рабочий план
+# Veilstone — Рабочий План
 
 ## Overview
 
-Рефакторинг архитектуры + исправление багов + расширяемость движка + поддержка ресурспаков.
-Цель: сделать проект расширяемым для добавления новых фич (блоки, биомы, мобы, измерения, текстуры).
+Текущая цель: стабилизировать архитектуру Veilstone перед следующими крупными gameplay-направлениями: player feel, вода, Twilight Forest-like генерация, 3D player, UI polish, мобы, network и resource packs.
 
----
+Этот файл хранит только активный план и ближайшие решения. Выполненная история живёт в `docs/CHANGELOG.md`; актуальные баги и quality debt — в `docs/BUGS.md`.
 
-## Phase 0: Critical Engine Bugs ✅
+## Current Phase
 
-### 0.1 Water Physics ✅
-- [x] Игрок не может плавать — добавлен buoyancy, swim_speed, in_water
-- [x] Вода не течёт — добавлен drain, horizontal spread with decay
-- [x] Нельзя ломать блоки сквозь воду — raycast skip_block для fluids
+### Phase A: Architecture Stabilization
 
-### 0.2 Mob AI & Physics ✅
-- [x] Мобы застревают в воде — smooth buoyancy с lerp
-- [x] Мобы спавнятся внутри блоков — проверка 2-block clearance
-- [x] AI не обходит препятствия — попытка 45°/90° поворота перед разворотом
-- [x] Зомби бьёт игрока сквозь высоту — проверка abs(dy) <= 2.0
-
-### 0.3 Combat & Animation ✅
-- [x] Анимация удара зомби — state_phase сбрасывается при каждом ударе
-- [x] Высотная проверка атаки — зомби не бьёт если игрок >2 блока выше
-
----
-
-## Phase 1: Extract GameWindow God Class ✅
-
-### 1.1 InventoryController ✅
-- [x] Извлечь draw_hotbar, draw_health, draw_inventory
-- [x] Извлечь crafting_*, inventory_slot_*, handle_crafting_click
-- [x] Тесты: unit + integration
-
-### 1.2 InputHandler ✅
-- [x] Извлечь on_key_press, on_mouse_*, on_text, on_scroll
-- [x] Тесты: unit (42 теста)
-
-### 1.3 NetworkController ✅
-- [x] Извлечь connect_remote, process_network_*, sync_remote_*
-- [x] Извлечь lan_*, open_to_lan, _send_block_action
-- [x] Тесты: unit (33 теста)
-
-### 1.4 WorldManager ✅
-- [x] Извлечь create_world, load_world, switch_world, save_player
-- [x] Player position helpers (restore, validate, move_to_spawn)
-- [ ] Тесты: unit
-
-### 1.5 GameplayController ✅
-- [x] Извлечь maintain_population, execute_command, _set_difficulty
-- [x] match/case dispatch вместо 80-строчного if/elif chain
-- [ ] Тесты: unit
-
-### 1.6 Slim GameWindow ✅
-- [x] Extract MenuUI → render/menu_ui.py
-- [x] Extract HudController → render/hud_controller.py
-- [x] apply_rebind → InputHandler; toggle_structure → NetworkController
-- [x] Dead profiling code removed
-- [x] window.py: 2614 → 579 строк
-- [x] Integration тесты (311/311)
-
----
+Цель Phase A — убрать `GameWindow`/god-object/service-locator проблему маленькими PR/commits, сохраняя рабочее состояние после каждого шага.
 
-## Phase 2: Data-Driven Content ✅
-
-### 2.1 Blocks from TOML ✅
-- [x] `data/blocks.toml` — определения блоков
-- [x] `load_block_registry_from_toml()` — загрузка из файла
-- [x] Тесты: unit (3 теста)
-
-### 2.2 Biomes from TOML ✅
-- [x] `data/biomes.toml` — параметры биомов
-- [x] `BiomeDef` + `BiomeRegistry` в domain/biomes/
-- [x] Тесты: unit (7 тестов)
+Правила Phase A:
 
-### 2.3 Items from TOML ✅
-- [x] `data/items.toml` — определения предметов + drop table
-- [x] `load_item_registry_from_toml()` — загрузка из файла
-- [x] Тесты: unit (2 теста)
-
----
-
-## Phase T: Minecraft-style Texture Pack System (MVP)
+- Не делать большой переписывающий PR.
+- Не добавлять Dishka сейчас; сначала manual composition root.
+- Новые use cases/controllers не принимают `GameWindow` целиком.
+- `DemoWorldRenderer` постепенно теряет владение storage/generation/streaming/fluid/registry/texture-pack loading.
+- Архитектурные ограничения проверяются через `uv run lint-imports`.
+- Перед закрытием шага обновлять `WORKPLAN`, `BUGS`, `CHANGELOG` согласно `CLAUDE.md`.
 
-Цель: Veilstone напрямую использует Minecraft Java-compatible resource pack layout.
-Пользователь кладёт ZIP/папку в `resource_packs/`, выбирает через UI, применяет без рестарта.
+## Deliverables
 
-**Ключевой принцип:** Не делать mapping layer как основной путь. Minecraft-style resource locations — основная система текстур. `data/blocks.toml` хранит texture IDs в формате `minecraft:block/name` напрямую.
-
-**Целевой пак для ручного тестирования:** `resource_packs/Faithful-32x-1.21.11/` (уже распакован).
-
-### Правила: ассеты и лицензии
-- Не коммитить пользовательские паки и кеш атласов
-- `.gitignore`: `resource_packs/*`, `!resource_packs/README.md`, `saves/texture_cache/`
-- Veilstone только поддерживает структуру — не распространяет чужие ассеты
-
-### MVP поддерживает
-- `pack.mcmeta`; ZIP и folder packs; `assets/minecraft/textures/block/*.png`
-- texture IDs в формате `minecraft:block/name`; block textures only
-- первый кадр для animated strips; fallback на default/generated texture
-
-### MVP не поддерживает
-Кастомные `veilstone:*` блоки, blockstates, JSON models, items, entities, biome colormaps, полноценную анимацию.
-
----
-
-### T1 — Convert block texture IDs ✅
-- [x] `resource_packs/README.md`, `.gitignore` правила, пустой пакет `render/texture_packs/`
-- [x] Обновить `data/blocks.toml`: все `texture_top/side/bottom` перевести на `minecraft:block/*`
-- [x] Временные замены для Veilstone-specific блоков:
-  - `veilwood_cut` → `minecraft:block/oak_log_top`
-  - `veilwood_bark` → `minecraft:block/oak_log`
-  - `veilwood_leaves` → `minecraft:block/oak_leaves`
-  - `veilwood_planks` → `minecraft:block/oak_planks`
-  - `dusk_crystal_ore` → `minecraft:block/diamond_ore`
-  - `gloam_lantern` → `minecraft:block/lantern`
-  - `runecraft_top` → `minecraft:block/crafting_table_top`
-  - `runecraft_side` → `minecraft:block/crafting_table_side`
-  - `glowing_mushroom` → `minecraft:block/red_mushroom`
-  - `fireflies` → `minecraft:block/glow_lichen`
-  - `water` → `minecraft:block/water_still`
-- [x] Обновить generated atlas keys на те же `minecraft:block/*` IDs
-
-Acceptance: default atlas работает; все texture IDs из `blocks.toml` резолюятся в UV.
-
----
-
-### T2 — Resource location resolver ✅
-Добавить resolver в `render/texture_packs/`:
-
-```python
-def resource_location_to_texture_path(resource: str) -> str:
-    # "minecraft:block/stone" -> "assets/minecraft/textures/block/stone.png"
-```
-
-Правила:
-- формат: `<namespace>:<kind>/<name>`
-- MVP: поддержать `kind == "block"`; любой namespace уже работает автоматически
-- invalid IDs дают понятную ошибку
-- missing textures не крашат — уходят в fallback
-
-Новые/обновлённые тесты:
-- [x] `minecraft:block/stone` → `assets/minecraft/textures/block/stone.png`
-- [x] Невалидный ID → ValueError с понятным сообщением
-- [x] Folder и ZIP пак читаются через resolver
-
-Acceptance: `uv run pytest -m unit`
-
----
-
-### T3 — Minecraft Java pack reader ✅
-- [x] Читать ZIP и folder packs
-- [x] Проверять `pack.mcmeta`
-- [x] `height > width and height % width == 0` → animated strip, брать первый кадр
-- [x] Конвертировать PNG в RGBA; missing texture → fallback
-- [x] Переключить с mapping-based API на resource-location-based API
-- [x] Загружать только texture IDs, которые реально нужны registry
-
-Acceptance: fake pack works; Faithful folder/zip работает вручную; third-party assets не коммитятся.
-
----
-
-### T4 — Atlas builder from active pack ✅
-- [x] `build_texture_atlas(tiles, *, tile_size) -> GeneratedAtlas` — generic packer
-- [x] `create_default_block_tiles()` — default procedural tiles
-- [x] Переключить ключи атласа на `minecraft:block/*` resource locations
-- [x] Собирать список texture IDs из `BlockRegistry` (из `texture_top/side/bottom` полей)
-- [x] Для каждого ID искать в active pack → fallback если не найдено
-
-Acceptance: `None` pack → default atlas; Faithful pack → imported atlas; все IDs из blocks.toml имеют UVs.
-
----
-
-### T5 — Renderer integration ✅
-- [x] `resource_pack_path: str = ""` в `GraphicsSettings`
-- [x] `apply_texture_pack()` метод на `DemoWorldRenderer`
-- [x] `_meshing_workers` и `_meshing_backend` сохранены на self
-- [x] Обновить `load_active_block_atlas()` под новый подход (без mapping TOML)
-- [x] При пустом `resource_pack_path` → default atlas с `minecraft:block/*` ключами
-
-Acceptance: `uv run pytest -m smoke`
-
----
-
-### T6 — Runtime apply in open world ✅ (код реализован, нужна ручная проверка)
-- [x] `DemoWorldRenderer.apply_texture_pack(atlas)` — GPU swap + remesh
-- [x] Thread/process backend handling
-- [x] Old texture release, mesh cache clear, `_remesh_all()`
-- [x] Добавить команду `/resourcepack <path|default>` в GameplayController
-- [x] При ошибке оставить старый pack
-- [ ] Ручная проверка Faithful folder/zip в открытом мире
-
-Ручной тест:
-```
-1. Запустить игру, создать мир
-2. /resourcepack resource_packs/Faithful-32x-1.21.11
-3. stone/dirt/grass/oak изменились без рестарта
-4. Новые чанки тоже с новым атласом
-5. /resourcepack default — визуал откатывается
-```
-
-Acceptance: `uv run pytest -m integration`
-
----
-
-### T7 — UI Texture Pack picker (отдельно, после T1-T6)
-- [x] Settings → Texture Packs screen
-- [x] Список: Default + ZIP/folders из `resource_packs/`
-- [x] Apply выбранного pack; показывать missing/warnings; сохранять выбор
-
----
-
-### T8 — Cache (опционально, после T7)
-- [x] `saves/texture_cache/<pack-id>-<hash>/` — atlas PNG + JSON
-- [x] Инвалидация по mtime + размеру пака
-
----
-
-### Future extension: custom namespaces
-Когда появятся свои блоки — не менять архитектуру, просто добавить namespace:
-```toml
-texture_top = "veilstone:block/my_block_top"
-```
-Resolver `<namespace>:<kind>/<name>` → `assets/<namespace>/textures/<kind>/<name>.png` уже поддерживает любой namespace. Обычные Minecraft паки покрывают `minecraft:*`, Veilstone-specific паки добавляют `assets/veilstone/textures/block/*.png`.
-
----
-
-### Риски
-
-| Риск | Митигация |
-|------|-----------|
-| UV-мисматч при смене — старые меши на старые UV | `mesh_cache.release()` + `_remesh_all()` |
-| Утечка GPU-текстуры | `old_texture.release()` до замены |
-| Отсутствующая текстура → невидимые блоки | Всегда fallback; атлас содержит все IDs из blocks.toml |
-| Animated strip (water) отображается некорректно | MVP: первый кадр |
-| UI apply во время мешинга (race) | clear pending queue + remesh после |
-
----
-
-## Phase 3: Extensibility Architecture
-
-### 3.1 Event Bus
-- [x] `engine/events.py` — EventBus на dataclass events
-- [x] BlockPlaced, BlockBroken, EntityDamaged, EntityDied
-- [x] Подключить audio через event bus
-- [x] Тесты: unit
-
-### 3.2 World Generation Pipeline ✅
-- [x] DimensionDef → [HeightProvider, SurfacePlacer, FeatureDecorator] в `pipeline.py`
-- [x] TerrainGenerator использует DimensionDef; BiomeSurfacePlacer читает block IDs из BlockRegistry
-- [x] Новый биом = новый decorator или новый BiomeDef; wired in world_scene.py
-- [x] Тесты: 15 unit
-
-### 3.3 Game State Machine ✅
-- [x] GameState enum: MENU, PLAYING, PAUSED в `engine/game_state.py`
-- [x] GameStateMachine: transition validation, InvalidTransition, try_transition
-- [x] _sync_game_state() в GameWindow; wired at all screen transitions
-- [x] Тесты: 19 unit
-
----
-
-## Phase 4: Quality & Testing
-
-### 4.1 Missing Unit Tests ✅
-- [x] 26 unit тестов для WorldManager (slug, position bounds, restore, spawn, saved_worlds)
-- [x] 19 unit тестов для GameplayController (/time, /difficulty, /resourcepack, /structure)
-- [ ] E2E тесты со скриншотами (verify skill)
-
-### 4.2 Performance ✅
-- [x] Кеширование `_saved_worlds()` — class-level cache, invalidate on create_world
-- [ ] Профилирование chunk loading
-- [x] Magic numbers → `engine/gameplay_constants.py` (position bounds, tree/ore density, terrain)
-
----
-
-## Commit Strategy
-
-Каждая подфаза коммитится отдельно после прохождения тестов.
-Никогда не добавлять в сообщения коммитов: `Co-Authored-By: Claude`, `Generated-By`, AI-атрибуцию.
+- [x] A1 Architecture map/docs: `docs/ARCHITECTURE.md` описывает текущую карту, целевые слои, direction of knowledge, lifetimes, composition root, ports/adapters, GameWindow migration, Controller(GameWindow) migration и DemoWorldRenderer split.
+- [x] A2 Import-linter setup: добавлен первый реалистичный контракт в `pyproject.toml`; команда `uv run lint-imports`.
+- [x] A3 Composition root skeleton: добавлен `src/voxel_sandbox/app/composition.py` с `AppRuntime` и `WorldRuntime`, без изменения runtime behavior.
+- [ ] A4 AppRuntime extraction: перенести app-level зависимости из `GameWindow`/entrypoints в ручную композицию: settings, paths, event bus, audio, content registries, texture pack service, settings store.
+  - [x] A4.1 Add `build_app_runtime()` factory for settings, data root, event bus, audio bus/director, item registry, and settings store without changing runtime behavior.
+  - [x] A4.2 Introduce the first compatibility path for passing `AppRuntime` toward `GameWindow`.
+  - [x] A4.3 Move existing `GameWindow` app-level construction calls for data root, audio, event bus, and item registry to the runtime path.
+  - [ ] A4.4 Extract texture pack service ownership; likely finish together with A7 `ApplyResourcePackUseCase`.
+- [ ] A5 WorldRuntime extraction: перенести world-level зависимости: active world storage, block registry, generation/streaming, player state, entity world, simulation systems, renderer facade/port.
+- [ ] A6 Replace one controller from `Controller(GameWindow)` to explicit dependencies. Начать с самого узкого участка, сохранить compatibility adapter при необходимости.
+- [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
+- [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
+- [ ] A9 Add isolated tests for use cases/systems: resource pack apply, player movement, fluid step, mob spawning, generation pipeline без Pyglet/OpenGL.
+
+## Immediate Next Step
+
+Следующий кодовый шаг: continue with A5 only after deciding whether A4.4 should be bundled into A7.
+
+1. Map the first `WorldRuntime` extraction target that does not require renderer ownership changes.
+2. Prefer player/entity/world storage state over texture-pack work unless A7 is started.
+3. Keep old constructor APIs as compatibility adapters.
+4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
+
+## Architecture Guardrails
+
+Enforced now:
+
+- `voxel_sandbox.domain` must not import `app`, `audio`, `infrastructure`, `network`, or `render`.
+
+Staged next:
+
+- Engine/simulation must not import window/UI/render controllers.
+- Application must not import Pyglet/ModernGL.
+- Presentation may import application; application must not import presentation.
+- Domain/simulation must not import infrastructure directly except through composition/adapters.
+
+## Phase A Acceptance
+
+- `GameWindow` migration strategy documented.
+- `Controller(GameWindow)` migration strategy documented.
+- `DemoWorldRenderer` responsibility split documented.
+- `import-linter` configured and runnable through `uv run lint-imports`.
+- At least one dependency rule enforced.
+- No Dishka introduced.
+- Existing runtime behavior unchanged by A1-A3.
+
+## Future Gameplay Acceptance
+
+After Phase A, these must become practical:
+
+- New gameplay systems can be tested without Pyglet window or OpenGL context.
+- Controllers no longer receive full `GameWindow`.
+- Simulation systems do not import render/window/UI.
+- Renderer does not own world persistence/generation.
+- Resource pack application exists as an application use case.
+- Water movement, mob spawning, world generation and player movement can each be tested independently.
