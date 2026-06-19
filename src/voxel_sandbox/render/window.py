@@ -13,7 +13,7 @@ import numpy as np
 import pyglet
 from pyglet.window import key
 
-from voxel_sandbox.app.composition import AppRuntime, build_app_runtime, build_world_runtime
+from voxel_sandbox.app.composition import AppRuntime, build_app_runtime, build_local_world_runtime
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
@@ -24,7 +24,6 @@ from voxel_sandbox.engine.authority import (
     WorldAuthority,
 )
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
-from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.events import (
     BlockBroken,
     BlockPlaced,
@@ -32,7 +31,7 @@ from voxel_sandbox.engine.events import (
     EntityDied,
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
-from voxel_sandbox.engine.physics import PlayerController, PlayerInput
+from voxel_sandbox.engine.physics import PlayerInput
 from voxel_sandbox.network import (
     ClientSession,
     LanServer,
@@ -121,7 +120,16 @@ class GameWindow(pyglet.window.Window):
         self.game_state = GameStateMachine()
         self.ui_renderer = UiRenderer(self.width, self.height)
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
-        self.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
+        self.world_runtime = build_local_world_runtime(
+            spawn_position=(spawn_x, spawn_y, spawn_z),
+            entity_seed=self.world_renderer.generator.seed.value,
+            storage=self.world_renderer.storage,
+            block_registry=self.world_renderer.registry,
+            generation=self.world_renderer.generator,
+            streaming=self.world_renderer.streamer,
+            renderer=self.world_renderer,
+        )
+        self.player = self.world_runtime.player_state
         self._sync_camera_to_player()
         self.key_state = KeyState()
         self.item_registry = self.app_runtime.content_registries.item_registry
@@ -148,16 +156,7 @@ class GameWindow(pyglet.window.Window):
             self._sync_camera_to_player()
         recipes_path = resource_path("config/recipes.toml")
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
-        self.entities = EntitySimulation(seed=self.world_renderer.generator.seed.value)
-        self.world_runtime = build_world_runtime(
-            storage=self.world_renderer.storage,
-            block_registry=self.world_renderer.registry,
-            generation=self.world_renderer.generator,
-            streaming=self.world_renderer.streamer,
-            player_state=self.player,
-            entity_world=self.entities.world,
-            renderer=self.world_renderer,
-        )
+        self.entities = self.world_runtime.entity_simulation
         self._gameplay._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
         self.structure_world = self.world_renderer.storage.load_structure_world()

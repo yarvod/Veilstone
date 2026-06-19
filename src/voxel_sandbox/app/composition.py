@@ -17,7 +17,9 @@ from voxel_sandbox.audio.bus import AudioBus
 from voxel_sandbox.audio.director import AudioDirector
 from voxel_sandbox.audio.runtime import create_audio_bus
 from voxel_sandbox.domain.items import ItemRegistry, load_item_registry_from_toml
+from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.events import EventBus
+from voxel_sandbox.engine.physics import PlayerController
 
 
 class SettingsStorePort(Protocol):
@@ -71,6 +73,7 @@ class WorldRuntime:
     generation: Any | None = None
     streaming: Any | None = None
     player_state: Any | None = None
+    entity_simulation: Any | None = None
     entity_world: Any | None = None
     simulation_systems: tuple[Any, ...] = ()
     renderer: Any | None = None
@@ -83,6 +86,7 @@ def build_world_runtime(
     generation: Any | None = None,
     streaming: Any | None = None,
     player_state: Any | None = None,
+    entity_simulation: Any | None = None,
     entity_world: Any | None = None,
     simulation_systems: tuple[Any, ...] = (),
     renderer: Any | None = None,
@@ -95,8 +99,36 @@ def build_world_runtime(
         generation=generation,
         streaming=streaming,
         player_state=player_state,
+        entity_simulation=entity_simulation,
         entity_world=entity_world,
         simulation_systems=simulation_systems,
+        renderer=renderer,
+    )
+
+
+def build_local_world_runtime(
+    *,
+    spawn_position: tuple[float, float, float],
+    entity_seed: int,
+    storage: Any | None = None,
+    block_registry: Any | None = None,
+    generation: Any | None = None,
+    streaming: Any | None = None,
+    renderer: Any | None = None,
+) -> WorldRuntime:
+    """Build local active-world simulation state without owning render setup."""
+
+    spawn_x, spawn_y, spawn_z = spawn_position
+    player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
+    entities = EntitySimulation(seed=entity_seed)
+    return build_world_runtime(
+        storage=storage,
+        block_registry=block_registry,
+        generation=generation,
+        streaming=streaming,
+        player_state=player,
+        entity_simulation=entities,
+        entity_world=entities.world,
         renderer=renderer,
     )
 

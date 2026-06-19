@@ -33,7 +33,7 @@
   - [ ] A4.4 Extract texture pack service ownership; likely finish together with A7 `ApplyResourcePackUseCase`.
 - [ ] A5 WorldRuntime extraction: перенести world-level зависимости: active world storage, block registry, generation/streaming, player state, entity world, simulation systems, renderer facade/port.
   - [x] A5.1 Add `build_world_runtime()` and attach `GameWindow.world_runtime` as an explicit map of current active-world dependencies without changing runtime behavior.
-  - [ ] A5.2 Move one world-level construction path behind `WorldRuntime` instead of direct `GameWindow` field construction.
+  - [x] A5.2 Move player/entity simulation construction behind `build_local_world_runtime()` while preserving `GameWindow.player` and `GameWindow.entities` compatibility fields.
   - [ ] A5.3 Keep compatibility fields until controllers/renderers are migrated.
 - [ ] A6 Replace one controller from `Controller(GameWindow)` to explicit dependencies. Начать с самого узкого участка, сохранить compatibility adapter при необходимости.
 - [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
@@ -42,10 +42,10 @@
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: continue A5 with one small world-level ownership move.
+Следующий кодовый шаг: continue A5 with compatibility refresh paths.
 
-1. Choose a target that does not require renderer ownership changes; likely player/entity state rather than storage/generation.
-2. Move construction behind `WorldRuntime` while preserving existing `GameWindow` compatibility fields.
+1. Ensure world switching refreshes `GameWindow.world_runtime` after renderer/player/entity replacement.
+2. Keep compatibility fields until controllers/renderers are migrated.
 3. Avoid touching texture-pack service until A7 starts.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 

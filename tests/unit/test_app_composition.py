@@ -2,13 +2,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from voxel_sandbox.app.composition import UserSettingsStore, build_app_runtime, build_world_runtime
+from voxel_sandbox.app.composition import (
+    UserSettingsStore,
+    build_app_runtime,
+    build_local_world_runtime,
+    build_world_runtime,
+)
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio.backend import NullAudioBackend
 from voxel_sandbox.audio.bus import AudioBus
 from voxel_sandbox.audio.director import AudioDirector
 from voxel_sandbox.domain.items import ItemRegistry
+from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.events import EventBus
+from voxel_sandbox.engine.physics import PlayerController
 
 
 def test_build_app_runtime_composes_app_level_dependencies(tmp_path: Path) -> None:
@@ -56,6 +63,7 @@ def test_build_world_runtime_records_active_world_dependencies() -> None:
         generation=generation,
         streaming=streaming,
         player_state=player_state,
+        entity_simulation=entity_world,
         entity_world=entity_world,
         renderer=renderer,
     )
@@ -65,5 +73,22 @@ def test_build_world_runtime_records_active_world_dependencies() -> None:
     assert runtime.generation is generation
     assert runtime.streaming is streaming
     assert runtime.player_state is player_state
+    assert runtime.entity_simulation is entity_world
     assert runtime.entity_world is entity_world
     assert runtime.renderer is renderer
+
+
+def test_build_local_world_runtime_creates_player_and_entity_simulation() -> None:
+    runtime = build_local_world_runtime(
+        spawn_position=(1.0, 2.0, 3.0),
+        entity_seed=42,
+    )
+
+    assert isinstance(runtime.player_state, PlayerController)
+    assert (runtime.player_state.x, runtime.player_state.y, runtime.player_state.z) == (
+        1.0,
+        2.0,
+        3.0,
+    )
+    assert isinstance(runtime.entity_simulation, EntitySimulation)
+    assert runtime.entity_world is runtime.entity_simulation.world
