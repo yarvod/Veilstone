@@ -41,7 +41,7 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
-from voxel_sandbox.render.hud_controller import HudController
+from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
     InputHandler,
     KeyState,
@@ -193,7 +193,7 @@ class GameWindow(pyglet.window.Window):
         self.hud_bg_group = pyglet.graphics.Group(order=0)
         self.hud_fg_group = pyglet.graphics.Group(order=1)
         self.hud_text_group = pyglet.graphics.Group(order=2)
-        self._hud = HudController(self)
+        self._hud = HudController(HudWindowAdapter(self))
         self._inv_ctrl = InventoryController(self)
         self._net = NetworkController(self)
         self.menu_ui = MenuUI(self)

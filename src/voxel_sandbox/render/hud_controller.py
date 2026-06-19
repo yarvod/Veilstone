@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import time
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 import numpy as np
@@ -30,8 +31,110 @@ class HudView(Protocol):
     network_players: Any
     remote_player_entities: Any
     entities: Any
+    debug_overlay_visible: bool
     inventory_open: bool
+    hotbar: Any
+    item_registry: Any
+    key_state: Any
+    menu_ui: Any
+    player_health: float
+    text_input: str
     _inv_ctrl: Any
+
+
+@dataclass(slots=True)
+class HudWindowAdapter:
+    """Compatibility adapter exposing only the HUD-facing window surface."""
+
+    _window: Any
+
+    @property
+    def width(self) -> int:
+        return self._window.width
+
+    @property
+    def height(self) -> int:
+        return self._window.height
+
+    @property
+    def hud_batch(self) -> Any:
+        return self._window.hud_batch
+
+    @property
+    def hud_text_group(self) -> Any:
+        return self._window.hud_text_group
+
+    @property
+    def world_renderer(self) -> Any:
+        return self._window.world_renderer
+
+    @property
+    def player(self) -> Any:
+        return self._window.player
+
+    @property
+    def camera(self) -> Any:
+        return self._window.camera
+
+    @property
+    def settings(self) -> Any:
+        return self._window.settings
+
+    @property
+    def game_state(self) -> Any:
+        return self._window.game_state
+
+    @property
+    def network_session(self) -> Any:
+        return self._window.network_session
+
+    @property
+    def network_players(self) -> Any:
+        return self._window.network_players
+
+    @property
+    def remote_player_entities(self) -> Any:
+        return self._window.remote_player_entities
+
+    @property
+    def entities(self) -> Any:
+        return self._window.entities
+
+    @property
+    def debug_overlay_visible(self) -> bool:
+        return self._window.debug_overlay_visible
+
+    @property
+    def inventory_open(self) -> bool:
+        return self._window.inventory_open
+
+    @property
+    def hotbar(self) -> Any:
+        return self._window.hotbar
+
+    @property
+    def item_registry(self) -> Any:
+        return self._window.item_registry
+
+    @property
+    def key_state(self) -> Any:
+        return self._window.key_state
+
+    @property
+    def menu_ui(self) -> Any:
+        return self._window.menu_ui
+
+    @property
+    def player_health(self) -> float:
+        return self._window.player_health
+
+    @property
+    def text_input(self) -> str:
+        return self._window.text_input
+
+    @property
+    def _inv_ctrl(self) -> Any:
+        return self._window._inv_ctrl
 
 
 class HudController:
