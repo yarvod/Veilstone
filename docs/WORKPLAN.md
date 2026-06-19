@@ -39,18 +39,19 @@
 - [ ] A6 Replace one controller from `Controller(GameWindow)` to explicit dependencies. Начать с самого узкого участка, сохранить compatibility adapter при необходимости.
   - [x] A6.1 Narrow `HudController` from nominal `GameWindow` type to explicit `HudView` Protocol listing the HUD-facing surface.
   - [x] A6.2 Replace `HudController(self)` with `HudController(HudWindowAdapter(self))`, localizing the window compatibility adapter.
-  - [ ] A6.3 Move at least one HUD read path from window field access to snapshot/view data.
+  - [x] A6.3 Move HUD frame/layout reads (`width`, `height`, `inventory_open`) to `HudFrameSnapshot` view data.
+  - [ ] A6.4 Continue replacing HUD direct adapter reads with snapshots where useful.
 - [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
 - [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
 - [ ] A9 Add isolated tests for use cases/systems: resource pack apply, player movement, fluid step, mob spawning, generation pipeline без Pyglet/OpenGL.
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: continue A6 by moving one HUD read path to snapshot/view data.
+Следующий кодовый шаг: decide whether A6 is enough for now or start A7 `ApplyResourcePackUseCase`.
 
-1. Keep HUD changes presentation-only and avoid changing visual behavior.
-2. Do not move storage/generation out of `DemoWorldRenderer` until A8.
-3. Avoid touching texture-pack service until A7 starts.
+1. Do not move storage/generation out of `DemoWorldRenderer` until A8.
+2. A7 is the next high-value step because resource pack apply is duplicated across command/UI/render boundaries.
+3. Keep controller changes small and test with smoke/UI checks.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 
 ## Architecture Guardrails

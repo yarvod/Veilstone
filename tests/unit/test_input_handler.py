@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from pyglet.window import key
-
-from voxel_sandbox.render.input_state import InputHandler, KeyState
+from voxel_sandbox.render.input_state import InputHandler, KeyState, key
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 

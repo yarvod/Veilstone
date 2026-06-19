@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from pyglet.window import mouse
-
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
+from voxel_sandbox.render.input_state import mouse
 from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
 
 

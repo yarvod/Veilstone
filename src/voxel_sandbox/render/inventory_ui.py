@@ -8,11 +8,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import pyglet
-from pyglet.window import mouse
 
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
+from voxel_sandbox.render.input_state import mouse
 from voxel_sandbox.render.ui.item_icons import (
     HEART_SIZE,
     ICON_SIZE,

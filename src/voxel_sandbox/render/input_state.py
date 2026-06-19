@@ -5,7 +5,37 @@ import sys
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from pyglet.window import key, mouse
+try:
+    from pyglet.window import key, mouse
+except (ImportError, IndexError):
+
+    class key:
+        BACKSPACE = 8
+        C = ord("C")
+        DOWN = 1002
+        E = ord("E")
+        ENTER = 13
+        ESCAPE = 27
+        F3 = 2003
+        F5 = 2005
+        F6 = 2006
+        F7 = 2007
+        F8 = 2008
+        F9 = 2009
+        MOD_SHIFT = 1
+        Q = ord("Q")
+        RETURN = 13
+        S = ord("S")
+        SLASH = ord("/")
+        SPACE = 32
+        T = ord("T")
+        UP = 1001
+        W = ord("W")
+
+    class mouse:
+        LEFT = 1
+        RIGHT = 4
+
 
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.engine.events import BlockBroken, BlockPlaced, EntityDamaged, EntityDied

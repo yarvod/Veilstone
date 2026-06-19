@@ -15,6 +15,13 @@ from voxel_sandbox.render.ui.menu import platform_font_name
 _UI_FONT = platform_font_name(sys.platform)
 
 
+@dataclass(slots=True)
+class HudFrameSnapshot:
+    width: int
+    height: int
+    inventory_open: bool
+
+
 class HudView(Protocol):
     """Narrow window-facing surface used by HUD rendering."""
 
@@ -40,6 +47,8 @@ class HudView(Protocol):
     player_health: float
     text_input: str
     _inv_ctrl: Any
+
+    def frame_snapshot(self) -> HudFrameSnapshot: ...
 
 
 @dataclass(slots=True)
@@ -136,6 +145,13 @@ class HudWindowAdapter:
     def _inv_ctrl(self) -> Any:
         return self._window._inv_ctrl
 
+    def frame_snapshot(self) -> HudFrameSnapshot:
+        return HudFrameSnapshot(
+            width=self._window.width,
+            height=self._window.height,
+            inventory_open=self._window.inventory_open,
+        )
+
 
 class HudController:
     """Owns HUD labels and draws the in-game overlay."""
@@ -204,6 +220,7 @@ class HudController:
 
     def draw(self, entity_draws: int) -> None:
         win = self.win
+        frame = win.frame_snapshot()
         x, y, z = win.camera.position
         fps = pyglet.clock.get_frequency()
         now = time.perf_counter()
@@ -262,13 +279,13 @@ class HudController:
             else:
                 names.append("You (Singleplayer)")
             self.player_list_label.text = "\n".join(names)
-            self.player_list_label.x = win.width // 2
-            self.player_list_label.y = win.height // 2
+            self.player_list_label.x = frame.width // 2
+            self.player_list_label.y = frame.height // 2
             self.player_list_label.draw()
 
         matrix = camera_matrix(
             win.camera,
-            max(win.width, 1) / max(win.height, 1),
+            max(frame.width, 1) / max(frame.height, 1),
             win.settings.camera.field_of_view,
         )
         for player_id, entity in win.remote_player_entities.items():
@@ -282,22 +299,22 @@ class HudController:
                 ndc_x = clip[0] / w
                 ndc_y = clip[1] / w
                 if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
-                    screen_x = (ndc_x + 1) * win.width / 2
-                    screen_y = (ndc_y + 1) * win.height / 2
+                    screen_x = (ndc_x + 1) * frame.width / 2
+                    screen_y = (ndc_y + 1) * frame.height / 2
                     name = win.network_players.get(player_id, {}).get("name", f"Player {player_id}")
                     self.player_name_label.text = str(name)
                     self.player_name_label.x = screen_x
                     self.player_name_label.y = screen_y
                     self.player_name_label.draw()
 
-        self.crosshair.visible = not win.inventory_open
-        self.crosshair.x = win.width // 2
-        self.crosshair.y = win.height // 2
+        self.crosshair.visible = not frame.inventory_open
+        self.crosshair.x = frame.width // 2
+        self.crosshair.y = frame.height // 2
         win._inv_ctrl.draw_hotbar()
         win._inv_ctrl.draw_health()
         win._inv_ctrl.draw_held_item()
         win._inv_ctrl.update_hud_status()
-        if win.inventory_open:
+        if frame.inventory_open:
             win._inv_ctrl.draw_inventory()
         if win.text_input is not None:
             win.menu_ui._draw_text_input()
