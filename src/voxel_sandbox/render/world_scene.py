@@ -10,6 +10,7 @@ import moderngl
 import numpy as np
 
 from voxel_sandbox.app.paths import resource_path
+from voxel_sandbox.domain.biomes import load_biome_registry_from_toml
 from voxel_sandbox.domain.blocks import load_block_registry_from_toml
 from voxel_sandbox.engine.chunks import (
     CHUNK_HEIGHT,
@@ -125,7 +126,12 @@ class DemoWorldRenderer:
         self.seed_text = active_seed
         if metadata is None:
             self.storage.ensure_world(name=self.world_name, seed=active_seed)
-        self.generator = TerrainGenerator(WorldSeed.parse(active_seed))
+        biome_registry = load_biome_registry_from_toml(resource_path("data/biomes.toml"))
+        self.generator = TerrainGenerator(
+            WorldSeed.parse(active_seed),
+            block_registry=self.registry,
+            biome_registry=biome_registry,
+        )
         self.streamer = ChunkStreamer(
             self.generator,
             render_distance=render_distance,

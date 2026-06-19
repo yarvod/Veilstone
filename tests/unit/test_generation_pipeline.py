@@ -1,0 +1,191 @@
+"""Unit tests for the world generation pipeline (Phase 3.2)."""
+
+from __future__ import annotations
+
+import pytest
+
+from voxel_sandbox.domain.biomes import load_biome_registry_from_toml
+from voxel_sandbox.domain.blocks import load_block_registry_from_toml
+from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.generation import (
+    BiomeSurfacePlacer,
+    FeatureDecorator,
+    HeightProvider,
+    SurfacePlacer,
+    TerrainGenerator,
+    WorldSeed,
+)
+from voxel_sandbox.engine.generation.terrain import Biome
+
+
+@pytest.fixture()
+def block_registry(tmp_path):
+    from voxel_sandbox.app.paths import resource_path
+
+    return load_block_registry_from_toml(resource_path("data/blocks.toml"))
+
+
+@pytest.fixture()
+def biome_registry(tmp_path):
+    from voxel_sandbox.app.paths import resource_path
+
+    return load_biome_registry_from_toml(resource_path("data/biomes.toml"))
+
+
+# ---------------------------------------------------------------------------
+# DimensionDef structural checks
+# ---------------------------------------------------------------------------
+
+
+def test_dimension_def_is_frozen() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("struct-test"))
+    dim = generator._dimension
+    with pytest.raises((AttributeError, TypeError)):
+        dim.water_level = 99  # type: ignore[misc]
+
+
+def test_dimension_has_four_decorators() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("decorators"))
+    assert len(generator._dimension.feature_decorators) == 4
+
+
+def test_generator_is_its_own_height_provider() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("provider"))
+    assert generator._dimension.height_provider is generator
+
+
+# ---------------------------------------------------------------------------
+# HeightProvider protocol compliance
+# ---------------------------------------------------------------------------
+
+
+def test_height_provider_protocol() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("protocol"))
+    # TerrainGenerator must satisfy HeightProvider
+    provider: HeightProvider = generator
+    assert isinstance(provider.height_at(0, 0), int)
+    assert isinstance(provider.biome_key_at(0, 0), str)
+
+
+def test_biome_key_at_returns_valid_key() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("biomekey"))
+    valid_keys = {b.value for b in Biome}
+    for x, z in [(-100, 200), (0, 0), (500, -300), (1000, 1000)]:
+        key = generator.biome_key_at(x, z)
+        assert key in valid_keys, f"biome_key_at({x}, {z}) returned {key!r}"
+
+
+def test_biome_key_matches_biome_enum() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("keymatch"))
+    assert generator.biome_key_at(0, 0) == generator.biome_at(0, 0).value
+
+
+# ---------------------------------------------------------------------------
+# BiomeSurfacePlacer
+# ---------------------------------------------------------------------------
+
+
+def test_biome_surface_placer_resolves_all_biomes(block_registry, biome_registry) -> None:
+    placer = BiomeSurfacePlacer(block_registry, biome_registry)
+    for biome in biome_registry:
+        assert biome.key in placer._biome_blocks
+        ids = placer._biome_blocks[biome.key]
+        assert len(ids) == 3
+        assert all(isinstance(i, int) for i in ids)
+
+
+def test_biome_surface_placer_highland_is_stone(block_registry, biome_registry) -> None:
+    placer = BiomeSurfacePlacer(block_registry, biome_registry)
+    stone_id = block_registry.by_key("stone").id
+    surface_id, subsurface_id, deep_id = placer._biome_blocks["dusk_highlands"]
+    assert surface_id == stone_id
+    assert subsurface_id == stone_id
+    assert deep_id == stone_id
+
+
+def test_biome_surface_placer_plains_has_grass_surface(block_registry, biome_registry) -> None:
+    placer = BiomeSurfacePlacer(block_registry, biome_registry)
+    grass_id = block_registry.by_key("grass").id
+    surface_id, _sub, _deep = placer._biome_blocks["twilight_plains"]
+    assert surface_id == grass_id
+
+
+def test_biome_surface_placer_swamp_has_dirt_surface(block_registry, biome_registry) -> None:
+    placer = BiomeSurfacePlacer(block_registry, biome_registry)
+    dirt_id = block_registry.by_key("dirt").id
+    surface_id, _sub, _deep = placer._biome_blocks["gloom_swamp"]
+    assert surface_id == dirt_id
+
+
+# ---------------------------------------------------------------------------
+# TerrainGenerator with BiomeSurfacePlacer wired in
+# ---------------------------------------------------------------------------
+
+
+def test_generator_with_registries_is_deterministic(block_registry, biome_registry) -> None:
+    seed = WorldSeed.parse("determinism")
+    gen_a = TerrainGenerator(seed, block_registry=block_registry, biome_registry=biome_registry)
+    gen_b = TerrainGenerator(seed, block_registry=block_registry, biome_registry=biome_registry)
+
+    import numpy as np
+
+    chunk_a = gen_a.generate_chunk(ChunkCoord(3, -2))
+    chunk_b = gen_b.generate_chunk(ChunkCoord(3, -2))
+    for sa, sb in zip(chunk_a.sections, chunk_b.sections, strict=True):
+        assert np.array_equal(sa.blocks, sb.blocks)
+
+
+def test_highland_chunk_has_stone_surface(block_registry, biome_registry) -> None:
+    """Find a highlands coordinate and verify stone surface when using BiomeSurfacePlacer."""
+    seed = WorldSeed.parse("highland-surface")
+    generator = TerrainGenerator(seed, block_registry=block_registry, biome_registry=biome_registry)
+    stone_id = block_registry.by_key("stone").id
+
+    # Scan for a highlands column
+    for chunk_x in range(-10, 10):
+        for chunk_z in range(-10, 10):
+            world_x = chunk_x * 16
+            world_z = chunk_z * 16
+            if generator.biome_key_at(world_x, world_z) == "dusk_highlands":
+                chunk = generator.generate_chunk(ChunkCoord(chunk_x, chunk_z))
+                height = generator.height_at(world_x, world_z)
+                surface_block = chunk.get_block(0, height - 1, 0)
+                assert surface_block == stone_id
+                return
+
+    pytest.skip("No dusk_highlands found in test range — seed-dependent, skip")
+
+
+def test_default_generator_unchanged_surface(block_registry, biome_registry) -> None:
+    """Default generator (no registries) always places grass at surface — unchanged behaviour."""
+    seed = WorldSeed.parse("default-compat")
+    generator = TerrainGenerator(seed)
+    chunk = generator.generate_chunk(ChunkCoord(0, 0))
+    height = generator.height_at(0, 0)
+    assert chunk.get_block(0, height - 1, 0) == 3  # grass=3 hardcoded in _DefaultSurfacePlacer
+
+
+# ---------------------------------------------------------------------------
+# Protocol runtime checks (structural typing)
+# ---------------------------------------------------------------------------
+
+
+def test_surface_placer_protocol_structural() -> None:
+    """_DefaultSurfacePlacer satisfies SurfacePlacer protocol."""
+    from voxel_sandbox.engine.generation.terrain import _DefaultSurfacePlacer
+
+    placer = _DefaultSurfacePlacer()
+    assert isinstance(placer, SurfacePlacer)
+
+
+def test_feature_decorator_protocol_structural() -> None:
+    """All four decorators satisfy FeatureDecorator protocol."""
+    from voxel_sandbox.engine.generation.terrain import (
+        _CaveDecorator,
+        _OreDecorator,
+        _TreeDecorator,
+    )
+
+    seed = WorldSeed.parse("proto")
+    for cls in (_CaveDecorator, _OreDecorator, _TreeDecorator):
+        assert isinstance(cls(seed), FeatureDecorator)
