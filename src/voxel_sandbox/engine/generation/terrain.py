@@ -8,6 +8,15 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from voxel_sandbox.engine.chunks import SECTION_SIZE, Chunk, ChunkCoord, DirtyFlag
+from voxel_sandbox.engine.gameplay_constants import (
+    ORE_DENSITY,
+    TERRAIN_BASE_HEIGHT,
+    TERRAIN_DETAIL_SCALE,
+    TERRAIN_HILL_SCALE,
+    TREE_DENSITY_DEFAULT,
+    TREE_DENSITY_SWAMP,
+    TREE_DENSITY_WOODS,
+)
 from voxel_sandbox.engine.generation.pipeline import DimensionDef, HeightProvider
 from voxel_sandbox.engine.generation.seed import WorldSeed
 from voxel_sandbox.engine.generation.structures import (
@@ -257,7 +266,7 @@ class _OreDecorator:
                 world_x = coord.x * SECTION_SIZE + int(x)
                 world_y = section_index * SECTION_SIZE + int(y)
                 world_z = coord.z * SECTION_SIZE + int(z)
-                if _hash3(seed_value, world_x, world_y, world_z, 10) > 0.988:
+                if _hash3(seed_value, world_x, world_y, world_z, 10) > ORE_DENSITY:
                     section.blocks[x, y, z] = 6
                     touched_sections.add(section_index)
 
@@ -282,11 +291,11 @@ class _TreeDecorator:
                 if height_provider.height_at(world_x, world_z) < TerrainGenerator.WATER_LEVEL:
                     continue
                 if biome_key == "twilight_woods":
-                    threshold = 0.982
+                    threshold = TREE_DENSITY_WOODS
                 elif biome_key == "gloom_swamp":
-                    threshold = 0.989
+                    threshold = TREE_DENSITY_SWAMP
                 else:
-                    threshold = 0.994
+                    threshold = TREE_DENSITY_DEFAULT
                 if _hash3(seed_value, world_x, 0, world_z, 20) <= threshold:
                     continue
                 ground_y = height_provider.height_at(world_x, world_z) - 1
@@ -452,7 +461,9 @@ class TerrainGenerator:
         broad = _value_noise(self.seed.value, world_x / 128.0, world_z / 128.0, 0)
         detail = _value_noise(self.seed.value, world_x / 32.0, world_z / 32.0, 1)
         hill_factor = broad * broad * broad
-        return 25 + int(hill_factor * 30.0 + detail * 10.0)
+        return TERRAIN_BASE_HEIGHT + int(
+            hill_factor * TERRAIN_HILL_SCALE + detail * TERRAIN_DETAIL_SCALE
+        )
 
     def biome_key_at(self, world_x: int, world_z: int) -> str:
         temperature = _value_noise(self.seed.value, world_x / 96.0, world_z / 96.0, 2)

@@ -1,0 +1,17 @@
+"""Named constants for gameplay rules and world bounds."""
+
+from __future__ import annotations
+
+PLAYER_MIN_Y: float = -256.0
+PLAYER_MAX_Y: float = 1024.0
+WORLD_HORIZONTAL_LIMIT: float = 30_000_000.0
+
+TREE_DENSITY_WOODS: float = 0.982
+TREE_DENSITY_SWAMP: float = 0.989
+TREE_DENSITY_DEFAULT: float = 0.994
+
+ORE_DENSITY: float = 0.988
+
+TERRAIN_BASE_HEIGHT: int = 25
+TERRAIN_HILL_SCALE: float = 30.0
+TERRAIN_DETAIL_SCALE: float = 10.0

@@ -11,6 +11,11 @@ from voxel_sandbox.app.paths import application_data_root
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack
 from voxel_sandbox.engine.ecs import EntitySimulation
+from voxel_sandbox.engine.gameplay_constants import (
+    PLAYER_MAX_Y,
+    PLAYER_MIN_Y,
+    WORLD_HORIZONTAL_LIMIT,
+)
 from voxel_sandbox.engine.physics import PlayerController
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
 from voxel_sandbox.render.ui.menu import Screen
@@ -22,12 +27,19 @@ LOGGER = logging.getLogger(__name__)
 
 
 class WorldManager:
+    _worlds_cache: tuple[tuple[str, Path], ...] | None = None
+
     def __init__(self, win: GameWindow) -> None:
         self.win = win
+
+    @classmethod
+    def _invalidate_worlds_cache(cls) -> None:
+        cls._worlds_cache = None
 
     def create_world(self, name: str, seed: str) -> None:
         root = application_data_root() / self._world_slug(name)
         WorldStorage(root).ensure_world(name=name, seed=seed)
+        self._invalidate_worlds_cache()
         self._switch_world(root)
 
     def load_world(self, name: str) -> bool:
@@ -115,9 +127,9 @@ class WorldManager:
         player = self.win.player
         if not all(math.isfinite(v) for v in (player.x, player.y, player.z)):
             return "non-finite coordinate"
-        if not -256.0 <= player.y <= 1024.0:
+        if not PLAYER_MIN_Y <= player.y <= PLAYER_MAX_Y:
             return f"vertical coordinate {player.y:.2f} outside safety bounds"
-        if abs(player.x) > 30_000_000.0 or abs(player.z) > 30_000_000.0:
+        if abs(player.x) > WORLD_HORIZONTAL_LIMIT or abs(player.z) > WORLD_HORIZONTAL_LIMIT:
             return "horizontal coordinate outside safety bounds"
         return None
 
@@ -132,16 +144,19 @@ class WorldManager:
         x, y, z = position
         return (
             all(math.isfinite(v) for v in position)
-            and -256.0 <= y <= 1024.0
-            and abs(x) <= 30_000_000.0
-            and abs(z) <= 30_000_000.0
+            and PLAYER_MIN_Y <= y <= PLAYER_MAX_Y
+            and abs(x) <= WORLD_HORIZONTAL_LIMIT
+            and abs(z) <= WORLD_HORIZONTAL_LIMIT
         )
 
-    @staticmethod
-    def _saved_worlds() -> tuple[tuple[str, Path], ...]:
+    @classmethod
+    def _saved_worlds(cls) -> tuple[tuple[str, Path], ...]:
+        if cls._worlds_cache is not None:
+            return cls._worlds_cache
         saves_root = application_data_root()
         if not saves_root.exists():
-            return ()
+            cls._worlds_cache = ()
+            return cls._worlds_cache
         worlds: list[tuple[str, Path]] = []
         for path in sorted(saves_root.iterdir()):
             if not path.is_dir():
@@ -149,7 +164,8 @@ class WorldManager:
             metadata = WorldStorage(path).load_metadata()
             if metadata is not None:
                 worlds.append((metadata.name, path))
-        return tuple(worlds)
+        cls._worlds_cache = tuple(worlds)
+        return cls._worlds_cache
 
     @staticmethod
     def _world_slug(name: str) -> str:

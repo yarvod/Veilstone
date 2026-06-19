@@ -203,6 +203,13 @@ def test_restore_colliding_position_returns_false_and_spawns() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def clear_worlds_cache():
+    WorldManager._invalidate_worlds_cache()
+    yield
+    WorldManager._invalidate_worlds_cache()
+
+
 def test_saved_worlds_empty_when_no_dir(tmp_path: Path) -> None:
     with patch(
         "voxel_sandbox.render.world_manager.application_data_root",
@@ -236,3 +243,13 @@ def test_saved_worlds_ignores_dirs_without_metadata(tmp_path: Path) -> None:
     ):
         result = WorldManager._saved_worlds()
     assert result == ()
+
+
+def test_saved_worlds_is_cached(tmp_path: Path) -> None:
+    with patch(
+        "voxel_sandbox.render.world_manager.application_data_root",
+        return_value=tmp_path / "nonexistent",
+    ) as mock_root:
+        WorldManager._saved_worlds()
+        WorldManager._saved_worlds()
+        assert mock_root.call_count == 1

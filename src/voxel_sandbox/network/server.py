@@ -13,6 +13,7 @@ from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.domain.blocks import BlockRegistry, load_block_registry_from_toml
 from voxel_sandbox.domain.blocks.structures import StructureEntity, StructureWorld, Vec3i
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, Chunk, ChunkCoord, split_world_axis
+from voxel_sandbox.engine.gameplay_constants import WORLD_HORIZONTAL_LIMIT
 from voxel_sandbox.engine.generation import TerrainGenerator, WorldSeed
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network.chunks import encode_chunk_blocks
@@ -484,7 +485,8 @@ def _validated_position(value: object) -> tuple[float, float, float] | None:
     x, y, z = (float(cast(int | float, coordinate)) for coordinate in raw)
     if not all(math.isfinite(coordinate) for coordinate in (x, y, z)):
         return None
-    if abs(x) > 30_000_000.0 or abs(z) > 30_000_000.0 or not 0.0 <= y <= CHUNK_HEIGHT:
+    y_valid = 0.0 <= y <= CHUNK_HEIGHT
+    if abs(x) > WORLD_HORIZONTAL_LIMIT or abs(z) > WORLD_HORIZONTAL_LIMIT or not y_valid:
         return None
     return x, y, z
 
