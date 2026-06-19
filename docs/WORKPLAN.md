@@ -34,7 +34,8 @@
 - [ ] A5 WorldRuntime extraction: перенести world-level зависимости: active world storage, block registry, generation/streaming, player state, entity world, simulation systems, renderer facade/port.
   - [x] A5.1 Add `build_world_runtime()` and attach `GameWindow.world_runtime` as an explicit map of current active-world dependencies without changing runtime behavior.
   - [x] A5.2 Move player/entity simulation construction behind `build_local_world_runtime()` while preserving `GameWindow.player` and `GameWindow.entities` compatibility fields.
-  - [ ] A5.3 Keep compatibility fields until controllers/renderers are migrated.
+  - [x] A5.3 Refresh `world_runtime` during world switching so compatibility fields stay synchronized after renderer/player/entity replacement.
+  - [ ] A5.4 Keep compatibility fields until controllers/renderers are migrated.
 - [ ] A6 Replace one controller from `Controller(GameWindow)` to explicit dependencies. Начать с самого узкого участка, сохранить compatibility adapter при необходимости.
 - [ ] A7 Extract `ApplyResourcePackUseCase`: единая логика для UI и `/resourcepack`; зависимости: texture pack service, world render port, settings store.
 - [ ] A8 Split renderer/world ownership boundaries gradually: storage/generator/streamer/fluid/lighting/registry уходят в runtime/simulation; renderer остаётся GPU scene adapter.
@@ -42,10 +43,10 @@
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: continue A5 with compatibility refresh paths.
+Следующий кодовый шаг: decide whether A5 is enough for now or continue with A6 controller dependency narrowing.
 
-1. Ensure world switching refreshes `GameWindow.world_runtime` after renderer/player/entity replacement.
-2. Keep compatibility fields until controllers/renderers are migrated.
+1. Do not move storage/generation out of `DemoWorldRenderer` until A8.
+2. Prefer A6 next: replace one `Controller(GameWindow)` path with explicit dependencies.
 3. Avoid touching texture-pack service until A7 starts.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 

@@ -10,13 +10,11 @@ from typing import TYPE_CHECKING
 from voxel_sandbox.app.paths import application_data_root
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack
-from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.gameplay_constants import (
     PLAYER_MAX_Y,
     PLAYER_MIN_Y,
     WORLD_HORIZONTAL_LIMIT,
 )
-from voxel_sandbox.engine.physics import PlayerController
 from voxel_sandbox.infrastructure.storage import PlayerSnapshot, WorldStorage
 from voxel_sandbox.render.ui.menu import Screen
 
@@ -64,8 +62,7 @@ class WorldManager:
         win.world_renderer.release()
         win.active_save_root = save_root
         win.world_renderer = win._create_world_renderer(save_root)
-        spawn_x, spawn_y, spawn_z = win.world_renderer.spawn_position
-        win.player = PlayerController(x=spawn_x, y=spawn_y, z=spawn_z)
+        win._rebuild_world_runtime()
         win.inventory = Inventory()
         win.hotbar = Hotbar(win.inventory)
         win.inventory.set(0, ItemStack(3, 32), win.item_registry)
@@ -79,7 +76,6 @@ class WorldManager:
             win.player_health = saved.health
             win.hotbar.select(saved.selected_slot)
             self.restore_player_position(saved.position)
-        win.entities = EntitySimulation(seed=win.world_renderer.generator.seed.value)
         win._gameplay._maintain_population((win.player.x, win.player.y, win.player.z))
         win.network_players.clear()
         win.remote_player_entities.clear()

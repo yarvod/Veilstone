@@ -119,17 +119,7 @@ class GameWindow(pyglet.window.Window):
         self.menu = MenuController()
         self.game_state = GameStateMachine()
         self.ui_renderer = UiRenderer(self.width, self.height)
-        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
-        self.world_runtime = build_local_world_runtime(
-            spawn_position=(spawn_x, spawn_y, spawn_z),
-            entity_seed=self.world_renderer.generator.seed.value,
-            storage=self.world_renderer.storage,
-            block_registry=self.world_renderer.registry,
-            generation=self.world_renderer.generator,
-            streaming=self.world_renderer.streamer,
-            renderer=self.world_renderer,
-        )
-        self.player = self.world_runtime.player_state
+        spawn_x, spawn_y, spawn_z = self._rebuild_world_runtime()
         self._sync_camera_to_player()
         self.key_state = KeyState()
         self.item_registry = self.app_runtime.content_registries.item_registry
@@ -156,7 +146,6 @@ class GameWindow(pyglet.window.Window):
             self._sync_camera_to_player()
         recipes_path = resource_path("config/recipes.toml")
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
-        self.entities = self.world_runtime.entity_simulation
         self._gameplay._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
         self.structure_world = self.world_renderer.storage.load_structure_world()
@@ -581,6 +570,21 @@ class GameWindow(pyglet.window.Window):
 
     def _sync_camera_to_player(self) -> None:
         self.camera.x, self.camera.y, self.camera.z = self.player.eye_position
+
+    def _rebuild_world_runtime(self) -> tuple[float, float, float]:
+        spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
+        self.world_runtime = build_local_world_runtime(
+            spawn_position=(spawn_x, spawn_y, spawn_z),
+            entity_seed=self.world_renderer.generator.seed.value,
+            storage=self.world_renderer.storage,
+            block_registry=self.world_renderer.registry,
+            generation=self.world_renderer.generator,
+            streaming=self.world_renderer.streamer,
+            renderer=self.world_renderer,
+        )
+        self.player = self.world_runtime.player_state
+        self.entities = self.world_runtime.entity_simulation
+        return spawn_x, spawn_y, spawn_z
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
