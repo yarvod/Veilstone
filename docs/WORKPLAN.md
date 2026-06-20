@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.6 moved `GameWindow` registry/generator/streamer reads from direct renderer fields to runtime accessors.
+Последний завершённый шаг: A8.7 moved `GameplayController` generator/registry reads from direct renderer fields to `world_runtime`.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 

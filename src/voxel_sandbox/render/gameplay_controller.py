@@ -19,6 +19,8 @@ from voxel_sandbox.app.commands import (
 )
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
+from voxel_sandbox.domain.blocks import BlockRegistry
+from voxel_sandbox.engine.generation import TerrainGenerator
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -31,6 +33,12 @@ class GameplayController:
             texture_packs=win.app_runtime.texture_packs,
             settings_store=win.app_runtime.settings_store,
         )
+
+    def _block_registry(self) -> BlockRegistry:
+        return cast(BlockRegistry, self.win.world_runtime.block_registry)
+
+    def _terrain_generator(self) -> TerrainGenerator:
+        return cast(TerrainGenerator, self.win.world_runtime.generation)
 
     def execute_command(self, source: str) -> None:
         win = self.win
@@ -167,7 +175,7 @@ class GameplayController:
         hostile_count = 0 if win.settings.gameplay.difficulty == "peaceful" else 1
         win.entities.maintain_population(
             center,
-            win.world_renderer.generator.height_at,
+            self._terrain_generator().height_at,
             self._is_entity_hazard,
             hostile_count=hostile_count,
             hostile_spawn_allowed=self._hostile_spawn_allowed,
@@ -184,4 +192,4 @@ class GameplayController:
 
     def _is_entity_hazard(self, x: int, y: int, z: int) -> bool:
         block_id = self.win.world_renderer.get_block(x, y, z)
-        return self.win.world_renderer.registry.by_id(block_id).is_fluid
+        return self._block_registry().by_id(block_id).is_fluid
