@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 BlockGetter = Callable[[int, int, int], int]
 SolidChecker = Callable[[int, int, int], bool]
 FluidChecker = Callable[[int, int, int], bool]
+
+_COYOTE_TIME: float = 0.12
+_JUMP_BUFFER_TIME: float = 0.12
+# Extra gravity scale when rising with jump released (variable height)
+_JUMP_CUT_GRAVITY_SCALE: float = 2.5
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +19,7 @@ class PlayerInput:
     forward: float = 0.0
     right: float = 0.0
     jump: bool = False
+    sprint: bool = False
 
 
 @dataclass(slots=True)
@@ -28,11 +34,15 @@ class PlayerController:
     height: float = 1.8
     eye_height: float = 1.62
     walk_speed: float = 5.0
+    sprint_speed: float = 8.0
     swim_speed: float = 3.0
     jump_speed: float = 8.0
     gravity: float = 24.0
     water_gravity: float = 4.0
     buoyancy: float = 12.0
+    _coyote_timer: float = field(default=0.0, init=False)
+    _jump_buffer_timer: float = field(default=0.0, init=False)
+    _prev_jump: bool = field(default=False, init=False)
 
     @property
     def eye_position(self) -> tuple[float, float, float]:
@@ -56,6 +66,18 @@ class PlayerController:
             feet_z = math.floor(self.z)
             self.in_water = is_fluid(feet_x, feet_y, feet_z)
 
+        # Jump buffer: detect rising edge so a tap is remembered for _JUMP_BUFFER_TIME seconds
+        if player_input.jump and not self._prev_jump:
+            self._jump_buffer_timer = _JUMP_BUFFER_TIME
+        elif self._jump_buffer_timer > 0.0:
+            self._jump_buffer_timer = max(0.0, self._jump_buffer_timer - delta_time)
+        self._prev_jump = player_input.jump
+
+        # Sample coyote availability before decrementing so the last frame still counts
+        coyote_available = self._coyote_timer > 0.0
+        if self._coyote_timer > 0.0:
+            self._coyote_timer = max(0.0, self._coyote_timer - delta_time)
+
         if self.in_water:
             if player_input.jump:
                 self.velocity_y = min(self.velocity_y + self.buoyancy * delta_time, 4.0)
@@ -63,9 +85,15 @@ class PlayerController:
                 self.velocity_y -= self.water_gravity * delta_time
             self.velocity_y *= max(0.0, 1.0 - 3.0 * delta_time)
         else:
-            if player_input.jump and self.on_ground:
+            can_jump = self.on_ground or coyote_available
+            if self._jump_buffer_timer > 0.0 and can_jump:
                 self.velocity_y = self.jump_speed
                 self.on_ground = False
+                self._coyote_timer = 0.0
+                self._jump_buffer_timer = 0.0
+            # Variable jump height: rising without holding jump → cut faster
+            if not player_input.jump and self.velocity_y > 0.0:
+                self.velocity_y -= self.gravity * (_JUMP_CUT_GRAVITY_SCALE - 1.0) * delta_time
             self.velocity_y -= self.gravity * delta_time
 
         length = math.hypot(player_input.forward, player_input.right)
@@ -74,17 +102,28 @@ class PlayerController:
         yaw = math.radians(yaw_degrees)
         forward_x, forward_z = math.cos(yaw), math.sin(yaw)
         right_x, right_z = -forward_z, forward_x
-        speed = self.swim_speed if self.in_water else self.walk_speed
+        speed = (
+            self.swim_speed
+            if self.in_water
+            else (self.sprint_speed if player_input.sprint else self.walk_speed)
+        )
         delta_x = (forward_x * forward + right_x * right) * speed * delta_time
         delta_z = (forward_z * forward + right_z * right) * speed * delta_time
 
         self._move_axis("x", delta_x, solid)
         self._move_axis("z", delta_z, solid)
         collided_y = self._move_axis("y", self.velocity_y * delta_time, solid)
+
         if collided_y:
-            self.on_ground = self.velocity_y < 0.0
+            newly_on_ground = self.velocity_y < 0.0
             self.velocity_y = 0.0
-        elif self.velocity_y > 0.0:
+            if newly_on_ground:
+                self._coyote_timer = 0.0
+            self.on_ground = newly_on_ground
+        else:
+            if self.on_ground:
+                # Just left the ground (walked off ledge) — start coyote window
+                self._coyote_timer = _COYOTE_TIME
             self.on_ground = False
 
     def intersects_block(self, block: tuple[int, int, int]) -> bool:

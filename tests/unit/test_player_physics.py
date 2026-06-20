@@ -40,6 +40,108 @@ def test_player_jumps_only_from_ground() -> None:
     assert player.velocity_y < first_velocity
 
 
+def _ledge_world(x: int, y: int, z: int) -> int:
+    """Ground exists only for x < 2; infinite drop beyond."""
+    del z
+    if y <= 0 and x < 2:
+        return 1
+    return 0
+
+
+def _walk_off_ledge(start_x: float = 1.8) -> PlayerController:
+    """Return a player that has just walked off the ledge (in air with coyote active)."""
+    player = PlayerController(x=start_x, y=1.0, z=0.5, on_ground=True)
+    dt = 1.0 / 60.0
+    # Walk until fully off the ledge (back edge past x=2, i.e. player.x >= 2.3)
+    for _ in range(20):
+        player.update(PlayerInput(forward=1.0), 0.0, dt, _ledge_world)
+        if not player.on_ground:
+            break
+    return player
+
+
+def test_coyote_time_allows_jump_after_leaving_ledge() -> None:
+    player = _walk_off_ledge()
+    assert not player.on_ground
+    assert player._coyote_timer > 0.0
+    # Jump within the coyote window
+    dt = 1.0 / 60.0
+    player.update(PlayerInput(forward=1.0, jump=True), 0.0, dt, _ledge_world)
+    assert player.velocity_y > 0.0
+
+
+def test_coyote_time_expires_before_jump() -> None:
+    player = _walk_off_ledge()
+    assert not player.on_ground
+    dt = 1.0 / 60.0
+    # Wait for coyote window to expire
+    for _ in range(20):
+        player.update(PlayerInput(), 0.0, dt, _ledge_world)
+    assert player._coyote_timer == 0.0
+    # Now press jump: should NOT fire (no ground, no coyote)
+    before_vy = player.velocity_y
+    player.update(PlayerInput(jump=True), 0.0, dt, _ledge_world)
+    assert player.velocity_y <= before_vy  # gravity only, no jump boost
+
+
+def test_jump_buffer_fires_on_landing() -> None:
+    # Player just above ground: pressing jump mid-air fires on contact
+    player = PlayerController(x=0.5, y=1.1, z=0.5)
+    dt = 1.0 / 60.0
+    # One tap of jump while in air
+    player.update(PlayerInput(jump=True), 0.0, dt, flat_world)
+    # Release jump and fall toward ground
+    for _ in range(10):
+        player.update(PlayerInput(), 0.0, dt, flat_world)
+    # Buffer should have fired on landing
+    assert player.velocity_y > 0.0
+
+
+def test_jump_buffer_expires_before_landing() -> None:
+    # Player far above ground: buffer expires before landing
+    player = PlayerController(x=0.5, y=3.0, z=0.5)
+    dt = 1.0 / 60.0
+    player.update(PlayerInput(jump=True), 0.0, dt, flat_world)
+    # Fall long enough for buffer to expire, then land
+    for _ in range(120):
+        player.update(PlayerInput(), 0.0, dt, flat_world)
+    assert player.on_ground
+    assert player.velocity_y == 0.0  # landed quietly, no jump
+
+
+def test_variable_jump_height_shorter_when_released() -> None:
+    # Holding jump all the way gives more height than tapping
+    def max_height_with_hold() -> float:
+        player = PlayerController(x=0.5, y=1.0, z=0.5, on_ground=True)
+        dt = 1.0 / 60.0
+        player.update(PlayerInput(jump=True), 0.0, dt, flat_world)
+        for _ in range(30):
+            player.update(PlayerInput(jump=True), 0.0, dt, flat_world)
+        return player.y
+
+    def max_height_with_tap() -> float:
+        player = PlayerController(x=0.5, y=1.0, z=0.5, on_ground=True)
+        dt = 1.0 / 60.0
+        player.update(PlayerInput(jump=True), 0.0, dt, flat_world)
+        # Immediately release
+        for _ in range(30):
+            player.update(PlayerInput(), 0.0, dt, flat_world)
+        return player.y
+
+    assert max_height_with_hold() > max_height_with_tap()
+
+
+def test_sprint_moves_faster_than_walk() -> None:
+    def travel(sprint: bool) -> float:
+        player = PlayerController(x=0.5, y=1.0, z=0.5, on_ground=True)
+        dt = 1.0 / 60.0
+        for _ in range(60):
+            player.update(PlayerInput(forward=1.0, sprint=sprint), 0.0, dt, flat_world)
+        return player.x
+
+    assert travel(sprint=True) > travel(sprint=False)
+
+
 def test_player_intersection_prevents_placing_inside_body() -> None:
     player = PlayerController(x=0.5, y=1.0, z=0.5)
     assert player.intersects_block((0, 1, 0))

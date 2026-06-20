@@ -50,6 +50,7 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
+from voxel_sandbox.render.head_bob import HeadBob
 from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
     InputHandler,
@@ -123,6 +124,7 @@ class GameWindow(pyglet.window.Window):
             ShaderFiles.from_directory(shader_root, "debug"),
         )
         self.camera = FirstPersonCamera()
+        self._head_bob = HeadBob()
         self.sky_renderer = SkyRenderer(self.mgl_context, clouds=settings.graphics.clouds)
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
@@ -363,11 +365,13 @@ class GameWindow(pyglet.window.Window):
         right = float(self.key_state.is_pressed(self.control_bindings["right"])) - float(
             self.key_state.is_pressed(self.control_bindings["left"])
         )
+        sprint = self.key_state.is_pressed(key.LSHIFT) or self.key_state.is_pressed(key.RSHIFT)
         self.player.update(
             PlayerInput(
                 forward=forward,
                 right=right,
                 jump=self.key_state.is_pressed(self.control_bindings["jump"]),
+                sprint=sprint,
             ),
             self.camera.yaw_degrees,
             delta_time,
@@ -376,10 +380,12 @@ class GameWindow(pyglet.window.Window):
             is_fluid=self._is_fluid_at,
         )
         moving = abs(forward) + abs(right) > 0.0
+        self._head_bob.update(moving, self.player.on_ground, delta_time)
         if moving and self.player.on_ground:
             self._footstep_accumulator += delta_time
-            if self._footstep_accumulator >= 0.42:
-                self._footstep_accumulator %= 0.42
+            footstep_interval = 0.28 if sprint else 0.42
+            if self._footstep_accumulator >= footstep_interval:
+                self._footstep_accumulator %= footstep_interval
                 block_id = self.world_renderer.get_block(
                     math.floor(self.player.x),
                     math.floor(self.player.y - 0.05),
@@ -589,7 +595,10 @@ class GameWindow(pyglet.window.Window):
         }
 
     def _sync_camera_to_player(self) -> None:
-        self.camera.x, self.camera.y, self.camera.z = self.player.eye_position
+        ex, ey, ez = self.player.eye_position
+        self.camera.x = ex
+        self.camera.y = ey + self._head_bob.offset_y
+        self.camera.z = ez
 
     def _rebuild_world_runtime(self) -> tuple[float, float, float]:
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
