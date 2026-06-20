@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol, cast
 
 from voxel_sandbox.app.paths import application_data_root, resource_path
 from voxel_sandbox.app.settings import AppSettings, load_settings, save_user_settings
@@ -16,10 +16,14 @@ from voxel_sandbox.audio.backend import AudioBackend
 from voxel_sandbox.audio.bus import AudioBus
 from voxel_sandbox.audio.director import AudioDirector
 from voxel_sandbox.audio.runtime import create_audio_bus
+from voxel_sandbox.domain.biomes import load_biome_registry_from_toml
+from voxel_sandbox.domain.blocks import load_block_registry_from_toml
 from voxel_sandbox.domain.items import ItemRegistry, load_item_registry_from_toml
 from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.events import EventBus
+from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
 from voxel_sandbox.engine.physics import PlayerController
+from voxel_sandbox.infrastructure.storage import WorldStorage
 
 
 class SettingsStorePort(Protocol):
@@ -79,6 +83,18 @@ class WorldRuntime:
     renderer: Any | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class WorldSceneDependencies:
+    """World data dependencies consumed by the current scene renderer."""
+
+    storage: WorldStorage
+    block_registry: Any
+    generation: TerrainGenerator
+    streaming: ChunkStreamer
+    world_name: str
+    seed_text: str
+
+
 def build_world_runtime(
     *,
     storage: Any | None = None,
@@ -130,6 +146,48 @@ def build_local_world_runtime(
         entity_simulation=entities,
         entity_world=entities.world,
         renderer=renderer,
+    )
+
+
+def build_world_scene_dependencies(
+    *,
+    seed: str,
+    save_root: Path,
+    render_distance: int,
+    generation_workers: int,
+    generation_backend: str,
+) -> WorldSceneDependencies:
+    """Build active-world storage, generation, and streaming dependencies."""
+
+    storage = WorldStorage(save_root)
+    metadata = storage.load_metadata()
+    active_seed = metadata.seed if metadata is not None else seed
+    world_name = metadata.name if metadata is not None else "Development World"
+    if metadata is None:
+        storage.ensure_world(name=world_name, seed=active_seed)
+
+    block_registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
+    biome_registry = load_biome_registry_from_toml(resource_path("data/biomes.toml"))
+    generator = TerrainGenerator(
+        WorldSeed.parse(active_seed),
+        block_registry=block_registry,
+        biome_registry=biome_registry,
+    )
+    streamer = ChunkStreamer(
+        generator,
+        render_distance=render_distance,
+        workers=generation_workers,
+        backend=cast(Literal["thread", "process"], generation_backend),
+        prepare_lighting=True,
+        storage=storage,
+    )
+    return WorldSceneDependencies(
+        storage=storage,
+        block_registry=block_registry,
+        generation=generator,
+        streaming=streamer,
+        world_name=world_name,
+        seed_text=active_seed,
     )
 
 

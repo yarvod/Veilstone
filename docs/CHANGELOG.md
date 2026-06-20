@@ -4,6 +4,8 @@
 
 ### Added
 
+- **World scene dependency builder** - storage, block registry, terrain generator, and chunk streamer construction now lives behind `build_world_scene_dependencies()` and is passed into `DemoWorldRenderer`.
+
 - **Architecture stabilization plan** — added `docs/ARCHITECTURE.md` with current dependency map, target layers, composition root strategy, ports/adapters, GameWindow/controller migration, DemoWorldRenderer split, and staged import-linter contracts.
 - **Architecture guardrail** — configured import-linter in `pyproject.toml`; `uv run lint-imports` now enforces that `voxel_sandbox.domain` does not import external adapter layers.
 - **Manual composition skeleton** — added `AppRuntime` and `WorldRuntime` dataclass contexts in `app/composition.py` for future wiring extraction.

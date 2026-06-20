@@ -7,6 +7,7 @@ from voxel_sandbox.app.composition import (
     build_app_runtime,
     build_local_world_runtime,
     build_world_runtime,
+    build_world_scene_dependencies,
 )
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio.backend import NullAudioBackend
@@ -15,7 +16,9 @@ from voxel_sandbox.audio.director import AudioDirector
 from voxel_sandbox.domain.items import ItemRegistry
 from voxel_sandbox.engine.ecs import EntitySimulation
 from voxel_sandbox.engine.events import EventBus
+from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator
 from voxel_sandbox.engine.physics import PlayerController
+from voxel_sandbox.infrastructure.storage import WorldStorage
 
 
 def test_build_app_runtime_composes_app_level_dependencies(tmp_path: Path) -> None:
@@ -92,3 +95,21 @@ def test_build_local_world_runtime_creates_player_and_entity_simulation() -> Non
     )
     assert isinstance(runtime.entity_simulation, EntitySimulation)
     assert runtime.entity_world is runtime.entity_simulation.world
+
+
+def test_build_world_scene_dependencies_composes_world_ownership(tmp_path: Path) -> None:
+    dependencies = build_world_scene_dependencies(
+        seed="composition-seed",
+        save_root=tmp_path / "world",
+        render_distance=0,
+        generation_workers=1,
+        generation_backend="thread",
+    )
+
+    assert isinstance(dependencies.storage, WorldStorage)
+    assert dependencies.storage.load_metadata() is not None
+    assert dependencies.block_registry.by_key("dirt").id == 2
+    assert isinstance(dependencies.generation, TerrainGenerator)
+    assert isinstance(dependencies.streaming, ChunkStreamer)
+    assert dependencies.world_name == "Development World"
+    assert dependencies.seed_text == "composition-seed"

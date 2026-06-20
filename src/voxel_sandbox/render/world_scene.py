@@ -9,9 +9,10 @@ from typing import Literal, cast
 import moderngl
 import numpy as np
 
-from voxel_sandbox.app.paths import resource_path
-from voxel_sandbox.domain.biomes import load_biome_registry_from_toml
-from voxel_sandbox.domain.blocks import load_block_registry_from_toml
+from voxel_sandbox.app.composition import (
+    WorldSceneDependencies,
+    build_world_scene_dependencies,
+)
 from voxel_sandbox.engine.chunks import (
     CHUNK_HEIGHT,
     SECTION_SIZE,
@@ -22,15 +23,9 @@ from voxel_sandbox.engine.chunks import (
     split_world_axis,
 )
 from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
-from voxel_sandbox.engine.generation import (
-    ChunkStreamer,
-    TerrainGenerator,
-    WorldSeed,
-    find_safe_spawn,
-)
+from voxel_sandbox.engine.generation import find_safe_spawn
 from voxel_sandbox.engine.lighting import effective_light_level, relight_chunks
 from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
-from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.render.atmosphere import (
     celestial_light_direction,
     daylight_factor,
@@ -80,6 +75,7 @@ class DemoWorldRenderer:
         shadow_bias: float,
         save_root: Path,
         resource_pack_path: str = "",
+        world_dependencies: WorldSceneDependencies | None = None,
     ) -> None:
         self.context = context
         shader_root = Path(__file__).parent / "shaders" / "glsl"
@@ -90,7 +86,21 @@ class DemoWorldRenderer:
         self.shadow_shader = ShaderProgram(
             context, ShaderFiles.from_directory(shader_root, "shadow_depth")
         )
-        self.registry = load_block_registry_from_toml(resource_path("data/blocks.toml"))
+        if world_dependencies is None:
+            world_dependencies = build_world_scene_dependencies(
+                seed=seed,
+                save_root=save_root,
+                render_distance=render_distance,
+                generation_workers=generation_workers,
+                generation_backend=generation_backend,
+            )
+        self.storage = world_dependencies.storage
+        self.registry = world_dependencies.block_registry
+        self.generator = world_dependencies.generation
+        self.streamer = world_dependencies.streaming
+        self.world_name = world_dependencies.world_name
+        self.seed_text = world_dependencies.seed_text
+
         pack_path = Path(resource_pack_path) if resource_pack_path else None
         atlas = load_active_block_atlas(
             pack_path,
@@ -119,27 +129,6 @@ class DemoWorldRenderer:
         self._fluid_accumulator = 0.0
         self._fluid_chunk_cursor = 0
         self.remote_mode = False
-        self.storage = WorldStorage(save_root)
-        metadata = self.storage.load_metadata()
-        active_seed = metadata.seed if metadata is not None else seed
-        self.world_name = metadata.name if metadata is not None else "Development World"
-        self.seed_text = active_seed
-        if metadata is None:
-            self.storage.ensure_world(name=self.world_name, seed=active_seed)
-        biome_registry = load_biome_registry_from_toml(resource_path("data/biomes.toml"))
-        self.generator = TerrainGenerator(
-            WorldSeed.parse(active_seed),
-            block_registry=self.registry,
-            biome_registry=biome_registry,
-        )
-        self.streamer = ChunkStreamer(
-            self.generator,
-            render_distance=render_distance,
-            workers=generation_workers,
-            backend=cast(Literal["thread", "process"], generation_backend),
-            prepare_lighting=True,
-            storage=self.storage,
-        )
         if (
             self.shader.program is None
             or self.water_shader.program is None

@@ -16,7 +16,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### WATCH-A001: GameWindow still owns runtime construction
 
-- **Status:** investigating
+- **Status:** partial mitigation in progress
 - **Affected area:** `render/window.py`
 - **Notes:** Tracked by Phase A A4/A5. This is architectural debt rather than a user-visible bug.
 
@@ -28,6 +28,6 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### WATCH-A003: DemoWorldRenderer owns world and rendering concerns
 
-- **Status:** investigating
+- **Status:** partial mitigation in progress
 - **Affected area:** `render/world_scene.py`
-- **Notes:** Tracked by Phase A A8.
+- **Notes:** Tracked by Phase A A8. Storage/block registry/generator/streamer construction now starts in composition, but renderer still exposes and calls world lifecycle fields directly.

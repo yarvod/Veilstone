@@ -51,10 +51,12 @@
 
 ## Immediate Next Step
 
-Следующий кодовый шаг: start A8 renderer/world ownership boundary split.
+Последний завершённый шаг: A8.1 moved world scene storage/block registry/generator/streamer construction behind `build_world_scene_dependencies()` and passed those dependencies into `DemoWorldRenderer`.
 
-1. Do not move storage/generation out of `DemoWorldRenderer` until A8.
-2. Start with a low-risk ownership boundary, not a renderer rewrite.
+Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
+
+1. Move the next small world lifecycle caller from direct renderer fields toward `WorldRuntime`/ports.
+2. Keep draw behavior unchanged; do not split the renderer class wholesale yet.
 3. Keep command and UI resource pack behavior covered by use case tests.
 4. Проверить `uv run lint-imports`, `uv run ruff check .`, `uv run ruff format --check .`, focused tests.
 

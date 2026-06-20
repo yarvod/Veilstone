@@ -13,7 +13,12 @@ import numpy as np
 import pyglet
 from pyglet.window import key
 
-from voxel_sandbox.app.composition import AppRuntime, build_app_runtime, build_local_world_runtime
+from voxel_sandbox.app.composition import (
+    AppRuntime,
+    build_app_runtime,
+    build_local_world_runtime,
+    build_world_scene_dependencies,
+)
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
@@ -591,6 +596,13 @@ class GameWindow(pyglet.window.Window):
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
+        world_dependencies = build_world_scene_dependencies(
+            seed=settings.world.seed,
+            save_root=save_root,
+            render_distance=settings.world.render_distance,
+            generation_workers=settings.world.generation_workers,
+            generation_backend=settings.world.generation_backend,
+        )
         return DemoWorldRenderer(
             self.mgl_context,
             seed=settings.world.seed,
@@ -612,6 +624,7 @@ class GameWindow(pyglet.window.Window):
             shadow_bias=settings.graphics.shadow_bias,
             save_root=save_root,
             resource_pack_path=settings.graphics.resource_pack_path,
+            world_dependencies=world_dependencies,
         )
 
 
