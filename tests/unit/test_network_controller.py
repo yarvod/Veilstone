@@ -129,6 +129,23 @@ class TestSendBlockAction:
         nc.send_block_action((0, 0, 0), 1)  # should not raise
 
 
+class TestLocalAuthority:
+    def test_loads_structure_world_from_runtime_storage(self):
+        win = _make_win()
+        storage = MagicMock()
+        structure_world = MagicMock()
+        structure_world.revision = 7
+        storage.load_structure_world.return_value = structure_world
+        win.world_runtime.storage = storage
+
+        nc = NetworkController(win)
+        nc.start_local_authority()
+
+        storage.load_structure_world.assert_called_once_with()
+        assert win.structure_world is structure_world
+        assert win.last_structure_revision == 7
+
+
 class TestApplyLanBlockActions:
     def test_drains_queue_and_sets_blocks(self):
         win = _make_win()

@@ -9,6 +9,7 @@ from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureW
 from voxel_sandbox.engine.authority import LocalWorldAuthority, NetworkWorldAuthority
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.ecs import AnimationState, RenderModel, Transform
+from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import ClientSession, LanServer, Message, decode_chunk_blocks
 from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
@@ -235,14 +236,14 @@ class NetworkController:
         if win.network_session is not None:
             win.menu.status = "Cannot open a multiplayer game to LAN."
             return
+        storage = cast(WorldStorage, win.world_runtime.storage)
         win.world_renderer.autosave()
-        if win.world_renderer.storage is not None:
-            win.world_renderer.storage.save_structure_world(win.structure_world)
+        storage.save_structure_world(win.structure_world)
         server = LanServer(
             "0.0.0.0",
             25565,
             seed=win.world_renderer.seed_text,
-            storage=win.world_renderer.storage,
+            storage=storage,
             block_action_sink=lambda position, block_id: win.lan_block_actions.put(
                 (position, block_id)
             ),
@@ -291,11 +292,8 @@ class NetworkController:
 
     def start_local_authority(self) -> None:
         win = self.win
-        win.structure_world = (
-            win.world_renderer.storage.load_structure_world()
-            if win.world_renderer.storage is not None
-            else StructureWorld()
-        )
+        storage = cast(WorldStorage, win.world_runtime.storage)
+        win.structure_world = storage.load_structure_world()
         win.last_structure_revision = win.structure_world.revision
         win.authority = LocalWorldAuthority(
             win.structure_world,

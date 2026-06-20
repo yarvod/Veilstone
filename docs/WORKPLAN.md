@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.4 moved `WorldManager` player save/restore and structure loading from direct renderer storage to `world_runtime.storage`.
+Последний завершённый шаг: A8.5 moved `NetworkController` LAN/authority structure storage calls from direct renderer storage to `world_runtime.storage`.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 
