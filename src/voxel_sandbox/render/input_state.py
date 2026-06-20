@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 try:
     from pyglet.window import key, mouse
@@ -38,6 +38,7 @@ except (ImportError, IndexError):
 
 
 from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.events import BlockBroken, BlockPlaced, EntityDamaged, EntityDied
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextPurpose
@@ -279,7 +280,8 @@ class InputHandler:
             return
         if button == mouse.LEFT:
             block_id = win.world_renderer.get_block(*hit.block)
-            if win.world_renderer.registry.by_id(block_id).is_fluid:
+            block_registry = cast(BlockRegistry, win.world_runtime.block_registry)
+            if block_registry.by_id(block_id).is_fluid:
                 win.inventory_status = "Water cannot be mined"
                 return
             if win.world_renderer.set_block(hit.block, 0):

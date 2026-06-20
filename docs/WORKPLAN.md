@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.7 moved `GameplayController` generator/registry reads from direct renderer fields to `world_runtime`.
+Последний завершённый шаг: A8.8 moved `InputHandler` mining fluid checks from direct renderer registry to `world_runtime.block_registry`.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 
