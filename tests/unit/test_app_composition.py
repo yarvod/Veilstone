@@ -19,6 +19,7 @@ from voxel_sandbox.engine.events import EventBus
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator
 from voxel_sandbox.engine.physics import PlayerController
 from voxel_sandbox.infrastructure.storage import WorldStorage
+from voxel_sandbox.render.texture_packs.service import RenderTexturePackService
 
 
 def test_build_app_runtime_composes_app_level_dependencies(tmp_path: Path) -> None:
@@ -38,6 +39,7 @@ def test_build_app_runtime_composes_app_level_dependencies(tmp_path: Path) -> No
     assert isinstance(runtime.audio_director, AudioDirector)
     assert isinstance(runtime.content_registries.item_registry, ItemRegistry)
     assert runtime.content_registries.item_registry.by_key("dirt").block_id == 2
+    assert isinstance(runtime.texture_packs, RenderTexturePackService)
 
 
 def test_user_settings_store_round_trips_user_settings(tmp_path: Path) -> None:

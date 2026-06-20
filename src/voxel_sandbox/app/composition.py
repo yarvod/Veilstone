@@ -24,6 +24,7 @@ from voxel_sandbox.engine.events import EventBus
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
 from voxel_sandbox.engine.physics import PlayerController
 from voxel_sandbox.infrastructure.storage import WorldStorage
+from voxel_sandbox.render.texture_packs.service import RenderTexturePackService
 
 
 class SettingsStorePort(Protocol):
@@ -197,6 +198,7 @@ def build_app_runtime(
     data_root: Path | None = None,
     settings_store: SettingsStorePort | None = None,
     audio_backend: AudioBackend | None = None,
+    texture_packs: Any | None = None,
 ) -> AppRuntime:
     """Build app-lifetime dependencies without constructing a window or world."""
 
@@ -211,4 +213,5 @@ def build_app_runtime(
             item_registry=load_item_registry_from_toml(resource_path("data/items.toml")),
         ),
         settings_store=settings_store or UserSettingsStore(),
+        texture_packs=texture_packs or RenderTexturePackService(),
     )

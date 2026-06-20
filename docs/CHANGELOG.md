@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Phase A architecture stabilization closeout** - `WORKPLAN` now marks A4/A5/A8/A9 completed; app runtime owns texture-pack service wiring and isolated subsystem test coverage was audited.
+- **AppRuntime texture-pack service** - `build_app_runtime()` now wires `RenderTexturePackService`, removing the remaining texture-pack service construction from `GameWindow`.
 - **DemoWorldRenderer ownership fields private** - storage, registry, generator, and streamer are no longer public renderer fields after external callers moved to runtime context.
 - **Inventory runtime block registry** - inventory item icon setup now uses `world_runtime.block_registry`; external callers no longer reach into `world_renderer.storage/registry/generator/streamer`.
 - **InputHandler runtime block registry** - mining fluid checks now use `world_runtime.block_registry` instead of direct renderer registry access.
