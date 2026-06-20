@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.8 moved `InputHandler` mining fluid checks from direct renderer registry to `world_runtime.block_registry`.
+Последний завершённый шаг: A8.9 moved inventory item icon block registry access to `world_runtime.block_registry`; external `world_renderer.storage/registry/generator/streamer` callers are gone.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 

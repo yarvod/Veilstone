@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Inventory runtime block registry** - inventory item icon setup now uses `world_runtime.block_registry`; external callers no longer reach into `world_renderer.storage/registry/generator/streamer`.
 - **InputHandler runtime block registry** - mining fluid checks now use `world_runtime.block_registry` instead of direct renderer registry access.
 - **GameplayController runtime world reads** - population and hazard checks now read terrain generation/block registry through `world_runtime` instead of renderer-owned fields.
 - **GameWindow runtime world accessors** - window-local registry, terrain generator, and chunk streamer reads now go through runtime accessors instead of direct renderer fields.

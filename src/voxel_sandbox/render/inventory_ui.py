@@ -5,10 +5,11 @@ from __future__ import annotations
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pyglet
 
+from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
@@ -194,7 +195,8 @@ class InventoryController:
     def __init__(self, win: GameWindow) -> None:
         self.win = win
 
-        self.item_icon_images = create_item_icons(win.item_registry, win.world_renderer.registry)
+        block_registry = cast(BlockRegistry, win.world_runtime.block_registry)
+        self.item_icon_images = create_item_icons(win.item_registry, block_registry)
         self.heart_images = create_heart_icons()
         self.heart_sprites = [
             pyglet.sprite.Sprite(self.heart_images[0], batch=win.hud_batch, group=win.hud_fg_group)
