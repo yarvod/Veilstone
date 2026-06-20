@@ -20,9 +20,16 @@
 - [x] Sprint: Shift → 8 m/s вместо 5 m/s, частота шагов уменьшается до 0.28 s.
 - [x] Head bob: плавная вертикальная осцилляция камеры (±0.04 ед.) при ходьбе.
 
+#### Phase B2: Water — DONE
+
+- [x] Cross-chunk water flow: `simulate_water_step` принимает `neighbors` dict, вода перетекает через границы чанков.
+- [x] Infinite source creation: flowing block рядом с 2+ источниками становится источником.
+- [x] Все загруженные чанки тикаются каждые 0.2 s вместо round-robin одного.
+- [x] `FluidUpdate.neighbor_keys` передаёт dirty-соседей вызывающей стороне.
+
 #### Immediate Next Step
 
-Следующее gameplay-направление из списка: **water** (full water simulation), **Twilight-like generation**, **3D player**, **UI polish**, **mobs**, **network**, или **resource packs**.
+Следующее gameplay-направление из списка: **Twilight-like generation**, **3D player**, **UI polish**, **mobs**, **network**, или **resource packs**.
 
 ---
 

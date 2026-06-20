@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Water improvements (Phase B2)** — water now flows across chunk boundaries; two adjacent source blocks fill the gap with a new source block (infinite water mechanic); all loaded chunks are ticked together each 0.2 s step instead of one at a time, so a lake across multiple chunks propagates at full speed.
+
 - **Player feel overhaul (Phase B1)** — coyote time (0.12 s), jump buffering (0.12 s), variable jump height (release Space while rising for a shorter arc), sprint (Shift → 8 m/s, faster footstep cadence), and subtle head bob camera oscillation when walking.
 
 - **Phase A architecture stabilization closeout** - `WORKPLAN` now marks A4/A5/A8/A9 completed; app runtime owns texture-pack service wiring and isolated subsystem test coverage was audited.
