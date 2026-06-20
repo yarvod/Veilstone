@@ -38,6 +38,7 @@ from voxel_sandbox.engine.events import (
     EntityDied,
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
+from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator
 from voxel_sandbox.engine.physics import PlayerInput
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import (
@@ -240,6 +241,15 @@ class GameWindow(pyglet.window.Window):
         del delta_time
         self.debug_shader.reload_if_changed()
 
+    def _block_registry(self) -> BlockRegistry:
+        return cast(BlockRegistry, self.world_runtime.block_registry)
+
+    def _terrain_generator(self) -> TerrainGenerator:
+        return cast(TerrainGenerator, self.world_runtime.generation)
+
+    def _chunk_streamer(self) -> ChunkStreamer:
+        return cast(ChunkStreamer, self.world_runtime.streaming)
+
     def _is_solid_combined(self, x: int, y: int, z: int) -> bool:
         return self.world_renderer.is_solid_block(x, y, z) or (
             hasattr(self, "structure_world") and self.structure_world.is_solid_cell(x, y, z)
@@ -249,7 +259,7 @@ class GameWindow(pyglet.window.Window):
         block_id = self.world_renderer.get_block(x, y, z)
         if block_id == 0:
             return False
-        return self.world_renderer.registry.by_id(block_id).is_fluid
+        return self._block_registry().by_id(block_id).is_fluid
 
     def fixed_update(self, delta_time: float) -> None:
         self._net.apply_lan_block_actions()
@@ -264,7 +274,7 @@ class GameWindow(pyglet.window.Window):
         self.audio_director.set_game_state(
             "night" if self.world_renderer.daylight < 0.25 else "exploration"
         )
-        terrain_height = self.world_renderer.generator.height_at(
+        terrain_height = self._terrain_generator().height_at(
             math.floor(self.player.x), math.floor(self.player.z)
         )
         self.audio_director.set_biome("cave" if self.player.y < terrain_height - 3 else "surface")
@@ -316,7 +326,7 @@ class GameWindow(pyglet.window.Window):
         player_damage = self.entities.update(
             delta_time,
             (self.player.x, self.player.y, self.player.z),
-            self.world_renderer.generator.height_at,
+            self._terrain_generator().height_at,
             self._gameplay._is_entity_hazard,
             self._is_solid_combined,
         )
@@ -364,7 +374,7 @@ class GameWindow(pyglet.window.Window):
             ),
             self.camera.yaw_degrees,
             delta_time,
-            self.world_renderer.streamer.get_block,
+            self._chunk_streamer().get_block,
             is_solid=self._is_solid_combined,
             is_fluid=self._is_fluid_at,
         )
@@ -378,7 +388,7 @@ class GameWindow(pyglet.window.Window):
                     math.floor(self.player.y - 0.05),
                     math.floor(self.player.z),
                 )
-                material = self.world_renderer.registry.by_id(block_id).material.value
+                material = self._block_registry().by_id(block_id).material.value
                 key_name = f"block.{material}"
                 key_name = key_name if key_name in self.audio.registry else "footstep"
                 self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, self.camera.position))
@@ -538,7 +548,7 @@ class GameWindow(pyglet.window.Window):
         self.events.subscribe(EntityDied, self._play_entity_died_event)
 
     def _play_block_event(self, event: BlockBroken | BlockPlaced) -> None:
-        material = self.world_renderer.registry.by_id(event.block_id).material.value
+        material = self._block_registry().by_id(event.block_id).material.value
         key_name = f"block.{material}"
         key_name = key_name if key_name in self.audio.registry else "footstep"
         self.audio.emit(

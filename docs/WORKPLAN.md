@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.5 moved `NetworkController` LAN/authority structure storage calls from direct renderer storage to `world_runtime.storage`.
+Последний завершённый шаг: A8.6 moved `GameWindow` registry/generator/streamer reads from direct renderer fields to runtime accessors.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 

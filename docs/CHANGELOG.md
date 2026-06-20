@@ -4,6 +4,7 @@
 
 ### Added
 
+- **GameWindow runtime world accessors** - window-local registry, terrain generator, and chunk streamer reads now go through runtime accessors instead of direct renderer fields.
 - **NetworkController runtime storage** - LAN structure save/load and local authority startup now use `world_runtime.storage`; added focused unit coverage for local authority structure loading.
 - **WorldManager runtime storage** - world switching and player save/restore now use `world_runtime.storage` instead of reaching through `world_renderer.storage`.
 - **WorldRuntime init callers** - initial player restore, structure world loading, and structure renderer registry wiring now read from `world_runtime` instead of direct renderer-owned world fields.
