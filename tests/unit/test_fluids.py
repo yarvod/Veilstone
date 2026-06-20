@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, ChunkSection
-from voxel_sandbox.engine.fluids import simulate_water_step
+from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
 from voxel_sandbox.render.meshes import build_greedy_mesh, build_visible_face_mesh, build_water_mesh
 from voxel_sandbox.tools.benchmark_mesher import UVS
 
@@ -64,3 +64,68 @@ def test_water_falls_then_spreads_horizontally_without_same_tick_cascade() -> No
     assert chunk.get_block(9, 9, 8) == 8
     section, local_y = divmod(9, 16)
     assert chunk.sections[section].metadata[9, local_y, 8] == 7
+
+
+def _chunk_with_stone_floor(coord: ChunkCoord) -> Chunk:
+    chunk = Chunk(coord)
+    for x in range(16):
+        for z in range(16):
+            chunk.set_block(x, 0, z, 1)  # stone floor
+    return chunk
+
+
+def test_water_flows_across_chunk_boundary() -> None:
+    """Water at the right edge of one chunk flows into the neighboring chunk."""
+    left = _chunk_with_stone_floor(ChunkCoord(0, 0))
+    right = _chunk_with_stone_floor(ChunkCoord(1, 0))
+
+    # Source water at x=15 (right edge of left chunk)
+    left.set_block(15, 1, 8, WATER_BLOCK_ID)
+    left.set_metadata(15, 1, 8, FLUID_MAX_LEVEL)
+
+    simulate_water_step(left, {(1, 0): right})
+
+    # Water should have entered the neighboring chunk at x=0
+    assert right.get_block(0, 1, 8) == WATER_BLOCK_ID
+
+
+def test_cross_chunk_flow_reports_neighbor_change() -> None:
+    left = _chunk_with_stone_floor(ChunkCoord(0, 0))
+    right = _chunk_with_stone_floor(ChunkCoord(1, 0))
+
+    left.set_block(15, 1, 8, WATER_BLOCK_ID)
+    left.set_metadata(15, 1, 8, FLUID_MAX_LEVEL)
+
+    result = simulate_water_step(left, {(1, 0): right})
+    assert (1, 0) in result.neighbor_keys
+
+
+def test_water_source_created_from_two_adjacent_sources() -> None:
+    """A gap between two source blocks fills and becomes a source."""
+    chunk = _chunk_with_stone_floor(ChunkCoord(0, 0))
+
+    # Two source blocks with a gap: (5,1,8) - gap at (6,1,8) - (7,1,8)
+    chunk.set_block(5, 1, 8, WATER_BLOCK_ID)
+    chunk.set_metadata(5, 1, 8, FLUID_MAX_LEVEL)
+    chunk.set_block(7, 1, 8, WATER_BLOCK_ID)
+    chunk.set_metadata(7, 1, 8, FLUID_MAX_LEVEL)
+
+    # First step: both sources spread toward the gap
+    simulate_water_step(chunk)
+    # Gap now has flowing water
+    assert chunk.get_block(6, 1, 8) == WATER_BLOCK_ID
+
+    # Second step: the gap block is adjacent to 2 sources → becomes a source
+    simulate_water_step(chunk)
+    sec, local_y = divmod(1, 16)
+    assert chunk.sections[sec].metadata[6, local_y, 8] == FLUID_MAX_LEVEL
+
+
+def test_no_cross_chunk_flow_without_neighbor() -> None:
+    """With no neighbor provided, water stops at the chunk boundary."""
+    left = _chunk_with_stone_floor(ChunkCoord(0, 0))
+    left.set_block(15, 1, 8, WATER_BLOCK_ID)
+    left.set_metadata(15, 1, 8, FLUID_MAX_LEVEL)
+
+    result = simulate_water_step(left, neighbors=None)
+    assert not result.neighbor_keys

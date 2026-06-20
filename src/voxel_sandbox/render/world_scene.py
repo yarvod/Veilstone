@@ -127,7 +127,6 @@ class DemoWorldRenderer:
         self.time_of_day = 0.575
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
-        self._fluid_chunk_cursor = 0
         self.remote_mode = False
         if (
             self.shader.program is None
@@ -305,11 +304,27 @@ class DemoWorldRenderer:
         chunks = self._streamer.loaded_chunks()
         if not chunks:
             return
-        chunk = chunks[self._fluid_chunk_cursor % len(chunks)]
-        self._fluid_chunk_cursor += 1
-        if simulate_water_step(chunk).changed:
-            affected_chunks = {chunk.coord: chunk}
-            for affected in self._relight_neighborhood((chunk.coord,)):
+        chunk_by_coord = {c.coord: c for c in chunks}
+        dirty_coords: set[ChunkCoord] = set()
+        for chunk in chunks:
+            cx, cz = chunk.coord.x, chunk.coord.z
+            neighbors = {}
+            for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nb = chunk_by_coord.get(ChunkCoord(cx + dx, cz + dz))
+                if nb is not None:
+                    neighbors[(dx, dz)] = nb
+            result = simulate_water_step(chunk, neighbors or None)
+            if result.changed:
+                dirty_coords.add(chunk.coord)
+            for dx, dz in result.neighbor_keys:
+                nb_coord = ChunkCoord(cx + dx, cz + dz)
+                if nb_coord in chunk_by_coord:
+                    dirty_coords.add(nb_coord)
+        if dirty_coords:
+            affected_chunks = {
+                coord: chunk_by_coord[coord] for coord in dirty_coords if coord in chunk_by_coord
+            }
+            for affected in self._relight_neighborhood(tuple(affected_chunks)):
                 affected_chunks[affected.coord] = affected
             for affected in affected_chunks.values():
                 self._schedule_chunk(affected)
