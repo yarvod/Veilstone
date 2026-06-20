@@ -23,6 +23,7 @@ from voxel_sandbox.app.composition import (
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
+from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemStack
@@ -38,6 +39,7 @@ from voxel_sandbox.engine.events import (
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
 from voxel_sandbox.engine.physics import PlayerInput
+from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import (
     ClientSession,
     LanServer,
@@ -141,9 +143,11 @@ class GameWindow(pyglet.window.Window):
         self.player_health = 20.0
         self._worlds = WorldManager(self)
         recovered_saved_position: tuple[float, float, float] | None = None
-        saved_player = self.world_renderer.storage.load_player(self.item_registry)
+        world_storage = cast(WorldStorage, self.world_runtime.storage)
+        block_registry = cast(BlockRegistry, self.world_runtime.block_registry)
+        saved_player = world_storage.load_player(self.item_registry)
         if saved_player is not None:
-            self.world_renderer.storage.restore_inventory(
+            world_storage.restore_inventory(
                 saved_player,
                 self.inventory,
                 self.item_registry,
@@ -157,10 +161,10 @@ class GameWindow(pyglet.window.Window):
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self._gameplay._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
-        self.structure_world = self.world_renderer.storage.load_structure_world()
+        self.structure_world = world_storage.load_structure_world()
         self.structure_renderer = StructureRenderer(
             self.mgl_context,
-            self.world_renderer.registry,
+            block_registry,
         )
         self.last_structure_revision = self.structure_world.revision
         self._population_accumulator = 0.0

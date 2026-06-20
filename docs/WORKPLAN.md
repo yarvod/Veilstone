@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.2 moved `GameWindow._rebuild_world_runtime()` from direct renderer world fields to the current `WorldSceneDependencies` context.
+Последний завершённый шаг: A8.3 moved initial player/structure loading and structure renderer registry access from direct renderer fields to `world_runtime`.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 
