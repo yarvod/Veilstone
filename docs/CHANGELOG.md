@@ -4,6 +4,7 @@
 
 ### Added
 
+- **World runtime rebuild context** - `GameWindow._rebuild_world_runtime()` now reads storage, registry, generation, and streaming from the current `WorldSceneDependencies` context instead of treating the renderer as the source of ownership.
 - **World scene dependency builder** - storage, block registry, terrain generator, and chunk streamer construction now lives behind `build_world_scene_dependencies()` and is passed into `DemoWorldRenderer`.
 
 - **Architecture stabilization plan** — added `docs/ARCHITECTURE.md` with current dependency map, target layers, composition root strategy, ports/adapters, GameWindow/controller migration, DemoWorldRenderer split, and staged import-linter contracts.

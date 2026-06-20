@@ -30,4 +30,4 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** partial mitigation in progress
 - **Affected area:** `render/world_scene.py`
-- **Notes:** Tracked by Phase A A8. Storage/block registry/generator/streamer construction now starts in composition, but renderer still exposes and calls world lifecycle fields directly.
+- **Notes:** Tracked by Phase A A8. Storage/block registry/generator/streamer construction now starts in composition, and runtime rebuild uses that context. Renderer still exposes and calls world lifecycle fields directly.

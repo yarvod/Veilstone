@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.1 moved world scene storage/block registry/generator/streamer construction behind `build_world_scene_dependencies()` and passed those dependencies into `DemoWorldRenderer`.
+Последний завершённый шаг: A8.2 moved `GameWindow._rebuild_world_runtime()` from direct renderer world fields to the current `WorldSceneDependencies` context.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 

@@ -15,6 +15,7 @@ from pyglet.window import key
 
 from voxel_sandbox.app.composition import (
     AppRuntime,
+    WorldSceneDependencies,
     build_app_runtime,
     build_local_world_runtime,
     build_world_scene_dependencies,
@@ -581,13 +582,14 @@ class GameWindow(pyglet.window.Window):
 
     def _rebuild_world_runtime(self) -> tuple[float, float, float]:
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
+        world_dependencies = self._world_scene_dependencies
         self.world_runtime = build_local_world_runtime(
             spawn_position=(spawn_x, spawn_y, spawn_z),
-            entity_seed=self.world_renderer.generator.seed.value,
-            storage=self.world_renderer.storage,
-            block_registry=self.world_renderer.registry,
-            generation=self.world_renderer.generator,
-            streaming=self.world_renderer.streamer,
+            entity_seed=world_dependencies.generation.seed.value,
+            storage=world_dependencies.storage,
+            block_registry=world_dependencies.block_registry,
+            generation=world_dependencies.generation,
+            streaming=world_dependencies.streaming,
             renderer=self.world_renderer,
         )
         self.player = self.world_runtime.player_state
@@ -603,6 +605,7 @@ class GameWindow(pyglet.window.Window):
             generation_workers=settings.world.generation_workers,
             generation_backend=settings.world.generation_backend,
         )
+        self._world_scene_dependencies: WorldSceneDependencies = world_dependencies
         return DemoWorldRenderer(
             self.mgl_context,
             seed=settings.world.seed,
