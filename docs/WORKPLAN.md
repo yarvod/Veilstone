@@ -8,6 +8,24 @@
 
 ## Current Phase
 
+### Phase B: Gameplay Improvements
+
+Начата с фокуса на player feel.
+
+#### Phase B1: Player Feel — DONE
+
+- [x] Coyote time (0.12 s): прыжок в течение короткого окна после ухода с края.
+- [x] Jump buffering (0.12 s): нажатие прыжка до приземления срабатывает при касании.
+- [x] Variable jump height: отпустить Space при подъёме = дополнительная гравитация (2.5× scale).
+- [x] Sprint: Shift → 8 m/s вместо 5 m/s, частота шагов уменьшается до 0.28 s.
+- [x] Head bob: плавная вертикальная осцилляция камеры (±0.04 ед.) при ходьбе.
+
+#### Immediate Next Step
+
+Следующее gameplay-направление из списка: **water** (full water simulation), **Twilight-like generation**, **3D player**, **UI polish**, **mobs**, **network**, или **resource packs**.
+
+---
+
 ### Phase A: Architecture Stabilization
 
 Цель Phase A — убрать `GameWindow`/god-object/service-locator проблему маленькими PR/commits, сохраняя рабочее состояние после каждого шага.
