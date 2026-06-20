@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from voxel_sandbox.app.paths import application_data_root
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
@@ -63,6 +63,7 @@ class WorldManager:
         win.active_save_root = save_root
         win.world_renderer = win._create_world_renderer(save_root)
         win._rebuild_world_runtime()
+        storage = cast(WorldStorage, win.world_runtime.storage)
         win.inventory = Inventory()
         win.hotbar = Hotbar(win.inventory)
         win.inventory.set(0, ItemStack(3, 32), win.item_registry)
@@ -70,9 +71,9 @@ class WorldManager:
         win.inventory.set(2, ItemStack(8, 1), win.item_registry)
         win.inventory.set(3, ItemStack(4, 4), win.item_registry)
         win.player_health = 20.0
-        saved = win.world_renderer.storage.load_player(win.item_registry)
+        saved = storage.load_player(win.item_registry)
         if saved is not None:
-            win.world_renderer.storage.restore_inventory(saved, win.inventory, win.item_registry)
+            storage.restore_inventory(saved, win.inventory, win.item_registry)
             win.player_health = saved.health
             win.hotbar.select(saved.selected_slot)
             self.restore_player_position(saved.position)
@@ -82,7 +83,7 @@ class WorldManager:
         win.remote_player_interpolation.clear()
         win.requested_remote_chunks.clear()
         win.last_snapshot_sequence = 0
-        win.structure_world = win.world_renderer.storage.load_structure_world()
+        win.structure_world = storage.load_structure_world()
         win.last_structure_revision = win.structure_world.revision
         win._net.start_local_authority()
         win.menu.screen = Screen.GAME
@@ -93,7 +94,8 @@ class WorldManager:
 
     def _save_player(self) -> None:
         win = self.win
-        win.world_renderer.storage.save_player(
+        storage = cast(WorldStorage, win.world_runtime.storage)
+        storage.save_player(
             PlayerSnapshot(
                 (win.player.x, win.player.y, win.player.z),
                 win.player_health,

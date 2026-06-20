@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.3 moved initial player/structure loading and structure renderer registry access from direct renderer fields to `world_runtime`.
+Последний завершённый шаг: A8.4 moved `WorldManager` player save/restore and structure loading from direct renderer storage to `world_runtime.storage`.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 
