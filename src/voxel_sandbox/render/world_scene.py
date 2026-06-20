@@ -94,17 +94,17 @@ class DemoWorldRenderer:
                 generation_workers=generation_workers,
                 generation_backend=generation_backend,
             )
-        self.storage = world_dependencies.storage
-        self.registry = world_dependencies.block_registry
-        self.generator = world_dependencies.generation
-        self.streamer = world_dependencies.streaming
+        self._storage = world_dependencies.storage
+        self._registry = world_dependencies.block_registry
+        self._generator = world_dependencies.generation
+        self._streamer = world_dependencies.streaming
         self.world_name = world_dependencies.world_name
         self.seed_text = world_dependencies.seed_text
 
         pack_path = Path(resource_pack_path) if resource_pack_path else None
         atlas = load_active_block_atlas(
             pack_path,
-            registry=self.registry,
+            registry=self._registry,
             cache_root=save_root.parent / "texture_cache",
         )
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
@@ -144,7 +144,7 @@ class DemoWorldRenderer:
         self._meshing_workers = meshing_workers
         self._meshing_backend = cast(Literal["thread", "process"], meshing_backend)
         self.mesh_worker = SectionMeshWorker(
-            self.registry,
+            self._registry,
             self.atlas_uvs,
             workers=self._meshing_workers,
             backend=self._meshing_backend,
@@ -155,7 +155,7 @@ class DemoWorldRenderer:
         self.face_count = 0
         self.triangle_count = 0
         self.selection: RaycastHit | None = None
-        self._upload_chunk_sync(self.streamer.prime(ChunkCoord(0, 0)))
+        self._upload_chunk_sync(self._streamer.prime(ChunkCoord(0, 0)))
 
     @property
     def daylight(self) -> float:
@@ -172,9 +172,9 @@ class DemoWorldRenderer:
     def spawn_light_level(self, x: int, y: int, z: int) -> int | None:
         chunk_x, _local_x = split_world_axis(x)
         chunk_z, _local_z = split_world_axis(z)
-        if self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z)) is None:
+        if self._streamer.get_chunk(ChunkCoord(chunk_x, chunk_z)) is None:
             return None
-        samples = (self.streamer.get_light(x, y, z), self.streamer.get_light(x, y + 1, z))
+        samples = (self._streamer.get_light(x, y, z), self._streamer.get_light(x, y + 1, z))
         return max(
             effective_light_level(sky_light, block_light, self.daylight)
             for sky_light, block_light in samples
@@ -191,7 +191,7 @@ class DemoWorldRenderer:
             max(0, min(CHUNK_HEIGHT - 1, int(np.floor(position[1] + height * amount))))
             for amount in (0.15, 0.55, 0.9)
         }
-        samples = [self.streamer.get_light(x, y, z) for y in sample_heights]
+        samples = [self._streamer.get_light(x, y, z) for y in sample_heights]
         return (
             max((sky for sky, _block in samples), default=0) / 15.0,
             max((block for _sky, block in samples), default=0) / 15.0,
@@ -202,9 +202,10 @@ class DemoWorldRenderer:
         try:
             return find_safe_spawn(
                 self.get_block,
-                self.generator.height_at,
+                self._generator.height_at,
                 lambda block_id: (
-                    self.registry.by_id(block_id).is_solid or self.registry.by_id(block_id).is_fluid
+                    self._registry.by_id(block_id).is_solid
+                    or self._registry.by_id(block_id).is_fluid
                 ),
                 prepare_column=lambda x, z: self.ensure_collision_area_loaded(
                     float(x) + 0.5,
@@ -217,18 +218,18 @@ class DemoWorldRenderer:
 
     @property
     def loaded_chunks(self) -> int:
-        return self.streamer.loaded_count
+        return self._streamer.loaded_count
 
     @property
     def pending_chunks(self) -> int:
-        return self.streamer.pending_count
+        return self._streamer.pending_count
 
     @property
     def pending_meshes(self) -> int:
         return self.mesh_worker.pending_count
 
     def get_block(self, x: int, y: int, z: int) -> int:
-        return self.streamer.get_block(x, y, z)
+        return self._streamer.get_block(x, y, z)
 
     def is_solid_block(self, x: int, y: int, z: int) -> bool:
         if y < 0:
@@ -237,9 +238,9 @@ class DemoWorldRenderer:
             return False
         chunk_x, _ = split_world_axis(x)
         chunk_z, _ = split_world_axis(z)
-        if self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z)) is None:
+        if self._streamer.get_chunk(ChunkCoord(chunk_x, chunk_z)) is None:
             return True
-        return self.registry.by_id(self.get_block(x, y, z)).is_solid
+        return self._registry.by_id(self.get_block(x, y, z)).is_solid
 
     def ensure_collision_area_loaded(self, x: float, z: float, radius: float) -> None:
         min_chunk_x, _ = split_world_axis(int(np.floor(x - radius)))
@@ -249,22 +250,22 @@ class DemoWorldRenderer:
         for chunk_x in range(min_chunk_x, max_chunk_x + 1):
             for chunk_z in range(min_chunk_z, max_chunk_z + 1):
                 coord = ChunkCoord(chunk_x, chunk_z)
-                if self.streamer.get_chunk(coord) is not None:
+                if self._streamer.get_chunk(coord) is not None:
                     continue
-                self._upload_chunk_sync(self.streamer.prime(coord))
+                self._upload_chunk_sync(self._streamer.prime(coord))
 
     def _create_emergency_spawn(self, x: int, z: int) -> tuple[float, float, float]:
         self.ensure_collision_area_loaded(float(x) + 0.5, float(z) + 0.5, 0.0)
-        surface = min(max(self.generator.height_at(x, z), 2), CHUNK_HEIGHT - 2)
+        surface = min(max(self._generator.height_at(x, z), 2), CHUNK_HEIGHT - 2)
         support_y = next(
             (
                 y
                 for y in range(surface - 1, -1, -1)
-                if self.registry.by_id(self.get_block(x, y, z)).is_solid
+                if self._registry.by_id(self.get_block(x, y, z)).is_solid
             ),
             0,
         )
-        if not self.registry.by_id(self.get_block(x, support_y, z)).is_solid:
+        if not self._registry.by_id(self.get_block(x, support_y, z)).is_solid:
             self.set_block((x, support_y, z), 1)
         spawn_y = min(support_y + 1, CHUNK_HEIGHT - 2)
         self.set_block((x, spawn_y, z), 0)
@@ -278,16 +279,16 @@ class DemoWorldRenderer:
         max_distance: float = 6.0,
     ) -> RaycastHit | None:
         def skip_fluid(block_id: int) -> bool:
-            return self.registry.by_id(block_id).is_fluid
+            return self._registry.by_id(block_id).is_fluid
 
         return voxel_raycast(self.get_block, origin, direction, max_distance, skip_block=skip_fluid)
 
     def set_block(self, block: tuple[int, int, int], block_id: int) -> bool:
         previous_id = self.get_block(*block)
         if block_id == WATER_BLOCK_ID:
-            changed = self.streamer.set_fluid(*block, block_id, FLUID_MAX_LEVEL)
+            changed = self._streamer.set_fluid(*block, block_id, FLUID_MAX_LEVEL)
         else:
-            changed = self.streamer.set_block(*block, block_id)
+            changed = self._streamer.set_block(*block, block_id)
         if not changed:
             return False
         self._remesh_around(block, previous_id, block_id)
@@ -301,7 +302,7 @@ class DemoWorldRenderer:
         if self._fluid_accumulator < 0.2:
             return
         self._fluid_accumulator %= 0.2
-        chunks = self.streamer.loaded_chunks()
+        chunks = self._streamer.loaded_chunks()
         if not chunks:
             return
         chunk = chunks[self._fluid_chunk_cursor % len(chunks)]
@@ -330,7 +331,7 @@ class DemoWorldRenderer:
 
     def update_streaming(self, center: ChunkCoord) -> None:
         if not self.remote_mode:
-            batch = self.streamer.update(center, max_completed=self.uploads_per_frame)
+            batch = self._streamer.update(center, max_completed=self.uploads_per_frame)
             for coord in batch.unloaded:
                 self._remove_chunk(coord)
             affected_chunks = {chunk.coord: chunk for chunk in batch.loaded}
@@ -340,7 +341,7 @@ class DemoWorldRenderer:
                 for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                     nc = ChunkCoord(loaded_chunk.coord.x + dx, loaded_chunk.coord.z + dz)
                     if nc not in affected_chunks:
-                        neighbor = self.streamer.get_chunk(nc)
+                        neighbor = self._streamer.get_chunk(nc)
                         if neighbor is not None:
                             affected_chunks[nc] = neighbor
             for unloaded_coord in batch.unloaded:
@@ -363,7 +364,7 @@ class DemoWorldRenderer:
         matrix = camera_matrix(camera, max(width, 1) / max(height, 1), fov)
 
         for completed in self.mesh_worker.poll(self.mesh_uploads_per_frame):
-            if self.streamer.get_chunk(completed.key.chunk) is None:
+            if self._streamer.get_chunk(completed.key.chunk) is None:
                 continue
             if completed.mesh.indices.size:
                 self.mesh_cache.upload(completed.key, completed.mesh)
@@ -421,7 +422,7 @@ class DemoWorldRenderer:
             0.62 + 0.38 * self.daylight,
             0.78 + 0.22 * self.daylight,
         )
-        underwater = self.registry.by_id(
+        underwater = self._registry.by_id(
             self.get_block(
                 int(np.floor(camera.x)),
                 int(np.floor(camera.y)),
@@ -484,21 +485,23 @@ class DemoWorldRenderer:
         else:
             self.mesh_worker.close()
             self.mesh_worker = SectionMeshWorker(
-                self.registry,
+                self._registry,
                 atlas.uvs,
                 workers=self._meshing_workers,
-                backend=self._meshing_backend,
+                backend=cast(Literal["thread", "process"], self._meshing_backend),
             )
 
         self.water_mesh_cache.release()
         self.mesh_cache.release()
+        assert self.shader.program is not None
+        assert self.water_shader.program is not None
         self.mesh_cache = SectionMeshCache(self.context, self.shader.program)
         self.water_mesh_cache = SectionMeshCache(self.context, self.water_shader.program)
         self._remesh_all()
 
     def release(self) -> None:
         self.mesh_worker.close()
-        self.streamer.close()
+        self._streamer.close()
         self.highlight.release()
         self.water_mesh_cache.release()
         self.mesh_cache.release()
@@ -510,11 +513,11 @@ class DemoWorldRenderer:
             self.shadow_map.release()
 
     def autosave(self) -> int:
-        self.storage.ensure_world(name=self.world_name, seed=self.seed_text)
-        return self.streamer.save_dirty()
+        self._storage.ensure_world(name=self.world_name, seed=self.seed_text)
+        return self._streamer.save_dirty()
 
     def install_remote_chunk(self, chunk: Chunk) -> None:
-        self.streamer.install_chunk(chunk)
+        self._streamer.install_chunk(chunk)
         affected_chunks = {chunk.coord: chunk}
         for affected in self._relight_neighborhood((chunk.coord,)):
             affected_chunks[affected.coord] = affected
@@ -546,8 +549,8 @@ class DemoWorldRenderer:
 
     def _remesh_around(self, block: tuple[int, int, int], previous_id: int, new_id: int) -> None:
         x, y, z = block
-        prev_def = self.registry.by_id(previous_id)
-        new_def = self.registry.by_id(new_id)
+        prev_def = self._registry.by_id(previous_id)
+        new_def = self._registry.by_id(new_id)
 
         needs_relight = (
             prev_def.emits_light != new_def.emits_light
@@ -558,7 +561,7 @@ class DemoWorldRenderer:
         if needs_relight:
             chunk_x = x // SECTION_SIZE
             chunk_z = z // SECTION_SIZE
-            chunk = self.streamer.get_chunk(ChunkCoord(chunk_x, chunk_z))
+            chunk = self._streamer.get_chunk(ChunkCoord(chunk_x, chunk_z))
             if chunk is not None:
                 chunks_to_schedule = {c.coord: c for c in self._relight_neighborhood([chunk.coord])}
                 for c in chunks_to_schedule.values():
@@ -604,9 +607,9 @@ class DemoWorldRenderer:
         chunks = tuple(
             chunk
             for coord in sorted(coordinates, key=lambda item: (item.x, item.z))
-            if (chunk := self.streamer.get_chunk(coord)) is not None
+            if (chunk := self._streamer.get_chunk(coord)) is not None
         )
-        return relight_chunks(chunks, self.registry)
+        return relight_chunks(chunks, self._registry)
 
     def _schedule_chunk(self, chunk: Chunk) -> None:
         tasks = {}
@@ -629,7 +632,7 @@ class DemoWorldRenderer:
 
     def _schedule_section(self, key: SectionCoord, chunk: Chunk | None = None) -> None:
         if chunk is None:
-            chunk = self.streamer.get_chunk(ChunkCoord(key.x, key.z))
+            chunk = self._streamer.get_chunk(ChunkCoord(key.x, key.z))
         if chunk is None or not (0 <= key.y < len(chunk.sections)):
             return
         section = chunk.sections[key.y]
@@ -651,12 +654,12 @@ class DemoWorldRenderer:
         return (
             builder(
                 neighborhood,
-                self.registry,
+                self._registry,
                 self.atlas_uvs,
                 smooth_lighting=self.smooth_lighting,
                 ambient_occlusion=self.ambient_occlusion,
             ),
-            build_water_mesh(neighborhood, self.registry, self.atlas_uvs),
+            build_water_mesh(neighborhood, self._registry, self.atlas_uvs),
         )
 
     def _build_neighborhood(self, key: SectionCoord) -> MeshingNeighborhood:
@@ -665,7 +668,7 @@ class DemoWorldRenderer:
             key.y * SECTION_SIZE - HALO_RADIUS,
             key.z * SECTION_SIZE - HALO_RADIUS,
         )
-        blocks, sky_light, block_light, metadata = self.streamer.snapshot_region(
+        blocks, sky_light, block_light, metadata = self._streamer.snapshot_region(
             origin,
             (HALO_SIZE, HALO_SIZE, HALO_SIZE),
         )
@@ -764,5 +767,5 @@ class DemoWorldRenderer:
         self.context.enable(moderngl.CULL_FACE)
 
     def _remesh_all(self) -> None:
-        for chunk in self.streamer.loaded_chunks():
+        for chunk in self._streamer.loaded_chunks():
             self._schedule_chunk(chunk)

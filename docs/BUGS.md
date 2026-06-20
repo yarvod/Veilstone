@@ -8,7 +8,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** typing / quality gate
-- **Observed:** `uv run pyright` reports 547 existing strict typing errors across engine, render, tests, and infrastructure.
+- **Observed:** `uv run pyright` reports 546 existing strict typing errors across engine, render, tests, and infrastructure.
 - **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
 - **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 
@@ -30,4 +30,4 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** partial mitigation in progress
 - **Affected area:** `render/world_scene.py`
-- **Notes:** Tracked by Phase A A8. Storage/block registry/generator/streamer construction now starts in composition; external callers now use runtime context instead of direct `world_renderer.storage/registry/generator/streamer`. Renderer still exposes and calls world lifecycle fields internally.
+- **Notes:** Tracked by Phase A A8. Storage/block registry/generator/streamer construction now starts in composition; external callers use runtime context, and renderer ownership fields are private. Renderer still calls world lifecycle internals until the next boundary split.

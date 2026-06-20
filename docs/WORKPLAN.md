@@ -51,7 +51,7 @@
 
 ## Immediate Next Step
 
-Последний завершённый шаг: A8.9 moved inventory item icon block registry access to `world_runtime.block_registry`; external `world_renderer.storage/registry/generator/streamer` callers are gone.
+Последний завершённый шаг: A8.10 made `DemoWorldRenderer` storage/registry/generator/streamer fields private after moving external callers to runtime context.
 
 Следующий кодовый шаг: continue A8 renderer/world ownership boundary split.
 
