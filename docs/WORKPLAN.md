@@ -207,7 +207,7 @@ resource packs.
       counts, memory estimate, Python/runtime info, CPU/GPU device strings where
       available.
 - [ ] Move lighting/AO/fog/meshing toggles to Settings UI or explicit dev menu.
-- [ ] Remove player-facing dependence on F6/F7/F8/F9 for graphics settings once
+- [x] Remove player-facing dependence on F6/F7/F8/F9 for graphics settings once
       Settings UI equivalents exist.
 - [ ] Keep expensive system telemetry out of per-frame hot paths; cache or
       update slow diagnostics at low frequency.

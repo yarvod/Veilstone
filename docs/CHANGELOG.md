@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Developer-only graphics F-key toggles** - graphics renderer toggles moved
+  from plain `F6`-`F9` to `Ctrl+F6`-`Ctrl+F9`, keeping normal F-keys free for
+  player-facing controls.
 - **Screenshot shortcut** - `F2` saves a PNG screenshot under the user data
   screenshots directory.
 - **HUD visibility shortcut** - `F1` now toggles HUD visibility at runtime.

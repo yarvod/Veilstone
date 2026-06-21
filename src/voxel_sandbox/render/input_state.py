@@ -182,16 +182,16 @@ class InputHandler:
         if symbol == key.F3:
             win.debug_overlay_visible = not win.debug_overlay_visible
             return
-        if symbol == key.F6:
+        if symbol == key.F6 and modifiers & key.MOD_CTRL:
             win.world_renderer.toggle_smooth_lighting()
             return
-        if symbol == key.F7:
+        if symbol == key.F7 and modifiers & key.MOD_CTRL:
             win.world_renderer.toggle_ambient_occlusion()
             return
-        if symbol == key.F8:
+        if symbol == key.F8 and modifiers & key.MOD_CTRL:
             win.world_renderer.toggle_fog()
             return
-        if symbol == key.F9:
+        if symbol == key.F9 and modifiers & key.MOD_CTRL:
             win.world_renderer.toggle_mesher()
             return
         if ord("1") <= symbol <= ord("9"):
