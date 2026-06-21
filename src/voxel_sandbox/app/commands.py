@@ -62,7 +62,7 @@ type GameCommand = (
 
 _NAMED_TIMES = {
     "sunrise": 0,
-    "day": 6000,
+    "day": 0,
     "noon": 6000,
     "twilight": 13800,
     "sunset": 12000,

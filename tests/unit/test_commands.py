@@ -16,7 +16,8 @@ from voxel_sandbox.app.commands import (
 
 
 def test_time_command_accepts_minecraft_names_and_ticks() -> None:
-    assert parse_command("/time set day") == SetTimeCommand(0.25, "day")
+    assert parse_command("/time set day") == SetTimeCommand(0.0, "day")
+    assert parse_command("/time set sunrise") == SetTimeCommand(0.0, "sunrise")
     assert parse_command("/time set noon") == SetTimeCommand(0.25, "noon")
     assert parse_command("/time set night") == SetTimeCommand(13000 / 24000, "night")
     assert parse_command("/time set twilight") == SetTimeCommand(

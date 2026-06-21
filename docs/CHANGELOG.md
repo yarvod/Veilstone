@@ -4,6 +4,8 @@
 
 ### Added
 
+- **README current-state refresh** - README now describes the actual prototype feature set, known gaps, controls, settings, architecture direction, and roadmap docs instead of carrying old phase-by-phase manual test history.
+- **Gameplay-feel roadmap** - `WORKPLAN` now tracks the next immersion work: viewmodel/held item animation, gait-synced footsteps, water shore exit and surface polish, mob locomotion, leaf transparency, inventory item presentation, generation richness, debug/perspective controls, and Minecraft-like time semantics.
 - **3D player debug draw path** - added `development.render_local_player_model` toggle and optional local player avatar rendering through the existing entity renderer path.
 - **3D player render adapter** - added CPU-side player avatar adapter mapping `PlayerRenderSnapshot` into existing entity renderer transform/model data.
 - **3D player snapshot** - added `PlayerRenderSnapshot` application view data and tests so a future player renderer can consume player state without depending on Pyglet/ModernGL.
@@ -45,6 +47,9 @@
 
 ### Fixed
 
+- **Time command semantics** - `/time set day` now means sunrise/start of day; `noon` remains the high-sun value.
+- **Default day cycle length** - default graphics day/night cycle now uses 1200 seconds, matching a Minecraft-like 20-minute full cycle.
+- **Footstep loudness** - default block-step and fallback footstep gains are lower in `config/audio.toml`.
 - **Resource pack application regression** - `ApplyResourcePackUseCase` now receives the block registry explicitly instead of reading `renderer.registry`, so resource packs still apply after renderer/world ownership split.
 - **Display-less UI interaction tests** — `test_ui_interaction.py` now skips at module level when no active display exists instead of failing during Pyglet window import/GL setup.
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.

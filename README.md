@@ -1,25 +1,38 @@
 # Veilstone
 
-Veilstone is an original Python voxel sandbox engine prototype. It uses Python 3.13,
-`uv`, pyglet, ModernGL, and NumPy. The project is being built in small, tested phases.
+Veilstone is an original Python voxel sandbox engine prototype built with Python
+3.13, `uv`, Pyglet, ModernGL, and NumPy.
 
-## Development setup
+The project is deliberately developed in small, tested phases. It already has a
+playable voxel loop, world streaming, basic survival-sandbox interactions,
+resource-pack experiments, audio, mobs, water, saves, and LAN multiplayer
+plumbing, but it is still a prototype rather than a Minecraft-complete game.
+
+Current planning lives in:
+
+- `docs/WORKPLAN.md` — active roadmap and next phase.
+- `docs/BUGS.md` — known bugs, rough edges, and quality-gate status.
+- `docs/CHANGELOG.md` — completed meaningful changes.
+- `docs/ARCHITECTURE.md` — target dependency direction and feature boundaries.
+
+## Run
 
 ```bash
 uv sync
 uv run python -m voxel_sandbox
 ```
 
-This is the player-facing entry point. It opens the Main Menu with Singleplayer,
-Multiplayer, Settings, and Exit. The technical commands remain available for development
-and dedicated server use:
+The normal entry point opens the main menu with Singleplayer, Multiplayer,
+Settings, and Exit.
+
+Developer entry points:
 
 ```bash
 uv run python -m voxel_sandbox --help
+uv run python -m voxel_sandbox server --port 25565
 uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
-uv run python -m voxel_sandbox server
-uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-worldgen
+uv run python -m voxel_sandbox benchmark-mesher
 uv run python -m voxel_sandbox benchmark-physics
 uv run python -m voxel_sandbox benchmark-lighting
 uv run python -m voxel_sandbox benchmark-streaming
@@ -30,248 +43,196 @@ uv run python -m voxel_sandbox benchmark-shadows
 uv run python -m voxel_sandbox structure-preview veilstone_ruin
 ```
 
-Singleplayer uses the same server-authoritative transport as multiplayer:
-the game client owns and connects to an in-process local server. `Open to LAN` exposes
-that server to other clients instead of launching a separate player-facing mode. The
-standalone `server` command is for dedicated LAN hosting and development.
+## What works today
 
-Quality checks:
+- Main menu, singleplayer world creation/loading, pause menu, settings screens,
+  and basic controls rebinding.
+- Server-authoritative local singleplayer transport plus LAN discovery/direct
+  connect/chat/Open LAN flows.
+- Chunked voxel terrain with caves, biomes, trees, Twilight-inspired
+  decorators, lighting, fog, clouds, shadows, greedy meshing, and background
+  generation/meshing workers.
+- Block targeting, breaking, placing, drops, item pickup/drop, hotbar, backpack,
+  and simple crafting.
+- Data-driven block/item/biome registries and a Minecraft Java-style resource
+  pack MVP for block textures.
+- Basic water blocks: passable/swimmable water, cross-chunk flow, simple source
+  creation, underwater fog, and water rendering.
+- Passive/hostile mobs with simple steering, gravity, buoyancy, sounds, damage,
+  death drops, and generated articulated model definitions.
+- Player-feel pass: coyote time, jump buffering, variable jump height, sprint,
+  and subtle head bob.
+- Experimental 3D local/third-person player model path behind
+  `development.render_local_player_model`.
+- Positional audio for UI, blocks, footsteps, mobs, ambience, and music through
+  a backend-independent event bus.
+- Save/load for world edits and player state.
+
+## Known prototype gaps
+
+These are expected rough edges, not hidden production promises:
+
+- First-person presentation is still primitive: no proper 3D hand/viewmodel,
+  held item model, swing/place/break animations, player shadow, or unified gait
+  phase syncing camera bob, footsteps, and body/hand animation.
+- Mob walking animation is visually rough and not yet synchronized to actual
+  locomotion speed, ground contact, or step sounds.
+- Water still behaves like voxel fluid. There are known movement and visual
+  issues around climbing out of water, interrupted flow surfaces, and the lack
+  of smooth continuous waves/splashes.
+- Transparent textures are incomplete. Leaf cutouts from packs such as Faithful
+  need alpha-tested/ordered rendering so the world is visible through holes.
+- Inventory UI is functional but not Minecraft-polished: no 3D item icons,
+  stack-count overlay in the corner of item icons, hover tooltip polish,
+  drag-and-drop slot movement, or full crafting UX.
+- World generation needs more distant landscape appeal, biome filling, grass,
+  flowers, landmarks, and configurable in-game render distance.
+- Debug/perspective controls are partial. `F3` exists for a debug overlay, but
+  CPU/GPU/memory/device diagnostics and Minecraft-like perspective cycling are
+  not complete.
+
+For the live prioritized list, see `docs/WORKPLAN.md` and `docs/BUGS.md`.
+
+## Controls
+
+- Arrow keys / `W` / `S` / `Enter`: navigate menus.
+- `W/A/S/D`: move.
+- `Space`: jump.
+- `Shift`: sprint.
+- Mouse: look around.
+- Left mouse: break highlighted block, or damage an aimed mob.
+- Right mouse: place selected block on highlighted face; when aiming a runtime
+  structure, toggle that structure.
+- `1-9` or mouse wheel: select hotbar slot.
+- `E`: open inventory and crafting UI.
+- Left/right click in inventory: transfer or split stacks.
+- `Shift` + left click in inventory: quick-move between hotbar and backpack.
+- `C`: take one matching recipe result from the player crafting grid.
+- `Q`: drop one item from the selected hotbar stack.
+- `T`: open multiplayer chat.
+- `/`: open command line.
+- `Escape`: pause/resume or go back in menus.
+- `F3`: toggle debug overlay.
+- `F5`: reload shaders.
+- `F6`: toggle smooth lighting.
+- `F7`: toggle ambient occlusion.
+- `F8`: toggle fog.
+- `F9`: toggle greedy/visible-face meshing comparison.
+
+Useful commands:
+
+```text
+/help
+/time set day|sunrise|noon|sunset|twilight|night|midnight|<ticks>
+/difficulty peaceful|normal
+/resourcepack <path|default>
+/structure spawn gate|altar|bridge
+/structure toggle <id>
+/structure list
+```
+
+`/time set day` and `/time set sunrise` set the world to the beginning of the
+day. `noon` is the high-sun value.
+
+## Settings
+
+Runtime defaults live in `config/settings.toml`; user overrides are stored under
+`saves/settings.toml`.
+
+Important settings:
+
+- `[world].render_distance` controls chunk radius in the config file. In-game
+  render-distance UI is planned but not complete.
+- `[world].generation_workers`, `[world].meshing_workers`, and upload budgets
+  tune background streaming work.
+- `[graphics].day_cycle_seconds = 1200.0` gives a Minecraft-like 20-minute full
+  day/night cycle.
+- `[graphics].shadow_quality`, `shadow_bias`, `clouds`, `postprocess`,
+  `smooth_lighting`, `ambient_occlusion`, and `fog` control renderer features.
+- `[audio]` controls master/effects/music/ambience volume groups; per-resource
+  gains live in `config/audio.toml`.
+
+## Resource packs
+
+The resource-pack MVP accepts Minecraft Java-style block texture locations for a
+subset of content and can load folders or ZIP packs.
+
+Example:
+
+```text
+/resourcepack resource_packs/Faithful-32x-1.21.11
+/resourcepack default
+```
+
+This is not a complete Minecraft resource-pack implementation yet. Alpha-tested
+leaves, 3D item models, UI item icons, and broader asset mapping are still on
+the roadmap.
+
+## Architecture
+
+The intended dependency direction is:
+
+```text
+domain <- engine/simulation <- application <- presentation, infrastructure, audio, network adapters
+```
+
+The practical rule for new features is: keep pure gameplay/data rules out of
+Pyglet and ModernGL, add use cases/ports when a feature crosses settings,
+storage, render, audio, network, or UI, and let the renderer consume snapshots
+rather than own gameplay state.
+
+Current package map:
+
+- `voxel_sandbox.domain`: pure block, item, inventory, biome, crafting, and
+  progression data/rules.
+- `voxel_sandbox.engine`: chunks, physics, fluids, generation, lighting,
+  events, ECS, authority, and simulation-ish systems.
+- `voxel_sandbox.application`: use cases, ports, and render-facing snapshots.
+- `voxel_sandbox.infrastructure`: storage and logging implementations.
+- `voxel_sandbox.audio`: audio bus, registry, backend, director, and event
+  mapping.
+- `voxel_sandbox.network`: LAN server/client/session messages and discovery.
+- `voxel_sandbox.render`: Pyglet window, ModernGL renderers, UI, controllers,
+  camera, shaders, texture-pack adapters.
+- `voxel_sandbox.app`: composition, settings, executable modes, and commands.
+
+See `docs/ARCHITECTURE.md` before adding systems that touch `GameWindow`,
+`DemoWorldRenderer`, controllers, storage, audio, or networking.
+
+## Quality checks
+
+Use focused tests while developing, then run the relevant gate before committing:
 
 ```bash
-uv run pytest
-uv run pytest -m unit
-uv run pytest -m integration
-uv run pytest -m smoke
+uv run lint-imports
 uv run ruff check .
 uv run ruff format --check .
+uv run pytest -m unit
 uv run pyright
 ```
 
-Pytest markers separate isolated unit tests from subsystem integration and real application
-smoke tests. Hypothesis covers broad coordinate invariants and automatically shrinks failing
-examples. The smoke suite creates the actual OpenGL context, compiles shaders, renders the
-menu and world once, and starts the dedicated server entry point.
+`pyright` is currently expected to fail only for the documented project-wide
+baseline in `docs/BUGS.md` (`BUG-Q001`). Do not mix unrelated typing cleanup into
+feature work unless it blocks the change.
 
-The committed `.python-version` and `pyproject.toml` keep the project on Python 3.13.
-Runtime settings live in `config/settings.toml`.
-`graphics.shadow_quality` accepts `off`, `low`, or `medium`; `graphics.shadow_bias`
-controls terrain shadow acne correction.
-`graphics.clouds` toggles procedural clouds and `graphics.postprocess` enables the optional
-tone-mapping/vignette framebuffer pass.
-Player overrides are written atomically to `saves/settings.toml`. The Settings screen exposes
-graphics toggles, VSync, and `peaceful`/`normal` difficulty; Controls supports conflict-checked
-movement/jump rebinding. Peaceful removes hostile mobs. Normal allows one nearby hostile mob only
-where effective skylight/block light is level 7 or lower.
-The Audio screen persists master, effects, music, and ambience volume groups. Positional block
-sounds, material footsteps, distinct cow/zombie feedback, biome ambience, and state-driven music
-use per-resource gain staging through a backend-independent event bus; dedicated servers use a
-silent backend.
-Cow and zombie mobs use original generated material sheets and versioned articulated model
-definitions. Reproducible orthographic pixel tiles map semantic or explicit directional faces onto
-a shared GPU atlas. Joint pivots, inherited transforms, forward-only steering, gravity, buoyancy,
-world light, terrain shadows and distance LOD keep their silhouettes and movement readable without
-copying third-party assets. Loaded neighboring chunks participate in one bounded lighting flood
-fill, so lantern and skylight propagation no longer stop at horizontal chunk borders.
-World generation and section meshing use reusable process pools by default. CPU work stays
-off the render thread, while `mesh_uploads_per_frame` amortizes OpenGL uploads.
-Versioned TOML structure templates generate deterministic ruins, camps, and rare dusk spires;
-the developer preview command prints their validated block layers and loot tables.
-Singleplayer state is autosaved under `saves/dev_world`: versioned world metadata, compressed
-chunk files, active runtime structures, and the local player's position, health, hotbar, and
-inventory. Runtime gates, altars, and bridges animate through render transforms instead of chunk
-remeshing; their collision and state are server-authoritative and replicated over LAN.
+Broader checks:
 
-## Packaging
+```bash
+uv run pytest
+uv run pytest -m integration
+uv run pytest -m smoke
+```
 
-Build the native application on the target operating system:
+Smoke tests create a real OpenGL context.
+
+## Build
 
 ```bash
 uv sync --frozen
 uv run python scripts/build_app.py
 ```
 
-On macOS this produces `dist/Veilstone.app`; Windows and Linux produce a `dist/Veilstone`
-directory. Packaged builds store settings, saves, and crash logs in the platform user-data
-directory. `VEILSTONE_DATA_DIR` overrides that location for automated tests. See
-`docs/RELEASE.md` for the complete release gate.
-
-Local multiplayer developer run:
-
-```bash
-uv run python -m voxel_sandbox server --port 25565
-uv run python -m voxel_sandbox client --connect 127.0.0.1:25565
-```
-
-The remote client receives server chunks, player snapshots, block deltas, and chat protocol
-messages. LAN discovery, Direct Connect, nickname editing, chat, reconnect, and Open to LAN
-are available through the game UI.
-
-Client controls:
-
-- Arrow keys or `W/S` and `Enter`: navigate menus.
-- `W/A/S/D`: walk; physical key positions remain usable with a non-English macOS layout.
-- `Space`: jump.
-- Mouse: look around.
-- Left mouse: break the highlighted block.
-- Left mouse while aiming at a mob: damage the mob; death produces an item entity.
-- `1-9` or mouse wheel: select a hotbar slot.
-- `E`: open the 9x4 inventory and player 2x2 crafting grid.
-- Left click / right click in inventory: transfer or split stacks.
-- `Shift` + left click in inventory: quick-move between hotbar and backpack.
-- Click the crafting output, or press `C`, to take one matching recipe result.
-- `Q`: drop one item from the selected hotbar stack.
-- `T`: enter and send a multiplayer chat message.
-- `/`: open the command line. Use `/help`, `/time set day|noon|night|midnight|<ticks>`, or
-  `/difficulty peaceful|normal`. Developer structure commands are `/structure spawn
-  gate|altar|bridge`, `/structure toggle ID`, and `/structure list`.
-- Right mouse: toggle an aimed runtime structure, otherwise place the selected block on the
-  highlighted face.
-- `Escape`: open the Pause Menu while playing, or go back in menus.
-- Pause Menu -> `Open to LAN`: advertise the running singleplayer server on the LAN.
-- `F3`: toggle the detailed debug overlay.
-- `F5`: force shader reload.
-- `F6`: toggle smooth lighting.
-- `F7`: toggle ambient occlusion.
-- `F8`: toggle fog.
-- `F9`: toggle greedy/visible-face meshing for visual comparison.
-
-## Architecture
-
-- `app`: composition root, settings, and executable modes.
-- `domain`: gameplay definitions and rules without rendering dependencies.
-- `engine`: data-oriented world, physics, generation, and simulation.
-- `render`: window, camera, shaders, meshes, and GPU resources.
-- `infrastructure`: logging, storage, assets, and profiling adapters.
-- `tests`: unit, integration, and performance coverage.
-
-Architecture decisions are recorded in `docs/adr`.
-
-Current prototype state: selecting Create World or Load World enters a rendered generated
-world with its own seed, metadata, and player save. Chunks stream around the player on
-background workers while the overlay reports loaded, pending, visible, lighting, and mesh
-counts.
-
-## Test Phase 5
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Select `Singleplayer`, then `Create World`.
-2. Fly with `W/A/S/D`, `Space`, and `Shift`; use the mouse to look around.
-3. Watch `Chunks` and `Pending` in the overlay while crossing chunk boundaries.
-4. Confirm terrain includes caves, dusk crystal ore, and veilwood trees.
-5. Press `Escape` to verify the Pause Menu, then choose `Resume`.
-
-The prototype render distance, seed, generation worker count, and upload budget can be
-changed under `[world]` in `config/settings.toml`.
-
-## Test Phase 9
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Select `Singleplayer -> Create World` and locate a generated lake below elevation 32.
-2. Inspect the animated transparent surface and shore geometry from above and below water.
-3. Press `3`, then place water over a ledge and verify downward then sideways flow.
-4. Enter water and verify the view changes to short-range blue underwater fog.
-5. Cross chunk boundaries near water and watch the frame-time overlay for streaming spikes.
-
-## Test Phase 10
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Switch hotbar slots with `1-9` or the mouse wheel and place a selected block.
-2. Break Veilwood logs and approach their positions until the `Drops` counter decreases.
-3. Press `E` and test stack transfer, splitting, and Shift-click quick move.
-4. Press `C` to turn a log into four planks, then craft a Runecraft Table from four planks.
-5. Place and right-click the Runecraft Table to activate 3x3 recipes.
-6. Press `Q` to drop one selected item and collect it again by walking nearby.
-
-## Test Phase 11
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Observe blue-gray passive mobs wandering and crimson hostile mobs chasing nearby players.
-2. Let a hostile reach melee range and verify the debug `Health` value decreases.
-3. Aim at either mob and left-click until it dies and creates a small gold item entity.
-4. Walk over the drop to collect it, or press `Q` to create another visible item entity.
-5. Move far enough to trigger despawn and verify the local population replenishes near the player.
-
-## Test Phase 12
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Edit terrain, change inventory and selected hotbar slot, move, then exit normally.
-2. Restart and choose `Singleplayer -> Load World`; verify world and player state are restored.
-3. Cross chunk boundaries after an edit and return to verify unload/reload persistence.
-4. Inspect `saves/dev_world/level.toml`, `players/local_player.json`, and `regions/*.vchk`.
-
-## Test Phase 6
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Select `Singleplayer -> Create World` and wait for the player to land.
-2. Walk with `W/A/S/D`; confirm terrain and trees block movement.
-3. Jump with `Space`; confirm jumping is unavailable while airborne.
-4. Aim with the crosshair and confirm the target block receives a gold outline.
-5. Break blocks with left mouse and place grass blocks with right mouse.
-6. Walk away until chunks unload, then return and confirm edits remain for the session.
-
-Player physics benchmark:
-
-```bash
-uv run python -m voxel_sandbox benchmark-physics
-```
-
-## Test Phase 7
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Select `Singleplayer -> Create World` and compare open terrain, shaded sides, and corners.
-2. Press `F6` and `F7`; confirm smooth lighting and ambient occlusion visibly toggle.
-3. Press `2`, then place a Gloam Lantern with right mouse in a dark recess or small cave.
-4. Break the lantern with left mouse; confirm its warm block light disappears.
-5. Walk away from terrain and press `F8`; confirm distance fog toggles.
-6. Observe the sky and terrain tint change during the configured day/night cycle.
-
-Lighting benchmark:
-
-```bash
-uv run python -m voxel_sandbox benchmark-lighting
-```
-
-The cycle duration and graphics defaults can be changed under `[graphics]` in
-`config/settings.toml`. Set `day_cycle_seconds = 30.0` for a faster manual check.
-
-## Test Phase 8
-
-```bash
-uv run python -m voxel_sandbox
-```
-
-1. Enter `Singleplayer -> Create World` and inspect flat terrain, slopes, trees, and caves.
-2. Press `F9` to switch between `greedy` and `visible` in the debug overlay.
-3. Confirm textures keep their block-sized scale and lighting does not gain border seams.
-4. Compare `Triangles` in both modes; greedy mode should be substantially lower.
-5. Toggle `F6`/`F7` in both mesh modes and confirm smooth light/AO remain coherent.
-
-```bash
-uv run python -m voxel_sandbox benchmark-mesher
-uv run python -m voxel_sandbox benchmark-lighting
-```
-
-Block and sky light use bounded voxel propagation, not per-light ray tracing. Sun-cast
-shadows use a GPU shadow map with configurable quality, bias, and PCF; see
-`docs/adr/0002-voxel-lighting-and-shadows.md`.
+On macOS this produces `dist/Veilstone.app`; Windows and Linux produce a
+`dist/Veilstone` directory. Packaged builds store settings, saves, and crash logs
+in the platform user-data directory. `VEILSTONE_DATA_DIR` overrides the data
+directory for automated tests.

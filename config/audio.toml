@@ -8,25 +8,25 @@ gain = 0.55
 key = "block.stone"
 path = "audio/block_stone.wav"
 group = "effects"
-gain = 0.72
+gain = 0.42
 
 [[audio]]
 key = "block.earth"
 path = "audio/block_earth.wav"
 group = "effects"
-gain = 0.62
+gain = 0.36
 
 [[audio]]
 key = "block.wood"
 path = "audio/block_wood.wav"
 group = "effects"
-gain = 0.68
+gain = 0.40
 
 [[audio]]
 key = "footstep"
 path = "audio/footstep.wav"
 group = "effects"
-gain = 0.48
+gain = 0.28
 
 [[audio]]
 key = "player.hurt"
