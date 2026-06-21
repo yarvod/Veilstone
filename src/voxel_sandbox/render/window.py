@@ -57,7 +57,6 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
-from voxel_sandbox.render.head_bob import HeadBob
 from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
     InputHandler,
@@ -133,7 +132,6 @@ class GameWindow(pyglet.window.Window):
             ShaderFiles.from_directory(shader_root, "debug"),
         )
         self.camera = FirstPersonCamera()
-        self._head_bob = HeadBob()
         self.sky_renderer = SkyRenderer(self.mgl_context, clouds=settings.graphics.clouds)
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
@@ -401,8 +399,6 @@ class GameWindow(pyglet.window.Window):
             ),
             delta_time,
         )
-        moving = self._player_animation_snapshot.moving
-        self._head_bob.update(moving, self.player.on_ground, delta_time)
         if self._player_animation_snapshot.footstep_due:
             block_id = self.world_renderer.get_block(
                 math.floor(self.player.x),
@@ -647,7 +643,8 @@ class GameWindow(pyglet.window.Window):
     def _sync_camera_to_player(self) -> None:
         ex, ey, ez = self.player.eye_position
         self.camera.x = ex
-        self.camera.y = ey + self._head_bob.offset_y
+        animation = self._player_animation_snapshot
+        self.camera.y = ey + (animation.camera_bob_y if animation is not None else 0.0)
         self.camera.z = ez
 
     def _rebuild_world_runtime(self) -> tuple[float, float, float]:

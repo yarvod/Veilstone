@@ -73,7 +73,7 @@ F-клавиши должны быть player-facing управлением, а 
       state, swim state, jump/fall state, interaction state, selected hand.
 - [x] Move footstep timing out of the ad-hoc render-window accumulator so gait
       phase is the single source of truth for steps.
-- [ ] Drive camera bob from the same gait phase; walking and sprinting should
+- [x] Drive camera bob from the same gait phase; walking and sprinting should
       feel different but synchronized with footsteps.
 - [ ] Add first-person 3D hand/viewmodel renderer that consumes a snapshot, not
       raw `GameWindow` state.
