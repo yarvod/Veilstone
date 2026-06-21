@@ -7,7 +7,9 @@ from voxel_sandbox.app.settings import AppSettings, load_settings, save_user_set
 
 
 def test_missing_settings_file_uses_defaults(tmp_path: Path) -> None:
-    assert load_settings(tmp_path / "missing.toml") == AppSettings()
+    settings = load_settings(tmp_path / "missing.toml")
+    assert settings == AppSettings()
+    assert settings.development.render_local_player_model is False
 
 
 def test_settings_are_loaded_from_toml(tmp_path: Path) -> None:

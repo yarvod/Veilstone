@@ -34,6 +34,7 @@ class DevelopmentSettings:
     shader_hot_reload: bool = True
     profile_frame: bool = False
     disable_hud: bool = False
+    render_local_player_model: bool = False
 
 
 @dataclass(frozen=True, slots=True)

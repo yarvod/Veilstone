@@ -22,6 +22,7 @@ from voxel_sandbox.app.composition import (
 )
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
@@ -60,6 +61,7 @@ from voxel_sandbox.render.input_state import (
 from voxel_sandbox.render.inventory_ui import InventoryController, InventoryLogic, InventoryState
 from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.network_controller import NetworkController
+from voxel_sandbox.render.player_avatar import build_player_avatar_world
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
@@ -427,7 +429,7 @@ class GameWindow(pyglet.window.Window):
         def render_entities(light_matrix: np.ndarray) -> None:
             nonlocal entity_draws
             texture = getattr(self.world_renderer, "texture", None)
-            registry = getattr(self.world_renderer, "registry", None)
+            registry = self._block_registry()
             atlas_uvs = getattr(self.world_renderer, "atlas_uvs", None)
             entity_draws = self.entity_renderer.render(
                 self.entities.world,
@@ -456,6 +458,39 @@ class GameWindow(pyglet.window.Window):
                 self.world_renderer.shadow_bias,
                 self.world_renderer.light_direction,
             )
+            if self.settings.development.render_local_player_model:
+                player_snapshot = build_player_render_snapshot(
+                    self.player,
+                    yaw_degrees=self.camera.yaw_degrees,
+                )
+                player_world = build_player_avatar_world(player_snapshot)
+                entity_draws += self.entity_renderer.render(
+                    player_world,
+                    self.camera,
+                    self.width,
+                    self.height,
+                    self.settings.camera.field_of_view,
+                    self.world_renderer.animation_time,
+                    self.item_registry,
+                    registry,
+                    texture,
+                    atlas_uvs,
+                    self.world_renderer.entity_light,
+                    self.world_renderer.daylight,
+                    (
+                        0.55 + 0.45 * self.world_renderer.daylight,
+                        0.62 + 0.38 * self.world_renderer.daylight,
+                        0.78 + 0.22 * self.world_renderer.daylight,
+                    ),
+                    light_matrix,
+                    (
+                        self.world_renderer.shadow_map.texture
+                        if self.world_renderer.shadow_map is not None
+                        else None
+                    ),
+                    self.world_renderer.shadow_bias,
+                    self.world_renderer.light_direction,
+                )
             entity_draws += self.structure_renderer.render(
                 self.structure_world,
                 self.camera,

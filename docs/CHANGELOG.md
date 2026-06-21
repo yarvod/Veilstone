@@ -4,6 +4,7 @@
 
 ### Added
 
+- **3D player debug draw path** - added `development.render_local_player_model` toggle and optional local player avatar rendering through the existing entity renderer path.
 - **3D player render adapter** - added CPU-side player avatar adapter mapping `PlayerRenderSnapshot` into existing entity renderer transform/model data.
 - **3D player snapshot** - added `PlayerRenderSnapshot` application view data and tests so a future player renderer can consume player state without depending on Pyglet/ModernGL.
 - **Generation guard tests** - generation feature densities and hardcoded feature block IDs are now checked against expected probability ranges and block registry data.

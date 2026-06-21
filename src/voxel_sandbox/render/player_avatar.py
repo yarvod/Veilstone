@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from voxel_sandbox.application.player_render import PlayerRenderSnapshot
-from voxel_sandbox.engine.ecs import RenderModel, Transform
+from voxel_sandbox.engine.ecs import EntityWorld, RenderModel, Transform
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,3 +30,14 @@ def build_player_avatar_render_data(
         ),
         model=model,
     )
+
+
+def build_player_avatar_world(snapshot: PlayerRenderSnapshot) -> EntityWorld:
+    """Build a transient EntityWorld containing only the local player avatar."""
+
+    data = build_player_avatar_render_data(snapshot)
+    world = EntityWorld()
+    entity = world.create()
+    world.transforms.set(entity, data.transform)
+    world.render_models.set(entity, data.model)
+    return world

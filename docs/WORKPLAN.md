@@ -27,11 +27,11 @@
 - [x] Add deterministic tests for any new generation rule before render integration.
 - [x] Review densities and block IDs against data registries before wider tuning.
 
-#### Phase B4: 3D Player Model — ACTIVE
+#### Phase B4: 3D Player Model — DONE
 
 - [x] Add `PlayerRenderSnapshot` application view data without Pyglet/ModernGL.
 - [x] Add render adapter that can consume `PlayerRenderSnapshot`.
-- [ ] Add first local/third-person player model draw path behind settings or debug toggle.
+- [x] Add first local/third-person player model draw path behind settings or debug toggle.
 
 ## Next Phases
 
