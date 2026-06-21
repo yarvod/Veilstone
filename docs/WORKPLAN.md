@@ -68,7 +68,7 @@ F-клавиши должны быть player-facing управлением, а 
 Цель: игрок в первом лице должен иметь тело/руку/предмет, а не быть камерой,
 которая летает по миру.
 
-- [ ] Add deterministic `PlayerAnimationState` / gait state in engine or
+- [x] Add deterministic `PlayerAnimationState` / gait state in engine or
       application-facing data: movement phase, walk/sprint cadence, grounded
       state, swim state, jump/fall state, interaction state, selected hand.
 - [ ] Move footstep timing out of the ad-hoc render-window accumulator so gait

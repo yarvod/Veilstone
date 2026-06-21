@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from voxel_sandbox.application.player_animation import PlayerAnimationSnapshot
 from voxel_sandbox.engine.physics import PlayerController
 
 
@@ -17,10 +18,14 @@ class PlayerRenderSnapshot:
     in_water: bool
     on_ground: bool
     vertical_velocity: float
+    animation: PlayerAnimationSnapshot | None = None
 
 
 def build_player_render_snapshot(
-    player: PlayerController, *, yaw_degrees: float
+    player: PlayerController,
+    *,
+    yaw_degrees: float,
+    animation: PlayerAnimationSnapshot | None = None,
 ) -> PlayerRenderSnapshot:
     """Create render view data without importing Pyglet/ModernGL."""
 
@@ -33,4 +38,5 @@ def build_player_render_snapshot(
         in_water=player.in_water,
         on_ground=player.on_ground,
         vertical_velocity=player.velocity_y,
+        animation=animation,
     )

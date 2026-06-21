@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from voxel_sandbox.application.player_animation import (
+    PlayerAnimationInput,
+    PlayerAnimationState,
+    advance_player_animation,
+)
 from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.engine.physics import PlayerController
 
@@ -20,6 +25,7 @@ def test_build_player_render_snapshot_captures_player_view_data() -> None:
     assert snapshot.in_water is True
     assert snapshot.on_ground is False
     assert snapshot.vertical_velocity == -1.5
+    assert snapshot.animation is None
 
 
 def test_build_player_render_snapshot_is_detached_from_player_mutation() -> None:
@@ -32,3 +38,22 @@ def test_build_player_render_snapshot_is_detached_from_player_mutation() -> None
 
     assert snapshot.position == (1.0, 2.0, 3.0)
     assert snapshot.yaw_degrees == 270.0
+
+
+def test_build_player_render_snapshot_can_carry_animation_snapshot() -> None:
+    player = PlayerController(x=1.0, y=2.0, z=3.0)
+    _, animation = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, on_ground=True),
+        0.21,
+    )
+
+    snapshot = build_player_render_snapshot(
+        player,
+        yaw_degrees=45.0,
+        animation=animation,
+    )
+
+    assert snapshot.animation is animation
+    assert snapshot.animation is not None
+    assert snapshot.animation.footstep_due is True
