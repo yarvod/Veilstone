@@ -30,7 +30,7 @@
 #### Phase B4: 3D Player Model — ACTIVE
 
 - [x] Add `PlayerRenderSnapshot` application view data without Pyglet/ModernGL.
-- [ ] Add render adapter that can consume `PlayerRenderSnapshot`.
+- [x] Add render adapter that can consume `PlayerRenderSnapshot`.
 - [ ] Add first local/third-person player model draw path behind settings or debug toggle.
 
 ## Next Phases
