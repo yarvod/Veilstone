@@ -100,9 +100,9 @@ F-клавиши должны быть player-facing управлением, а 
       held item, name, health/status flags where needed.
 - [ ] Make local third-person player rendering use the same player snapshot path
       as remote players.
-- [ ] Add camera perspective modes: first person, third-person back,
+- [x] Add camera perspective modes: first person, third-person back,
       third-person front.
-- [ ] Add Minecraft-like perspective cycle binding after resolving current F-key
+- [x] Add Minecraft-like perspective cycle binding after resolving current F-key
       conflicts.
 - [ ] Add remote player interpolation so multiplayer movement does not jitter.
 - [ ] Render remote player nameplates above head with distance/readability rules.
@@ -200,7 +200,7 @@ resource packs.
 Цель: сделать понятные Minecraft-like controls и убрать графические toggles из
 обычных F-клавиш.
 
-- [ ] Add perspective cycling for first/third-person modes.
+- [x] Add perspective cycling for first/third-person modes.
 - [ ] Add or reserve hide-HUD behavior.
 - [ ] Add or reserve screenshot behavior.
 - [ ] Expand debug overlay with coordinates, FPS/frame timings, chunk/mesh

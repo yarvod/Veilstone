@@ -152,6 +152,19 @@ class TestOnKeyPress:
         h.on_key_press(key.F3, 0)
         assert win.debug_overlay_visible is True
 
+    def test_f5_cycles_perspective(self):
+        win = _make_win(in_game=True)
+        h = InputHandler(win)
+        h.on_key_press(key.F5, 0)
+        win.cycle_perspective.assert_called_once()
+
+    def test_ctrl_f5_keeps_shader_reload_dev_binding(self):
+        win = _make_win(in_game=True)
+        h = InputHandler(win)
+        h.on_key_press(key.F5, key.MOD_CTRL)
+        win.debug_shader.reload.assert_called_once_with(force=True)
+        win.cycle_perspective.assert_not_called()
+
     def test_hotbar_digit_selects_slot(self):
         win = _make_win(in_game=True)
         h = InputHandler(win)

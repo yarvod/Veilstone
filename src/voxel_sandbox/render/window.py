@@ -30,6 +30,11 @@ from voxel_sandbox.application.player_animation import (
     advance_player_animation,
     start_player_interaction,
 )
+from voxel_sandbox.application.player_camera import (
+    PerspectiveMode,
+    camera_position_for_perspective,
+    cycle_perspective_mode,
+)
 from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.application.player_viewmodel import build_player_viewmodel_snapshot
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
@@ -215,6 +220,7 @@ class GameWindow(pyglet.window.Window):
         self.mouse_y = 0
         self.mouse_captured = False
         self.debug_overlay_visible = False
+        self.perspective_mode = PerspectiveMode.FIRST_PERSON
         self.hud_batch = pyglet.graphics.Batch()
         self.hud_bg_group = pyglet.graphics.Group(order=0)
         self.hud_fg_group = pyglet.graphics.Group(order=1)
@@ -475,7 +481,10 @@ class GameWindow(pyglet.window.Window):
                 self.world_renderer.shadow_bias,
                 self.world_renderer.light_direction,
             )
-            if self.settings.development.render_local_player_model:
+            if (
+                self.settings.development.render_local_player_model
+                or self.perspective_mode is not PerspectiveMode.FIRST_PERSON
+            ):
                 player_snapshot = build_player_render_snapshot(
                     self.player,
                     yaw_degrees=self.camera.yaw_degrees,
@@ -546,7 +555,7 @@ class GameWindow(pyglet.window.Window):
             ),
             transparent_underlay=render_entities,
         )
-        if not self.inventory_open:
+        if not self.inventory_open and self.perspective_mode is PerspectiveMode.FIRST_PERSON:
             viewmodel_snapshot = build_player_viewmodel_snapshot(
                 self._player_animation_snapshot,
                 held_stack=self.hotbar.selected,
@@ -661,10 +670,17 @@ class GameWindow(pyglet.window.Window):
 
     def _sync_camera_to_player(self) -> None:
         ex, ey, ez = self.player.eye_position
-        self.camera.x = ex
         animation = self._player_animation_snapshot
-        self.camera.y = ey + (animation.camera_bob_y if animation is not None else 0.0)
-        self.camera.z = ez
+        self.camera.x, self.camera.y, self.camera.z = camera_position_for_perspective(
+            (ex, ey + (animation.camera_bob_y if animation is not None else 0.0), ez),
+            self.camera.direction,
+            self.perspective_mode,
+        )
+
+    def cycle_perspective(self) -> None:
+        self.perspective_mode = cycle_perspective_mode(self.perspective_mode)
+        self._sync_camera_to_player()
+        self.inventory_status = f"Perspective: {self.perspective_mode.value}"
 
     def start_player_interaction(self, interaction: PlayerInteraction) -> None:
         self._player_animation_state = start_player_interaction(

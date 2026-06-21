@@ -24,6 +24,7 @@ except (ImportError, IndexError):
         F7 = 2007
         F8 = 2008
         F9 = 2009
+        MOD_CTRL = 2
         MOD_SHIFT = 1
         Q = ord("Q")
         RETURN = 13
@@ -94,7 +95,6 @@ class InputHandler:
         self.win = win
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
-        del modifiers
         win = self.win
         if symbol is None:
             LOGGER.debug("Ignored key event without a symbol")
@@ -165,8 +165,11 @@ class InputHandler:
             win._sync_game_state()
             win._sync_mouse_capture()
             return
-        if symbol == key.F5:
+        if symbol == key.F5 and modifiers & key.MOD_CTRL:
             win.debug_shader.reload(force=True)
+            return
+        if symbol == key.F5:
+            win.cycle_perspective()
             return
         if symbol == key.F3:
             win.debug_overlay_visible = not win.debug_overlay_visible

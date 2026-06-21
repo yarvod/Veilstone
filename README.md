@@ -113,7 +113,8 @@ For the live prioritized list, see `docs/WORKPLAN.md` and `docs/BUGS.md`.
 - `/`: open command line.
 - `Escape`: pause/resume or go back in menus.
 - `F3`: toggle debug overlay.
-- `F5`: reload shaders.
+- `F5`: cycle camera perspective.
+- `Ctrl+F5`: reload shaders.
 - `F6`: toggle smooth lighting.
 - `F7`: toggle ambient occlusion.
 - `F8`: toggle fog.

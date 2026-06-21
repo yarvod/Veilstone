@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Perspective cycling** - added first-person, third-person-back, and
+  third-person-front camera modes; `F5` cycles perspective and `Ctrl+F5` keeps
+  shader reload as a development shortcut.
 - **Viewmodel interaction swings** - attack, block break, and block place inputs
   now start player interaction animation state, driving the first-person
   viewmodel swing pose.
