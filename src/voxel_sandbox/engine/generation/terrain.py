@@ -9,6 +9,8 @@ import numpy as np
 
 from voxel_sandbox.engine.chunks import SECTION_SIZE, Chunk, ChunkCoord, DirtyFlag
 from voxel_sandbox.engine.gameplay_constants import (
+    DUNGEON_DENSITY,
+    HIGHLANDS_PILLAR_DENSITY,
     ORE_DENSITY,
     TERRAIN_BASE_HEIGHT,
     TERRAIN_DETAIL_SCALE,
@@ -389,6 +391,69 @@ class _TreeDecorator:
                     )
 
 
+class _DungeonDecorator:
+    """Places one carved underground chamber per qualifying chunk."""
+
+    def __init__(self, seed: WorldSeed) -> None:
+        self._seed_value = seed.value
+
+    def decorate(
+        self,
+        chunk: Chunk,
+        coord: ChunkCoord,
+        height_provider: HeightProvider,
+        touched_sections: set[int],
+    ) -> None:
+        if _hash(self._seed_value, coord.x, coord.z, 60) > DUNGEON_DENSITY:
+            return
+        room_x = coord.x * SECTION_SIZE + 8
+        room_y = 8  # floor at room_y; interior y = room_y+1 .. room_y+4
+        room_z = coord.z * SECTION_SIZE + 8
+        for dx in range(-3, 4):
+            for dy in range(1, 5):
+                for dz in range(-3, 4):
+                    _set_if_inside(
+                        chunk, coord, room_x + dx, room_y + dy, room_z + dz, 0, touched_sections
+                    )
+        for lx, lz in ((-2, -2), (2, -2), (-2, 2), (2, 2)):
+            _set_if_inside(chunk, coord, room_x + lx, room_y + 4, room_z + lz, 7, touched_sections)
+        for sy in range(room_y + 5, room_y + 15):
+            for dx in range(-1, 2):
+                for dz in range(-1, 2):
+                    _set_if_inside(chunk, coord, room_x + dx, sy, room_z + dz, 0, touched_sections)
+
+
+class _HighlandsFeatureDecorator:
+    """Raises stone pillars capped with ore in Dusk Highlands columns."""
+
+    def __init__(self, seed: WorldSeed) -> None:
+        self._seed_value = seed.value
+
+    def decorate(
+        self,
+        chunk: Chunk,
+        coord: ChunkCoord,
+        height_provider: HeightProvider,
+        touched_sections: set[int],
+    ) -> None:
+        seed_value = self._seed_value
+        min_x = coord.x * SECTION_SIZE
+        min_z = coord.z * SECTION_SIZE
+        for world_x in range(min_x, min_x + SECTION_SIZE):
+            for world_z in range(min_z, min_z + SECTION_SIZE):
+                if height_provider.biome_key_at(world_x, world_z) != Biome.DUSK_HIGHLANDS.value:
+                    continue
+                if _hash3(seed_value, world_x, 0, world_z, 70) < HIGHLANDS_PILLAR_DENSITY:
+                    continue
+                top_y = height_provider.height_at(world_x, world_z)
+                pillar_h = 5 + int(_hash3(seed_value, world_x, 1, world_z, 71) * 10)
+                for y in range(top_y, top_y + pillar_h):
+                    _set_if_inside(chunk, coord, world_x, y, world_z, 1, touched_sections)
+                _set_if_inside(
+                    chunk, coord, world_x, top_y + pillar_h, world_z, 6, touched_sections
+                )
+
+
 class _StructureDecorator:
     def __init__(self, seed: WorldSeed, templates: tuple[StructureTemplate, ...]) -> None:
         self._seed = seed
@@ -439,6 +504,12 @@ class TerrainGenerator:
         self.structure_templates: tuple[StructureTemplate, ...] = load_structure_templates(
             Path(__file__).parent / "structure_templates"
         )
+        # Biome-specific hill amplitude: height_variation * 2 gives pronounced differences
+        self._biome_hill_scale: dict[str, float] = {}
+        if biome_registry is not None:
+            for biome in biome_registry:
+                self._biome_hill_scale[biome.key] = biome.height_variation * 2.0
+
         surface_placer: _DefaultSurfacePlacer | BiomeSurfacePlacer
         if block_registry is not None and biome_registry is not None:
             surface_placer = BiomeSurfacePlacer(block_registry, biome_registry)
@@ -453,6 +524,8 @@ class TerrainGenerator:
                 _CaveDecorator(seed),
                 _OreDecorator(seed),
                 _TreeDecorator(seed),
+                _DungeonDecorator(seed),
+                _HighlandsFeatureDecorator(seed),
                 _StructureDecorator(seed, self.structure_templates),
             ),
         )
@@ -461,9 +534,9 @@ class TerrainGenerator:
         broad = _value_noise(self.seed.value, world_x / 128.0, world_z / 128.0, 0)
         detail = _value_noise(self.seed.value, world_x / 32.0, world_z / 32.0, 1)
         hill_factor = broad * broad * broad
-        return TERRAIN_BASE_HEIGHT + int(
-            hill_factor * TERRAIN_HILL_SCALE + detail * TERRAIN_DETAIL_SCALE
-        )
+        biome_key = self.biome_key_at(world_x, world_z)
+        hill_scale = self._biome_hill_scale.get(biome_key, TERRAIN_HILL_SCALE)
+        return TERRAIN_BASE_HEIGHT + int(hill_factor * hill_scale + detail * TERRAIN_DETAIL_SCALE)
 
     def biome_key_at(self, world_x: int, world_z: int) -> str:
         temperature = _value_noise(self.seed.value, world_x / 96.0, world_z / 96.0, 2)

@@ -8,7 +8,6 @@ from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
 
 class FakeRenderer:
     def __init__(self) -> None:
-        self.registry = object()
         self.applied_atlas: object | None = None
 
     def apply_texture_pack(self, atlas: object) -> None:
@@ -46,6 +45,7 @@ class FakeTexturePackService:
 
 def test_apply_resource_pack_updates_renderer_and_settings(tmp_path: Path) -> None:
     atlas = object()
+    registry = object()
     renderer = FakeRenderer()
     store = FakeSettingsStore()
     texture_packs = FakeTexturePackService(atlas)
@@ -58,6 +58,7 @@ def test_apply_resource_pack_updates_renderer_and_settings(tmp_path: Path) -> No
         path=str(pack),
         settings=AppSettings(),
         renderer=renderer,
+        block_registry=registry,
         cache_root=tmp_path / "cache",
     )
 
@@ -66,20 +67,23 @@ def test_apply_resource_pack_updates_renderer_and_settings(tmp_path: Path) -> No
     assert result.settings.graphics.resource_pack_path == str(pack)
     assert store.saved is result.settings
     assert renderer.applied_atlas is atlas
-    assert texture_packs.calls == [(pack, renderer.registry, tmp_path / "cache")]
+    assert texture_packs.calls == [(pack, registry, tmp_path / "cache")]
 
 
 def test_apply_resource_pack_reset_uses_default_atlas(tmp_path: Path) -> None:
     atlas = object()
+    registry = object()
     renderer = FakeRenderer()
     store = FakeSettingsStore()
+    texture_packs = FakeTexturePackService(atlas)
 
-    use_case = ApplyResourcePackUseCase(FakeTexturePackService(atlas), store)
+    use_case = ApplyResourcePackUseCase(texture_packs, store)
 
     result = use_case.execute(
         path=None,
         settings=AppSettings(),
         renderer=renderer,
+        block_registry=registry,
         cache_root=tmp_path / "cache",
     )
 
@@ -88,6 +92,7 @@ def test_apply_resource_pack_reset_uses_default_atlas(tmp_path: Path) -> None:
     assert result.settings.graphics.resource_pack_path == ""
     assert store.saved is result.settings
     assert renderer.applied_atlas is atlas
+    assert texture_packs.calls == [(None, registry, tmp_path / "cache")]
 
 
 def test_apply_resource_pack_missing_path_does_not_mutate(tmp_path: Path) -> None:
@@ -101,6 +106,7 @@ def test_apply_resource_pack_missing_path_does_not_mutate(tmp_path: Path) -> Non
         path=str(tmp_path / "missing"),
         settings=settings,
         renderer=renderer,
+        block_registry=object(),
         cache_root=tmp_path / "cache",
     )
 

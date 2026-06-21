@@ -359,6 +359,7 @@ class MenuUI:
             path=None if pack_path is None else str(pack_path),
             settings=win.settings,
             renderer=win.world_renderer,
+            block_registry=win.world_runtime.block_registry,
             cache_root=win.active_save_root.parent / "texture_cache",
             report_callback=capture_report,
         )

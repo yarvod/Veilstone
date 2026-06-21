@@ -16,8 +16,6 @@ class SettingsStorePort(Protocol):
 
 
 class WorldRenderPort(Protocol):
-    registry: Any
-
     def apply_texture_pack(self, atlas: Any) -> None: ...
 
 
@@ -52,6 +50,7 @@ class ApplyResourcePackUseCase:
         path: str | None,
         settings: AppSettings,
         renderer: WorldRenderPort,
+        block_registry: Any,
         cache_root: Path,
         report_callback: Callable[[Any], None] | None = None,
     ) -> ApplyResourcePackResult:
@@ -66,7 +65,7 @@ class ApplyResourcePackUseCase:
         try:
             atlas = self.texture_packs.load_block_atlas(
                 pack_path,
-                registry=renderer.registry,
+                registry=block_registry,
                 cache_root=cache_root,
                 report_callback=report_callback,
             )

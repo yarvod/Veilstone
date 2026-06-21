@@ -44,9 +44,9 @@ def test_dimension_def_is_frozen() -> None:
         dim.water_level = 99  # type: ignore[misc]
 
 
-def test_dimension_has_four_decorators() -> None:
+def test_dimension_has_six_decorators() -> None:
     generator = TerrainGenerator(WorldSeed.parse("decorators"))
-    assert len(generator._dimension.feature_decorators) == 4
+    assert len(generator._dimension.feature_decorators) == 6
 
 
 def test_generator_is_its_own_height_provider() -> None:
@@ -179,13 +179,21 @@ def test_surface_placer_protocol_structural() -> None:
 
 
 def test_feature_decorator_protocol_structural() -> None:
-    """All four decorators satisfy FeatureDecorator protocol."""
+    """All feature decorators satisfy FeatureDecorator protocol."""
     from voxel_sandbox.engine.generation.terrain import (
         _CaveDecorator,
+        _DungeonDecorator,
+        _HighlandsFeatureDecorator,
         _OreDecorator,
         _TreeDecorator,
     )
 
     seed = WorldSeed.parse("proto")
-    for cls in (_CaveDecorator, _OreDecorator, _TreeDecorator):
+    for cls in (
+        _CaveDecorator,
+        _OreDecorator,
+        _TreeDecorator,
+        _DungeonDecorator,
+        _HighlandsFeatureDecorator,
+    ):
         assert isinstance(cls(seed), FeatureDecorator)

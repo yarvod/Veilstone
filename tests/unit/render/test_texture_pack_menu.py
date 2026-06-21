@@ -50,8 +50,8 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(tmp_path: 
             texture_packs=FakeTexturePackService(),
         ),
         active_save_root=tmp_path / "save",
+        world_runtime=SimpleNamespace(block_registry="registry"),
         world_renderer=SimpleNamespace(
-            registry="registry",
             apply_texture_pack=lambda next_atlas: applied.append(next_atlas),
         ),
     )

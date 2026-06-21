@@ -89,6 +89,7 @@ class GameplayController:
             path=command.path,
             settings=win.settings,
             renderer=win.world_renderer,
+            block_registry=self._block_registry(),
             cache_root=win.active_save_root.parent / "texture_cache",
         )
         if result.applied:

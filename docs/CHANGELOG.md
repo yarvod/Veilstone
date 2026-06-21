@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Generation decorators** - terrain generation now includes dungeon and Dusk Highlands pillar decorators, with generation pipeline tests updated to cover the expanded decorator set.
+
 - **Water improvements (Phase B2)** — water now flows across chunk boundaries; two adjacent source blocks fill the gap with a new source block (infinite water mechanic); all loaded chunks are ticked together each 0.2 s step instead of one at a time, so a lake across multiple chunks propagates at full speed.
 
 - **Player feel overhaul (Phase B1)** — coyote time (0.12 s), jump buffering (0.12 s), variable jump height (release Space while rising for a shorter arc), sprint (Shift → 8 m/s, faster footstep cadence), and subtle head bob camera oscillation when walking.
@@ -39,6 +41,7 @@
 
 ### Fixed
 
+- **Resource pack application regression** - `ApplyResourcePackUseCase` now receives the block registry explicitly instead of reading `renderer.registry`, so resource packs still apply after renderer/world ownership split.
 - **Display-less UI interaction tests** — `test_ui_interaction.py` now skips at module level when no active display exists instead of failing during Pyglet window import/GL setup.
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
