@@ -29,6 +29,7 @@ from voxel_sandbox.application.player_animation import (
     advance_player_animation,
 )
 from voxel_sandbox.application.player_render import build_player_render_snapshot
+from voxel_sandbox.application.player_viewmodel import build_player_viewmodel_snapshot
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
@@ -56,6 +57,7 @@ from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
+from voxel_sandbox.render.first_person_viewmodel import FirstPersonViewmodelRenderer
 from voxel_sandbox.render.gameplay_controller import GameplayController
 from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
@@ -67,6 +69,7 @@ from voxel_sandbox.render.inventory_ui import InventoryController, InventoryLogi
 from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.player_avatar import build_player_avatar_world
+from voxel_sandbox.render.player_viewmodel import build_player_viewmodel_render_data
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
@@ -168,6 +171,7 @@ class GameWindow(pyglet.window.Window):
         self.recipe_book = RecipeBook.from_toml(recipes_path, self.item_registry)
         self._gameplay._maintain_population((spawn_x, spawn_y, spawn_z))
         self.entity_renderer = EntityRenderer(self.mgl_context)
+        self.viewmodel_renderer = FirstPersonViewmodelRenderer(self.mgl_context)
         self.structure_world = world_storage.load_structure_world()
         self.structure_renderer = StructureRenderer(
             self.mgl_context,
@@ -238,6 +242,7 @@ class GameWindow(pyglet.window.Window):
         self.debug_shader.release()
         self.sky_renderer.release()
         self.entity_renderer.release()
+        self.viewmodel_renderer.release()
         self.structure_renderer.release()
         self.world_renderer.release()
         self.audio.close()
@@ -539,6 +544,18 @@ class GameWindow(pyglet.window.Window):
             ),
             transparent_underlay=render_entities,
         )
+        if not self.inventory_open:
+            viewmodel_snapshot = build_player_viewmodel_snapshot(
+                self._player_animation_snapshot,
+                held_stack=self.hotbar.selected,
+            )
+            viewmodel_data = build_player_viewmodel_render_data(viewmodel_snapshot)
+            self.mgl_context.disable(moderngl.DEPTH_TEST)
+            self.viewmodel_renderer.render(
+                viewmodel_data,
+                width=self.width,
+                height=self.height,
+            )
         self.mgl_context.disable(moderngl.DEPTH_TEST)
         self.menu_ui._prepare_ui_draw()
         if not getattr(self.settings.development, "disable_hud", False):

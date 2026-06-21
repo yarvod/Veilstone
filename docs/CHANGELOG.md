@@ -4,6 +4,9 @@
 
 ### Added
 
+- **First-person viewmodel renderer MVP** - added a small ModernGL cuboid
+  overlay renderer for the first-person hand and selected held item, driven from
+  viewmodel snapshots and rendered before HUD.
 - **First-person viewmodel render adapter** - added render-facing cuboid part
   data for the hand and held item from the application viewmodel snapshot.
 - **First-person viewmodel snapshot** - added application-layer hand/held-item

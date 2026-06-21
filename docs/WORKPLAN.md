@@ -75,12 +75,12 @@ F-клавиши должны быть player-facing управлением, а 
       phase is the single source of truth for steps.
 - [x] Drive camera bob from the same gait phase; walking and sprinting should
       feel different but synchronized with footsteps.
-- [ ] Add first-person 3D hand/viewmodel renderer that consumes a snapshot, not
+- [x] Add first-person 3D hand/viewmodel renderer that consumes a snapshot, not
       raw `GameWindow` state.
 - [x] Add application-level first-person viewmodel pose snapshot for hand,
       held item, bob, and swing animation data.
 - [x] Add render-facing first-person viewmodel part data for hand and held item.
-- [ ] Render selected held item/block as a 3D model in the hand.
+- [x] Render selected held item/block as a first 3D cuboid MVP in the hand.
 - [ ] Add attack/break/place swing animation with clear start, progress, finish,
       and cancellation behavior.
 - [ ] Add block breaking feedback hook so hand animation, sound, particles later
