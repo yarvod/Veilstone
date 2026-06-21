@@ -6,13 +6,13 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G001: Player cannot reliably leave water onto shore
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** player physics / water collision
 - **Observed:** player can swim upward, but transitioning from water onto nearby
   land is unreliable or blocked.
-- **Next action:** add a focused shore-exit regression test around water,
-  collision, step-up, and jump/swim movement; fix movement rules without adding
-  render/window dependencies.
+- **Fix notes:** player physics now attempts a bounded step-up when horizontal
+  movement collides while swimming, with a regression test for swimming onto a
+  one-block shore.
 
 ### BUG-G002: Water flow surface looks interrupted after block breaks
 

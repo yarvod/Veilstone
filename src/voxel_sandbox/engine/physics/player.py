@@ -57,7 +57,10 @@ class PlayerController:
         is_solid: SolidChecker | None = None,
         is_fluid: FluidChecker | None = None,
     ) -> None:
-        solid = is_solid if is_solid is not None else lambda x, y, z: get_block(x, y, z) != 0
+        def default_solid(x: int, y: int, z: int) -> bool:
+            return get_block(x, y, z) != 0
+
+        solid: SolidChecker = is_solid if is_solid is not None else default_solid
 
         self.in_water = False
         if is_fluid is not None:
@@ -110,8 +113,10 @@ class PlayerController:
         delta_x = (forward_x * forward + right_x * right) * speed * delta_time
         delta_z = (forward_z * forward + right_z * right) * speed * delta_time
 
-        self._move_axis("x", delta_x, solid)
-        self._move_axis("z", delta_z, solid)
+        if self._move_axis("x", delta_x, solid):
+            self._try_step_up("x", delta_x, solid)
+        if self._move_axis("z", delta_z, solid):
+            self._try_step_up("z", delta_z, solid)
         collided_y = self._move_axis("y", self.velocity_y * delta_time, solid)
 
         if collided_y:
@@ -152,6 +157,23 @@ class PlayerController:
             if self._collides_block(is_solid):
                 setattr(self, axis, previous)
                 return True
+        return False
+
+    def _try_step_up(self, axis: str, displacement: float, is_solid: SolidChecker) -> bool:
+        if displacement == 0.0 or not (self.in_water or self.on_ground):
+            return False
+        original_x, original_y, original_z = self.x, self.y, self.z
+        max_step = 1.05 if self.in_water else 0.6
+        step_heights = (0.25, 0.5, 0.75, 1.0, 1.05)
+        for step_height in step_heights:
+            if step_height > max_step:
+                continue
+            self.x, self.y, self.z = original_x, original_y + step_height, original_z
+            if self._collides_block(is_solid):
+                continue
+            if not self._move_axis(axis, displacement, is_solid):
+                return True
+        self.x, self.y, self.z = original_x, original_y, original_z
         return False
 
     def _collides_block(self, is_solid: SolidChecker) -> bool:

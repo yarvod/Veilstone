@@ -74,6 +74,9 @@
 
 ### Fixed
 
+- **Water shore exit** - player physics now supports swimming/jumping out of
+  water onto a one-block shore via a bounded collision step-up, covered by a
+  regression test.
 - **Time command semantics** - `/time set day` now means sunrise/start of day; `noon` remains the high-sun value.
 - **Default day cycle length** - default graphics day/night cycle now uses 1200 seconds, matching a Minecraft-like 20-minute full cycle.
 - **Footstep loudness** - default block-step and fallback footstep gains are lower in `config/audio.toml`.

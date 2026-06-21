@@ -30,6 +30,33 @@ def test_player_cannot_walk_through_wall() -> None:
     assert player.x < 1.71
 
 
+def test_player_can_swim_out_of_water_onto_one_block_shore() -> None:
+    def world(x: int, y: int, z: int) -> int:
+        del z
+        if y <= 0:
+            return 1
+        return 1 if x >= 1 and y == 1 else 0
+
+    def is_fluid(x: int, y: int, z: int) -> bool:
+        del z
+        return x <= 0 and y == 1
+
+    player = PlayerController(x=0.35, y=1.05, z=0.5, in_water=True)
+    dt = 1.0 / 60.0
+
+    for _ in range(45):
+        player.update(
+            PlayerInput(forward=1.0, jump=True),
+            0.0,
+            dt,
+            world,
+            is_fluid=is_fluid,
+        )
+
+    assert player.x > 1.15
+    assert player.y >= 1.95
+
+
 def test_player_jumps_only_from_ground() -> None:
     player = PlayerController(x=0.5, y=1.0, z=0.5, on_ground=True)
     player.update(PlayerInput(jump=True), 0.0, 1.0 / 60.0, flat_world)
