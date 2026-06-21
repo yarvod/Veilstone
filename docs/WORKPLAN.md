@@ -77,6 +77,8 @@ F-клавиши должны быть player-facing управлением, а 
       feel different but synchronized with footsteps.
 - [ ] Add first-person 3D hand/viewmodel renderer that consumes a snapshot, not
       raw `GameWindow` state.
+- [x] Add application-level first-person viewmodel pose snapshot for hand,
+      held item, bob, and swing animation data.
 - [ ] Render selected held item/block as a 3D model in the hand.
 - [ ] Add attack/break/place swing animation with clear start, progress, finish,
       and cancellation behavior.

@@ -4,6 +4,9 @@
 
 ### Added
 
+- **First-person viewmodel snapshot** - added application-layer hand/held-item
+  pose data with bob and interaction swing offsets so the renderer can add a 3D
+  hand without reading raw window or inventory state.
 - **Gait-driven camera bob** - local camera height now reads bob offset from the
   player animation snapshot instead of a separate render-owned `HeadBob`
   oscillator.
