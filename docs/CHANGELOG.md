@@ -4,6 +4,8 @@
 
 ### Added
 
+- **First-person viewmodel render adapter** - added render-facing cuboid part
+  data for the hand and held item from the application viewmodel snapshot.
 - **First-person viewmodel snapshot** - added application-layer hand/held-item
   pose data with bob and interaction swing offsets so the renderer can add a 3D
   hand without reading raw window or inventory state.
