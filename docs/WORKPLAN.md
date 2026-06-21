@@ -18,7 +18,7 @@
 
 Сделано: cross-chunk water flow, infinite source creation, тик всех загруженных чанков за fluid step, dirty neighbor propagation.
 
-#### Phase B3: Twilight-like Generation — ACTIVE
+#### Phase B3: Twilight-like Generation — DONE
 
 - [x] Add biome-sensitive hill amplitude for stronger Twilight biome silhouettes.
 - [x] Add dungeon chamber decorator and isolated generation test.
@@ -27,9 +27,14 @@
 - [x] Add deterministic tests for any new generation rule before render integration.
 - [x] Review densities and block IDs against data registries before wider tuning.
 
+#### Phase B4: 3D Player Model — ACTIVE
+
+- [x] Add `PlayerRenderSnapshot` application view data without Pyglet/ModernGL.
+- [ ] Add render adapter that can consume `PlayerRenderSnapshot`.
+- [ ] Add first local/third-person player model draw path behind settings or debug toggle.
+
 ## Next Phases
 
-- [ ] Phase B4: 3D player model/render adapter; movement remains simulation-tested.
 - [ ] Phase B5: UI polish; keep UI invoking use cases/runtime ports, not renderer internals.
 - [ ] Phase B6: Mobs; spawning and AI tested through `WorldQuery`/`EntityWorld` without GPU.
 - [ ] Phase B7: Network polish; persistence/session changes through runtime/application boundaries.

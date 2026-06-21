@@ -4,6 +4,7 @@
 
 ### Added
 
+- **3D player snapshot** - added `PlayerRenderSnapshot` application view data and tests so a future player renderer can consume player state without depending on Pyglet/ModernGL.
 - **Generation guard tests** - generation feature densities and hardcoded feature block IDs are now checked against expected probability ranges and block registry data.
 - **Generation decorators** - terrain generation now includes dungeon and Dusk Highlands pillar decorators, plus deterministic tests for Twilight Woods mushrooms/fireflies and Gloom Swamp glowing mushrooms.
 
