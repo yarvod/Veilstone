@@ -165,6 +165,29 @@ def test_default_generator_unchanged_surface(block_registry, biome_registry) -> 
     assert chunk.get_block(0, height - 1, 0) == 3  # grass=3 hardcoded in _DefaultSurfacePlacer
 
 
+def test_dungeon_decorator_carves_chamber_and_places_lamps() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("b3-generation"))
+    chunk = generator.generate_chunk(ChunkCoord(-19, -13))
+
+    assert chunk.get_block(8, 9, 8) == 0
+    assert chunk.get_block(8, 12, 8) == 0
+    assert chunk.get_block(6, 12, 6) == 7
+
+
+def test_dusk_highlands_decorator_places_pillar_with_ore_cap() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("b3-generation"))
+    chunk = generator.generate_chunk(ChunkCoord(-20, -12))
+
+    local_x = 3
+    local_z = 14
+    top_y = generator.height_at(-317, -178)
+    pillar_height = 13
+
+    for y in range(top_y, top_y + pillar_height):
+        assert chunk.get_block(local_x, y, local_z) == 1
+    assert chunk.get_block(local_x, top_y + pillar_height, local_z) == 6
+
+
 # ---------------------------------------------------------------------------
 # Protocol runtime checks (structural typing)
 # ---------------------------------------------------------------------------
