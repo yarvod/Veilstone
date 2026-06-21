@@ -188,6 +188,23 @@ def test_dusk_highlands_decorator_places_pillar_with_ore_cap() -> None:
     assert chunk.get_block(local_x, top_y + pillar_height, local_z) == 6
 
 
+def test_twilight_woods_decorator_places_mushrooms_and_fireflies() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("b3-variety"))
+    chunk = generator.generate_chunk(ChunkCoord(-30, -27))
+
+    assert generator.biome_key_at(-471, -421) == "twilight_woods"
+    assert chunk.get_block(9, 33, 11) == 11
+    assert chunk.get_block(8, 45, 11) == 12
+
+
+def test_gloom_swamp_decorator_places_glowing_mushrooms() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("b3-swamp-variety"))
+    chunk = generator.generate_chunk(ChunkCoord(-40, -30))
+
+    assert generator.biome_key_at(-635, -473) == "gloom_swamp"
+    assert chunk.get_block(5, 32, 7) == 11
+
+
 # ---------------------------------------------------------------------------
 # Protocol runtime checks (structural typing)
 # ---------------------------------------------------------------------------

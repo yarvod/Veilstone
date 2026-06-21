@@ -23,8 +23,8 @@
 - [x] Add biome-sensitive hill amplitude for stronger Twilight biome silhouettes.
 - [x] Add dungeon chamber decorator and isolated generation test.
 - [x] Add Dusk Highlands pillar/ore-cap decorator and isolated generation test.
-- [ ] Add small structure/feature variety pass for Twilight Woods and Gloom Swamp.
-- [ ] Add deterministic tests for any new generation rule before render integration.
+- [x] Add small structure/feature variety pass for Twilight Woods and Gloom Swamp.
+- [x] Add deterministic tests for any new generation rule before render integration.
 - [ ] Review densities and block IDs against data registries before wider tuning.
 
 ## Next Phases
