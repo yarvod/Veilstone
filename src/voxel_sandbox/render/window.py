@@ -220,6 +220,7 @@ class GameWindow(pyglet.window.Window):
         self.mouse_y = 0
         self.mouse_captured = False
         self.debug_overlay_visible = False
+        self.hud_hidden = False
         self.perspective_mode = PerspectiveMode.FIRST_PERSON
         self.hud_batch = pyglet.graphics.Batch()
         self.hud_bg_group = pyglet.graphics.Group(order=0)
@@ -569,7 +570,7 @@ class GameWindow(pyglet.window.Window):
             )
         self.mgl_context.disable(moderngl.DEPTH_TEST)
         self.menu_ui._prepare_ui_draw()
-        if not getattr(self.settings.development, "disable_hud", False):
+        if not self.hud_hidden and not getattr(self.settings.development, "disable_hud", False):
             self._hud.draw(entity_draws)
         self.mgl_context.enable(moderngl.DEPTH_TEST)
 

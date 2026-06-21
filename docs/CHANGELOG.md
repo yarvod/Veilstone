@@ -4,6 +4,7 @@
 
 ### Added
 
+- **HUD visibility shortcut** - `F1` now toggles HUD visibility at runtime.
 - **Perspective cycling** - added first-person, third-person-back, and
   third-person-front camera modes; `F5` cycles perspective and `Ctrl+F5` keeps
   shader reload as a development shortcut.

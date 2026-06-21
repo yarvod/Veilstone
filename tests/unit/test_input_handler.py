@@ -152,6 +152,13 @@ class TestOnKeyPress:
         h.on_key_press(key.F3, 0)
         assert win.debug_overlay_visible is True
 
+    def test_f1_toggles_hud_hidden(self):
+        win = _make_win(in_game=True)
+        win.hud_hidden = False
+        h = InputHandler(win)
+        h.on_key_press(key.F1, 0)
+        assert win.hud_hidden is True
+
     def test_f5_cycles_perspective(self):
         win = _make_win(in_game=True)
         h = InputHandler(win)

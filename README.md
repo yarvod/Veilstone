@@ -112,6 +112,7 @@ For the live prioritized list, see `docs/WORKPLAN.md` and `docs/BUGS.md`.
 - `T`: open multiplayer chat.
 - `/`: open command line.
 - `Escape`: pause/resume or go back in menus.
+- `F1`: hide/show HUD.
 - `F3`: toggle debug overlay.
 - `F5`: cycle camera perspective.
 - `Ctrl+F5`: reload shaders.

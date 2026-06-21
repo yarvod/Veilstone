@@ -201,7 +201,7 @@ resource packs.
 обычных F-клавиш.
 
 - [x] Add perspective cycling for first/third-person modes.
-- [ ] Add or reserve hide-HUD behavior.
+- [x] Add or reserve hide-HUD behavior.
 - [ ] Add or reserve screenshot behavior.
 - [ ] Expand debug overlay with coordinates, FPS/frame timings, chunk/mesh
       counts, memory estimate, Python/runtime info, CPU/GPU device strings where
