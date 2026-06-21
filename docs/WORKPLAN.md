@@ -25,7 +25,7 @@
 - [x] Add Dusk Highlands pillar/ore-cap decorator and isolated generation test.
 - [x] Add small structure/feature variety pass for Twilight Woods and Gloom Swamp.
 - [x] Add deterministic tests for any new generation rule before render integration.
-- [ ] Review densities and block IDs against data registries before wider tuning.
+- [x] Review densities and block IDs against data registries before wider tuning.
 
 ## Next Phases
 

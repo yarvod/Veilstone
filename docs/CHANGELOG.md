@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Generation guard tests** - generation feature densities and hardcoded feature block IDs are now checked against expected probability ranges and block registry data.
 - **Generation decorators** - terrain generation now includes dungeon and Dusk Highlands pillar decorators, plus deterministic tests for Twilight Woods mushrooms/fireflies and Gloom Swamp glowing mushrooms.
 
 - **Water improvements (Phase B2)** — water now flows across chunk boundaries; two adjacent source blocks fill the gap with a new source block (infinite water mechanic); all loaded chunks are ticked together each 0.2 s step instead of one at a time, so a lake across multiple chunks propagates at full speed.

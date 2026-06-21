@@ -5,8 +5,16 @@ from __future__ import annotations
 import pytest
 
 from voxel_sandbox.domain.biomes import load_biome_registry_from_toml
-from voxel_sandbox.domain.blocks import load_block_registry_from_toml
+from voxel_sandbox.domain.blocks import BlockRegistry, load_block_registry_from_toml
 from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.gameplay_constants import (
+    DUNGEON_DENSITY,
+    HIGHLANDS_PILLAR_DENSITY,
+    ORE_DENSITY,
+    TREE_DENSITY_DEFAULT,
+    TREE_DENSITY_SWAMP,
+    TREE_DENSITY_WOODS,
+)
 from voxel_sandbox.engine.generation import (
     BiomeSurfacePlacer,
     FeatureDecorator,
@@ -115,6 +123,25 @@ def test_biome_surface_placer_swamp_has_dirt_surface(block_registry, biome_regis
     dirt_id = block_registry.by_key("dirt").id
     surface_id, _sub, _deep = placer._biome_blocks["gloom_swamp"]
     assert surface_id == dirt_id
+
+
+def test_generation_feature_block_ids_match_registry(block_registry: BlockRegistry) -> None:
+    assert block_registry.by_key("dusk_crystal_ore").id == 6
+    assert block_registry.by_key("gloam_lantern").id == 7
+    assert block_registry.by_key("glowing_mushroom").id == 11
+    assert block_registry.by_key("fireflies").id == 12
+
+
+def test_generation_feature_densities_are_probabilities() -> None:
+    for density in (
+        DUNGEON_DENSITY,
+        1.0 - HIGHLANDS_PILLAR_DENSITY,
+        1.0 - ORE_DENSITY,
+        TREE_DENSITY_DEFAULT,
+        TREE_DENSITY_SWAMP,
+        TREE_DENSITY_WOODS,
+    ):
+        assert 0.0 <= density <= 1.0
 
 
 # ---------------------------------------------------------------------------
