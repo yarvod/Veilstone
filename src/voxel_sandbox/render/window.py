@@ -22,6 +22,12 @@ from voxel_sandbox.app.composition import (
 )
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.application.player_animation import (
+    PlayerAnimationInput,
+    PlayerAnimationSnapshot,
+    PlayerAnimationState,
+    advance_player_animation,
+)
 from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.domain.blocks import BlockRegistry
@@ -115,7 +121,8 @@ class GameWindow(pyglet.window.Window):
         self.audio_director = self.app_runtime.audio_director
         self.events = self.app_runtime.event_bus
         self._subscribe_audio_events()
-        self._footstep_accumulator = 0.0
+        self._player_animation_state = PlayerAnimationState()
+        self._player_animation_snapshot: PlayerAnimationSnapshot | None = None
         self.control_bindings = self._control_symbols()
         self.rebinding_action: str | None = None
         self.active_save_root = save_root or self.app_runtime.data_root / "dev_world"
@@ -368,37 +375,44 @@ class GameWindow(pyglet.window.Window):
             self.key_state.is_pressed(self.control_bindings["left"])
         )
         sprint = self.key_state.is_pressed(key.LSHIFT) or self.key_state.is_pressed(key.RSHIFT)
+        player_input = PlayerInput(
+            forward=forward,
+            right=right,
+            jump=self.key_state.is_pressed(self.control_bindings["jump"]),
+            sprint=sprint,
+        )
         self.player.update(
-            PlayerInput(
-                forward=forward,
-                right=right,
-                jump=self.key_state.is_pressed(self.control_bindings["jump"]),
-                sprint=sprint,
-            ),
+            player_input,
             self.camera.yaw_degrees,
             delta_time,
             self._chunk_streamer().get_block,
             is_solid=self._is_solid_combined,
             is_fluid=self._is_fluid_at,
         )
-        moving = abs(forward) + abs(right) > 0.0
+        self._player_animation_state, self._player_animation_snapshot = advance_player_animation(
+            self._player_animation_state,
+            PlayerAnimationInput(
+                forward=forward,
+                right=right,
+                sprint=sprint,
+                on_ground=self.player.on_ground,
+                in_water=self.player.in_water,
+                vertical_velocity=self.player.velocity_y,
+            ),
+            delta_time,
+        )
+        moving = self._player_animation_snapshot.moving
         self._head_bob.update(moving, self.player.on_ground, delta_time)
-        if moving and self.player.on_ground:
-            self._footstep_accumulator += delta_time
-            footstep_interval = 0.28 if sprint else 0.42
-            if self._footstep_accumulator >= footstep_interval:
-                self._footstep_accumulator %= footstep_interval
-                block_id = self.world_renderer.get_block(
-                    math.floor(self.player.x),
-                    math.floor(self.player.y - 0.05),
-                    math.floor(self.player.z),
-                )
-                material = self._block_registry().by_id(block_id).material.value
-                key_name = f"block.{material}"
-                key_name = key_name if key_name in self.audio.registry else "footstep"
-                self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, self.camera.position))
-        else:
-            self._footstep_accumulator = 0.0
+        if self._player_animation_snapshot.footstep_due:
+            block_id = self.world_renderer.get_block(
+                math.floor(self.player.x),
+                math.floor(self.player.y - 0.05),
+                math.floor(self.player.z),
+            )
+            material = self._block_registry().by_id(block_id).material.value
+            key_name = f"block.{material}"
+            key_name = key_name if key_name in self.audio.registry else "footstep"
+            self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, self.camera.position))
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
@@ -462,6 +476,7 @@ class GameWindow(pyglet.window.Window):
                 player_snapshot = build_player_render_snapshot(
                     self.player,
                     yaw_degrees=self.camera.yaw_degrees,
+                    animation=self._player_animation_snapshot,
                 )
                 player_world = build_player_avatar_world(player_snapshot)
                 entity_draws += self.entity_renderer.render(

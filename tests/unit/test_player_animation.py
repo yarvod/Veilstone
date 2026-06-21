@@ -17,7 +17,7 @@ def test_walking_advances_gait_and_emits_footstep_contact() -> None:
     state, snapshot = advance_player_animation(
         state,
         PlayerAnimationInput(forward=1.0, on_ground=True),
-        0.21,
+        0.42,
     )
 
     assert snapshot.moving is True
@@ -33,12 +33,12 @@ def test_sprinting_uses_faster_cadence_and_larger_bob() -> None:
     walking_state, walking = advance_player_animation(
         PlayerAnimationState(),
         PlayerAnimationInput(forward=1.0, on_ground=True),
-        0.07,
+        0.14,
     )
     sprint_state, sprinting = advance_player_animation(
         PlayerAnimationState(),
         PlayerAnimationInput(forward=1.0, sprint=True, on_ground=True),
-        0.07,
+        0.14,
     )
 
     assert walking_state.gait_cycle < sprint_state.gait_cycle
@@ -63,7 +63,7 @@ def test_swimming_advances_motion_without_ground_footstep() -> None:
     state, snapshot = advance_player_animation(
         PlayerAnimationState(),
         PlayerAnimationInput(forward=1.0, in_water=True, on_ground=False),
-        0.275,
+        0.55,
     )
 
     assert snapshot.moving is True

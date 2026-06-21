@@ -45,7 +45,7 @@ def test_build_player_render_snapshot_can_carry_animation_snapshot() -> None:
     _, animation = advance_player_animation(
         PlayerAnimationState(),
         PlayerAnimationInput(forward=1.0, on_ground=True),
-        0.21,
+        0.42,
     )
 
     snapshot = build_player_render_snapshot(

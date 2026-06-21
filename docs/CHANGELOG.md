@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Gait-driven local footsteps** - `GameWindow` now advances player animation state each update and emits local footstep sounds from gait contact snapshots instead of a separate footstep accumulator.
 - **Player animation state foundation** - added application-layer gait and interaction animation state/snapshots for walk, sprint, swim, footstep contact, camera/viewmodel bob values, and interaction progress without Pyglet/OpenGL.
 - **README current-state refresh** - README now describes the actual prototype feature set, known gaps, controls, settings, architecture direction, and roadmap docs instead of carrying old phase-by-phase manual test history.
 - **Gameplay-feel roadmap** - `WORKPLAN` now tracks the next immersion work: viewmodel/held item animation, gait-synced footsteps, water shore exit and surface polish, mob locomotion, leaf transparency, inventory item presentation, generation richness, debug/perspective controls, and Minecraft-like time semantics.

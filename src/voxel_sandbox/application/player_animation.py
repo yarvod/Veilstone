@@ -94,7 +94,7 @@ def advance_player_animation(
     sprinting = bool(animation_input.sprint and moving and not swimming)
 
     cadence_seconds = _cadence_seconds(sprinting=sprinting, swimming=swimming)
-    cycle_delta = movement_amount * dt / cadence_seconds if moving else 0.0
+    cycle_delta = movement_amount * dt / (cadence_seconds * 2.0) if moving else 0.0
     gait_cycle = state.gait_cycle + cycle_delta
 
     next_step_index = math.floor(gait_cycle * 2.0)

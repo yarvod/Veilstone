@@ -30,7 +30,9 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Affected area:** player feel / audio / animation
 - **Observed:** walking camera bob, footstep sounds, player body, and future hand
   animation do not share one gait phase. Footsteps were also too loud by default.
-- **Fix notes:** default footstep and block-step resource gains were lowered.
+- **Fix notes:** default footstep and block-step resource gains were lowered;
+  footstep timing now comes from application-layer player gait state instead of
+  a separate render-window accumulator.
 - **Next action:** introduce a gait/animation state that drives bob, sound, body,
   and viewmodel from the same cadence.
 

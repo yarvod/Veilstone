@@ -71,7 +71,7 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Add deterministic `PlayerAnimationState` / gait state in engine or
       application-facing data: movement phase, walk/sprint cadence, grounded
       state, swim state, jump/fall state, interaction state, selected hand.
-- [ ] Move footstep timing out of the ad-hoc render-window accumulator so gait
+- [x] Move footstep timing out of the ad-hoc render-window accumulator so gait
       phase is the single source of truth for steps.
 - [ ] Drive camera bob from the same gait phase; walking and sprinting should
       feel different but synchronized with footsteps.
@@ -117,7 +117,7 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Lower default footstep/block-step audio gains in `config/audio.toml`.
 - [ ] Split block action sounds from walking sounds where needed so breaking,
       placing, and walking can be tuned independently.
-- [ ] Sync footstep events to gait phase instead of a separate render-window
+- [x] Sync footstep events to gait phase instead of a separate render-window
       accumulator.
 - [ ] Add per-material step sound tuning with sane default gain ranges.
 - [ ] Add walk/sprint cadence tests.
