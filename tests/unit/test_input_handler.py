@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from voxel_sandbox.render.input_state import InputHandler, KeyState, key
+from voxel_sandbox.application.player_animation import PlayerInteraction
+from voxel_sandbox.render.input_state import InputHandler, KeyState, key, mouse
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 
@@ -250,6 +251,23 @@ class TestOnActivate:
         h = InputHandler(win)
         h.on_activate()
         win._sync_mouse_capture.assert_called_once()
+
+
+class TestOnMousePress:
+    def test_left_click_mob_starts_attack_interaction(self):
+        win = _make_win(in_game=True)
+        win.mouse_captured = True
+        target = object()
+        win.entities.target_mob.return_value = target
+        win.entities.world.mob_ai = {target: MagicMock(kind=MagicMock(value="hostile"))}
+        win.entities.world.transforms = {target: MagicMock(position=(1.0, 2.0, 3.0))}
+        win.entities.damage.return_value = []
+        h = InputHandler(win)
+
+        h.on_mouse_press(0, 0, mouse.LEFT, 0)
+
+        win.start_player_interaction.assert_called_once_with(PlayerInteraction.ATTACK)
+        win.entities.damage.assert_called_once()
 
 
 class TestOnMouseScroll:

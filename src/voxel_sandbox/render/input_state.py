@@ -5,6 +5,8 @@ import sys
 from dataclasses import replace
 from typing import TYPE_CHECKING, cast
 
+from voxel_sandbox.application.player_animation import PlayerInteraction
+
 try:
     from pyglet.window import key, mouse
 except (ImportError, IndexError):
@@ -255,6 +257,7 @@ class InputHandler:
         if button == mouse.LEFT:
             target = win.entities.target_mob(win.camera.position, win.camera.direction)
             if target is not None:
+                win.start_player_interaction(PlayerInteraction.ATTACK)
                 kind = win.entities.world.mob_ai[target].kind.value
                 position = win.entities.world.transforms[target].position
                 drops = win.entities.damage(target, 4.0, win.player.eye_position)
@@ -285,6 +288,7 @@ class InputHandler:
                 win.inventory_status = "Water cannot be mined"
                 return
             if win.world_renderer.set_block(hit.block, 0):
+                win.start_player_interaction(PlayerInteraction.BREAK_BLOCK)
                 win.events.publish(BlockBroken(block_id, hit.block))
                 win._net.send_block_action(hit.block, 0)
                 drop = win.item_registry.drop_for_block(block_id)
@@ -309,6 +313,7 @@ class InputHandler:
             if definition.block_id is None:
                 return
             if win.world_renderer.set_block(hit.previous, definition.block_id):
+                win.start_player_interaction(PlayerInteraction.PLACE_BLOCK)
                 win.events.publish(BlockPlaced(definition.block_id, hit.previous))
                 win._net.send_block_action(hit.previous, definition.block_id)
                 win.inventory.take_from_slot(win.hotbar.selected_index)

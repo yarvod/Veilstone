@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Viewmodel interaction swings** - attack, block break, and block place inputs
+  now start player interaction animation state, driving the first-person
+  viewmodel swing pose.
 - **First-person viewmodel renderer MVP** - added a small ModernGL cuboid
   overlay renderer for the first-person hand and selected held item, driven from
   viewmodel snapshots and rendered before HUD.

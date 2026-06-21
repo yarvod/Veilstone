@@ -81,7 +81,7 @@ F-клавиши должны быть player-facing управлением, а 
       held item, bob, and swing animation data.
 - [x] Add render-facing first-person viewmodel part data for hand and held item.
 - [x] Render selected held item/block as a first 3D cuboid MVP in the hand.
-- [ ] Add attack/break/place swing animation with clear start, progress, finish,
+- [x] Add attack/break/place swing animation with clear start, progress, finish,
       and cancellation behavior.
 - [ ] Add block breaking feedback hook so hand animation, sound, particles later
       can share the same interaction event.

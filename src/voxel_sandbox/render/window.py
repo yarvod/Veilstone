@@ -26,7 +26,9 @@ from voxel_sandbox.application.player_animation import (
     PlayerAnimationInput,
     PlayerAnimationSnapshot,
     PlayerAnimationState,
+    PlayerInteraction,
     advance_player_animation,
+    start_player_interaction,
 )
 from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.application.player_viewmodel import build_player_viewmodel_snapshot
@@ -663,6 +665,12 @@ class GameWindow(pyglet.window.Window):
         animation = self._player_animation_snapshot
         self.camera.y = ey + (animation.camera_bob_y if animation is not None else 0.0)
         self.camera.z = ez
+
+    def start_player_interaction(self, interaction: PlayerInteraction) -> None:
+        self._player_animation_state = start_player_interaction(
+            self._player_animation_state,
+            interaction,
+        )
 
     def _rebuild_world_runtime(self) -> tuple[float, float, float]:
         spawn_x, spawn_y, spawn_z = self.world_renderer.spawn_position
