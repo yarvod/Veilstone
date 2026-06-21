@@ -106,6 +106,7 @@ F-клавиши должны быть player-facing управлением, а 
       conflicts.
 - [ ] Add remote player interpolation so multiplayer movement does not jitter.
 - [ ] Render remote player nameplates above head with distance/readability rules.
+- [x] Add nameplate snapshot/render data with distance fade visibility rules.
 - [ ] Render held item/block for remote players.
 - [ ] Render player shadow for local third-person and remote players.
 - [ ] Keep networking payload compact: replicate entity/player state, not render

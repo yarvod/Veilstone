@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Player nameplate snapshots** - added application/render data for remote
+  player nameplates above character heads with distance fade visibility rules.
 - **Developer-only graphics F-key toggles** - graphics renderer toggles moved
   from plain `F6`-`F9` to `Ctrl+F6`-`Ctrl+F9`, keeping normal F-keys free for
   player-facing controls.
