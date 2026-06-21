@@ -113,6 +113,7 @@ For the live prioritized list, see `docs/WORKPLAN.md` and `docs/BUGS.md`.
 - `/`: open command line.
 - `Escape`: pause/resume or go back in menus.
 - `F1`: hide/show HUD.
+- `F2`: save screenshot.
 - `F3`: toggle debug overlay.
 - `F5`: cycle camera perspective.
 - `Ctrl+F5`: reload shaders.

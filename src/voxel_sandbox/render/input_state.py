@@ -19,6 +19,7 @@ except (ImportError, IndexError):
         ENTER = 13
         ESCAPE = 27
         F1 = 2001
+        F2 = 2002
         F3 = 2003
         F5 = 2005
         F6 = 2006
@@ -174,6 +175,9 @@ class InputHandler:
             return
         if symbol == key.F1:
             win.hud_hidden = not win.hud_hidden
+            return
+        if symbol == key.F2:
+            win.save_screenshot()
             return
         if symbol == key.F3:
             win.debug_overlay_visible = not win.debug_overlay_visible

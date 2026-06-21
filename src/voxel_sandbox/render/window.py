@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import queue
+from datetime import datetime
 from pathlib import Path
 from typing import Final, cast
 
@@ -682,6 +683,15 @@ class GameWindow(pyglet.window.Window):
         self.perspective_mode = cycle_perspective_mode(self.perspective_mode)
         self._sync_camera_to_player()
         self.inventory_status = f"Perspective: {self.perspective_mode.value}"
+
+    def save_screenshot(self) -> Path:
+        screenshots = self.app_runtime.data_root / "screenshots"
+        screenshots.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = screenshots / f"veilstone_{stamp}.png"
+        pyglet.image.get_buffer_manager().get_color_buffer().save(str(path))
+        self.inventory_status = f"Screenshot saved: {path.name}"
+        return path
 
     def start_player_interaction(self, interaction: PlayerInteraction) -> None:
         self._player_animation_state = start_player_interaction(

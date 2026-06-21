@@ -159,6 +159,12 @@ class TestOnKeyPress:
         h.on_key_press(key.F1, 0)
         assert win.hud_hidden is True
 
+    def test_f2_saves_screenshot(self):
+        win = _make_win(in_game=True)
+        h = InputHandler(win)
+        h.on_key_press(key.F2, 0)
+        win.save_screenshot.assert_called_once()
+
     def test_f5_cycles_perspective(self):
         win = _make_win(in_game=True)
         h = InputHandler(win)
