@@ -143,6 +143,7 @@ class GameWindow(pyglet.window.Window):
             ShaderFiles.from_directory(shader_root, "debug"),
         )
         self.camera = FirstPersonCamera()
+        self.perspective_mode = PerspectiveMode.FIRST_PERSON
         self.sky_renderer = SkyRenderer(self.mgl_context, clouds=settings.graphics.clouds)
         self.world_renderer = self._create_world_renderer(self.active_save_root)
         self.menu = MenuController()
@@ -222,7 +223,6 @@ class GameWindow(pyglet.window.Window):
         self.mouse_captured = False
         self.debug_overlay_visible = False
         self.hud_hidden = False
-        self.perspective_mode = PerspectiveMode.FIRST_PERSON
         self.hud_batch = pyglet.graphics.Batch()
         self.hud_bg_group = pyglet.graphics.Group(order=0)
         self.hud_fg_group = pyglet.graphics.Group(order=1)

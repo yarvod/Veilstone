@@ -74,6 +74,8 @@
 
 ### Fixed
 
+- **Perspective initialization crash** - `GameWindow` now initializes perspective
+  mode before the first camera sync during startup.
 - **Water shore exit** - player physics now supports swimming/jumping out of
   water onto a one-block shore via a bounded collision step-up, covered by a
   regression test.
