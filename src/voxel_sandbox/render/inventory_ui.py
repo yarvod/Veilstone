@@ -341,7 +341,25 @@ class InventoryController:
             color=(160, 180, 215, 255),
         )
 
-    # ── rendering ───────────────────────────────────────────────────────────
+        # ── rendering ───────────────────────────────────────────────────────────
+
+        self.hover_tooltip_bg = pyglet.shapes.BorderedRectangle(
+            0,
+            0,
+            96,
+            28,
+            2,
+            color=(18, 20, 28),
+            border_color=(122, 126, 158),
+        )
+        self.hover_tooltip_label = pyglet.text.Label(
+            "",
+            anchor_x="left",
+            anchor_y="center",
+            font_name=_FONT,
+            font_size=13,
+            color=(245, 245, 245, 255),
+        )
 
     def draw_hotbar(self) -> None:
         win = self.win
@@ -366,6 +384,7 @@ class InventoryController:
 
         slot_size = 52
         start_x = win.width // 2 - (slot_size * 9) // 2
+        hovered_index = self.hotbar_slot_at(win.mouse_x, win.mouse_y)
         for index, shape in enumerate(self.hotbar_slots):
             stack = win.inventory[index]
             x = start_x + index * slot_size
@@ -378,6 +397,7 @@ class InventoryController:
                 16,
                 slot_size,
                 selected=index == win.hotbar.selected_index,
+                hovered=index == hovered_index,
             )
             key_label = self.hotbar_key_labels[index]
             key_label.x = x + 4
@@ -429,6 +449,9 @@ class InventoryController:
         self.inventory_title.x = center_x
         self.inventory_title.y = center_y + 218
         self.inventory_title.draw()
+        hovered_inventory_index = self.slot_at(win.mouse_x, win.mouse_y)
+        hovered_crafting_index = self.crafting_slot_at(win.mouse_x, win.mouse_y)
+        hovered_result = self.crafting_result_at(win.mouse_x, win.mouse_y)
         display_indices = (*range(9, len(win.inventory)), *range(9))
         for display_index, index in enumerate(display_indices):
             x, y = self._inventory_slot_position(display_index)
@@ -441,6 +464,7 @@ class InventoryController:
                 y,
                 48,
                 selected=index == win.hotbar.selected_index,
+                hovered=index == hovered_inventory_index,
             )
         craft_origin_x, craft_origin_y = self._crafting_origin()
         self.crafting_label.text = f"CRAFTING {win.crafting_grid_size}x{win.crafting_grid_size}"
@@ -462,6 +486,7 @@ class InventoryController:
                 x,
                 y,
                 48,
+                hovered=index == hovered_crafting_index,
             )
         result_x, result_y = self._crafting_result_position()
         result_stack = self.crafting_result_stack()
@@ -474,6 +499,7 @@ class InventoryController:
             result_y,
             56,
             selected=result_stack is not None,
+            hovered=hovered_result,
         )
         self.crafting_arrow.x = result_x - 50
         self.crafting_arrow.y = result_y + 28
@@ -497,6 +523,8 @@ class InventoryController:
             self.cursor_item_label.x = win.mouse_x + 48
             self.cursor_item_label.y = win.mouse_y + 10
             self.cursor_item_label.draw()
+        else:
+            self._draw_hover_tooltip()
 
     def _draw_item_slot(
         self,
@@ -509,13 +537,21 @@ class InventoryController:
         size: int,
         *,
         selected: bool = False,
+        hovered: bool = False,
     ) -> None:
         shape.x = x
         shape.y = y
         shape.width = size
         shape.height = size
-        shape.color = (80, 85, 100, 255) if selected else (58, 63, 76, 255)
-        shape.border_color = (255, 255, 100, 255) if selected else (125, 136, 154, 255)
+        if selected:
+            shape.color = (84, 90, 108, 255)
+            shape.border_color = (255, 245, 135, 255)
+        elif hovered:
+            shape.color = (76, 82, 98, 255)
+            shape.border_color = (205, 215, 235, 255)
+        else:
+            shape.color = (58, 63, 76, 255)
+            shape.border_color = (125, 136, 154, 255)
         if getattr(shape, "batch", None) is None:
             shape.draw()
         if stack is None:
@@ -536,6 +572,53 @@ class InventoryController:
             count_label.draw()
 
     # ── hit testing ─────────────────────────────────────────────────────────
+
+    def hotbar_slot_at(self, x: int, y: int) -> int | None:
+        slot_size = 52
+        start_x = self.win.width // 2 - (slot_size * 9) // 2
+        if not (16 <= y <= 16 + slot_size):
+            return None
+        index = (x - start_x) // slot_size
+        if 0 <= index < 9 and start_x + index * slot_size <= x <= start_x + (index + 1) * slot_size:
+            return int(index)
+        return None
+
+    def hovered_stack_at(self, x: int, y: int) -> ItemStack | None:
+        if self.win.inventory_open:
+            inventory_index = self.slot_at(x, y)
+            if inventory_index is not None:
+                return self.win.inventory[inventory_index]
+            crafting_index = self.crafting_slot_at(x, y)
+            if crafting_index is not None:
+                return self.win.crafting_grid[crafting_index]
+            if self.crafting_result_at(x, y):
+                return self.crafting_result_stack()
+            return None
+        hotbar_index = self.hotbar_slot_at(x, y)
+        if hotbar_index is None:
+            return None
+        return self.win.inventory[hotbar_index]
+
+    def _draw_hover_tooltip(self) -> None:
+        stack = self.hovered_stack_at(self.win.mouse_x, self.win.mouse_y)
+        if stack is None:
+            return
+        definition = self.win.item_registry.by_id(stack.item_id)
+        text = definition.name if stack.count == 1 else f"{definition.name} x{stack.count}"
+        width = max(96, len(text) * 8 + 18)
+        x = min(self.win.mouse_x + 14, self.win.width - width - 8)
+        y = min(self.win.mouse_y + 24, self.win.height - 34)
+        x = max(8, x)
+        y = max(8, y)
+        self.hover_tooltip_bg.x = x
+        self.hover_tooltip_bg.y = y
+        self.hover_tooltip_bg.width = width
+        self.hover_tooltip_bg.height = 28
+        self.hover_tooltip_bg.draw()
+        self.hover_tooltip_label.text = text
+        self.hover_tooltip_label.x = x + 9
+        self.hover_tooltip_label.y = y + 14
+        self.hover_tooltip_label.draw()
 
     def slot_at(self, x: int, y: int) -> int | None:
         display_indices = (*range(9, len(self.win.inventory)), *range(9))

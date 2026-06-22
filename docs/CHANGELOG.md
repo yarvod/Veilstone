@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Inventory hover presentation** - inventory and crafting slots now highlight
+  on hover and draw a Minecraft-like item-name tooltip with stack count through
+  the real HUD draw path.
 - **Remote player held-item replication** - LAN player snapshots now carry
   compact held-item payloads into remote player ECS components, so other players
   can render selected blocks/items in hand without network render objects.

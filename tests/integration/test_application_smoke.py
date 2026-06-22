@@ -376,6 +376,14 @@ def test_inventory_grid_and_item_icons_render() -> None:
             assert len(window.crafting_grid) == 4
             assert len(window._inv_ctrl.item_icon_images) == len(window.item_registry)
             assert len(window._inv_ctrl.heart_sprites) == 10
+            window.inventory.set(9, ItemStack(3, 5), window.item_registry)
+            slot_x, slot_y = window._inv_ctrl._inventory_slot_position(0)
+            window.mouse_x = slot_x + 24
+            window.mouse_y = slot_y + 24
+            window.on_draw()
+            window.mgl_context.finish()
+            item_name = window.item_registry.by_id(3).name
+            assert window._inv_ctrl.hover_tooltip_label.text == f"{item_name} x5"
             window.on_key_press(None, 0)
         finally:
             window.close()
