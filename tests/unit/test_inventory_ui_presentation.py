@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 from voxel_sandbox.domain.crafting import CraftingGrid
 from voxel_sandbox.domain.inventory import Inventory
@@ -53,3 +54,24 @@ def test_hovered_stack_reads_inventory_when_open() -> None:
     x, y = controller._inventory_slot_position(0)
 
     assert controller.hovered_stack_at(x + 24, y + 24) == ItemStack(4, 5)
+
+
+def test_drag_target_slot_uses_distinct_highlight() -> None:
+    controller = _controller()
+    controller.win.cursor_stack = ItemStack(3, 2)
+    shape = SimpleNamespace(draw=lambda: None)
+    icon = SimpleNamespace(visible=True)
+    count_label = SimpleNamespace(text="")
+
+    controller._draw_item_slot(
+        cast(Any, shape),
+        cast(Any, icon),
+        cast(Any, count_label),
+        None,
+        10,
+        10,
+        48,
+        hovered=True,
+    )
+
+    assert shape.border_color == (120, 255, 185, 255)

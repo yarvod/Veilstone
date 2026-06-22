@@ -627,6 +627,9 @@ class GameWindow(pyglet.window.Window):
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
         self._input.on_mouse_release(x, y, button, modifiers)
 
+    def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, buttons: int, modifiers: int) -> None:
+        self._input.on_mouse_drag(x, y, dx, dy, buttons, modifiers)
+
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         self._input.on_mouse_motion(x, y, dx, dy)
 

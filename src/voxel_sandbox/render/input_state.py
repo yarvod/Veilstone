@@ -95,6 +95,9 @@ class InputHandler:
 
     def __init__(self, win: GameWindow) -> None:
         self.win = win
+        self._inventory_drag_button: int | None = None
+        self._inventory_drag_start: tuple[int, int] | None = None
+        self._inventory_drag_moved = False
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         win = self.win
@@ -251,6 +254,10 @@ class InputHandler:
                 win.menu_ui._play_ui_sound()
             return
         if win.menu.in_game and win.inventory_open:
+            self._inventory_drag_button = None
+            self._inventory_drag_start = None
+            self._inventory_drag_moved = False
+            can_start_drag = button == mouse.LEFT and not bool(modifiers & key.MOD_SHIFT)
             crafting_slot = win._inv_ctrl.crafting_slot_at(x, y)
             if crafting_slot is not None:
                 win._inv_ctrl.handle_crafting_click(crafting_slot, button)
@@ -262,6 +269,9 @@ class InputHandler:
                     button,
                     quick_move=bool(modifiers & key.MOD_SHIFT),
                 )
+            if can_start_drag and win.cursor_stack is not None:
+                self._inventory_drag_button = button
+                self._inventory_drag_start = (x, y)
             return
         if not win.menu.in_game or not win.mouse_captured or win.inventory_open:
             return
@@ -347,6 +357,21 @@ class InputHandler:
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
         win = self.win
+        if (
+            win.menu.in_game
+            and win.inventory_open
+            and button == self._inventory_drag_button
+            and self._inventory_drag_moved
+            and win.cursor_stack is not None
+        ):
+            crafting_slot = win._inv_ctrl.crafting_slot_at(x, y)
+            if crafting_slot is not None:
+                win._inv_ctrl.handle_crafting_click(crafting_slot, button)
+            elif (slot := win._inv_ctrl.slot_at(x, y)) is not None:
+                win._inv_ctrl.handle_inventory_click(slot, button, quick_move=False)
+        self._inventory_drag_button = None
+        self._inventory_drag_start = None
+        self._inventory_drag_moved = False
         if not win.menu.in_game and hasattr(win, "ui_renderer") and win.ui_renderer:
             win.ui_renderer.on_mouse_release(x, y, button, modifiers)
 
@@ -354,6 +379,10 @@ class InputHandler:
         win = self.win
         win.mouse_x = x
         win.mouse_y = y
+        if self._inventory_drag_start is not None:
+            start_x, start_y = self._inventory_drag_start
+            if abs(x - start_x) + abs(y - start_y) >= 8:
+                self._inventory_drag_moved = True
         if win.text_input is not None:
             return
         if (
@@ -369,6 +398,10 @@ class InputHandler:
                 float(dy),
                 win.settings.camera.mouse_sensitivity,
             )
+
+    def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, buttons: int, modifiers: int) -> None:
+        del buttons, modifiers
+        self.on_mouse_motion(x, y, dx, dy)
 
     def apply_rebind(self, symbol: int) -> None:
         win = self.win

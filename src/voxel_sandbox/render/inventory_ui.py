@@ -543,7 +543,10 @@ class InventoryController:
         shape.y = y
         shape.width = size
         shape.height = size
-        if selected:
+        if hovered and self.win.cursor_stack is not None:
+            shape.color = (66, 88, 82, 255)
+            shape.border_color = (120, 255, 185, 255)
+        elif selected:
             shape.color = (84, 90, 108, 255)
             shape.border_color = (255, 245, 135, 255)
         elif hovered:

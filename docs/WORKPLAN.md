@@ -177,9 +177,9 @@ resource packs.
 - [ ] Add render-facing item icon/model snapshots separate from inventory rules.
 - [x] Show Minecraft-like stack count in the lower-right corner of item icons.
 - [x] Show hover tooltip with item name.
-- [ ] Add drag-and-drop slot movement.
+- [x] Add drag-and-drop slot movement.
 - [x] Add clear selected/hover visual states.
-- [ ] Add clear drag visual states.
+- [x] Add clear drag visual states.
 - [ ] Improve crafting UX without coupling UI directly to domain internals.
 - [ ] Later: 3D item/block icons in inventory once item model rendering exists.
 - [ ] Keep inventory domain pure; UI should send commands/use cases, not mutate

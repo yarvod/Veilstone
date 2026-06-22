@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Inventory drag-and-drop movement** - inventory stacks can now be picked up,
+  dragged to another slot, and dropped there with a distinct drag-target slot
+  highlight, covered by unit tests and the real inventory smoke path.
 - **Debug HUD diagnostics** - F3 overlay now includes block/chunk coordinates,
   network mode, remote-player counts, selected item, and existing chunk/entity
   render metrics in the real HUD draw path.

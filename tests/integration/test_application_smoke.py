@@ -386,7 +386,7 @@ def test_inventory_grid_and_item_icons_render() -> None:
 
     if not pyglet.display.get_display().get_screens():
         pytest.skip("OpenGL smoke requires an active display")
-    from pyglet.window import key
+    from pyglet.window import key, mouse
 
     from voxel_sandbox.render.ui.menu import Screen
     from voxel_sandbox.render.window import GameWindow
@@ -411,6 +411,20 @@ def test_inventory_grid_and_item_icons_render() -> None:
             window.mgl_context.finish()
             item_name = window.item_registry.by_id(3).name
             assert window._inv_ctrl.hover_tooltip_label.text == f"{item_name} x5"
+            target_x, target_y = window._inv_ctrl._inventory_slot_position(1)
+            window.on_mouse_press(slot_x + 24, slot_y + 24, mouse.LEFT, 0)
+            window.on_mouse_drag(
+                target_x + 24,
+                target_y + 24,
+                target_x - slot_x,
+                target_y - slot_y,
+                mouse.LEFT,
+                0,
+            )
+            window.on_mouse_release(target_x + 24, target_y + 24, mouse.LEFT, 0)
+            assert window.inventory[9] is None
+            assert window.inventory[10] == ItemStack(3, 5)
+            assert window.cursor_stack is None
             window.on_key_press(None, 0)
         finally:
             window.close()

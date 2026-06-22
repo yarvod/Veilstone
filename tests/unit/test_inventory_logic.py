@@ -105,3 +105,45 @@ class TestInventoryClick:
         assert logic.s.cursor_stack is not None
         assert logic.s.cursor_stack.count == 5
         assert logic.s.inventory[0].count == 5
+
+    def test_left_click_merges_cursor_stack_into_same_item(self):
+        logic = _make_logic()
+        reg = logic.s.item_registry
+        logic.s.inventory.set(0, ItemStack(1, 10), reg)
+        logic.s.cursor_stack = ItemStack(1, 5)
+
+        logic.handle_inventory_click(0, mouse.LEFT, quick_move=False)
+
+        assert logic.s.cursor_stack is None
+        assert logic.s.inventory[0] == ItemStack(1, 15)
+
+    def test_left_click_partially_merges_up_to_stack_limit(self):
+        logic = _make_logic()
+        reg = logic.s.item_registry
+        logic.s.inventory.set(0, ItemStack(1, 63), reg)
+        logic.s.cursor_stack = ItemStack(1, 4)
+
+        logic.handle_inventory_click(0, mouse.LEFT, quick_move=False)
+
+        assert logic.s.cursor_stack == ItemStack(1, 3)
+        assert logic.s.inventory[0] == ItemStack(1, 64)
+
+    def test_left_click_swaps_different_item_stack(self):
+        logic = _make_logic()
+        reg = logic.s.item_registry
+        logic.s.inventory.set(0, ItemStack(1, 10), reg)
+        logic.s.cursor_stack = ItemStack(2, 3)
+
+        logic.handle_inventory_click(0, mouse.LEFT, quick_move=False)
+
+        assert logic.s.cursor_stack == ItemStack(1, 10)
+        assert logic.s.inventory[0] == ItemStack(2, 3)
+
+    def test_right_click_places_one_item_into_empty_slot(self):
+        logic = _make_logic()
+        logic.s.cursor_stack = ItemStack(1, 5)
+
+        logic.handle_inventory_click(0, mouse.RIGHT, quick_move=False)
+
+        assert logic.s.cursor_stack == ItemStack(1, 4)
+        assert logic.s.inventory[0] == ItemStack(1, 1)

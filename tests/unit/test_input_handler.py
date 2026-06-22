@@ -342,6 +342,119 @@ class TestOnMouseScroll:
         h.on_mouse_scroll(0, 0, 0, 1)
         win.hotbar.cycle.assert_not_called()
 
+
+class TestInventoryDrag:
+    def test_click_pickup_without_drag_does_not_place_on_release(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = None
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.return_value = 0
+
+        def pick_up(_slot: int, _button: int, *, quick_move: bool) -> None:
+            assert not quick_move
+            win.cursor_stack = object()
+
+        win._inv_ctrl.handle_inventory_click.side_effect = pick_up
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, 0)
+        h.on_mouse_release(10, 10, mouse.LEFT, 0)
+
+        win._inv_ctrl.handle_inventory_click.assert_called_once_with(
+            0, mouse.LEFT, quick_move=False
+        )
+
+    def test_drag_release_places_cursor_stack_on_target_slot(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = None
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.side_effect = [0, 1]
+
+        def pick_up(_slot: int, _button: int, *, quick_move: bool) -> None:
+            assert not quick_move
+            win.cursor_stack = object()
+
+        win._inv_ctrl.handle_inventory_click.side_effect = pick_up
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
+        h.on_mouse_release(30, 10, mouse.LEFT, 0)
+
+        assert win._inv_ctrl.handle_inventory_click.call_args_list[-1].args == (1, mouse.LEFT)
+        assert win._inv_ctrl.handle_inventory_click.call_args_list[-1].kwargs == {
+            "quick_move": False
+        }
+
+    def test_shift_click_does_not_start_inventory_drag(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = None
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.return_value = 0
+
+        def quick_move(_slot: int, _button: int, *, quick_move: bool) -> None:
+            assert quick_move
+            win.cursor_stack = object()
+
+        win._inv_ctrl.handle_inventory_click.side_effect = quick_move
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, key.MOD_SHIFT)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
+        h.on_mouse_release(30, 10, mouse.LEFT, 0)
+
+        win._inv_ctrl.handle_inventory_click.assert_called_once_with(0, mouse.LEFT, quick_move=True)
+
+    def test_drag_release_routes_to_crafting_slot(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = None
+        win._inv_ctrl.crafting_slot_at.side_effect = [None, 2]
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.return_value = 0
+
+        def pick_up(_slot: int, _button: int, *, quick_move: bool) -> None:
+            assert not quick_move
+            win.cursor_stack = object()
+
+        win._inv_ctrl.handle_inventory_click.side_effect = pick_up
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
+        h.on_mouse_release(30, 10, mouse.LEFT, 0)
+
+        win._inv_ctrl.handle_crafting_click.assert_called_once_with(2, mouse.LEFT)
+
+    def test_drag_release_outside_slots_keeps_cursor_stack_carried(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        carried = object()
+        win.cursor_stack = None
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.side_effect = [0, None]
+
+        def pick_up(_slot: int, _button: int, *, quick_move: bool) -> None:
+            assert not quick_move
+            win.cursor_stack = carried
+
+        win._inv_ctrl.handle_inventory_click.side_effect = pick_up
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
+        h.on_mouse_release(30, 10, mouse.LEFT, 0)
+
+        assert win.cursor_stack is carried
+        win._inv_ctrl.handle_inventory_click.assert_called_once()
+
     def test_no_cycle_when_text_input_active(self):
         win = _make_win(in_game=True)
         win.text_input = MagicMock()
