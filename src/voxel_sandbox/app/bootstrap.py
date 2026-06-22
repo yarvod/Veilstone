@@ -77,6 +77,10 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.structure_preview import run_preview
 
         return run_preview(str(args.template))
+    if command == "foliage-smoke-scene":
+        from voxel_sandbox.tools.foliage_smoke_scene import run_preview
+
+        return run_preview()
     raise ValueError(f"Unsupported command: {command}")
 
 

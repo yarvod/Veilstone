@@ -41,6 +41,10 @@ def build_parser() -> argparse.ArgumentParser:
         "structure-preview", help="Print a validated structure template by layer"
     )
     structure_preview.add_argument("template")
+    subparsers.add_parser(
+        "foliage-smoke-scene",
+        help="Print the transparent foliage manual smoke-test scene",
+    )
     return parser
 
 

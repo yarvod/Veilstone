@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Transparent foliage smoke scene** - added a reusable cutout-leaf fixture,
+  CLI preview, unit coverage, and an OpenGL-gated runtime smoke path for leaves
+  in front of an opaque backdrop.
 - **Resource-pack cutout verification** - added Faithful oak-leaf alpha coverage
   through the real block-atlas importer and documented supported vs planned
   resource-pack features.

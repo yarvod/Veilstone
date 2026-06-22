@@ -246,6 +246,38 @@ def test_first_person_viewmodel_renders_hand_and_held_block() -> None:
             window.close()
 
 
+def test_transparent_foliage_scene_renders() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+    from voxel_sandbox.tools.foliage_smoke_scene import apply_foliage_smoke_scene
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-foliage-smoke-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            scene = apply_foliage_smoke_scene(
+                window.world_renderer.set_block,
+                window.world_runtime.block_registry,
+            )
+            window.camera.position = scene.spawn_position
+
+            registry = window.world_runtime.block_registry
+            assert registry.by_key("veilwood_leaves").render_layer == "cutout"
+            assert window.world_renderer.get_block(6, 4, 7) == registry.by_key("veilwood_leaves").id
+            assert window.world_renderer.get_block(6, 4, 8) == registry.by_key("stone").id
+
+            window.menu.screen = Screen.GAME
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+        finally:
+            window.close()
+
+
 def test_network_input_is_throttled_and_includes_held_item() -> None:
     import pyglet
 

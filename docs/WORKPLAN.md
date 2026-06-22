@@ -168,7 +168,7 @@ resource packs.
 - [x] Mark blocks/materials that require cutout rendering in data registry.
 - [x] Verify Faithful-style leaf textures render with visible holes.
 - [x] Document supported vs planned resource-pack features.
-- [ ] Add a smoke/manual test scene or fixture for transparent foliage.
+- [x] Add a smoke/manual test scene or fixture for transparent foliage.
 
 ### Phase C7: Inventory and item presentation
 

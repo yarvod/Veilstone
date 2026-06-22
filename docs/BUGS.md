@@ -26,7 +26,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G003: Footstep audio and movement presentation are not unified
 
-- **Status:** investigating
+- **Status:** fixed
 - **Affected area:** player feel / audio / animation
 - **Observed:** walking camera bob, footstep sounds, player body, and future hand
   animation do not share one gait phase. Footsteps were also too loud by default.
@@ -49,13 +49,13 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** investigating
 - **Affected area:** texture packs / block rendering
-- **Observed:** textures transparent regions, Faithful-style leaves,
-  do not yet show world through holes like Minecraft leaves.
+- **Observed:** textures with transparent regions, including Faithful-style
+  leaves, did not show the world through holes like Minecraft leaves.
 - **Fix notes:** cutout blocks now discard transparent atlas texels, leaves are
   non-opaque/cutout in block data, skylight and face culling treat leaves as
-  non-occluders, and Faithful oak-leaf alpha is preserved through atlas import.
-- **Next action:** add a dedicated foliage smoke/manual scene and document any
-  remaining translucent-block limits.
+  non-occluders, Faithful oak-leaf alpha is preserved through atlas import, and
+  a dedicated foliage smoke scene exercises leaves in front of an opaque
+  backdrop through the real draw path when an OpenGL display is available.
 
 ### BUG-G006: Inventory UI is functional but not Minecraft-polished
 
