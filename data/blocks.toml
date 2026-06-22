@@ -60,9 +60,12 @@ key = "veilwood_leaves"
 name = "Veilwood Leaves"
 material = "plant"
 hardness = 0.2
+is_opaque = false
+is_transparent = true
 texture_top = "minecraft:block/oak_leaves"
 texture_side = "minecraft:block/oak_leaves"
 texture_bottom = "minecraft:block/oak_leaves"
+render_layer = "cutout"
 
 [[block]]
 id = 6

@@ -66,6 +66,7 @@ def load_block_registry_from_toml(path: Path) -> BlockRegistry:
                 texture_top=raw.get("texture_top", "missing"),
                 texture_side=raw.get("texture_side", "missing"),
                 texture_bottom=raw.get("texture_bottom", "missing"),
+                render_layer=raw.get("render_layer", "opaque"),
             )
         )
     return BlockRegistry(definitions)
@@ -130,9 +131,12 @@ def create_core_block_registry() -> BlockRegistry:
                 "Veilwood Leaves",
                 Material.PLANT,
                 0.2,
+                is_opaque=False,
+                is_transparent=True,
                 texture_top="veilwood_leaves",
                 texture_side="veilwood_leaves",
                 texture_bottom="veilwood_leaves",
+                render_layer="cutout",
             ),
             BlockDef(
                 6,

@@ -47,9 +47,14 @@ def create_default_block_tiles(tile_size: int = 32) -> dict[str, Image.Image]:
             for px in range(1, tile_size - 1):
                 seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
                 offset = int(seed >> 29) - 3
+                alpha = color[3]
+                if name == "minecraft:block/oak_leaves" and (
+                    (px + py) % 5 == 0 or (px * 3 + py) % 11 == 0
+                ):
+                    alpha = 0
                 shade = (
                     *tuple(min(255, max(0, ch + offset)) for ch in color[:3]),
-                    255,
+                    alpha,
                 )
                 draw.point((px, py), fill=shade)
         tiles[name] = image

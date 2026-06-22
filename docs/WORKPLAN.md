@@ -162,10 +162,10 @@ F-клавиши должны быть player-facing управлением, а 
 Цель: листья и похожие блоки должны иметь прозрачные участки, как в Minecraft
 resource packs.
 
-- [ ] Add alpha-tested/cutout block rendering path for leaves and similar blocks.
-- [ ] Preserve depth behavior so leaf holes show the world through transparent
+- [x] Add alpha-tested/cutout block rendering path for leaves and similar blocks.
+- [x] Preserve depth behavior so leaf holes show the world through transparent
       texture regions without sorting artifacts.
-- [ ] Mark blocks/materials that require cutout rendering in data registry.
+- [x] Mark blocks/materials that require cutout rendering in data registry.
 - [ ] Verify Faithful-style leaf textures render with visible holes.
 - [ ] Document supported vs planned resource-pack features.
 - [ ] Add a smoke/manual test scene or fixture for transparent foliage.

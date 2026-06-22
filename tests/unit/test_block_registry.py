@@ -28,6 +28,10 @@ def test_core_registry_reserves_zero_for_air() -> None:
     assert registry.by_key("water").is_fluid
     assert not registry.by_key("water").is_solid
     assert registry.by_key("workbench").id == 10
+    leaves = registry.by_key("veilwood_leaves")
+    assert leaves.render_layer == "cutout"
+    assert not leaves.is_opaque
+    assert leaves.is_transparent
     assert len(registry) == 13
 
 
@@ -48,6 +52,11 @@ def test_registry_requires_air_at_zero() -> None:
 def test_block_definition_validates_storage_limits() -> None:
     with pytest.raises(ValueError, match="uint16"):
         block(65536, "overflow")
+
+
+def test_block_definition_validates_render_layer() -> None:
+    with pytest.raises(ValueError, match="render layer"):
+        BlockDef(1, "bad_layer", "Bad Layer", Material.PLANT, 0.1, render_layer="ghost")
 
 
 _MINIMAL_TOML = """\
@@ -84,6 +93,7 @@ emits_light = 14
 texture_top = "gloam_lantern"
 texture_side = "gloam_lantern"
 texture_bottom = "gloam_lantern"
+render_layer = "cutout"
 """
 
 
@@ -99,6 +109,7 @@ def test_load_block_registry_from_toml(tmp_path: Path) -> None:
     assert registry.by_key("stone").material is Material.STONE
     assert registry.by_key("gloam_lantern").emits_light == 14
     assert registry.by_key("gloam_lantern").is_transparent
+    assert registry.by_key("gloam_lantern").render_layer == "cutout"
 
 
 def test_load_block_registry_auto_id(tmp_path: Path) -> None:
@@ -120,4 +131,8 @@ def test_load_block_registry_data_file() -> None:
 
     assert registry.by_id(0).key == "air"
     assert registry.by_key("water").is_fluid
+    leaves = registry.by_key("veilwood_leaves")
+    assert leaves.render_layer == "cutout"
+    assert not leaves.is_opaque
+    assert leaves.is_transparent
     assert len(registry) == 13

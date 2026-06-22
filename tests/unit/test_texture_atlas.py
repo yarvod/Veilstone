@@ -36,6 +36,14 @@ def test_default_tiles_returns_all_texture_keys() -> None:
         assert img.mode == "RGBA"
 
 
+def test_default_leaf_tile_contains_cutout_alpha() -> None:
+    leaves = create_default_block_tiles(tile_size=16)["minecraft:block/oak_leaves"]
+    alphas = [pixel[3] for pixel in leaves.getdata()]
+
+    assert min(alphas) == 0
+    assert max(alphas) == 255
+
+
 def test_build_texture_atlas_contains_all_keys() -> None:
     tiles = create_default_block_tiles(tile_size=8)
     atlas = build_texture_atlas(tiles, tile_size=8)

@@ -40,6 +40,21 @@ def test_adjacent_blocks_hide_shared_faces() -> None:
     assert mesh.triangle_count == 20
 
 
+def test_cutout_leaf_does_not_cull_neighbor_stone_face() -> None:
+    section = lit_section()
+    section.set_block(1, 1, 1, 1)
+    section.set_block(2, 1, 1, 5)
+    registry = create_core_block_registry()
+
+    visible = build_visible_face_mesh(section, registry, UVS)
+    greedy = build_greedy_mesh(section, registry, UVS)
+
+    assert visible.face_count == 11
+    assert visible.triangle_count == 22
+    assert greedy.face_count == 11
+    assert greedy.triangle_count == 22
+
+
 def test_empty_section_produces_empty_arrays() -> None:
     mesh = build_visible_face_mesh(lit_section(), create_core_block_registry(), UVS)
 

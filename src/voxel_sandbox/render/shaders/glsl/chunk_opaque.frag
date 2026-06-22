@@ -57,6 +57,9 @@ void main() {
     }
     vec2 atlas_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, tile_uv);
     vec4 base_color = texture(texture_atlas, atlas_uv);
+    if (base_color.a < 0.5) {
+        discard;
+    }
     float sky = vertex_sky_light * daylight;
     float shadow = mix(0.58, 1.0, sample_shadow());
     float sun_light = sky * vertex_directional * shadow;

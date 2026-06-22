@@ -21,6 +21,17 @@ def test_skylight_blocks_opaque_roof_and_spreads_below_it() -> None:
     assert chunk.sections[0].sky_light[10, 10, 10] == 15
 
 
+def test_cutout_leaf_roof_does_not_block_skylight() -> None:
+    chunk = Chunk(ChunkCoord(0, 0))
+    for x in range(2, 7):
+        for z in range(2, 7):
+            chunk.set_block(x, 20, z, 5)
+
+    relight_chunk(chunk, create_core_block_registry())
+
+    assert chunk.sections[1].sky_light[4, 3, 4] == 15
+
+
 def test_lantern_light_propagates_and_is_blocked_by_stone() -> None:
     chunk = Chunk(ChunkCoord(0, 0))
     chunk.set_block(8, 8, 8, 7)

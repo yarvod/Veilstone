@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Cutout foliage rendering** - leaves can now be marked as cutout blocks in
+  block data, procedural leaf textures include transparent holes, and the chunk
+  shader discards transparent atlas texels so foliage holes reveal the world.
 - **Inventory hover presentation** - inventory and crafting slots now highlight
   on hover and draw a Minecraft-like item-name tooltip with stack count through
   the real HUD draw path.

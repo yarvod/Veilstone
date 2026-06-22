@@ -30,6 +30,7 @@ class BlockDef:
     texture_top: str = "missing"
     texture_side: str = "missing"
     texture_bottom: str = "missing"
+    render_layer: str = "opaque"
 
     def __post_init__(self) -> None:
         if not 0 <= self.id <= 65535:
@@ -38,3 +39,5 @@ class BlockDef:
             raise ValueError("Block key must be non-empty lowercase text")
         if not 0 <= self.emits_light <= 15:
             raise ValueError("Block light emission must be between 0 and 15")
+        if self.render_layer not in {"opaque", "cutout", "translucent"}:
+            raise ValueError("Block render layer must be opaque, cutout, or translucent")

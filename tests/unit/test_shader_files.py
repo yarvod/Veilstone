@@ -29,3 +29,11 @@ def test_entity_and_shadow_shaders_rotate_local_front_toward_positive_yaw() -> N
     assert inverse_column in entity_vertex
     assert yaw_matrix in shadow_vertex
     assert inverse_column in shadow_vertex
+
+
+def test_chunk_shader_discards_cutout_alpha() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
+
+    assert "base_color.a < 0.5" in fragment
+    assert "discard;" in fragment
