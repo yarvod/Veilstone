@@ -61,9 +61,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** UI / inventory / item rendering
-- **Observed:** inventory lacks 3D item icons, stack-count corner overlays,
-  polished hover names, drag-and-drop movement, and full crafting UX.
-- **Next action:** add render-facing item icon snapshots and improve slot
+- **Observed:** inventory still lacks 3D item icons and full crafting UX polish.
+- **Fix notes:** stack counts, hover names, drag-and-drop movement, and selected
+  and drag slot states are present; inventory UI logic now refreshes the active
+  world inventory reference after creating or switching worlds so stale saved
+  items cannot leak into the new-world UI state.
+- **Next action:** add render-facing item icon/model snapshots and improve slot
   interaction incrementally without moving inventory rules into render code.
 
 ### BUG-G007: World generation lacks distant richness and settings control

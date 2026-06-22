@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from voxel_sandbox.domain.crafting import RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.render.input_state import mouse
-from voxel_sandbox.render.inventory_ui import InventoryLogic, InventoryState
+from voxel_sandbox.render.inventory_ui import InventoryController, InventoryLogic, InventoryState
 
 
 def _make_logic() -> InventoryLogic:
@@ -17,6 +19,33 @@ def _make_logic() -> InventoryLogic:
         recipe_book=RecipeBook(()),
     )
     return InventoryLogic(state)
+
+
+def test_inventory_controller_sync_refreshes_world_inventory_reference() -> None:
+    registry = create_core_item_registry()
+    old_inventory = Inventory()
+    old_inventory.set(0, ItemStack(1, 64), registry)
+    new_inventory = Inventory()
+    state = InventoryState(
+        inventory=old_inventory,
+        item_registry=registry,
+        recipe_book=RecipeBook(()),
+    )
+    controller = object.__new__(InventoryController)
+    controller.win = SimpleNamespace(
+        inventory=new_inventory,
+        crafting_grid=state.crafting_grid,
+        crafting_grid_size=state.crafting_grid_size,
+        cursor_stack=None,
+        inventory_open=False,
+        inventory_status="",
+        _inv_state=state,
+    )
+
+    controller._sync_to_inv()
+
+    assert state.inventory is new_inventory
+    assert state.inventory[0] is None
 
 
 class TestInventoryOpen:

@@ -725,6 +725,7 @@ class InventoryController:
 
     def _sync_to_inv(self) -> None:
         win = self.win
+        win._inv_state.inventory = win.inventory
         win._inv_state.crafting_grid = win.crafting_grid
         win._inv_state.crafting_grid_size = win.crafting_grid_size
         win._inv_state.cursor_stack = win.cursor_stack

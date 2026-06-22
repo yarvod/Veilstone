@@ -103,6 +103,9 @@
 
 ### Fixed
 
+- **New-world inventory UI state** - inventory logic now refreshes its active
+  inventory reference after world creation or switching, preventing stale saved
+  stacks from appearing through UI interactions in a new world.
 - **Fullscreen framebuffer sizing** - rendering now uses framebuffer dimensions for ModernGL viewports, so fullscreen/Retina windows no longer leave the game/menu clipped into a lower-left rectangle.
 - **New-world defaults** - new worlds now start with an empty hotbar/inventory and a bright late-sunrise morning instead of debug items at dusk/night.
 - **Footstep sound harshness** - regenerated softer local footstep/block-step WAVs and lowered their default gains so walking is quieter and less abrasive.

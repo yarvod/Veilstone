@@ -71,6 +71,9 @@ class WorldManager:
         storage = cast(WorldStorage, win.world_runtime.storage)
         win.inventory = Inventory()
         win.hotbar = Hotbar(win.inventory)
+        win._inv_state.inventory = win.inventory
+        win._inv_state.cursor_stack = None
+        win.cursor_stack = None
         win.player_health = 20.0
         saved = storage.load_player(win.item_registry)
         if saved is not None:
