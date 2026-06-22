@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Render-distance settings control** - Settings now exposes `[world].render_distance`
+  as a cycling menu value and persists changes to user settings.
 - **Walk/sprint cadence coverage** - added regression coverage for gait-phase
   footstep contact timing so sprint steps remain faster than walking steps.
 - **Transparent foliage smoke scene** - added a reusable cutout-leaf fixture,

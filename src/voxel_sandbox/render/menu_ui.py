@@ -166,6 +166,7 @@ class MenuUI:
             "cycle_shadows": win.settings.graphics.shadow_quality,
             "toggle_clouds": "on" if win.settings.graphics.clouds else "off",
             "toggle_vsync": "on" if win.settings.window.vsync else "off",
+            "cycle_render_distance": f"{win.settings.world.render_distance} chunks",
             "cycle_difficulty": win.settings.gameplay.difficulty,
             "rebind_forward": win.settings.controls.forward,
             "rebind_backward": win.settings.controls.backward,
@@ -501,6 +502,8 @@ class MenuUI:
             )
             win.set_vsync(enabled)
             save_user_settings(win.settings)
+        elif command is MenuCommand.CYCLE_RENDER_DISTANCE:
+            self._cycle_render_distance()
         elif command is MenuCommand.CYCLE_DIFFICULTY:
             difficulty = "peaceful" if win.settings.gameplay.difficulty == "normal" else "normal"
             win._gameplay._set_difficulty(difficulty)
@@ -534,6 +537,18 @@ class MenuUI:
                 MenuCommand.REBIND_JUMP: "jump",
             }[command]
             win.menu.status = f"Press a key for {win.rebinding_action}."
+
+    def _cycle_render_distance(self) -> None:
+        win = self.win
+        choices = (2, 4, 6, 8, 10, 12)
+        current = win.settings.world.render_distance
+        next_distance = next((value for value in choices if value > current), choices[0])
+        win.settings = replace(
+            win.settings,
+            world=replace(win.settings.world, render_distance=next_distance),
+        )
+        win.menu.status = f"Render distance saved {next_distance} chunks; applies on world reload."
+        save_user_settings(win.settings)
 
     # ── Audio helpers ─────────────────────────────────────────────────────────
 

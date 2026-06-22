@@ -30,6 +30,7 @@ class MenuCommand(Enum):
     CYCLE_SHADOWS = auto()
     TOGGLE_CLOUDS = auto()
     TOGGLE_VSYNC = auto()
+    CYCLE_RENDER_DISTANCE = auto()
     CYCLE_DIFFICULTY = auto()
     CREATE_WORLD = auto()
     REBIND_FORWARD = auto()
@@ -71,6 +72,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Shadow Quality", action="cycle_shadows"),
         MenuItem("Clouds", action="toggle_clouds"),
         MenuItem("VSync", action="toggle_vsync"),
+        MenuItem("Render Distance", action="cycle_render_distance"),
         MenuItem("Difficulty", action="cycle_difficulty"),
         MenuItem("Texture Packs", target=Screen.TEXTURE_PACKS),
         MenuItem("Audio", target=Screen.AUDIO),
@@ -190,6 +192,8 @@ class MenuController:
             return MenuCommand.TOGGLE_CLOUDS
         elif action == "toggle_vsync":
             return MenuCommand.TOGGLE_VSYNC
+        if action == "cycle_render_distance":
+            return MenuCommand.CYCLE_RENDER_DISTANCE
         elif action == "cycle_difficulty":
             return MenuCommand.CYCLE_DIFFICULTY
         elif action == "rebind_forward":

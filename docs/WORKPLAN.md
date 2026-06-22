@@ -189,7 +189,7 @@ resource packs.
 
 Цель: мир должен давать красивые дали и больше живого наполнения.
 
-- [ ] Add Settings UI control for `[world].render_distance`.
+- [x] Add Settings UI control for `[world].render_distance`.
 - [ ] Persist render distance changes and rebuild/reconfigure chunk streaming
       safely.
 - [ ] Improve distant landscape readability and biome silhouettes.
