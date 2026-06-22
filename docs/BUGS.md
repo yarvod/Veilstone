@@ -45,14 +45,17 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Next action:** drive animation phase from entity velocity and grounded state;
   add tests for phase advancement and idle reset.
 
-### BUG-G005: Leaf/resource-pack transparency is not rendered as cutout
+### BUG-G005: Leaf/resource-pack transparency not rendered cutout
 
-- **Status:** open
+- **Status:** investigating
 - **Affected area:** texture packs / block rendering
-- **Observed:** textures with transparent regions, such as Faithful-style leaves,
-  do not yet show the world through holes like Minecraft leaves.
-- **Next action:** add an alpha-tested/cutout block render path and verify depth
-  behavior on leaf blocks.
+- **Observed:** textures transparent regions, Faithful-style leaves,
+  do not yet show world through holes like Minecraft leaves.
+- **Fix notes:** cutout blocks now discard transparent atlas texels, leaves are
+  non-opaque/cutout in block data, skylight and face culling treat leaves as
+  non-occluders, and Faithful oak-leaf alpha is preserved through atlas import.
+- **Next action:** add a dedicated foliage smoke/manual scene and document any
+  remaining translucent-block limits.
 
 ### BUG-G006: Inventory UI is functional but not Minecraft-polished
 

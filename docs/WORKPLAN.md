@@ -166,8 +166,8 @@ resource packs.
 - [x] Preserve depth behavior so leaf holes show the world through transparent
       texture regions without sorting artifacts.
 - [x] Mark blocks/materials that require cutout rendering in data registry.
-- [ ] Verify Faithful-style leaf textures render with visible holes.
-- [ ] Document supported vs planned resource-pack features.
+- [x] Verify Faithful-style leaf textures render with visible holes.
+- [x] Document supported vs planned resource-pack features.
 - [ ] Add a smoke/manual test scene or fixture for transparent foliage.
 
 ### Phase C7: Inventory and item presentation

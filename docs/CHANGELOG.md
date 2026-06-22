@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Resource-pack cutout verification** - added Faithful oak-leaf alpha coverage
+  through the real block-atlas importer and documented supported vs planned
+  resource-pack features.
 - **Per-material footstep sound keys** - walking now resolves to `step.*`
   material sounds before falling back to `footstep`, leaving `block.*` sounds
   available for louder breaking/placing actions.

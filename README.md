@@ -72,20 +72,17 @@ uv run python -m voxel_sandbox structure-preview veilstone_ruin
 
 These are expected rough edges, not hidden production promises:
 
-- First-person presentation is still primitive: no proper 3D hand/viewmodel,
-  held item model, swing/place/break animations, player shadow, or unified gait
-  phase syncing camera bob, footsteps, and body/hand animation.
+- First-person presentation is improving but still needs final Minecraft-like
+  hand skin/model polish, player shadow, and block-break feedback particles.
 - Mob walking animation is visually rough and not yet synchronized to actual
-  locomotion speed, ground contact, or step sounds.
-- Water still behaves like voxel fluid. There are known movement and visual
-  issues around climbing out of water, interrupted flow surfaces, and the lack
-  of smooth continuous waves/splashes.
-- Transparent textures are incomplete. Leaf cutouts from packs such as Faithful
-  need alpha-tested/ordered rendering so the world is visible through holes.
-- Inventory UI is functional but not Minecraft-polished: no 3D item icons,
-  stack-count overlay in the corner of item icons, hover tooltip polish,
-  drag-and-drop slot movement, or full crafting UX.
-- World generation needs more distant landscape appeal, biome filling, grass,
+  locomotion speed, ground contact, and step sounds.
+- Water still behaves like voxel fluid. There are known movement/visual issues
+  around interrupted flow surfaces and lack of smooth continuous waves/splashes.
+- Transparent leaf cutouts now use alpha-tested rendering, but dedicated foliage
+  smoke scenes and full translucent-block support are still planned.
+- Inventory UI now has stack counts, hover tooltips, and drag-and-drop slot
+  movement, but still lacks 3D item icons and full crafting UX.
+- World generation needs distant landscape appeal, biome filling, grass,
   flowers, landmarks, and configurable in-game render distance.
 - Debug/perspective controls are partial. `F3` exists for a debug overlay, but
   CPU/GPU/memory/device diagnostics and Minecraft-like perspective cycling are
@@ -168,8 +165,8 @@ Example:
 ```
 
 This is not a complete Minecraft resource-pack implementation yet. Alpha-tested
-leaves, 3D item models, UI item icons, and broader asset mapping are still on
-the roadmap.
+leaf textures are supported for cutout blocks; 3D item models, UI item icons,
+translucent blocks, and broader asset mapping are still on the roadmap.
 
 ## Architecture
 
