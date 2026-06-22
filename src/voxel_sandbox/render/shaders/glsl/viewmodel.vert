@@ -2,6 +2,7 @@
 
 in vec3 in_position;
 in vec3 in_normal;
+in vec2 in_uv;
 
 uniform vec3 part_position;
 uniform vec3 part_scale;
@@ -9,6 +10,7 @@ uniform vec3 part_rotation_degrees;
 uniform float aspect_ratio;
 
 out vec3 v_normal;
+out vec2 v_uv;
 
 mat3 rotate_x(float angle) {
     float c = cos(angle);
@@ -51,4 +53,5 @@ void main() {
     clip_position.x /= max(aspect_ratio, 0.001);
     gl_Position = vec4(clip_position, 1.0);
     v_normal = normalize(rotation * in_normal);
+    v_uv = in_uv;
 }

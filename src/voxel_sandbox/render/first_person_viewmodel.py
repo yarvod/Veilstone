@@ -21,7 +21,7 @@ class FirstPersonViewmodelRenderer:
         self.vertex_buffer = context.buffer(_cube_vertices().astype("f4").tobytes())
         self.vertex_array = context.vertex_array(
             self.shader.program,
-            [(self.vertex_buffer, "3f 3f", "in_position", "in_normal")],
+            [(self.vertex_buffer, "3f 3f 2f", "in_position", "in_normal", "in_uv")],
         )
 
     def render(
@@ -30,6 +30,8 @@ class FirstPersonViewmodelRenderer:
         *,
         width: int,
         height: int,
+        block_texture: moderngl.Texture | None = None,
+        atlas_uvs: dict[str, tuple[float, float, float, float]] | None = None,
     ) -> int:
         program = self.shader.program
         if program is None:
@@ -37,6 +39,15 @@ class FirstPersonViewmodelRenderer:
         cast("moderngl.Uniform", program["aspect_ratio"]).value = max(width, 1) / max(height, 1)
         draws = 0
         for part in data.parts:
+            texture_rect = _texture_rect(part.texture_name, atlas_uvs)
+            if block_texture is not None and texture_rect is not None:
+                block_texture.use(0)
+                cast("moderngl.Uniform", program["use_texture"]).value = 1
+                cast("moderngl.Uniform", program["viewmodel_texture"]).value = 0
+                cast("moderngl.Uniform", program["uv_rect"]).value = texture_rect
+            else:
+                cast("moderngl.Uniform", program["use_texture"]).value = 0
+                cast("moderngl.Uniform", program["uv_rect"]).value = (0.0, 0.0, 1.0, 1.0)
             cast("moderngl.Uniform", program["part_position"]).value = part.position
             cast("moderngl.Uniform", program["part_scale"]).value = part.scale
             cast("moderngl.Uniform", program["part_rotation_degrees"]).value = part.rotation_degrees
@@ -49,6 +60,19 @@ class FirstPersonViewmodelRenderer:
         self.vertex_array.release()
         self.vertex_buffer.release()
         self.shader.release()
+
+
+def _texture_rect(
+    texture_name: str | None,
+    atlas_uvs: dict[str, tuple[float, float, float, float]] | None,
+) -> tuple[float, float, float, float] | None:
+    if texture_name is None or atlas_uvs is None:
+        return None
+    rect = atlas_uvs.get(texture_name)
+    if rect is None:
+        return None
+    u, v, width, height = rect
+    return u, v, u + width, v + height
 
 
 def _cube_vertices() -> np.ndarray:
@@ -93,9 +117,11 @@ def _cube_vertices() -> np.ndarray:
             ],
         ),
     ]
-    vertices: list[tuple[float, float, float, float, float, float]] = []
+    uv_corners = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
+    vertices: list[tuple[float, float, float, float, float, float, float, float]] = []
     for normal, corners in faces:
         for index in (0, 1, 2, 0, 2, 3):
             position = corners[index]
-            vertices.append((*position, *normal))
+            uv = uv_corners[index]
+            vertices.append((*position, *normal, *uv))
     return np.array(vertices, dtype=np.float32)

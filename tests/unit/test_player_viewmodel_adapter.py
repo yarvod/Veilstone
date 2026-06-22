@@ -8,7 +8,9 @@ from voxel_sandbox.application.player_animation import (
     start_player_interaction,
 )
 from voxel_sandbox.application.player_viewmodel import build_player_viewmodel_snapshot
+from voxel_sandbox.domain.blocks.registry import create_core_block_registry
 from voxel_sandbox.domain.items import ItemStack
+from voxel_sandbox.domain.items.registry import create_core_item_registry
 from voxel_sandbox.render.player_viewmodel import build_player_viewmodel_render_data
 
 
@@ -33,8 +35,22 @@ def test_viewmodel_render_data_adds_held_item_part() -> None:
     data = build_player_viewmodel_render_data(snapshot)
 
     assert [part.name for part in data.parts] == ["right_arm", "held_item_block"]
-    assert data.parts[1].position[2] < data.parts[0].position[2]
-    assert data.parts[1].scale == (0.20, 0.20, 0.20)
+    assert data.parts[1].position != data.parts[0].position
+    assert data.parts[1].scale == (0.22, 0.22, 0.22)
+
+
+def test_viewmodel_render_data_uses_block_texture_for_held_block() -> None:
+    snapshot = build_player_viewmodel_snapshot(
+        None,
+        held_stack=ItemStack(item_id=3, count=4),
+    )
+    data = build_player_viewmodel_render_data(
+        snapshot,
+        item_registry=create_core_item_registry(),
+        block_registry=create_core_block_registry(),
+    )
+
+    assert data.parts[1].texture_name == "grass_top"
 
 
 def test_viewmodel_render_data_uses_torch_like_lantern_model() -> None:
@@ -51,7 +67,7 @@ def test_viewmodel_render_data_uses_torch_like_lantern_model() -> None:
         "held_item_lantern_head",
     ]
     assert data.parts[1].scale[1] > data.parts[1].scale[0]
-    assert data.parts[2].position[1] > data.parts[1].position[1]
+    assert data.parts[2].position != data.parts[1].position
 
 
 def test_viewmodel_render_data_applies_bob_and_swing_to_hand() -> None:

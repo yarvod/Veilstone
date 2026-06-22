@@ -1,4 +1,5 @@
 """Unit tests for WorldManager (Phase 4.1)."""
+# pyright: reportPrivateUsage=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownMemberType=false
 
 from __future__ import annotations
 
@@ -233,6 +234,51 @@ def test_saved_worlds_finds_valid_saves(tmp_path: Path) -> None:
 
     names = [name for name, _ in result]
     assert "Test World" in names
+
+
+def test_unique_world_root_does_not_reuse_existing_save(tmp_path: Path) -> None:
+    from voxel_sandbox.infrastructure.storage import WorldStorage
+
+    WorldStorage(tmp_path / "same-name").ensure_world(name="Same Name", seed="old")
+
+    with patch(
+        "voxel_sandbox.render.world_manager.application_data_root",
+        return_value=tmp_path,
+    ):
+        assert WorldManager._unique_world_root("Same Name") == tmp_path / "same-name-2"
+
+
+def test_create_world_uses_unique_root_for_duplicate_names(tmp_path: Path) -> None:
+    from voxel_sandbox.infrastructure.storage import WorldStorage
+
+    WorldStorage(tmp_path / "same-name").ensure_world(name="Same Name", seed="old")
+    win = _make_win()
+    manager = WorldManager(win)
+
+    with (
+        patch(
+            "voxel_sandbox.render.world_manager.application_data_root",
+            return_value=tmp_path,
+        ),
+        patch.object(manager, "_switch_world") as switch_world,
+    ):
+        manager.create_world("Same Name", "new-seed")
+
+    assert (tmp_path / "same-name-2" / "level.toml").exists()
+    switch_world.assert_called_once_with(tmp_path / "same-name-2")
+
+
+def test_delete_world_removes_directory_and_invalidates_cache(tmp_path: Path) -> None:
+    from voxel_sandbox.infrastructure.storage import WorldStorage
+
+    world_dir = tmp_path / "gone"
+    WorldStorage(world_dir).ensure_world(name="Gone", seed="seed")
+    WorldManager._worlds_cache = (("Gone", world_dir),)
+
+    WorldManager.delete_world(world_dir)
+
+    assert not world_dir.exists()
+    assert WorldManager._worlds_cache is None
 
 
 def test_saved_worlds_ignores_dirs_without_metadata(tmp_path: Path) -> None:

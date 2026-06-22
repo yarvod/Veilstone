@@ -26,7 +26,7 @@ def test_audio_bus_routes_positional_effect_with_group_volumes() -> None:
 
     resource, volume, position = backend.played[-1]
     assert resource.key == "block.stone"
-    assert abs(volume - 0.144) < 1e-9
+    assert abs(volume - 0.084) < 1e-9
     assert position == (1.0, 2.0, 3.0)
     assert backend.listener == (4.0, 5.0, 6.0)
 

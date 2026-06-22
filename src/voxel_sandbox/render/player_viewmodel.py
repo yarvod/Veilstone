@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from voxel_sandbox.application.player_viewmodel import PlayerViewmodelSnapshot
+from voxel_sandbox.domain.blocks import BlockRegistry
+from voxel_sandbox.domain.items import ItemRegistry
 
 type Vec3 = tuple[float, float, float]
 
@@ -14,6 +16,7 @@ class ViewmodelPart:
     scale: Vec3
     rotation_degrees: Vec3
     color: Vec3
+    texture_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +26,9 @@ class PlayerViewmodelRenderData:
 
 def build_player_viewmodel_render_data(
     snapshot: PlayerViewmodelSnapshot,
+    *,
+    item_registry: ItemRegistry | None = None,
+    block_registry: BlockRegistry | None = None,
 ) -> PlayerViewmodelRenderData:
     """Convert application viewmodel pose data into renderable cuboid parts."""
     hand_position = _add(snapshot.base_position, snapshot.bob_offset, snapshot.swing_offset)
@@ -38,12 +44,25 @@ def build_player_viewmodel_render_data(
     )
     if snapshot.held_item is None:
         return PlayerViewmodelRenderData(parts=(arm,))
-    return PlayerViewmodelRenderData(parts=(arm, *_held_item_parts(snapshot, hand_position)))
+    return PlayerViewmodelRenderData(
+        parts=(
+            arm,
+            *_held_item_parts(
+                snapshot,
+                hand_position,
+                item_registry=item_registry,
+                block_registry=block_registry,
+            ),
+        )
+    )
 
 
 def _held_item_parts(
     snapshot: PlayerViewmodelSnapshot,
     hand_position: Vec3,
+    *,
+    item_registry: ItemRegistry | None,
+    block_registry: BlockRegistry | None,
 ) -> tuple[ViewmodelPart, ...]:
     assert snapshot.held_item is not None
     if snapshot.held_item.item_id == 7:
@@ -54,24 +73,38 @@ def _held_item_parts(
             position=handle_position,
             scale=(0.055, 0.34, 0.055),
             rotation_degrees=rotation,
-            color=(0.22, 0.14, 0.08),
+            color=(0.30, 0.20, 0.10),
         )
         head = ViewmodelPart(
             name="held_item_lantern_head",
-            position=_add(handle_position, (0.0, 0.23, 0.0)),
-            scale=(0.13, 0.13, 0.13),
+            position=_add(hand_position, (-0.10, 0.20, -0.10)),
+            scale=(0.16, 0.16, 0.16),
             rotation_degrees=rotation,
-            color=(1.0, 0.72, 0.08),
+            color=(1.0, 0.68, 0.24),
         )
         return handle, head
     block = ViewmodelPart(
         name="held_item_block",
-        position=_add(hand_position, (-0.11, 0.38, -0.12)),
-        scale=(0.20, 0.20, 0.20),
-        rotation_degrees=_add((-14.0, 20.0, 8.0), snapshot.swing_rotation_degrees),
-        color=(0.64, 0.66, 0.62),
+        position=_add(hand_position, (-0.10, 0.34, -0.24)),
+        scale=(0.22, 0.22, 0.22),
+        rotation_degrees=_add((-18.0, -34.0, 12.0), snapshot.swing_rotation_degrees),
+        color=(0.44, 0.70, 0.32),
+        texture_name=_held_block_texture_name(snapshot, item_registry, block_registry),
     )
     return (block,)
+
+
+def _held_block_texture_name(
+    snapshot: PlayerViewmodelSnapshot,
+    item_registry: ItemRegistry | None,
+    block_registry: BlockRegistry | None,
+) -> str | None:
+    if item_registry is None or block_registry is None or snapshot.held_item is None:
+        return None
+    item = item_registry.by_id(snapshot.held_item.item_id)
+    if item.block_id is None:
+        return None
+    return block_registry.by_id(item.block_id).texture_top
 
 
 def _add(*vectors: Vec3) -> Vec3:

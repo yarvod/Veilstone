@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 import sys
 import time
 from dataclasses import replace
@@ -650,7 +649,7 @@ class MenuUI:
                     win._sync_mouse_capture()
                     return
                 name, path = self.world_list_items[self.world_list_index]
-                shutil.rmtree(path)
+                WorldManager.delete_world(path)
                 win.menu.status = f"Deleted world {name}."
                 self._world_list_cache_time = 0.0
                 self._refresh_world_list()

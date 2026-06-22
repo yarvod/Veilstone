@@ -158,6 +158,15 @@ def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
         f'shadow_quality = "{settings.graphics.shadow_quality}"\n'
         f"clouds = {str(settings.graphics.clouds).lower()}\n"
         f"fog = {str(settings.graphics.fog).lower()}\n"
+        "\n[world]\n"
+        f'seed = "{settings.world.seed}"\n'
+        f"render_distance = {settings.world.render_distance}\n"
+        f"generation_workers = {settings.world.generation_workers}\n"
+        f'generation_backend = "{settings.world.generation_backend}"\n'
+        f"chunk_uploads_per_frame = {settings.world.chunk_uploads_per_frame}\n"
+        f"meshing_workers = {settings.world.meshing_workers}\n"
+        f'meshing_backend = "{settings.world.meshing_backend}"\n'
+        f"mesh_uploads_per_frame = {settings.world.mesh_uploads_per_frame}\n"
         "\n[gameplay]\n"
         f'difficulty = "{settings.gameplay.difficulty}"\n'
         f"hostile_spawn_light_limit = {settings.gameplay.hostile_spawn_light_limit}\n"

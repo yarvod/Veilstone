@@ -74,6 +74,19 @@
 
 ### Fixed
 
+- **First-person hand duplication** - legacy 2D HUD hand/item overlay is now
+  disabled; first-person presentation uses only the 3D viewmodel.
+- **Held block viewmodel texture** - first-person held block cuboids now resolve
+  their texture from the selected item/block registry and render with atlas UVs.
+- **Local third-person player gait** - local player avatar rendering now receives
+  the same gait animation phase used by camera bob, footsteps, and viewmodel
+  motion, reducing static sliding when perspective is switched.
+- **User world settings persistence** - user settings writes now include the
+  `[world]` section, including render distance and generation/meshing settings.
+- **World create/delete persistence** - creating a world now chooses a unique
+  save directory instead of reusing an existing slug, preventing old player
+  inventory from leaking into new worlds; deleting a world now invalidates the
+  saved-world cache.
 - **Perspective initialization crash** - `GameWindow` now initializes perspective
   mode before the first camera sync during startup.
 - **Water shore exit** - player physics now supports swimming/jumping out of

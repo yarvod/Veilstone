@@ -404,24 +404,8 @@ class InventoryController:
                 sprite.draw()
 
     def draw_held_item(self) -> None:
-        win = self.win
-        if not win.inventory_open:
-            self.held_hand_sprite.visible = True
-            self.held_hand_sprite.x = win.width - 150
-            self.held_hand_sprite.y = -12
-            held_stack = win.inventory[win.hotbar.selected_index]
-            if held_stack is not None:
-                self.held_item_icon.visible = True
-                self.held_item_icon.image = self.item_icon_images[held_stack.item_id]
-                self.held_item_icon.scale = 112 / max(1, self.held_item_icon.image.width)
-                self.held_item_icon.x = win.width - 190
-                self.held_item_icon.y = 12
-                self.held_item_icon.rotation = 12
-            else:
-                self.held_item_icon.visible = False
-        else:
-            self.held_hand_sprite.visible = False
-            self.held_item_icon.visible = False
+        self.held_hand_sprite.visible = False
+        self.held_item_icon.visible = False
 
     def update_hud_status(self) -> None:
         win = self.win

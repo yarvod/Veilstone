@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from voxel_sandbox.application.player_animation import PlayerAnimationSnapshot, PlayerInteraction
 from voxel_sandbox.application.player_render import PlayerRenderSnapshot
 from voxel_sandbox.render.player_avatar import (
     build_player_avatar_render_data,
@@ -46,3 +47,38 @@ def test_build_player_avatar_world_contains_single_renderable_entity() -> None:
     entity = entities[0]
     assert world.transforms[entity].position == snapshot.position
     assert world.render_models[entity].key == "remote_player"
+
+
+def test_build_player_avatar_world_carries_player_gait_animation() -> None:
+    animation = PlayerAnimationSnapshot(
+        moving=True,
+        sprinting=False,
+        swimming=False,
+        grounded=True,
+        movement_amount=0.75,
+        gait_phase=1.25,
+        step_index=2,
+        footstep_due=False,
+        camera_bob_y=0.0,
+        viewmodel_bob_y=0.0,
+        interaction=PlayerInteraction.IDLE,
+        interaction_progress=0.0,
+        interaction_active=False,
+    )
+    snapshot = PlayerRenderSnapshot(
+        position=(4.0, 5.0, 6.0),
+        eye_position=(4.0, 6.62, 6.0),
+        yaw_degrees=90.0,
+        width=0.6,
+        height=1.8,
+        in_water=False,
+        on_ground=True,
+        vertical_velocity=0.0,
+        animation=animation,
+    )
+
+    world = build_player_avatar_world(snapshot)
+    (entity,) = world.query(world.animations)
+
+    assert world.animations[entity].phase == 1.25
+    assert world.animations[entity].speed == 0.75

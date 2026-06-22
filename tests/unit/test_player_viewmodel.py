@@ -21,7 +21,7 @@ def test_viewmodel_snapshot_maps_selected_item_without_render_dependencies() -> 
     assert snapshot.held_item is not None
     assert snapshot.held_item.item_id == 7
     assert snapshot.held_item.count == 12
-    assert snapshot.base_position == (1.18, -0.92, -0.28)
+    assert snapshot.base_position == (0.74, -0.74, -0.48)
     assert snapshot.interaction is PlayerInteraction.IDLE
     assert snapshot.swing_offset == (0.0, 0.0, 0.0)
 
@@ -58,4 +58,4 @@ def test_left_hand_mirrors_base_position() -> None:
     snapshot = build_player_viewmodel_snapshot(None, hand="left")
 
     assert snapshot.hand == "left"
-    assert snapshot.base_position[0] == -1.18
+    assert snapshot.base_position[0] == -0.74

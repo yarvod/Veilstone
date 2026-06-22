@@ -33,6 +33,7 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
             clouds=False,
         ),
         window=replace(settings.window, vsync=False),
+        world=replace(settings.world, seed="saved-seed", render_distance=5),
         gameplay=replace(settings.gameplay, difficulty="peaceful", hostile_spawn_light_limit=5),
         audio=replace(settings.audio, master=0.3, music=0.2, ambience=0.4),
         controls=replace(settings.controls, forward="UP", jump="RSHIFT"),
@@ -45,9 +46,12 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
     assert loaded.graphics.shadow_quality == "off"
     assert not loaded.graphics.clouds
     assert not loaded.window.vsync
+    assert loaded.world.seed == "saved-seed"
+    assert loaded.world.render_distance == 5
     assert loaded.gameplay.difficulty == "peaceful"
     assert loaded.gameplay.hostile_spawn_light_limit == 5
     assert loaded.audio.master == 0.3
+    assert loaded.audio.effects == settings.audio.effects
     assert loaded.audio.music == 0.2
     assert loaded.audio.ambience == 0.4
     assert loaded.controls.forward == "UP"

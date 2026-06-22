@@ -562,12 +562,18 @@ class GameWindow(pyglet.window.Window):
                 self._player_animation_snapshot,
                 held_stack=self.hotbar.selected,
             )
-            viewmodel_data = build_player_viewmodel_render_data(viewmodel_snapshot)
+            viewmodel_data = build_player_viewmodel_render_data(
+                viewmodel_snapshot,
+                item_registry=self.item_registry,
+                block_registry=self._block_registry(),
+            )
             self.mgl_context.disable(moderngl.DEPTH_TEST)
             self.viewmodel_renderer.render(
                 viewmodel_data,
                 width=self.width,
                 height=self.height,
+                block_texture=self.world_renderer.texture,
+                atlas_uvs=self.world_renderer.atlas_uvs,
             )
         self.mgl_context.disable(moderngl.DEPTH_TEST)
         self.menu_ui._prepare_ui_draw()

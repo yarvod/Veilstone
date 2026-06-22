@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -35,10 +36,15 @@ class WorldManager:
         cls._worlds_cache = None
 
     def create_world(self, name: str, seed: str) -> None:
-        root = application_data_root() / self._world_slug(name)
+        root = self._unique_world_root(name)
         WorldStorage(root).ensure_world(name=name, seed=seed)
         self._invalidate_worlds_cache()
         self._switch_world(root)
+
+    @classmethod
+    def delete_world(cls, path: Path) -> None:
+        shutil.rmtree(path)
+        cls._invalidate_worlds_cache()
 
     def load_world(self, name: str) -> bool:
         match = next(
@@ -172,3 +178,17 @@ class WorldManager:
             for part in name.split()
         )
         return slug or "world"
+
+    @classmethod
+    def _unique_world_root(cls, name: str) -> Path:
+        saves_root = application_data_root()
+        slug = cls._world_slug(name)
+        candidate = saves_root / slug
+        if not candidate.exists():
+            return candidate
+        suffix = 2
+        while True:
+            candidate = saves_root / f"{slug}-{suffix}"
+            if not candidate.exists():
+                return candidate
+            suffix += 1

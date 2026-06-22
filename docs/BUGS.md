@@ -72,11 +72,49 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Next action:** add Settings UI render-distance control and schedule generation
   feature-density passes with deterministic tests.
 
+### BUG-S001: Creating/deleting worlds reused stale save state
+
+- **Status:** fixed
+- **Affected area:** world selection / persistence
+- **Observed:** creating a world with a name whose save slug already existed could
+  reuse the old save directory, including previous player inventory. Deleting a
+  world could leave the cached world list stale.
+- **Fix notes:** new worlds now use a unique save directory when the slug already
+  exists, and world deletion goes through `WorldManager.delete_world()` which
+  invalidates the saved-world cache.
+
+### BUG-P001: Duplicate first-person hand render path
+
+- **Status:** fixed
+- **Affected area:** first-person HUD / viewmodel rendering
+- **Observed:** first-person mode could show both the old 2D HUD hand/item
+  overlay and the newer 3D viewmodel hand.
+- **Fix notes:** legacy held-hand HUD overlay is now disabled; first-person hand
+  and held block rendering comes from the 3D viewmodel path.
+
+### BUG-P002: Local third-person avatar did not use player gait
+
+- **Status:** fixed
+- **Affected area:** perspective switching / local player rendering
+- **Observed:** switching perspective showed a local player model that did not
+  carry the same gait phase as the first-person player animation state.
+- **Fix notes:** local avatar transient render world now receives an
+  `AnimationState` derived from `PlayerAnimationSnapshot`.
+
+### BUG-S002: User world settings were not persisted
+
+- **Status:** fixed
+- **Affected area:** settings persistence
+- **Observed:** user settings writes saved window, camera, graphics, gameplay,
+  audio, and controls, but not the `[world]` section.
+- **Fix notes:** `save_user_settings()` now writes the world section, including
+  render distance and generation/meshing settings.
+
 ### BUG-Q001: Project-wide Pyright is currently red
 
 - **Status:** open
 - **Affected area:** typing / quality gate
-- **Observed:** `uv run pyright` reports 549 existing strict typing errors across engine, render, tests, and infrastructure.
+- **Observed:** `uv run pyright` reports 508 existing strict typing errors across engine, render, tests, and infrastructure.
 - **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
 - **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 
