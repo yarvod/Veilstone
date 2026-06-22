@@ -88,6 +88,7 @@
 
 ### Changed
 
+- **First-person viewmodel pose** - adjusted the MVP viewmodel from centered debug cuboids to a single lower-right arm, with held blocks attached to the hand and a torch-like lantern model for the lantern item.
 - **Agent instructions merged** — `CLAUDE.md` and `AGENTS.md` now contain the same complete project instructions, including RTK usage, docs workflow, checks, architecture rules, and commit policy.
 - **Workplan reset** — `docs/WORKPLAN.md` now tracks only the active Architecture Stabilization phase and next actions; completed historical phase checklists were removed from the active plan.
 - **Bug tracker reset** — `docs/BUGS.md` now tracks active issues/watchlist only instead of resolved historical bug entries.

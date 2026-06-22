@@ -26,27 +26,52 @@ def build_player_viewmodel_render_data(
 ) -> PlayerViewmodelRenderData:
     """Convert application viewmodel pose data into renderable cuboid parts."""
     hand_position = _add(snapshot.base_position, snapshot.bob_offset, snapshot.swing_offset)
-    hand = ViewmodelPart(
-        name=f"{snapshot.hand}_hand",
+    arm = ViewmodelPart(
+        name=f"{snapshot.hand}_arm",
         position=hand_position,
-        scale=(0.16, 0.34, 0.16),
-        rotation_degrees=snapshot.swing_rotation_degrees,
+        scale=(0.18, 0.62, 0.18),
+        rotation_degrees=_add(
+            (-22.0, 0.0, -24.0 if snapshot.hand == "right" else 24.0),
+            snapshot.swing_rotation_degrees,
+        ),
         color=(0.78, 0.58, 0.42),
     )
     if snapshot.held_item is None:
-        return PlayerViewmodelRenderData(parts=(hand,))
-    item = ViewmodelPart(
-        name="held_item",
-        position=_add(hand_position, (0.0, 0.09, -0.18)),
-        scale=(0.22, 0.22, 0.22),
-        rotation_degrees=(
-            snapshot.swing_rotation_degrees[0],
-            snapshot.swing_rotation_degrees[1] + 18.0,
-            snapshot.swing_rotation_degrees[2],
-        ),
-        color=(0.72, 0.72, 0.72),
+        return PlayerViewmodelRenderData(parts=(arm,))
+    return PlayerViewmodelRenderData(parts=(arm, *_held_item_parts(snapshot, hand_position)))
+
+
+def _held_item_parts(
+    snapshot: PlayerViewmodelSnapshot,
+    hand_position: Vec3,
+) -> tuple[ViewmodelPart, ...]:
+    assert snapshot.held_item is not None
+    if snapshot.held_item.item_id == 7:
+        handle_position = _add(hand_position, (-0.10, 0.40, -0.10))
+        rotation = _add((-8.0, 0.0, 8.0), snapshot.swing_rotation_degrees)
+        handle = ViewmodelPart(
+            name="held_item_lantern_handle",
+            position=handle_position,
+            scale=(0.055, 0.34, 0.055),
+            rotation_degrees=rotation,
+            color=(0.22, 0.14, 0.08),
+        )
+        head = ViewmodelPart(
+            name="held_item_lantern_head",
+            position=_add(handle_position, (0.0, 0.23, 0.0)),
+            scale=(0.13, 0.13, 0.13),
+            rotation_degrees=rotation,
+            color=(1.0, 0.72, 0.08),
+        )
+        return handle, head
+    block = ViewmodelPart(
+        name="held_item_block",
+        position=_add(hand_position, (-0.11, 0.38, -0.12)),
+        scale=(0.20, 0.20, 0.20),
+        rotation_degrees=_add((-14.0, 20.0, 8.0), snapshot.swing_rotation_degrees),
+        color=(0.64, 0.66, 0.62),
     )
-    return PlayerViewmodelRenderData(parts=(hand, item))
+    return (block,)
 
 
 def _add(*vectors: Vec3) -> Vec3:

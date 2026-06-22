@@ -19,9 +19,9 @@ def test_viewmodel_render_data_contains_hand_part() -> None:
 
     assert len(data.parts) == 1
     hand = data.parts[0]
-    assert hand.name == "right_hand"
+    assert hand.name == "right_arm"
     assert hand.position == snapshot.base_position
-    assert hand.scale == (0.16, 0.34, 0.16)
+    assert hand.scale == (0.18, 0.62, 0.18)
 
 
 def test_viewmodel_render_data_adds_held_item_part() -> None:
@@ -32,9 +32,26 @@ def test_viewmodel_render_data_adds_held_item_part() -> None:
 
     data = build_player_viewmodel_render_data(snapshot)
 
-    assert [part.name for part in data.parts] == ["right_hand", "held_item"]
+    assert [part.name for part in data.parts] == ["right_arm", "held_item_block"]
     assert data.parts[1].position[2] < data.parts[0].position[2]
-    assert data.parts[1].rotation_degrees[1] == 18.0
+    assert data.parts[1].scale == (0.20, 0.20, 0.20)
+
+
+def test_viewmodel_render_data_uses_torch_like_lantern_model() -> None:
+    snapshot = build_player_viewmodel_snapshot(
+        None,
+        held_stack=ItemStack(item_id=7, count=1),
+    )
+
+    data = build_player_viewmodel_render_data(snapshot)
+
+    assert [part.name for part in data.parts] == [
+        "right_arm",
+        "held_item_lantern_handle",
+        "held_item_lantern_head",
+    ]
+    assert data.parts[1].scale[1] > data.parts[1].scale[0]
+    assert data.parts[2].position[1] > data.parts[1].position[1]
 
 
 def test_viewmodel_render_data_applies_bob_and_swing_to_hand() -> None:
