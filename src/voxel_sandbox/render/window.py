@@ -323,12 +323,23 @@ class GameWindow(pyglet.window.Window):
                 self._network_accumulator %= 0.05
                 try:
                     if self.authority is not None:
+                        selected_stack = self.hotbar.selected
+                        held_item_payload = (
+                            {
+                                "item_id": selected_stack.item_id,
+                                "count": selected_stack.count,
+                                "hand": "right",
+                            }
+                            if selected_stack is not None
+                            else None
+                        )
                         self.authority.send_input(
                             (self.player.x, self.player.y, self.player.z),
                             math.radians(self.camera.yaw_degrees) + math.pi / 2.0,
+                            held_item_payload,
                         )
-                    if self.world_renderer.remote_mode:
-                        self._net.request_remote_chunk()
+                        if self.world_renderer.remote_mode:
+                            self._net.request_remote_chunk()
                 except (ConnectionError, OSError):
                     self.inventory_status = "Connection interrupted; reconnecting..."
         self._autosave_accumulator += delta_time

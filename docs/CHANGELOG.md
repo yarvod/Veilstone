@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Remote player held-item replication** - LAN player snapshots now carry
+  compact held-item payloads into remote player ECS components, so other players
+  can render selected blocks/items in hand without network render objects.
 - **Player avatar held-item rendering** - entity rendering now draws a small
   animated held block/item cuboid attached to player avatar arm pose data.
 - **Player avatar held-item snapshot data** - local third-person player render

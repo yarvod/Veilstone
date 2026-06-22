@@ -4,6 +4,7 @@ import tempfile
 from dataclasses import replace
 from pathlib import Path
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -215,6 +216,37 @@ def test_first_person_viewmodel_renders_hand_and_held_block() -> None:
             ]
         finally:
             window.viewmodel_renderer = original_viewmodel_renderer
+            window.close()
+
+
+def test_network_input_is_throttled_and_includes_held_item() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-network-input-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.network_session = MagicMock()
+            window.authority = MagicMock()
+            window.inventory.set(0, ItemStack(3, 2), window.item_registry)
+            window.hotbar.select(0)
+
+            window.fixed_update(0.01)
+            window.fixed_update(0.02)
+            window.authority.send_input.assert_not_called()
+
+            window.fixed_update(0.02)
+
+            window.authority.send_input.assert_called_once()
+            _position, _yaw, held_item = window.authority.send_input.call_args.args
+            assert held_item == {"item_id": 3, "count": 2, "hand": "right"}
+        finally:
             window.close()
 
 

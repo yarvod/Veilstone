@@ -20,6 +20,8 @@ from voxel_sandbox.network.chunks import encode_chunk_blocks
 from voxel_sandbox.network.protocol import PROTOCOL_VERSION, Message, receive_frame, send_frame
 from voxel_sandbox.network.rate_limit import TokenBucket
 
+type HeldItemPayload = dict[str, object]
+
 
 @dataclass(slots=True)
 class ServerState:
@@ -181,13 +183,7 @@ class ServerState:
                 continue
             own_position = cast(list[float], own["position"])
             visible = {
-                other_id: {
-                    "name": player["name"],
-                    "position": list(cast(list[float], player["position"])),
-                    "yaw": player.get("yaw", 0.0),
-                    "animation_state": player.get("animation_state", "idle"),
-                    "animation_phase": player.get("animation_phase", 0.0),
-                }
+                other_id: _player_snapshot_payload(player)
                 for other_id, player in players.items()
                 if _distance_squared(
                     own_position,
@@ -308,6 +304,12 @@ class _Handler(socketserver.BaseRequestHandler):
                     raw_yaw = message.get("yaw")
                     if isinstance(raw_yaw, int | float) and math.isfinite(float(raw_yaw)):
                         player["yaw"] = float(raw_yaw)
+                    if "held_item" in message:
+                        held_item = _validated_held_item(message.get("held_item"))
+                        if held_item is not None:
+                            player["held_item"] = held_item
+                        else:
+                            player.pop("held_item", None)
                     player["animation_state"] = "walk" if distance > 0.002 else "idle"
                     raw_phase = player.get("animation_phase", 0.0)
                     previous_phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0
@@ -474,6 +476,40 @@ class LanServer:
 
 def _distance_squared(first: list[float], second: list[float]) -> float:
     return sum((first[index] - second[index]) ** 2 for index in range(3))
+
+
+def _player_snapshot_payload(player: dict[str, object]) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "name": player["name"],
+        "position": list(cast(list[float], player["position"])),
+        "yaw": player.get("yaw", 0.0),
+        "animation_state": player.get("animation_state", "idle"),
+        "animation_phase": player.get("animation_phase", 0.0),
+    }
+    held_item = player.get("held_item")
+    if isinstance(held_item, dict):
+        payload["held_item"] = dict(cast(dict[str, object], held_item))
+    return payload
+
+
+def _validated_held_item(value: object) -> HeldItemPayload | None:
+    if not isinstance(value, dict):
+        return None
+    payload = cast(dict[str, object], value)
+    item_id = payload.get("item_id")
+    count = payload.get("count", 1)
+    hand = payload.get("hand", "right")
+    if (
+        not isinstance(item_id, int)
+        or isinstance(item_id, bool)
+        or item_id < 1
+        or not isinstance(count, int)
+        or isinstance(count, bool)
+        or count < 1
+        or hand not in {"left", "right"}
+    ):
+        return None
+    return {"item_id": item_id, "count": count, "hand": hand}
 
 
 def _validated_position(value: object) -> tuple[float, float, float] | None:

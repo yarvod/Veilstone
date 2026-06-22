@@ -4,6 +4,8 @@ from typing import Any, Protocol
 from voxel_sandbox.domain.blocks.structures import StructureWorld
 from voxel_sandbox.network import ClientSession
 
+type HeldItemPayload = dict[str, object]
+
 
 class WorldAuthority(Protocol):
     @property
@@ -13,7 +15,12 @@ class WorldAuthority(Protocol):
 
     def toggle_structure(self, entity_id: int) -> Any: ...
 
-    def send_input(self, position: tuple[float, float, float], yaw: float) -> None: ...
+    def send_input(
+        self,
+        position: tuple[float, float, float],
+        yaw: float,
+        held_item: HeldItemPayload | None = None,
+    ) -> None: ...
 
     def send_chat(self, text: str) -> None: ...
 
@@ -43,8 +50,13 @@ class LocalWorldAuthority:
     def toggle_structure(self, entity_id: int) -> Any:
         return self._structure_world.toggle(entity_id)
 
-    def send_input(self, position: tuple[float, float, float], yaw: float) -> None:
-        pass
+    def send_input(
+        self,
+        position: tuple[float, float, float],
+        yaw: float,
+        held_item: HeldItemPayload | None = None,
+    ) -> None:
+        del held_item
 
     def send_chat(self, text: str) -> None:
         pass
@@ -75,12 +87,18 @@ class NetworkWorldAuthority:
         self._session.send({"type": "structure_toggle", "id": entity_id})
         return None
 
-    def send_input(self, position: tuple[float, float, float], yaw: float) -> None:
+    def send_input(
+        self,
+        position: tuple[float, float, float],
+        yaw: float,
+        held_item: HeldItemPayload | None = None,
+    ) -> None:
         self._session.send(
             {
                 "type": "input",
                 "position": list(position),
                 "yaw": yaw,
+                "held_item": held_item,
             }
         )
 

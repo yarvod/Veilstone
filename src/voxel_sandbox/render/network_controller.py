@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureWorld
 from voxel_sandbox.engine.authority import LocalWorldAuthority, NetworkWorldAuthority
 from voxel_sandbox.engine.chunks import ChunkCoord
-from voxel_sandbox.engine.ecs import AnimationState, RenderModel, Transform
+from voxel_sandbox.engine.ecs import AnimationState, HeldItem, RenderModel, Transform
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import ClientSession, LanServer, Message, decode_chunk_blocks
 from voxel_sandbox.network.discovery import DiscoveryResponder
@@ -19,6 +19,27 @@ if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _held_item_from_player(player: dict[str, object]) -> HeldItem | None:
+    raw_held_item = player.get("held_item")
+    if not isinstance(raw_held_item, dict):
+        return None
+    held_item = cast(dict[str, object], raw_held_item)
+    item_id = held_item.get("item_id")
+    count = held_item.get("count", 1)
+    hand = held_item.get("hand", "right")
+    if (
+        not isinstance(item_id, int)
+        or isinstance(item_id, bool)
+        or item_id < 1
+        or not isinstance(count, int)
+        or isinstance(count, bool)
+        or count < 1
+        or hand not in {"left", "right"}
+    ):
+        return None
+    return HeldItem(item_id=item_id, count=count, hand=str(hand))
 
 
 class NetworkController:
@@ -197,6 +218,11 @@ class NetworkController:
                 raw_phase = player.get("animation_phase", 0.0)
                 animation.phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0
                 animation.speed = 1.8 if player.get("animation_state") == "walk" else 0.0
+            held_item = _held_item_from_player(player)
+            if held_item is not None:
+                win.entities.world.held_items.set(entity, held_item)
+            else:
+                win.entities.world.held_items.remove(entity)
             win.remote_player_interpolation[raw_id].push(
                 time.monotonic(),
                 position_tuple,

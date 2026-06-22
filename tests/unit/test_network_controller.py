@@ -6,6 +6,7 @@ import queue
 from unittest.mock import MagicMock
 
 from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.ecs import EntityWorld
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.ui.menu import Screen
 
@@ -312,3 +313,48 @@ class TestApplyMessage:
         win = _make_win()
         nc = NetworkController(win)
         nc.apply_message({"type": "future_feature", "data": 42})  # should not raise
+
+
+def test_sync_remote_players_maps_held_item_component():
+    win = _make_win()
+    win.entities.world = EntityWorld()
+    win.network_session = MagicMock(player_id=99)
+    nc = NetworkController(win)
+
+    nc.sync_remote_players(
+        {
+            1: {
+                "position": [1.0, 64.0, 2.0],
+                "yaw": 1.25,
+                "held_item": {"item_id": 3, "count": 2, "hand": "left"},
+            }
+        }
+    )
+
+    entity = win.remote_player_entities[1]
+    held_item = win.entities.world.held_items[entity]
+    assert held_item.item_id == 3
+    assert held_item.count == 2
+    assert held_item.hand == "left"
+
+
+def test_sync_remote_players_removes_stale_held_item_component():
+    win = _make_win()
+    win.entities.world = EntityWorld()
+    win.network_session = MagicMock(player_id=99)
+    nc = NetworkController(win)
+
+    nc.sync_remote_players(
+        {
+            1: {
+                "position": [1.0, 64.0, 2.0],
+                "held_item": {"item_id": 3, "count": 2, "hand": "right"},
+            }
+        }
+    )
+    entity = win.remote_player_entities[1]
+    assert win.entities.world.held_items.get(entity) is not None
+
+    nc.sync_remote_players({1: {"position": [1.0, 64.0, 2.0]}})
+
+    assert win.entities.world.held_items.get(entity) is None
