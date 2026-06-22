@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Debug HUD diagnostics** - F3 overlay now includes block/chunk coordinates,
+  network mode, remote-player counts, selected item, and existing chunk/entity
+  render metrics in the real HUD draw path.
 - **Cutout foliage rendering** - leaves can now be marked as cutout blocks in
   block data, procedural leaf textures include transparent holes, and the chunk
   shader discards transparent atlas texels so foliage holes reveal the world.

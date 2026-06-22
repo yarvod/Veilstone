@@ -65,6 +65,33 @@ def test_invalid_saved_position_recovers_without_losing_inventory() -> None:
             window.close()
 
 
+def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-debug-hud-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.debug_overlay_visible = True
+            window._hud._last_update_time = 0.0
+            window.on_draw()
+            window.mgl_context.finish()
+
+            text = window._hud.debug_label.text
+            assert "Block " in text
+            assert "Chunk " in text
+            assert "Network singleplayer" in text
+            assert "Remote players 0" in text
+        finally:
+            window.close()
+
+
 def test_new_world_starts_empty_and_in_bright_morning() -> None:
     import pyglet
 
