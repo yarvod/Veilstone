@@ -120,11 +120,11 @@ F-клавиши должны быть player-facing управлением, а 
 Цель: шаги должны быть тише, приятнее и синхронны с движением.
 
 - [x] Lower default footstep/block-step audio gains in `config/audio.toml`.
-- [ ] Split block action sounds from walking sounds where needed so breaking,
+- [x] Split block action sounds from walking sounds where needed so breaking,
       placing, and walking can be tuned independently.
 - [x] Sync footstep events to gait phase instead of a separate render-window
       accumulator.
-- [ ] Add per-material step sound tuning with sane default gain ranges.
+- [x] Add per-material step sound tuning with sane default gain ranges.
 - [ ] Add walk/sprint cadence tests.
 - [ ] Later: add landing, swimming, splash, and block interaction sounds through
       gameplay events, not direct renderer calls.

@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Per-material footstep sound keys** - walking now resolves to `step.*`
+  material sounds before falling back to `footstep`, leaving `block.*` sounds
+  available for louder breaking/placing actions.
 - **Inventory drag-and-drop movement** - inventory stacks can now be picked up,
   dragged to another slot, and dropped there with a distinct drag-target slot
   highlight, covered by unit tests and the real inventory smoke path.

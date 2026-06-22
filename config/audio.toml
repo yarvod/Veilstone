@@ -23,6 +23,30 @@ group = "effects"
 gain = 0.15
 
 [[audio]]
+key = "step.stone"
+path = "audio/block_stone.wav"
+group = "effects"
+gain = 0.08
+
+[[audio]]
+key = "step.earth"
+path = "audio/block_earth.wav"
+group = "effects"
+gain = 0.07
+
+[[audio]]
+key = "step.wood"
+path = "audio/block_wood.wav"
+group = "effects"
+gain = 0.08
+
+[[audio]]
+key = "step.plant"
+path = "audio/footstep.wav"
+group = "effects"
+gain = 0.06
+
+[[audio]]
 key = "footstep"
 path = "audio/footstep.wav"
 group = "effects"

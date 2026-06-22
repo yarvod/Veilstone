@@ -15,6 +15,7 @@ from voxel_sandbox.audio import (
 )
 from voxel_sandbox.audio.backend import listener_space
 from voxel_sandbox.audio.runtime import create_audio_bus, create_server_audio_bus
+from voxel_sandbox.render.window import _footstep_sound_key
 
 
 def test_audio_bus_routes_positional_effect_with_group_volumes() -> None:
@@ -29,6 +30,19 @@ def test_audio_bus_routes_positional_effect_with_group_volumes() -> None:
     assert abs(volume - 0.032) < 1e-9
     assert position == (1.0, 2.0, 3.0)
     assert backend.listener == (4.0, 5.0, 6.0)
+
+
+def test_footstep_sound_prefers_step_material_keys() -> None:
+    assert _footstep_sound_key("stone", {"step.stone", "block.stone", "footstep"}) == "step.stone"
+    assert _footstep_sound_key("glass", {"block.glass", "footstep"}) == "footstep"
+
+
+def test_step_material_sounds_are_tuned_separately_from_block_actions() -> None:
+    bus = create_audio_bus(AudioSettings(), NullAudioBackend())
+
+    assert "step.stone" in bus.registry
+    assert "block.stone" in bus.registry
+    assert bus.registry.get("step.stone").gain < bus.registry.get("block.stone").gain
 
 
 def test_director_changes_music_and_biome_ambience_once() -> None:
