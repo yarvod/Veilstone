@@ -139,6 +139,9 @@
 
 ### Changed
 
+- **First-person viewmodel gait sway** - first-person hand and held item pose
+  now uses deterministic lateral and forward sway from gait phase, with stronger
+  sprint motion and mirrored left-hand movement.
 - **First-person hand model polish** - first-person viewmodel now renders a blocky sleeve and skin hand as separate cuboids, attaches held blocks/items to the hand, and has smoke coverage for the runtime first-person draw path.
 - **First-person viewmodel pose** - adjusted the MVP viewmodel from centered debug cuboids to a single lower-right arm, with held blocks attached to the hand and a torch-like lantern model for the lantern item.
 - **Agent instructions merged** — `CLAUDE.md` and `AGENTS.md` now contain the same complete project instructions, including RTK usage, docs workflow, checks, architecture rules, and commit policy.

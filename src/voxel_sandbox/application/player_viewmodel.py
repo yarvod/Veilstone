@@ -37,13 +37,13 @@ def build_player_viewmodel_snapshot(
     """Build first-person hand/item pose data without importing render code."""
     interaction = animation.interaction if animation is not None else PlayerInteraction.IDLE
     interaction_progress = animation.interaction_progress if animation is not None else 0.0
-    bob_y = animation.viewmodel_bob_y if animation is not None else 0.0
+    bob_offset = _bob_offset(animation, hand)
 
     return PlayerViewmodelSnapshot(
         hand=hand,
         held_item=_held_item_snapshot(held_stack),
         base_position=(0.56 if hand == "right" else -0.56, -0.84, -0.56),
-        bob_offset=(0.0, bob_y, 0.0),
+        bob_offset=bob_offset,
         swing_offset=_swing_offset(interaction, interaction_progress),
         swing_rotation_degrees=_swing_rotation(interaction, interaction_progress),
         interaction=interaction,
@@ -55,6 +55,31 @@ def _held_item_snapshot(stack: ItemStack | None) -> HeldItemSnapshot | None:
     if stack is None:
         return None
     return HeldItemSnapshot(item_id=stack.item_id, count=stack.count)
+
+
+def _bob_offset(
+    animation: PlayerAnimationSnapshot | None,
+    hand: str,
+) -> tuple[float, float, float]:
+    if animation is None:
+        return (0.0, 0.0, 0.0)
+    if not animation.moving:
+        return (0.0, animation.viewmodel_bob_y, 0.0)
+
+    phase = animation.gait_phase * math.tau
+    side = 1.0 if hand == "right" else -1.0
+    lateral_amplitude = 0.018
+    forward_amplitude = 0.026
+    if animation.sprinting:
+        lateral_amplitude = 0.026
+        forward_amplitude = 0.038
+    if animation.swimming:
+        lateral_amplitude = 0.012
+        forward_amplitude = 0.018
+
+    lateral = math.sin(phase) * lateral_amplitude * side
+    forward = (1.0 - math.cos(phase)) * -forward_amplitude
+    return (lateral, animation.viewmodel_bob_y, forward)
 
 
 def _swing_offset(interaction: PlayerInteraction, progress: float) -> tuple[float, float, float]:
