@@ -143,6 +143,8 @@
 
 ### Changed
 
+- **Live render-distance apply** - changing render distance in Settings now
+  updates active chunk streaming immediately while still saving user settings.
 - **First-person viewmodel gait sway** - first-person hand and held item pose
   now uses deterministic lateral and forward sway from gait phase, with stronger
   sprint motion and mirrored left-hand movement.

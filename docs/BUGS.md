@@ -69,14 +69,16 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Next action:** add render-facing item icon/model snapshots and improve slot
   interaction incrementally without moving inventory rules into render code.
 
-### BUG-G007: World generation lacks distant richness and settings control
+### BUG-G007: World generation lacks distant richness
 
 - **Status:** open
 - **Affected area:** generation / settings UI / streaming
-- **Observed:** terrain lacks enough distant fields, biome filling, grass,
-  flowers, and in-game render-distance control.
-- **Next action:** add Settings UI render-distance control and schedule generation
-  feature-density passes with deterministic tests.
+- **Observed:** terrain lacks enough distant fields, biome filling, grass, and
+  flowers.
+- **Fix notes:** Settings now exposes `[world].render_distance`, persists it,
+  and applies changes to active chunk streaming without requiring a world reload.
+- **Next action:** schedule generation feature-density passes with deterministic
+  tests.
 
 ### BUG-S001: Creating/deleting worlds reused stale save state
 

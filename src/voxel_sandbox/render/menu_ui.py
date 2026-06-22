@@ -547,7 +547,9 @@ class MenuUI:
             win.settings,
             world=replace(win.settings.world, render_distance=next_distance),
         )
-        win.menu.status = f"Render distance saved {next_distance} chunks; applies on world reload."
+        changed_live = win.world_renderer.set_render_distance(next_distance)
+        suffix = "applied." if changed_live else "already active."
+        win.menu.status = f"Render distance saved {next_distance} chunks; {suffix}"
         save_user_settings(win.settings)
 
     # ── Audio helpers ─────────────────────────────────────────────────────────

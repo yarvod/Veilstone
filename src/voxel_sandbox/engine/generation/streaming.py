@@ -86,6 +86,14 @@ class ChunkStreamer:
     def loaded_chunks(self) -> tuple[Chunk, ...]:
         return tuple(self._loaded.values())
 
+    def set_render_distance(self, render_distance: int) -> bool:
+        if render_distance < 0:
+            raise ValueError("Render distance cannot be negative")
+        if render_distance == self.render_distance:
+            return False
+        self.render_distance = render_distance
+        return True
+
     def install_chunk(self, chunk: Chunk) -> None:
         pending = self._pending.pop(chunk.coord, None)
         if pending is not None:

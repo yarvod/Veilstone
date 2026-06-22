@@ -43,6 +43,33 @@ def test_streamer_generates_surrounding_chunks_off_thread_and_unloads() -> None:
         streamer.close()
 
 
+def test_streamer_reconfigures_render_distance() -> None:
+    streamer = ChunkStreamer(
+        TerrainGenerator(WorldSeed.parse("distance-reconfigure")),
+        render_distance=0,
+        workers=1,
+    )
+    center = ChunkCoord(0, 0)
+    try:
+        streamer.prime(center)
+        assert streamer.loaded_count == 1
+
+        assert streamer.set_render_distance(1) is True
+        deadline = time.monotonic() + 3.0
+        while streamer.loaded_count < 9 and time.monotonic() < deadline:
+            streamer.update(center, max_completed=9)
+            time.sleep(0.005)
+        assert streamer.loaded_count == 9
+
+        assert streamer.set_render_distance(0) is True
+        batch = streamer.update(center, max_completed=9)
+        assert len(batch.unloaded) == 8
+        assert streamer.loaded_count == 1
+        assert streamer.set_render_distance(0) is False
+    finally:
+        streamer.close()
+
+
 def test_streamer_exposes_loaded_world_blocks_and_mutation() -> None:
     streamer = ChunkStreamer(
         TerrainGenerator(WorldSeed.parse("mutation-test")),

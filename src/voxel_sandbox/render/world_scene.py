@@ -344,6 +344,9 @@ class DemoWorldRenderer:
         self.greedy_meshing = not self.greedy_meshing
         self._remesh_all()
 
+    def set_render_distance(self, render_distance: int) -> bool:
+        return self._streamer.set_render_distance(render_distance)
+
     def update_streaming(self, center: ChunkCoord) -> None:
         if not self.remote_mode:
             batch = self._streamer.update(center, max_completed=self.uploads_per_frame)
