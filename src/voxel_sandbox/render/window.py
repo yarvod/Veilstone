@@ -155,10 +155,6 @@ class GameWindow(pyglet.window.Window):
         self.item_registry = self.app_runtime.content_registries.item_registry
         self.inventory = Inventory()
         self.hotbar = Hotbar(self.inventory)
-        self.inventory.set(0, ItemStack(3, 32), self.item_registry)
-        self.inventory.set(1, ItemStack(7, 8), self.item_registry)
-        self.inventory.set(2, ItemStack(8, 1), self.item_registry)
-        self.inventory.set(3, ItemStack(4, 4), self.item_registry)
         self.player_health = 20.0
         self._worlds = WorldManager(self)
         recovered_saved_position: tuple[float, float, float] | None = None
@@ -427,12 +423,13 @@ class GameWindow(pyglet.window.Window):
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
+        framebuffer_width, framebuffer_height = self._framebuffer_size()
+        self.mgl_context.screen.use()
+        self.mgl_context.viewport = (0, 0, framebuffer_width, framebuffer_height)
         clear_color = (
             self.world_renderer.clear_color if self.menu.in_game else (0.025, 0.04, 0.075, 1.0)
         )
         if not self.menu.in_game:
-            self.mgl_context.screen.use()
-            self.mgl_context.viewport = (0, 0, max(self.width, 1), max(self.height, 1))
             self.mgl_context.clear(*clear_color, depth=1.0)
             self.menu_ui._prepare_ui_draw()
             self.menu_ui._draw_menu()
@@ -442,8 +439,8 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context.clear(*clear_color, depth=1.0)
         self.sky_renderer.render(
             self.camera,
-            self.width,
-            self.height,
+            framebuffer_width,
+            framebuffer_height,
             self.settings.camera.field_of_view,
             self.world_renderer.daylight,
             self.world_renderer.time_of_day,
@@ -459,8 +456,8 @@ class GameWindow(pyglet.window.Window):
             entity_draws = self.entity_renderer.render(
                 self.entities.world,
                 self.camera,
-                self.width,
-                self.height,
+                framebuffer_width,
+                framebuffer_height,
                 self.settings.camera.field_of_view,
                 self.world_renderer.animation_time,
                 self.item_registry,
@@ -497,8 +494,8 @@ class GameWindow(pyglet.window.Window):
                 entity_draws += self.entity_renderer.render(
                     player_world,
                     self.camera,
-                    self.width,
-                    self.height,
+                    framebuffer_width,
+                    framebuffer_height,
                     self.settings.camera.field_of_view,
                     self.world_renderer.animation_time,
                     self.item_registry,
@@ -524,8 +521,8 @@ class GameWindow(pyglet.window.Window):
             entity_draws += self.structure_renderer.render(
                 self.structure_world,
                 self.camera,
-                self.width,
-                self.height,
+                framebuffer_width,
+                framebuffer_height,
                 self.settings.camera.field_of_view,
                 self.world_renderer.texture,
                 self.world_renderer.atlas_uvs,
@@ -548,8 +545,8 @@ class GameWindow(pyglet.window.Window):
 
         self.world_renderer.render(
             self.camera,
-            self.width,
-            self.height,
+            framebuffer_width,
+            framebuffer_height,
             self.settings.camera.field_of_view,
             shadow_caster=lambda light_matrix: self.entity_renderer.render_shadow(
                 self.entities.world,
@@ -571,8 +568,8 @@ class GameWindow(pyglet.window.Window):
             self.mgl_context.disable(moderngl.DEPTH_TEST)
             self.viewmodel_renderer.render(
                 viewmodel_data,
-                width=self.width,
-                height=self.height,
+                width=framebuffer_width,
+                height=framebuffer_height,
                 block_texture=self.world_renderer.texture,
                 atlas_uvs=self.world_renderer.atlas_uvs,
             )
@@ -581,6 +578,19 @@ class GameWindow(pyglet.window.Window):
         if not self.hud_hidden and not getattr(self.settings.development, "disable_hud", False):
             self._hud.draw(entity_draws)
         self.mgl_context.enable(moderngl.DEPTH_TEST)
+
+    def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
+        ui_renderer = getattr(self, "ui_renderer", None)
+        if ui_renderer is not None:
+            ui_renderer.resize(width, height)
+
+    def _framebuffer_size(self) -> tuple[int, int]:
+        get_size = getattr(self, "get_framebuffer_size", None)
+        if callable(get_size):
+            width, height = get_size()
+            return max(int(width), 1), max(int(height), 1)
+        return max(int(self.width), 1), max(int(self.height), 1)
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         self._input.on_key_press(symbol, modifiers)

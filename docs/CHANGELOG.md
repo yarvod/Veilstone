@@ -79,6 +79,10 @@
 
 ### Fixed
 
+- **Fullscreen framebuffer sizing** - rendering now uses framebuffer dimensions for ModernGL viewports, so fullscreen/Retina windows no longer leave the game/menu clipped into a lower-left rectangle.
+- **New-world defaults** - new worlds now start with an empty hotbar/inventory and a bright late-sunrise morning instead of debug items at dusk/night.
+- **Footstep sound harshness** - regenerated softer local footstep/block-step WAVs and lowered their default gains so walking is quieter and less abrasive.
+
 - **Local player avatar yaw** - local third-person player model yaw now converts
   camera-facing degrees into the radians-based ECS/entity renderer transform.
 - **First-person hand duplication** - legacy 2D HUD hand/item overlay is now
@@ -108,6 +112,7 @@
 
 ### Changed
 
+- **First-person hand model polish** - first-person viewmodel now renders a blocky sleeve and skin hand as separate cuboids, attaches held blocks/items to the hand, and has smoke coverage for the runtime first-person draw path.
 - **First-person viewmodel pose** - adjusted the MVP viewmodel from centered debug cuboids to a single lower-right arm, with held blocks attached to the hand and a torch-like lantern model for the lantern item.
 - **Agent instructions merged** — `CLAUDE.md` and `AGENTS.md` now contain the same complete project instructions, including RTK usage, docs workflow, checks, architecture rules, and commit policy.
 - **Workplan reset** — `docs/WORKPLAN.md` now tracks only the active Architecture Stabilization phase and next actions; completed historical phase checklists were removed from the active plan.

@@ -64,6 +64,24 @@ def test_invalid_saved_position_recovers_without_losing_inventory() -> None:
             window.close()
 
 
+def test_new_world_starts_empty_and_in_bright_morning() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-new-world-defaults-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            assert all(window.inventory[index] is None for index in range(9))
+            assert window.hotbar.selected is None
+            assert window.world_renderer.time_of_day == pytest.approx(0.18)
+            assert window.world_renderer.daylight >= 0.90
+        finally:
+            window.close()
+
+
 def test_main_menu_text_renders_with_blending() -> None:
     import pyglet
 
@@ -138,6 +156,65 @@ def test_shadow_quality_modes_render(quality: str) -> None:
             window.mgl_context.finish()
             assert (window.world_renderer.shadow_map is None) is (quality == "off")
         finally:
+            window.close()
+
+
+def test_first_person_viewmodel_renders_hand_and_held_block() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.application.player_camera import PerspectiveMode
+    from voxel_sandbox.render.first_person_viewmodel import FirstPersonViewmodelRenderer
+    from voxel_sandbox.render.player_viewmodel import PlayerViewmodelRenderData
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    class SpyViewmodelRenderer:
+        def __init__(self) -> None:
+            self.calls: list[PlayerViewmodelRenderData] = []
+
+        def render(
+            self,
+            data: PlayerViewmodelRenderData,
+            *,
+            width: int,
+            height: int,
+            block_texture: object | None = None,
+            atlas_uvs: dict[str, tuple[float, float, float, float]] | None = None,
+        ) -> int:
+            self.calls.append(data)
+            return len(data.parts)
+
+        def release(self) -> None:
+            pass
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-viewmodel-smoke-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        original_viewmodel_renderer = window.viewmodel_renderer
+        spy = SpyViewmodelRenderer()
+        window.viewmodel_renderer = cast(FirstPersonViewmodelRenderer, spy)
+        try:
+            window.menu.screen = Screen.GAME
+            window.perspective_mode = PerspectiveMode.FIRST_PERSON
+            window.inventory.set(
+                window.hotbar.selected_index,
+                ItemStack(3, 1),
+                window.item_registry,
+            )
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.mgl_context.viewport == (0, 0, *window._framebuffer_size())
+            assert spy.calls
+            assert [part.name for part in spy.calls[-1].parts] == [
+                "right_arm",
+                "right_hand",
+                "held_item_block",
+            ]
+        finally:
+            window.viewmodel_renderer = original_viewmodel_renderer
             window.close()
 
 

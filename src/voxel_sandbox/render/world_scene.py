@@ -124,7 +124,7 @@ class DemoWorldRenderer:
         self.shadow_bias = shadow_bias
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
-        self.time_of_day = 0.575
+        self.time_of_day = 0.18
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
         self.remote_mode = False

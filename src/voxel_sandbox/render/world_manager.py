@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, cast
 
 from voxel_sandbox.app.paths import application_data_root
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
-from voxel_sandbox.domain.items import ItemStack
 from voxel_sandbox.engine.gameplay_constants import (
     PLAYER_MAX_Y,
     PLAYER_MIN_Y,
@@ -72,10 +71,6 @@ class WorldManager:
         storage = cast(WorldStorage, win.world_runtime.storage)
         win.inventory = Inventory()
         win.hotbar = Hotbar(win.inventory)
-        win.inventory.set(0, ItemStack(3, 32), win.item_registry)
-        win.inventory.set(1, ItemStack(7, 8), win.item_registry)
-        win.inventory.set(2, ItemStack(8, 1), win.item_registry)
-        win.inventory.set(3, ItemStack(4, 4), win.item_registry)
         win.player_health = 20.0
         saved = storage.load_player(win.item_registry)
         if saved is not None:
