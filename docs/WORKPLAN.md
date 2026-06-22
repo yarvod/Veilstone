@@ -100,6 +100,7 @@ F-клавиши должны быть player-facing управлением, а 
       held item, name, health/status flags where needed.
 - [ ] Make local third-person player rendering use the same player snapshot path
       as remote players.
+- [x] Add render-layer held item/block cuboid support for player avatar entities.
 - [x] Add camera perspective modes: first person, third-person back,
       third-person front.
 - [x] Add Minecraft-like perspective cycle binding after resolving current F-key

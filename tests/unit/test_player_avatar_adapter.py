@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from voxel_sandbox.application.player_animation import (
     PlayerAnimationSnapshot,
     PlayerInteraction,
@@ -29,7 +31,7 @@ def test_build_player_avatar_render_data_maps_snapshot_to_entity_inputs() -> Non
     data = build_player_avatar_render_data(snapshot)
 
     assert data.transform.position == snapshot.position
-    assert data.transform.yaw == 45.0
+    assert math.isclose(data.transform.yaw, math.radians(45.0) + math.pi / 2.0)
     assert data.model.key == "remote_player"
     assert data.model.scale == (0.6, 1.8, 0.6)
     assert data.held_item is None

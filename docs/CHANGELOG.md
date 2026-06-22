@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Player avatar held-item rendering** - entity rendering now draws a small
+  animated held block/item cuboid attached to player avatar arm pose data.
 - **Player avatar held-item snapshot data** - local third-person player render
   snapshots now carry selected held item data into a dedicated ECS component for
   the shared player model path.
@@ -77,6 +79,8 @@
 
 ### Fixed
 
+- **Local player avatar yaw** - local third-person player model yaw now converts
+  camera-facing degrees into the radians-based ECS/entity renderer transform.
 - **First-person hand duplication** - legacy 2D HUD hand/item overlay is now
   disabled; first-person presentation uses only the 3D viewmodel.
 - **Held block viewmodel texture** - first-person held block cuboids now resolve

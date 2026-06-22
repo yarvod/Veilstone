@@ -28,6 +28,10 @@ from voxel_sandbox.render.entity_models import (
     ModelPart,
 )
 from voxel_sandbox.render.math3d import camera_matrix
+from voxel_sandbox.render.player_held_item import (
+    PlayerHeldItemRenderData,
+    build_player_held_item_render_data,
+)
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 
 
@@ -208,6 +212,24 @@ class EntityRenderer:
                 )
                 self.vertex_array.render(moderngl.TRIANGLES)
                 draws += 1
+            held_item = world.held_items.get(entity)
+            if held_item is not None and distance <= 28.0:
+                arm_part = "arm_right" if held_item.hand == "right" else "arm_left"
+                if any(part.name == arm_part for part in model.parts):
+                    arm_offset, arm_rotation = resolved_part_transform(model, arm_part, pose)
+                    held_item_data = build_player_held_item_render_data(
+                        held_item,
+                        arm_offset=arm_offset,
+                        arm_rotation=arm_rotation,
+                        item_registry=item_registry,
+                        block_registry=block_registry,
+                        atlas_uvs=atlas_uvs if block_texture is not None else None,
+                    )
+                    if held_item_data.texture_rect is not None and block_texture is not None:
+                        block_texture.use(0)
+                    else:
+                        self.texture.use(0)
+                    draws += self._render_held_item(program, held_item_data)
         return draws
 
     def render_shadow(
@@ -264,6 +286,28 @@ class EntityRenderer:
             return self.models.get(key)
         except KeyError:
             return None
+
+    def _render_held_item(
+        self,
+        program: moderngl.Program,
+        data: PlayerHeldItemRenderData,
+    ) -> int:
+        cast("moderngl.Uniform", program["part_offset"]).value = data.offset
+        cast("moderngl.Uniform", program["part_scale"]).value = data.scale
+        cast("moderngl.Uniform", program["part_pivot"]).value = (0.0, 0.0, 0.0)
+        cast("moderngl.Uniform", program["part_rotation"]).value = data.rotation
+        cast("moderngl.Uniform", program["entity_color"]).value = data.color
+        if data.texture_rect is not None:
+            cast("moderngl.Uniform", program["use_texture"]).value = 1
+            self._set_uniform_face_uvs(program, cast("FaceUVs", (data.texture_rect,) * 6))
+        else:
+            cast("moderngl.Uniform", program["use_texture"]).value = 0
+            self._set_uniform_face_uvs(
+                program,
+                cast("FaceUVs", ((0.0, 0.0, 1.0, 1.0),) * 6),
+            )
+        self.vertex_array.render(moderngl.TRIANGLES)
+        return 1
 
     def _render_fallback(
         self,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from voxel_sandbox.application.player_render import PlayerRenderSnapshot
@@ -32,7 +33,7 @@ def build_player_avatar_render_data(
             snapshot.position[0],
             snapshot.position[1],
             snapshot.position[2],
-            snapshot.yaw_degrees,
+            math.radians(snapshot.yaw_degrees) + math.pi / 2.0,
         ),
         model=model,
         held_item=(
