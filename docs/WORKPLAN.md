@@ -125,7 +125,7 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Sync footstep events to gait phase instead of a separate render-window
       accumulator.
 - [x] Add per-material step sound tuning with sane default gain ranges.
-- [ ] Add walk/sprint cadence tests.
+- [x] Add walk/sprint cadence tests.
 - [ ] Later: add landing, swimming, splash, and block interaction sounds through
       gameplay events, not direct renderer calls.
 

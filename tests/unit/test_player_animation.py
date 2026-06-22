@@ -46,6 +46,29 @@ def test_sprinting_uses_faster_cadence_and_larger_bob() -> None:
     assert abs(sprinting.camera_bob_y) > abs(walking.camera_bob_y)
 
 
+def test_walk_and_sprint_footstep_contacts_use_expected_cadence() -> None:
+    _, walking_early = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, on_ground=True),
+        0.28,
+    )
+    _, walking_contact = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, on_ground=True),
+        0.42,
+    )
+    _, sprint_contact = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, sprint=True, on_ground=True),
+        0.28,
+    )
+
+    assert walking_early.footstep_due is False
+    assert walking_contact.footstep_due is True
+    assert sprint_contact.footstep_due is True
+    assert sprint_contact.step_index == walking_contact.step_index == 1
+
+
 def test_airborne_movement_does_not_emit_footsteps() -> None:
     state, snapshot = advance_player_animation(
         PlayerAnimationState(),

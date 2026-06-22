@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Walk/sprint cadence coverage** - added regression coverage for gait-phase
+  footstep contact timing so sprint steps remain faster than walking steps.
 - **Transparent foliage smoke scene** - added a reusable cutout-leaf fixture,
   CLI preview, unit coverage, and an OpenGL-gated runtime smoke path for leaves
   in front of an opaque backdrop.
