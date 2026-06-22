@@ -52,6 +52,13 @@ class RenderModel:
     scale: tuple[float, float, float]
 
 
+@dataclass(frozen=True, slots=True)
+class HeldItem:
+    item_id: int
+    count: int
+    hand: str = "right"
+
+
 class MobKind(Enum):
     PASSIVE = "passive"
     HOSTILE = "hostile"

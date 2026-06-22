@@ -8,6 +8,7 @@ from voxel_sandbox.engine.ecs.components import (
     Collider,
     EntityId,
     Health,
+    HeldItem,
     ItemEntity,
     Lifetime,
     MobAI,
@@ -59,6 +60,7 @@ class EntityWorld:
         self.colliders: ComponentStore[Collider] = ComponentStore()
         self.health: ComponentStore[Health] = ComponentStore()
         self.render_models: ComponentStore[RenderModel] = ComponentStore()
+        self.held_items: ComponentStore[HeldItem] = ComponentStore()
         self.mob_ai: ComponentStore[MobAI] = ComponentStore()
         self.animations: ComponentStore[AnimationState] = ComponentStore()
         self.lifetimes: ComponentStore[Lifetime] = ComponentStore()
@@ -69,6 +71,7 @@ class EntityWorld:
             self.colliders,
             self.health,
             self.render_models,
+            self.held_items,
             self.mob_ai,
             self.animations,
             self.lifetimes,

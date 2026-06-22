@@ -6,6 +6,7 @@ from voxel_sandbox.application.player_animation import (
     advance_player_animation,
 )
 from voxel_sandbox.application.player_render import build_player_render_snapshot
+from voxel_sandbox.domain.items import ItemStack
 from voxel_sandbox.engine.physics import PlayerController
 
 
@@ -26,6 +27,7 @@ def test_build_player_render_snapshot_captures_player_view_data() -> None:
     assert snapshot.on_ground is False
     assert snapshot.vertical_velocity == -1.5
     assert snapshot.animation is None
+    assert snapshot.held_item is None
 
 
 def test_build_player_render_snapshot_is_detached_from_player_mutation() -> None:
@@ -57,3 +59,19 @@ def test_build_player_render_snapshot_can_carry_animation_snapshot() -> None:
     assert snapshot.animation is animation
     assert snapshot.animation is not None
     assert snapshot.animation.footstep_due is True
+
+
+def test_build_player_render_snapshot_carries_selected_held_item() -> None:
+    player = PlayerController(x=1.0, y=2.0, z=3.0)
+
+    snapshot = build_player_render_snapshot(
+        player,
+        yaw_degrees=90.0,
+        held_stack=ItemStack(item_id=7, count=12),
+    )
+
+    assert snapshot.held_item is not None
+    assert snapshot.held_item.item_id == 7
+    assert snapshot.held_item.count == 12
+    assert snapshot.held_item.hand == "right"
+    assert snapshot.animation is None

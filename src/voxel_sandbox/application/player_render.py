@@ -3,7 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from voxel_sandbox.application.player_animation import PlayerAnimationSnapshot
+from voxel_sandbox.domain.items import ItemStack
 from voxel_sandbox.engine.physics import PlayerController
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerHeldItemSnapshot:
+    item_id: int
+    count: int
+    hand: str = "right"
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +27,7 @@ class PlayerRenderSnapshot:
     on_ground: bool
     vertical_velocity: float
     animation: PlayerAnimationSnapshot | None = None
+    held_item: PlayerHeldItemSnapshot | None = None
 
 
 def build_player_render_snapshot(
@@ -26,6 +35,8 @@ def build_player_render_snapshot(
     *,
     yaw_degrees: float,
     animation: PlayerAnimationSnapshot | None = None,
+    held_stack: ItemStack | None = None,
+    hand: str = "right",
 ) -> PlayerRenderSnapshot:
     """Create render view data without importing Pyglet/ModernGL."""
 
@@ -39,4 +50,11 @@ def build_player_render_snapshot(
         on_ground=player.on_ground,
         vertical_velocity=player.velocity_y,
         animation=animation,
+        held_item=_held_item_snapshot(held_stack, hand=hand),
     )
+
+
+def _held_item_snapshot(stack: ItemStack | None, *, hand: str) -> PlayerHeldItemSnapshot | None:
+    if stack is None:
+        return None
+    return PlayerHeldItemSnapshot(item_id=stack.item_id, count=stack.count, hand=hand)

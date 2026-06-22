@@ -491,6 +491,7 @@ class GameWindow(pyglet.window.Window):
                     self.player,
                     yaw_degrees=self.camera.yaw_degrees,
                     animation=self._player_animation_snapshot,
+                    held_stack=self.hotbar.selected,
                 )
                 player_world = build_player_avatar_world(player_snapshot)
                 entity_draws += self.entity_renderer.render(

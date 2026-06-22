@@ -3,7 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from voxel_sandbox.application.player_render import PlayerRenderSnapshot
-from voxel_sandbox.engine.ecs import AnimationState, EntityWorld, RenderModel, Transform
+from voxel_sandbox.engine.ecs import (
+    AnimationState,
+    EntityWorld,
+    HeldItem,
+    RenderModel,
+    Transform,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,6 +18,7 @@ class PlayerAvatarRenderData:
 
     transform: Transform
     model: RenderModel
+    held_item: HeldItem | None = None
 
 
 def build_player_avatar_render_data(
@@ -28,6 +35,15 @@ def build_player_avatar_render_data(
             snapshot.yaw_degrees,
         ),
         model=model,
+        held_item=(
+            HeldItem(
+                snapshot.held_item.item_id,
+                snapshot.held_item.count,
+                snapshot.held_item.hand,
+            )
+            if snapshot.held_item is not None
+            else None
+        ),
     )
 
 
@@ -38,6 +54,8 @@ def build_player_avatar_world(snapshot: PlayerRenderSnapshot) -> EntityWorld:
     entity = world.create()
     world.transforms.set(entity, data.transform)
     world.render_models.set(entity, data.model)
+    if data.held_item is not None:
+        world.held_items.set(entity, data.held_item)
     if snapshot.animation is not None:
         world.animations.set(
             entity,

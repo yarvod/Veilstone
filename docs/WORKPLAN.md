@@ -86,7 +86,7 @@ F-клавиши должны быть player-facing управлением, а 
 - [ ] Add block breaking feedback hook so hand animation, sound, particles later
       can share the same interaction event.
 - [ ] Add local player shadow path where render quality allows it.
-- [ ] Add tests for gait phase, interaction state transitions, and snapshot
+- [x] Add tests for gait phase, interaction state transitions, and snapshot
       generation without Pyglet/OpenGL.
 
 ### Phase C2: Networked player entity and third-person camera
@@ -132,8 +132,8 @@ F-клавиши должны быть player-facing управлением, а 
 
 Цель: вода должна быть играбельной сейчас и визуально приятнее потом.
 
-- [ ] Fix player inability to reliably climb from water onto shore.
-- [ ] Add regression test for water-to-land movement at shore blocks.
+- [x] Fix player inability to reliably climb from water onto shore.
+- [x] Add regression test for water-to-land movement at shore blocks.
 - [ ] Verify swimming, buoyancy, jump/step-up, and collision rules do not fight
       each other near shore blocks.
 - [ ] Smooth visible water flow transitions after block breaks.

@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Player avatar held-item snapshot data** - local third-person player render
+  snapshots now carry selected held item data into a dedicated ECS component for
+  the shared player model path.
 - **Player nameplate snapshots** - added application/render data for remote
   player nameplates above character heads with distance fade visibility rules.
 - **Developer-only graphics F-key toggles** - graphics renderer toggles moved
