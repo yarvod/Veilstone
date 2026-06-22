@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import math
 import queue
-from collections.abc import Container
 from datetime import datetime
 from pathlib import Path
 from typing import Final, cast
@@ -40,6 +39,7 @@ from voxel_sandbox.application.player_camera import (
 from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.application.player_viewmodel import build_player_viewmodel_snapshot
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
+from voxel_sandbox.audio.steps import footstep_sound_key
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
@@ -90,13 +90,6 @@ from voxel_sandbox.render.world_scene import DemoWorldRenderer
 
 LOGGER = logging.getLogger(__name__)
 FIXED_UPDATE_SECONDS: Final = 1.0 / 60.0
-
-
-def _footstep_sound_key(material: str, available_sounds: Container[str]) -> str:
-    material_key = f"step.{material}"
-    if material_key in available_sounds:
-        return material_key
-    return "footstep"
 
 
 class GameWindow(pyglet.window.Window):
@@ -436,7 +429,7 @@ class GameWindow(pyglet.window.Window):
                 math.floor(self.player.z),
             )
             material = self._block_registry().by_id(block_id).material.value
-            key_name = _footstep_sound_key(material, self.audio.registry)
+            key_name = footstep_sound_key(material, self.audio.registry)
             self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, self.camera.position))
         self._sync_camera_to_player()
 

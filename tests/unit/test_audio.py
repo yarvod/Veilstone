@@ -15,7 +15,7 @@ from voxel_sandbox.audio import (
 )
 from voxel_sandbox.audio.backend import listener_space
 from voxel_sandbox.audio.runtime import create_audio_bus, create_server_audio_bus
-from voxel_sandbox.render.window import _footstep_sound_key
+from voxel_sandbox.audio.steps import footstep_sound_key
 
 
 def test_audio_bus_routes_positional_effect_with_group_volumes() -> None:
@@ -33,8 +33,8 @@ def test_audio_bus_routes_positional_effect_with_group_volumes() -> None:
 
 
 def test_footstep_sound_prefers_step_material_keys() -> None:
-    assert _footstep_sound_key("stone", {"step.stone", "block.stone", "footstep"}) == "step.stone"
-    assert _footstep_sound_key("glass", {"block.glass", "footstep"}) == "footstep"
+    assert footstep_sound_key("stone", {"step.stone", "block.stone", "footstep"}) == "step.stone"
+    assert footstep_sound_key("glass", {"block.glass", "footstep"}) == "footstep"
 
 
 def test_step_material_sounds_are_tuned_separately_from_block_actions() -> None:
