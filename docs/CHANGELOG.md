@@ -124,6 +124,8 @@
 
 ### Fixed
 
+- **Camera position setter regression** - `FirstPersonCamera.position` can be set
+  as a tuple again, fixing the transparent foliage OpenGL smoke scene.
 - **Prerelease release tags** - release version tooling now accepts
   PEP 440-compatible tag suffixes like `v0.0.1-beta1`, preserves the original
   Git tag, and sanitizes package zip names without dots or build symbols.
@@ -178,6 +180,9 @@
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
 ### Changed
+- **Named time command contract** - README and command tests now document the
+  exact Minecraft-style tick values for `/time set` names, numeric wraparound,
+  and the `twilight` preview freeze behavior.
 - **Resource pack storage root** - texture pack imports now target app-data
   `resource_packs/`, while legacy local `resource_packs/` remain discoverable,
   so app updates do not overwrite user packs.

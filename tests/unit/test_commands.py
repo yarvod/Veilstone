@@ -15,17 +15,27 @@ from voxel_sandbox.app.commands import (
 )
 
 
-def test_time_command_accepts_minecraft_names_and_ticks() -> None:
-    assert parse_command("/time set dawn") == SetTimeCommand(23000 / 24000, "dawn")
-    assert parse_command("/time set sunrise") == SetTimeCommand(0.0, "sunrise")
-    assert parse_command("/time set day") == SetTimeCommand(1000 / 24000, "day")
-    assert parse_command("/time set morning") == SetTimeCommand(4320 / 24000, "morning")
-    assert parse_command("/time set late_sunrise") == SetTimeCommand(4320 / 24000, "late_sunrise")
-    assert parse_command("/time set noon") == SetTimeCommand(0.25, "noon")
-    assert parse_command("/time set night") == SetTimeCommand(13000 / 24000, "night")
-    assert parse_command("/time set twilight") == SetTimeCommand(
-        13800 / 24000, "twilight", freeze=True
-    )
+@pytest.mark.parametrize(
+    ("name", "ticks", "freeze"),
+    [
+        ("dawn", 23000, False),
+        ("sunrise", 0, False),
+        ("day", 1000, False),
+        ("morning", 4320, False),
+        ("late_sunrise", 4320, False),
+        ("late-sunrise", 4320, False),
+        ("noon", 6000, False),
+        ("sunset", 12000, False),
+        ("night", 13000, False),
+        ("twilight", 13800, True),
+        ("midnight", 18000, False),
+    ],
+)
+def test_time_command_named_semantics_are_explicit(name: str, ticks: int, freeze: bool) -> None:
+    assert parse_command(f"/time set {name}") == SetTimeCommand(ticks / 24000, name, freeze=freeze)
+
+
+def test_time_command_accepts_wrapping_ticks() -> None:
     assert parse_command("/time set 30000") == SetTimeCommand(0.25, "6000")
 
 

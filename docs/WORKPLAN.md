@@ -224,7 +224,7 @@ resource packs.
 - [x] Tune dawn/day/sunset/night proportions toward Minecraft-like feel.
 - [x] Add explicit dawn/sunset transition tuning rather than only one linear
       full-cycle value if renderer needs it.
-- [ ] Expose/finalize named time semantics in command tests and README.
+- [x] Expose/finalize named time semantics in command tests and README.
 
 ### Phase C11: Release/update UX
 

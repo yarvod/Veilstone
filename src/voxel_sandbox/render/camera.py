@@ -23,6 +23,10 @@ class FirstPersonCamera:
     def position(self) -> tuple[float, float, float]:
         return self.x, self.y, self.z
 
+    @position.setter
+    def position(self, value: tuple[float, float, float]) -> None:
+        self.x, self.y, self.z = value
+
     @property
     def direction(self) -> tuple[float, float, float]:
         yaw = math.radians(self.yaw_degrees)

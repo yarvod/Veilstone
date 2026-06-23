@@ -30,3 +30,11 @@ def test_camera_pitch_is_clamped() -> None:
 
     camera.rotate(delta_x=0.0, delta_y=-4000.0, sensitivity=1.0)
     assert camera.pitch_degrees == -89.0
+
+
+def test_camera_position_can_be_set_as_tuple() -> None:
+    camera = FirstPersonCamera()
+
+    camera.position = (1.0, 2.0, 3.0)
+
+    assert camera.position == (1.0, 2.0, 3.0)

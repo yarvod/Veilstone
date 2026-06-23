@@ -123,7 +123,7 @@ Useful commands:
 
 ```text
 /help
-/time set day|sunrise|noon|sunset|twilight|night|midnight|<ticks>
+/time set dawn|sunrise|day|morning|late_sunrise|noon|sunset|twilight|night|midnight|<ticks>
 /difficulty peaceful|normal
 /resourcepack <path|default>
 /structure spawn gate|altar|bridge
@@ -131,8 +131,11 @@ Useful commands:
 /structure list
 ```
 
-`/time set day` and `/time set sunrise` set the world to the beginning of the
-day. `noon` is the high-sun value.
+Named `/time set` values use Minecraft-style day ticks over a 24000 tick cycle:
+`sunrise=0`, `day=1000`, `morning=4320`, `late_sunrise=4320`, `noon=6000`,
+`sunset=12000`, `night=13000`, `twilight=13800`, `midnight=18000`, and
+`dawn=23000`. `twilight` freezes the cycle for presentation previews. Numeric
+tick values wrap into the same 0-23999 range.
 
 ## Settings
 
