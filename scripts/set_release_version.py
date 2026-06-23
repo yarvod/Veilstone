@@ -4,10 +4,13 @@ import argparse
 import re
 from pathlib import Path
 
+from packaging.version import InvalidVersion, Version
+
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
 VERSION_FILE = ROOT / "src/voxel_sandbox/version.py"
 REPO_SLUG = "yarvod/Veilstone"
+TAG_PATTERN = re.compile(r"^v(?P<version>\d+\.\d+\.\d+(?:[-_.+A-Za-z0-9]*)?)$")
 
 
 def main() -> int:
@@ -22,9 +25,14 @@ def main() -> int:
 
 
 def version_from_tag(tag: str) -> str:
-    if not re.fullmatch(r"v\d+\.\d+\.\d+(?:[A-Za-z0-9_.-]*)?", tag):
-        raise SystemExit(f"Release tag must look like v0.2.0, got {tag!r}")
-    return tag.removeprefix("v")
+    match = TAG_PATTERN.fullmatch(tag)
+    if not match:
+        raise SystemExit(f"Release tag must look like v0.2.0 or v0.2.0-beta1, got {tag!r}")
+    raw_version = match.group("version")
+    try:
+        return str(Version(raw_version))
+    except InvalidVersion as error:
+        raise SystemExit(f"Release tag version must be PEP 440 compatible, got {tag!r}") from error
 
 
 def update_pyproject(version: str) -> None:

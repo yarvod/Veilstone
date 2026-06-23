@@ -85,7 +85,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $tagSlug = "${{ github.ref_name }}" -replace '[./\\]', '_'
+          $tagSlug = "${{ github.ref_name }}" -replace '[^A-Za-z0-9_-]', '_'
           $assetName = "Veilstone_${{ matrix.platform }}_${{ matrix.arch }}_$tagSlug"
           Compress-Archive -Path .\dist\Veilstone -DestinationPath ".\dist\$assetName.zip" -Force
 
@@ -93,8 +93,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          tag_slug="${GITHUB_REF_NAME//./_}"
-          tag_slug="${tag_slug//\//_}"
+          tag_slug="$(printf '%s' "$GITHUB_REF_NAME" | sed 's/[^A-Za-z0-9_-]/_/g')"
           asset_name="Veilstone_${{ matrix.platform }}_${{ matrix.arch }}_${tag_slug}"
           cd dist
           if [ -d "Veilstone.app" ]; then

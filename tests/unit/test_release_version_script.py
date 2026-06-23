@@ -17,9 +17,23 @@ def test_version_from_release_tag_strips_v_prefix() -> None:
     assert set_release_version.version_from_tag("v0.2.0") == "0.2.0"
 
 
+def test_version_from_release_tag_supports_prerelease_suffix() -> None:
+    assert set_release_version.version_from_tag("v0.0.1-beta1") == "0.0.1b1"
+    assert set_release_version.version_from_tag("v0.0.1-rc.2") == "0.0.1rc2"
+
+
+def test_version_from_release_tag_supports_local_build_suffix() -> None:
+    assert set_release_version.version_from_tag("v0.0.1+build7") == "0.0.1+build7"
+
+
 def test_version_from_release_tag_rejects_plain_version() -> None:
     with pytest.raises(SystemExit):
         set_release_version.version_from_tag("0.2.0")
+
+
+def test_version_from_release_tag_rejects_non_pep440_suffix() -> None:
+    with pytest.raises(SystemExit):
+        set_release_version.version_from_tag("v0.0.1-hotfix.foo")
 
 
 def test_update_pyproject_is_idempotent_for_current_version(
@@ -43,3 +57,16 @@ def test_update_pyproject_is_idempotent_for_current_version(
     set_release_version.update_pyproject("0.0.1")
 
     assert 'version = "0.0.1"' in pyproject.read_text(encoding="utf-8")
+
+
+def test_update_version_file_keeps_original_tag_but_normalized_version(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    version_file = tmp_path / "version.py"
+    monkeypatch.setattr(set_release_version, "VERSION_FILE", version_file)
+
+    set_release_version.update_version_file("0.0.1b1", "v0.0.1-beta1")
+
+    text = version_file.read_text(encoding="utf-8")
+    assert '__version__ = "0.0.1b1"' in text
+    assert 'RELEASE_TAG = "v0.0.1-beta1"' in text

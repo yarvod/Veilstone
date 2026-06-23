@@ -120,6 +120,9 @@
 
 ### Fixed
 
+- **Prerelease release tags** - release version tooling now accepts
+  PEP 440-compatible tag suffixes like `v0.0.1-beta1`, preserves the original
+  Git tag, and sanitizes package zip names without dots or build symbols.
 - **Release version script idempotency** - releasing the already-current version
   no longer reports `project.version` as missing.
 - **Windows CI UI tests** - UI renderer tests now skip when the runner exposes a
