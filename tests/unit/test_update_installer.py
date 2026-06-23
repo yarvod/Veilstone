@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import stat
 import zipfile
 from pathlib import Path
@@ -20,11 +21,11 @@ def _write_zip(archive: Path, members: dict[str, bytes]) -> None:
 
 
 def test_current_install_root_detects_macos_app_bundle() -> None:
-    executable = Path("/Applications/Veilstone.app/Contents/MacOS/Veilstone")
+    executable = Path("Applications/Veilstone.app/Contents/MacOS/Veilstone")
 
     root = current_install_root(executable=executable, platform="darwin", frozen=True)
 
-    assert root == Path("/Applications/Veilstone.app")
+    assert root == executable.resolve().parents[2]
 
 
 def test_current_install_root_requires_packaged_app_without_explicit_executable() -> None:
@@ -55,7 +56,8 @@ def test_prepare_update_install_for_macos_bundle(tmp_path: Path) -> None:
     assert plan.payload_root.name == "Veilstone.app"
     assert plan.target_root == target
     assert plan.script_path.name == "apply_update.sh"
-    assert plan.script_path.stat().st_mode & stat.S_IXUSR
+    if os.name != "nt":
+        assert plan.script_path.stat().st_mode & stat.S_IXUSR
     script = plan.script_path.read_text(encoding="utf-8")
     assert "APP_PID=123" in script
     assert 'open "$TARGET"' in script
