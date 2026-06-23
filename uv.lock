@@ -698,7 +698,7 @@ wheels = [
 
 [[package]]
 name = "voxel-sandbox"
-version = "0.0.1"
+version = "0.0.1b0"
 source = { editable = "." }
 dependencies = [
     { name = "moderngl" },
