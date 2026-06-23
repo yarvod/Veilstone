@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     client.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
 
     server = subparsers.add_parser("server", help="Start a dedicated server")
-    server.add_argument("--world", default="saves/dev_world")
+    server.add_argument("--world", default=None)
     server.add_argument("--port", type=int, default=25565)
     server.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
 

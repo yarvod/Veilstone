@@ -112,6 +112,7 @@
 ### Fixed
 
 - **First-person held lantern silhouette** - removed the temporary torch-like lantern handle model so held block items render as compact blocks instead of a second rod beside the arm.
+- **Dedicated server default save path** - omitted `server --world` now uses the Veilstone application data root instead of a relative install-directory path.
 - **New-world inventory UI state** - inventory logic now refreshes its active
   inventory reference after world creation or switching, preventing stale saved
   stacks from appearing through UI interactions in a new world.

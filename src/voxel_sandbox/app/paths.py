@@ -38,3 +38,7 @@ def crash_log_path() -> Path:
 
 def updates_root() -> Path:
     return application_data_root() / "updates"
+
+
+def default_server_world_path() -> Path:
+    return application_data_root() / "server_world"

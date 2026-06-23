@@ -41,6 +41,11 @@ def test_client_accepts_connect_address_and_nickname() -> None:
     assert args.name == "Veilwalker"
 
 
+def test_server_world_defaults_to_application_data_root() -> None:
+    args = build_parser().parse_args(["server"])
+    assert args.world is None
+
+
 def test_structure_preview_accepts_template_key() -> None:
     args = build_parser().parse_args(["structure-preview", "veilstone_ruin"])
     assert args.command == "structure-preview"

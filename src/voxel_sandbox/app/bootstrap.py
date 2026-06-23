@@ -30,10 +30,12 @@ def run_command(args: argparse.Namespace) -> int:
         )
     if command == "server":
         from voxel_sandbox.app.main_server import run_server
+        from voxel_sandbox.app.paths import default_server_world_path
 
+        world = str(args.world) if args.world else str(default_server_world_path())
         return run_server(
             settings,
-            world=str(args.world),
+            world=world,
             port=int(args.port),
             smoke_test=bool(args.smoke_test),
         )
