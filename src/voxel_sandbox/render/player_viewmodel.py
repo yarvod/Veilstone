@@ -109,20 +109,20 @@ def _arm_parts(
     snapshot: PlayerViewmodelSnapshot, hand_position: Vec3
 ) -> tuple[ViewmodelPart, ViewmodelPart]:
     side = 1.0 if snapshot.hand == "right" else -1.0
-    rotation = _add((-22.0, side * -4.0, side * -12.0), snapshot.swing_rotation_degrees)
+    rotation = _add((-24.0, side * -5.0, side * -14.0), snapshot.swing_rotation_degrees)
     sleeve = ViewmodelPart(
         name=f"{snapshot.hand}_arm",
         position=hand_position,
-        scale=(0.28, 0.18, 0.28),
+        scale=(0.275, 0.115, 0.275),
         rotation_degrees=rotation,
-        color=(0.18, 0.36, 0.68),
+        color=(0.13, 0.29, 0.58),
     )
     hand = ViewmodelPart(
         name=f"{snapshot.hand}_hand",
-        position=_add(hand_position, (-side * 0.004, -0.13, -0.01)),
-        scale=(0.27, 0.075, 0.27),
+        position=_add(hand_position, (-side * 0.003, -0.12, -0.006)),
+        scale=(0.255, 0.145, 0.255),
         rotation_degrees=rotation,
-        color=(0.82, 0.62, 0.44),
+        color=(0.78, 0.56, 0.38),
     )
     return sleeve, hand
 

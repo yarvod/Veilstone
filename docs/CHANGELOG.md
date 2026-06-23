@@ -153,6 +153,9 @@
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
 ### Changed
+- **First-person arm proportions** - shortened the blue sleeve into a cuff and
+  made the skin hand/forearm the dominant cuboid so the viewmodel no longer
+  reads as two separate rods.
 - **Vanilla block keys** - oak log/leaves/planks, crafting table, and short grass
   now use Minecraft-like canonical registry keys while keeping legacy Veilstone
   aliases for existing saves, structures, recipes, and tests.

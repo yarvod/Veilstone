@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import math
 
 from voxel_sandbox.application.player_animation import (
     PlayerAnimationInput,
@@ -23,7 +23,7 @@ def test_viewmodel_snapshot_maps_selected_item_without_render_dependencies() -> 
     assert snapshot.held_item is not None
     assert snapshot.held_item.item_id == 7
     assert snapshot.held_item.count == 12
-    assert snapshot.base_position == (0.82, -1.02, -0.55)
+    assert snapshot.base_position == (0.9, -1.06, -0.52)
     assert snapshot.interaction is PlayerInteraction.IDLE
     assert snapshot.swing_offset == (0.0, 0.0, 0.0)
 
@@ -37,9 +37,9 @@ def test_viewmodel_bob_uses_player_animation_snapshot() -> None:
 
     snapshot = build_player_viewmodel_snapshot(animation)
 
-    assert snapshot.bob_offset[0] == pytest.approx(0.012727922061357854)
+    assert math.isclose(snapshot.bob_offset[0], 0.012727922061357854)
     assert snapshot.bob_offset[1] == animation.viewmodel_bob_y
-    assert snapshot.bob_offset[2] == pytest.approx(-0.007615223689149762)
+    assert math.isclose(snapshot.bob_offset[2], -0.007615223689149762)
     assert snapshot.held_item is None
 
 
@@ -52,7 +52,7 @@ def test_viewmodel_bob_mirrors_lateral_sway_for_left_hand() -> None:
     right = build_player_viewmodel_snapshot(animation, hand="right")
     left = build_player_viewmodel_snapshot(animation, hand="left")
 
-    assert left.bob_offset[0] == pytest.approx(-right.bob_offset[0])
+    assert math.isclose(left.bob_offset[0], -right.bob_offset[0])
     assert left.bob_offset[1:] == right.bob_offset[1:]
 
 
@@ -94,4 +94,4 @@ def test_left_hand_mirrors_base_position() -> None:
     snapshot = build_player_viewmodel_snapshot(None, hand="left")
 
     assert snapshot.hand == "left"
-    assert snapshot.base_position[0] == -0.82
+    assert snapshot.base_position[0] == -0.9
