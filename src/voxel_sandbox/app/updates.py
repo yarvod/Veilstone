@@ -148,6 +148,7 @@ def download_release_asset(
     destination_dir: Path | None = None,
     client: HttpClient | None = None,
     timeout: float = 60.0,
+    progress_callback: Callable[[int, int | None], None] | None = None,
 ) -> Path:
     target_dir = destination_dir or updates_root()
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -158,9 +159,13 @@ def download_release_asset(
     response.raise_for_status()
     with tempfile.NamedTemporaryFile(dir=target_dir, delete=False) as temp_file:
         temp_path = Path(temp_file.name)
+        received = 0
         for chunk in response.iter_content(chunk_size=1024 * 256):
             if chunk:
                 temp_file.write(chunk)
+                received += len(chunk)
+                if progress_callback is not None:
+                    progress_callback(received, asset.size or None)
     temp_path.replace(target)
     return target
 

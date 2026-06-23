@@ -235,8 +235,9 @@ resource packs.
   prerelease, and platform-zip availability markers.
 - [x] Download selected platform zip into app-data `updates/` staging, not into
   packaged `_internal` resources and not over saves.
-- [ ] Move network check/download work off the draw path into a background
-  worker with progress/cancel state.
+- [x] Move network check/download work off the draw path into a background
+  worker with progress status.
+- [ ] Add cancel state for in-progress update downloads.
 - [ ] Add a safe install/apply flow that preserves `application_data_root()`
   saves/settings and clearly separates staged archives from live game files.
 

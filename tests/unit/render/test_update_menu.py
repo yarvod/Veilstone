@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from queue import Queue
 from types import SimpleNamespace
 from typing import Any
 
@@ -60,6 +61,8 @@ def _make_menu_ui() -> tuple[MenuUI, Any, RecordingUiRenderer]:
     menu_ui.update_release_index = 0
     menu_ui._updates_loaded = False
     menu_ui.downloaded_update_path = None
+    menu_ui._update_events = Queue()
+    menu_ui._update_worker = None
     return menu_ui, win, renderer
 
 
@@ -80,6 +83,9 @@ def test_update_screen_starts_with_check_action(monkeypatch: Any) -> None:
     assert call["primary_label"] == "Check"
 
     call["on_play"]()
+    assert menu_ui._update_worker is not None
+    menu_ui._update_worker.join(timeout=1.0)
+    menu_ui._draw_update_list()
 
     assert menu_ui.update_release_items == [release]
     assert menu_ui._updates_loaded is True
@@ -99,7 +105,9 @@ def test_update_screen_downloads_selected_release(monkeypatch: Any, tmp_path: Pa
     def select_asset(_release: GitHubRelease) -> ReleaseAsset:
         return asset
 
-    def download_asset(_asset: ReleaseAsset) -> Path:
+    def download_asset(_asset: ReleaseAsset, *, progress_callback: Any = None) -> Path:
+        if progress_callback is not None:
+            progress_callback(4, 4)
         return target
 
     monkeypatch.setattr("voxel_sandbox.render.menu_ui.select_platform_asset", select_asset)
@@ -109,7 +117,10 @@ def test_update_screen_downloads_selected_release(monkeypatch: Any, tmp_path: Pa
     menu_ui.update_release_items = [release]
     menu_ui._updates_loaded = True
 
-    menu_ui._download_selected_update()
+    menu_ui._start_selected_update_download()
+    assert menu_ui._update_worker is not None
+    menu_ui._update_worker.join(timeout=1.0)
+    menu_ui._poll_update_events()
 
     assert menu_ui.downloaded_update_path == target
     assert win.menu.status == f"Downloaded v0.2.0 to {target}."

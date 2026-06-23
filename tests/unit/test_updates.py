@@ -95,11 +95,22 @@ def test_download_release_asset_writes_to_updates_staging(tmp_path: Path) -> Non
     )
     client = FakeClient(FakeResponse(chunks=(b"abc", b"def")))
 
-    path = download_release_asset(asset, destination_dir=tmp_path, client=client)
+    progress: list[tuple[int, int | None]] = []
+
+    def record_progress(received: int, total: int | None) -> None:
+        progress.append((received, total))
+
+    path = download_release_asset(
+        asset,
+        destination_dir=tmp_path,
+        client=client,
+        progress_callback=record_progress,
+    )
 
     assert path == tmp_path / "Veilstone_Linux_x64.zip"
     assert path.read_bytes() == b"abcdef"
     assert client.requests == [("https://example.test/linux.zip", True)]
+    assert progress == [(3, 6), (6, 6)]
 
 
 def test_fetch_releases_filters_drafts_and_keeps_prereleases_by_default() -> None:

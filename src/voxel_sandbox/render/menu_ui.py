@@ -6,7 +6,9 @@ import sys
 import time
 from dataclasses import replace
 from pathlib import Path
-from typing import TYPE_CHECKING
+from queue import Empty, Queue
+from threading import Thread
+from typing import TYPE_CHECKING, cast
 
 import moderngl
 import pyglet
@@ -31,6 +33,8 @@ from voxel_sandbox.version import __version__
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
+
+UpdateEvent = tuple[str, object]
 
 
 class MenuUI:
@@ -84,6 +88,8 @@ class MenuUI:
         self.update_release_index = 0
         self._updates_loaded = False
         self.downloaded_update_path: Path | None = None
+        self._update_events: Queue[UpdateEvent] = Queue()
+        self._update_worker: Thread | None = None
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -356,15 +362,16 @@ class MenuUI:
 
     def _draw_update_list(self) -> None:
         win = self.win
+        self._poll_update_events()
 
         def on_select(idx: int) -> None:
             self.update_release_index = idx
 
         def on_check() -> None:
-            self._refresh_update_release_list()
+            self._start_update_release_check()
 
         def on_download() -> None:
-            self._download_selected_update()
+            self._start_selected_update_download()
 
         def on_cancel() -> None:
             win.menu.back()
@@ -436,33 +443,32 @@ class MenuUI:
             cancel_label="Back",
         )
 
-    def _refresh_update_release_list(self) -> None:
+    def _start_update_release_check(self) -> None:
         win = self.win
+        if self._update_worker_active():
+            win.menu.status = "Update task already running..."
+            return
         win.menu.status = "Checking GitHub releases..."
-        try:
-            self.update_release_items = list(fetch_releases())
-        except Exception as error:
-            self._updates_loaded = True
-            self.update_release_items = []
-            win.menu.status = f"Update check failed: {error}"
-            return
 
-        self._updates_loaded = True
-        self.update_release_index = 0
-        self.downloaded_update_path = None
-        if not self.update_release_items:
-            win.menu.status = "No GitHub releases found."
-            return
+        def worker() -> None:
+            try:
+                releases = fetch_releases()
+            except Exception as error:
+                self._update_events.put(("error", f"Update check failed: {error}"))
+                return
+            self._update_events.put(("releases", releases))
 
-        latest = self.update_release_items[0]
-        asset = select_platform_asset(latest)
-        suffix = "" if asset is not None else " (no zip for this platform)"
-        win.menu.status = f"Current {__version__}; latest {latest.tag_name}{suffix}."
+        self._update_worker = Thread(target=worker, name="VeilstoneUpdateCheck", daemon=True)
+        self._update_worker.start()
 
-    def _download_selected_update(self) -> None:
+    def _start_selected_update_download(self) -> None:
         win = self.win
+        if self._update_worker_active():
+            win.menu.status = "Update task already running..."
+            return
         if not self.update_release_items:
-            self._refresh_update_release_list()
+            self._start_update_release_check()
+            return
         if not (0 <= self.update_release_index < len(self.update_release_items)):
             win.menu.status = "No update release selected."
             return
@@ -474,14 +480,64 @@ class MenuUI:
             return
 
         win.menu.status = f"Downloading {asset.name}..."
-        try:
-            path = download_release_asset(asset)
-        except Exception as error:
-            win.menu.status = f"Download failed: {error}"
-            return
 
-        self.downloaded_update_path = path
-        win.menu.status = f"Downloaded {release.tag_name} to {path}."
+        def progress(received: int, total: int | None) -> None:
+            self._update_events.put(
+                ("progress", self._update_progress_status(asset.name, received, total))
+            )
+
+        def worker() -> None:
+            try:
+                path = download_release_asset(asset, progress_callback=progress)
+            except Exception as error:
+                self._update_events.put(("error", f"Download failed: {error}"))
+                return
+            self._update_events.put(("downloaded", (release.tag_name, path)))
+
+        self._update_worker = Thread(target=worker, name="VeilstoneUpdateDownload", daemon=True)
+        self._update_worker.start()
+
+    def _poll_update_events(self) -> None:
+        while True:
+            try:
+                event, payload = self._update_events.get_nowait()
+            except Empty:
+                return
+
+            if event == "error":
+                self._updates_loaded = True
+                self.win.menu.status = str(payload)
+            elif event == "progress":
+                self.win.menu.status = str(payload)
+            elif event == "releases":
+                releases = cast(tuple[GitHubRelease, ...], payload)
+                self.update_release_items = list(releases)
+                self._updates_loaded = True
+                self.update_release_index = 0
+                self.downloaded_update_path = None
+                self._set_update_release_status()
+            elif event == "downloaded":
+                tag_name, path = cast(tuple[str, Path], payload)
+                self.downloaded_update_path = path
+                self.win.menu.status = f"Downloaded {tag_name} to {path}."
+
+    def _set_update_release_status(self) -> None:
+        if not self.update_release_items:
+            self.win.menu.status = "No GitHub releases found."
+            return
+        latest = self.update_release_items[0]
+        asset = select_platform_asset(latest)
+        suffix = "" if asset is not None else " (no zip for this platform)"
+        self.win.menu.status = f"Current {__version__}; latest {latest.tag_name}{suffix}."
+
+    def _update_worker_active(self) -> bool:
+        return self._update_worker is not None and self._update_worker.is_alive()
+
+    def _update_progress_status(self, asset_name: str, received: int, total: int | None) -> str:
+        if total:
+            percent = min(100.0, (received / total) * 100.0)
+            return f"Downloading {asset_name}: {percent:.0f}%"
+        return f"Downloading {asset_name}: {received // 1024} KiB"
 
     def _update_release_label(self, release: GitHubRelease) -> str:
         asset = select_platform_asset(release)
