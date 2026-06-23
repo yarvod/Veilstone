@@ -15,6 +15,11 @@ import pyglet
 
 from voxel_sandbox.app.paths import resource_packs_root
 from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.app.update_installer import (
+    UpdateInstallError,
+    launch_update_installer,
+    prepare_update_install,
+)
 from voxel_sandbox.app.updates import (
     GitHubRelease,
     download_release_asset,
@@ -395,6 +400,9 @@ class MenuUI:
         def on_download() -> None:
             self._start_selected_update_download()
 
+        def on_install() -> None:
+            self._apply_downloaded_update()
+
         def on_cancel_task() -> None:
             self._cancel_update_task()
 
@@ -462,12 +470,12 @@ class MenuUI:
             mapped_on_select,
             on_download,
             secondary_action,
-            lambda: None,
+            on_install,
             lambda: None,
             on_cancel,
             primary_label="Download",
             secondary_label=secondary_label,
-            edit_label="",
+            edit_label="Install" if self.downloaded_update_path is not None else "",
             delete_label="",
             cancel_label="Back",
         )
@@ -575,6 +583,31 @@ class MenuUI:
             return
         self._update_cancel_event.set()
         self.win.menu.status = "Cancelling update task..."
+
+    def _apply_downloaded_update(self) -> None:
+        win = self.win
+        if self._update_worker_active():
+            win.menu.status = "Wait for the current update task to finish."
+            return
+        if self.downloaded_update_path is None:
+            win.menu.status = "Download an update before installing."
+            return
+        if not self.downloaded_update_path.is_file():
+            win.menu.status = "Downloaded update archive is missing."
+            return
+
+        try:
+            plan = prepare_update_install(self.downloaded_update_path)
+            launch_update_installer(plan)
+        except UpdateInstallError as error:
+            win.menu.status = f"Install unavailable: {error}"
+            return
+        except OSError as error:
+            win.menu.status = f"Install launch failed: {error}"
+            return
+
+        win.menu.status = "Installing update; Veilstone will restart."
+        win.close()
 
     def _update_progress_status(self, asset_name: str, received: int, total: int | None) -> str:
         if total:

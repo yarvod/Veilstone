@@ -40,8 +40,10 @@ class RecordingUiRenderer:
                 "selected_index": selected_index,
                 "on_play": on_play,
                 "on_create": on_create,
+                "on_edit": on_edit,
                 "primary_label": primary_label,
                 "secondary_label": secondary_label,
+                "edit_label": edit_label,
                 "cancel_label": cancel_label,
             }
         )
@@ -55,7 +57,9 @@ def _make_menu_ui() -> tuple[MenuUI, Any, RecordingUiRenderer]:
         menu=menu,
         ui_renderer=renderer,
         _sync_game_state=lambda: None,
+        closed=False,
     )
+    win.close = lambda: setattr(win, "closed", True)
     menu_ui = MenuUI.__new__(MenuUI)
     menu_ui.win = win
     menu_ui.update_release_items = []
@@ -164,3 +168,67 @@ def test_update_screen_can_cancel_running_download(monkeypatch: Any, tmp_path: P
 
     assert menu_ui.downloaded_update_path is None
     assert win.menu.status == "Download cancelled."
+
+
+def test_update_screen_shows_install_button_after_download(tmp_path: Path) -> None:
+    asset = ReleaseAsset("Veilstone_Test_v0_2_0.zip", "https://example.test/asset.zip", 4)
+    release = GitHubRelease(
+        tag_name="v0.2.0",
+        name="Veilstone v0.2.0",
+        html_url="https://example.test/release",
+        assets=(asset,),
+    )
+    archive = tmp_path / asset.name
+    archive.write_bytes(b"zip")
+
+    menu_ui, _win, renderer = _make_menu_ui()
+    menu_ui.update_release_items = [release]
+    menu_ui._updates_loaded = True
+    menu_ui.downloaded_update_path = archive
+
+    menu_ui._draw_update_list()
+
+    call = renderer.calls[-1]
+    assert call["edit_label"] == "Install"
+
+
+def test_update_screen_install_launches_external_installer(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    archive = tmp_path / "update.zip"
+    archive.write_bytes(b"zip")
+    launched: list[Path] = []
+
+    class FakePlan:
+        script_path = tmp_path / "apply_update.sh"
+
+    def prepare(path: Path) -> FakePlan:
+        assert path == archive
+        return FakePlan()
+
+    def launch(plan: FakePlan) -> None:
+        launched.append(plan.script_path)
+
+    monkeypatch.setattr("voxel_sandbox.render.menu_ui.prepare_update_install", prepare)
+    monkeypatch.setattr("voxel_sandbox.render.menu_ui.launch_update_installer", launch)
+
+    menu_ui, win, _renderer = _make_menu_ui()
+    menu_ui.downloaded_update_path = archive
+
+    menu_ui._apply_downloaded_update()
+
+    assert launched == [FakePlan.script_path]
+    assert win.closed is True
+    assert win.menu.status == "Installing update; Veilstone will restart."
+
+
+def test_update_screen_install_reports_packaged_app_requirement(tmp_path: Path) -> None:
+    archive = tmp_path / "update.zip"
+    archive.write_bytes(b"zip")
+    menu_ui, win, _renderer = _make_menu_ui()
+    menu_ui.downloaded_update_path = archive
+
+    menu_ui._apply_downloaded_update()
+
+    assert "packaged app" in win.menu.status
+    assert win.closed is False

@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Safe staged update installer** - the Updates screen can now prepare and
+  launch an external installer script for downloaded release zips; the script
+  waits for the running app to exit, swaps the app bundle/folder, cleans the
+  backup, and restarts Veilstone without touching app-data saves/settings/packs.
 - **In-app update screen** - Settings now includes an Updates screen that lists
   GitHub releases, marks current/prerelease/platform availability, and downloads
   the selected platform zip into the app-data updates staging directory without
