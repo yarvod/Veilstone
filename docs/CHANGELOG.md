@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Debug overlay runtime diagnostics** - F3 debug overlay now includes Python
+  runtime/platform and current frame size alongside existing chunk, mesh, entity,
+  network, and coordinate counters.
 - **Safe staged update installer** - the Updates screen can now prepare and
   launch an external installer script for downloaded release zips; the script
   waits for the running app to exit, swaps the app bundle/folder, cleans the

@@ -88,6 +88,8 @@ def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
             assert "Chunk " in text
             assert "Network singleplayer" in text
             assert "Remote players 0" in text
+            assert "Runtime Python " in text
+            assert "Frame " in text
         finally:
             window.close()
 

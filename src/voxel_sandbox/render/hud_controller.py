@@ -251,6 +251,8 @@ class HudController:
                 f"Remote players {len(win.remote_player_entities)}\n"
                 f"Network {'client' if win.network_session is not None else 'singleplayer'} "
                 f"Known players {len(win.network_players)}\n"
+                f"Runtime Python {sys.version_info.major}.{sys.version_info.minor} "
+                f"{sys.platform}  Frame {frame.width}x{frame.height}\n"
                 f"Animation states {self._animation_debug_summary()}\n"
                 f"Selected {self._selected_item_name()}  "
                 "[1-9 hotbar, E inventory, C craft, Q drop]"
