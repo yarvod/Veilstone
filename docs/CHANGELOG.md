@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Release/update tooling** - added version metadata, release scripts, GitHub tag release packaging with platform zip assets, and CLI update check/download staging through GitHub Releases.
 - **Biome ground cover** - terrain generation now places deterministic cutout
   tall grass and wildflowers across plains, woods, and swamp biomes with
   resource-pack mappings and density coverage.

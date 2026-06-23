@@ -16,6 +16,7 @@ dependencies = [
     "numpy>=2.2.0,<3",
     "pillow>=11.0.0,<12",
     "pyglet>=2.1.0,<3",
+    "requests>=2.34.2",
 ]
 
 [project.scripts]

@@ -81,6 +81,20 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.foliage_smoke_scene import run_preview
 
         return run_preview()
+    if command == "check-update":
+        from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
+
+        return run_check_update(repo_slug=str(args.repo or REPO_SLUG))
+    if command == "download-update":
+        from pathlib import Path
+
+        from voxel_sandbox.app.updates import REPO_SLUG, run_download_update
+
+        output_dir = Path(str(args.output_dir)) if args.output_dir else None
+        return run_download_update(
+            repo_slug=str(args.repo or REPO_SLUG),
+            destination_dir=output_dir,
+        )
     raise ValueError(f"Unsupported command: {command}")
 
 

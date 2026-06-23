@@ -9,38 +9,62 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   native-build:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-14
+            platform: macOS
+            arch: arm64
+          - os: windows-latest
+            platform: Windows
+            arch: x64
+          - os: ubuntu-latest
+            platform: Linux
+            arch: x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Linux OpenGL dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libegl1-mesa-dev libgl1-mesa-dev
+          sudo apt-get install --yes libegl1-mesa-dev libgl1-mesa-dev zip
+
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
           enable-cache: true
+
       - run: uv sync --frozen
+
       - name: Run tests
         if: runner.os == 'macOS'
         run: uv run python scripts/run_ci_tests.py
+
       - name: Run platform-neutral tests
         if: runner.os == 'Windows'
         run: uv run python scripts/run_ci_tests.py -m "not smoke"
-      - name: Run tests with virtual display
+
+      - name: Run tests virtual display
         if: runner.os == 'Linux'
         run: xvfb-run uv run python scripts/run_ci_tests.py
+
       - run: uv run python scripts/build_app.py
+
       - name: Smoke test macOS package
         if: runner.os == 'macOS'
-        run: VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" dist/Veilstone.app/Contents/MacOS/Veilstone --smoke-test
+        run: |
+          VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" dist/Veilstone.app/Contents/MacOS/Veilstone --version
+          VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" dist/Veilstone.app/Contents/MacOS/Veilstone --verify-package
+          VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" dist/Veilstone.app/Contents/MacOS/Veilstone --smoke-test
+
       - name: Smoke test Windows package
         if: runner.os == 'Windows'
         shell: pwsh
@@ -49,11 +73,55 @@ jobs:
           .\dist\Veilstone\Veilstone.exe --version
           .\dist\Veilstone\Veilstone.exe --verify-package
           .\dist\Veilstone\Veilstone.exe server --smoke-test
+
       - name: Smoke test Linux package
         if: runner.os == 'Linux'
-        run: VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" xvfb-run dist/Veilstone/Veilstone --smoke-test
+        run: |
+          VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" dist/Veilstone/Veilstone --version
+          VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" dist/Veilstone/Veilstone --verify-package
+          VEILSTONE_DATA_DIR="$RUNNER_TEMP/veilstone" xvfb-run dist/Veilstone/Veilstone --smoke-test
+
+      - name: Archive Windows package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tagSlug = "${{ github.ref_name }}" -replace '[./\\]', '_'
+          $assetName = "Veilstone_${{ matrix.platform }}_${{ matrix.arch }}_$tagSlug"
+          Compress-Archive -Path .\dist\Veilstone -DestinationPath ".\dist\$assetName.zip" -Force
+
+      - name: Archive Unix package
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          tag_slug="${GITHUB_REF_NAME//./_}"
+          tag_slug="${tag_slug//\//_}"
+          asset_name="Veilstone_${{ matrix.platform }}_${{ matrix.arch }}_${tag_slug}"
+          cd dist
+          if [ -d "Veilstone.app" ]; then
+            zip -r "${asset_name}.zip" Veilstone.app
+          else
+            zip -r "${asset_name}.zip" Veilstone
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
-          name: Veilstone-${{ runner.os }}
-          path: dist/Veilstone*
+          name: Veilstone-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.ref_name }}
+          path: dist/*.zip
           if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: native-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Veilstone ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: release-assets/*.zip

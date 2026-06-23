@@ -45,6 +45,17 @@ def build_parser() -> argparse.ArgumentParser:
         "foliage-smoke-scene",
         help="Print the transparent foliage manual smoke-test scene",
     )
+    check_update = subparsers.add_parser(
+        "check-update",
+        help="Check the latest Veilstone GitHub release",
+    )
+    check_update.add_argument("--repo", default=None, help=argparse.SUPPRESS)
+    download_update = subparsers.add_parser(
+        "download-update",
+        help="Download the latest matching Veilstone release zip",
+    )
+    download_update.add_argument("--repo", default=None, help=argparse.SUPPRESS)
+    download_update.add_argument("--output-dir", default=None)
     return parser
 
 

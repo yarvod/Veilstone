@@ -34,3 +34,7 @@ def user_settings_path() -> Path:
 
 def crash_log_path() -> Path:
     return application_data_root() / "logs/crash.log"
+
+
+def updates_root() -> Path:
+    return application_data_root() / "updates"
