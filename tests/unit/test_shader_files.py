@@ -39,9 +39,21 @@ def test_chunk_shader_discards_cutout_alpha() -> None:
     assert "discard;" in fragment
 
 
-def test_chunk_shader_does_not_flip_cutout_tiles_vertically() -> None:
+def test_chunk_shader_does_not_flip_cutout_tiles_randomly() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
 
-    assert "tile_uv.x = 1.0 - tile_uv.x" in fragment
+    assert "tile_uv.x = 1.0 - tile_uv.x" not in fragment
     assert "tile_uv.y = 1.0 - tile_uv.y" not in fragment
+
+
+def test_shadow_depth_shader_discards_cutout_alpha() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    vertex = (shader_root / "shadow_depth.vert").read_text(encoding="utf-8")
+    fragment = (shader_root / "shadow_depth.frag").read_text(encoding="utf-8")
+
+    assert "in vec2 in_uv" in vertex
+    assert "in vec4 in_atlas_rect" in vertex
+    assert "uniform sampler2D texture_atlas" in fragment
+    assert "texture(texture_atlas, atlas_uv).a < 0.5" in fragment
+    assert "discard;" in fragment

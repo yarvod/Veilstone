@@ -65,7 +65,7 @@ class SectionMeshCache:
         if self.depth_program is not None:
             depth_vertex_array = self.context.vertex_array(
                 self.depth_program,
-                [(vertex_buffer, "3f 48x", "in_position")],
+                [(vertex_buffer, "3f 2f 24x 4f", "in_position", "in_uv", "in_atlas_rect")],
                 index_buffer,
                 index_element_size=4,
             )

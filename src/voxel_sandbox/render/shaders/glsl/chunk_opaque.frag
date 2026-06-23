@@ -47,11 +47,6 @@ float sample_shadow() {
 
 void main() {
     vec2 tile_uv = fract(vertex_uv);
-    vec3 block_cell = floor(vertex_world_position + vec3(0.001));
-    float variation = fract(sin(dot(block_cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-    if (variation > 0.5) {
-        tile_uv.x = 1.0 - tile_uv.x;
-    }
     vec2 atlas_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, tile_uv);
     vec4 base_color = texture(texture_atlas, atlas_uv);
     if (base_color.a < 0.5) {

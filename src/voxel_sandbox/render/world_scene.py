@@ -51,6 +51,12 @@ from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 
 
+def _configure_block_texture(texture: moderngl.Texture) -> None:
+    texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+    texture.repeat_x = False
+    texture.repeat_y = False
+
+
 class DemoWorldRenderer:
     def __init__(
         self,
@@ -108,8 +114,7 @@ class DemoWorldRenderer:
             cache_root=save_root.parent / "texture_cache",
         )
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
-        self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self.texture.build_mipmaps()
+        _configure_block_texture(self.texture)
         self.atlas_uvs = atlas.uvs
         self.uploads_per_frame = uploads_per_frame
         self.mesh_uploads_per_frame = mesh_uploads_per_frame
@@ -493,8 +498,7 @@ class DemoWorldRenderer:
         """Hot-swap the block texture atlas and remesh all loaded chunks."""
         old_texture = self.texture
         self.texture = self.context.texture((atlas.width, atlas.height), 4, atlas.pixels)
-        self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self.texture.build_mipmaps()
+        _configure_block_texture(self.texture)
         old_texture.release()
 
         self.atlas_uvs = atlas.uvs
@@ -764,6 +768,8 @@ class DemoWorldRenderer:
         self.context.viewport = (0, 0, shadow_map.size, shadow_map.size)
         self.context.clear(depth=1.0)
         self.context.cull_face = "front"
+        self.texture.use(0)
+        cast("moderngl.Uniform", program["texture_atlas"]).value = 0
         cast("moderngl.Uniform", program["light_matrix"]).write(
             light_matrix.T.astype("f4").tobytes()
         )

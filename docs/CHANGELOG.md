@@ -136,6 +136,10 @@
 
 ### Fixed
 
+- **Cutout plant shadows and atlas seams** - chunk shadow depth now respects
+  atlas alpha cutouts, world block atlases use clamped nearest sampling without
+  mipmap bleeding, and chunk shaders no longer randomly flip atlas tiles between
+  neighboring blocks.
 - **Grass plant rendering polish** - default short grass now uses sparse
   bottom-rooted cutout blades without opaque texture borders, cross-plant quads
   use top-biased lighting, and chunk texture variation no longer vertically

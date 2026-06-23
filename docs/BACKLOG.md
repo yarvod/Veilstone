@@ -62,15 +62,15 @@ implemented; move backlog items into workplan when a slice becomes active.
 
 ### R-B003: Cutout Plant Shadows Still Use Full Crossed Planes
 
-- **Status:** open
+- **Status:** fixed
 - **Observed:** visible plant rendering discards transparent texels, but the
   current shadow-depth path can still treat crossed cutout plant planes as solid
   sheets.
 - **Desired:** grass/foliage shadows respect alpha cutouts or skip tiny plant
   shadow casters until the depth pass carries atlas UV/alpha data.
-- **Candidate work:** add alpha-aware chunk shadow depth shader/VAO attributes,
-  or exclude `render_shape = "cross"` blocks from the shadow caster mesh as a
-  small interim visual fix.
+- **Fix notes:** chunk shadow-depth rendering now receives atlas UV/rect
+  attributes, binds the block atlas, and discards transparent texels before
+  writing depth.
 
 ## Diagnostics
 
