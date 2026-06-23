@@ -152,3 +152,31 @@ emits_light = 6
 texture_top = "minecraft:block/glow_lichen"
 texture_side = "minecraft:block/glow_lichen"
 texture_bottom = "minecraft:block/glow_lichen"
+
+[[block]]
+id = 13
+key = "tall_grass"
+name = "Tall Grass"
+material = "plant"
+hardness = 0.0
+is_solid = false
+is_opaque = false
+is_transparent = true
+texture_top = "minecraft:block/short_grass"
+texture_side = "minecraft:block/short_grass"
+texture_bottom = "minecraft:block/short_grass"
+render_layer = "cutout"
+
+[[block]]
+id = 14
+key = "wildflower"
+name = "Wildflower"
+material = "plant"
+hardness = 0.0
+is_solid = false
+is_opaque = false
+is_transparent = true
+texture_top = "minecraft:block/dandelion"
+texture_side = "minecraft:block/dandelion"
+texture_bottom = "minecraft:block/dandelion"
+render_layer = "cutout"

@@ -10,6 +10,9 @@ import numpy as np
 from voxel_sandbox.engine.chunks import SECTION_SIZE, Chunk, ChunkCoord, DirtyFlag
 from voxel_sandbox.engine.gameplay_constants import (
     DUNGEON_DENSITY,
+    GROUND_COVER_DENSITY_PLAINS,
+    GROUND_COVER_DENSITY_SWAMP,
+    GROUND_COVER_DENSITY_WOODS,
     HIGHLANDS_PILLAR_DENSITY,
     ORE_DENSITY,
     TERRAIN_BASE_HEIGHT,
@@ -18,6 +21,8 @@ from voxel_sandbox.engine.gameplay_constants import (
     TREE_DENSITY_DEFAULT,
     TREE_DENSITY_SWAMP,
     TREE_DENSITY_WOODS,
+    WILDFLOWER_DENSITY_PLAINS,
+    WILDFLOWER_DENSITY_WOODS,
 )
 from voxel_sandbox.engine.generation.pipeline import DimensionDef, HeightProvider
 from voxel_sandbox.engine.generation.seed import WorldSeed
@@ -391,6 +396,55 @@ class _TreeDecorator:
                     )
 
 
+class _GroundCoverDecorator:
+    def __init__(self, seed: WorldSeed) -> None:
+        self._seed_value = seed.value
+
+    def decorate(
+        self,
+        chunk: Chunk,
+        coord: ChunkCoord,
+        height_provider: HeightProvider,
+        touched_sections: set[int],
+    ) -> None:
+        min_x = coord.x * SECTION_SIZE
+        min_z = coord.z * SECTION_SIZE
+        for world_x in range(min_x, min_x + SECTION_SIZE):
+            for world_z in range(min_z, min_z + SECTION_SIZE):
+                biome_key = height_provider.biome_key_at(world_x, world_z)
+                density, flower_density = _ground_cover_density(biome_key)
+                if density <= 0.0:
+                    continue
+                height = height_provider.height_at(world_x, world_z)
+                if height <= TerrainGenerator.WATER_LEVEL:
+                    continue
+                cover_roll = _hash3(self._seed_value, world_x, height, world_z, 82)
+                if cover_roll >= density:
+                    continue
+                flower_roll = _hash3(self._seed_value, world_x, height, world_z, 83)
+                block_id = 14 if flower_roll < flower_density else 13
+                _set_if_inside(
+                    chunk,
+                    coord,
+                    world_x,
+                    height,
+                    world_z,
+                    block_id,
+                    touched_sections,
+                    replace_air_only=True,
+                )
+
+
+def _ground_cover_density(biome_key: str) -> tuple[float, float]:
+    if biome_key == Biome.TWILIGHT_WOODS.value:
+        return GROUND_COVER_DENSITY_WOODS, WILDFLOWER_DENSITY_WOODS
+    if biome_key == Biome.TWILIGHT_PLAINS.value:
+        return GROUND_COVER_DENSITY_PLAINS, WILDFLOWER_DENSITY_PLAINS
+    if biome_key == Biome.GLOOM_SWAMP.value:
+        return GROUND_COVER_DENSITY_SWAMP, 0.0
+    return 0.0, 0.0
+
+
 class _DungeonDecorator:
     """Places one carved underground chamber per qualifying chunk."""
 
@@ -524,6 +578,7 @@ class TerrainGenerator:
                 _CaveDecorator(seed),
                 _OreDecorator(seed),
                 _TreeDecorator(seed),
+                _GroundCoverDecorator(seed),
                 _DungeonDecorator(seed),
                 _HighlandsFeatureDecorator(seed),
                 _StructureDecorator(seed, self.structure_templates),

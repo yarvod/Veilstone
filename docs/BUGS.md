@@ -73,12 +73,14 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** generation / settings UI / streaming
-- **Observed:** terrain lacks enough distant fields, biome filling, grass, and
-  flowers.
+- **Observed:** terrain still lacks enough distant biome silhouettes and visible
+  landmarks.
 - **Fix notes:** Settings now exposes `[world].render_distance`, persists it,
   and applies changes to active chunk streaming without requiring a world reload.
-- **Next action:** schedule generation feature-density passes with deterministic
-  tests.
+  Biome-aware tall grass and wildflower ground cover now add small features with
+  deterministic density coverage.
+- **Next action:** improve distant biome silhouettes and schedule landmark
+  feature passes with deterministic tests.
 
 ### BUG-S001: Creating/deleting worlds reused stale save state
 

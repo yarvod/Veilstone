@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Biome ground cover** - terrain generation now places deterministic cutout
+  tall grass and wildflowers across plains, woods, and swamp biomes with
+  resource-pack mappings and density coverage.
 - **Render-distance settings control** - Settings now exposes `[world].render_distance`
   as a cycling menu value and persists changes to user settings.
 - **Walk/sprint cadence coverage** - added regression coverage for gait-phase

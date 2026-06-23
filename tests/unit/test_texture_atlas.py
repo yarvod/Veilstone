@@ -25,6 +25,8 @@ _EXPECTED_KEYS = {
     "minecraft:block/crafting_table_side",
     "minecraft:block/red_mushroom",
     "minecraft:block/glow_lichen",
+    "minecraft:block/short_grass",
+    "minecraft:block/dandelion",
 }
 
 
@@ -42,6 +44,14 @@ def test_default_leaf_tile_contains_cutout_alpha() -> None:
 
     assert min(alphas) == 0
     assert max(alphas) == 255
+
+
+def test_default_ground_cover_tiles_contain_cutout_alpha() -> None:
+    tiles = create_default_block_tiles(tile_size=16)
+    for name in ("minecraft:block/short_grass", "minecraft:block/dandelion"):
+        alphas = [pixel[3] for pixel in tiles[name].getdata()]
+        assert min(alphas) == 0
+        assert max(alphas) == 255
 
 
 def test_build_texture_atlas_contains_all_keys() -> None:

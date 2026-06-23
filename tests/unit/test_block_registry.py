@@ -32,7 +32,12 @@ def test_core_registry_reserves_zero_for_air() -> None:
     assert leaves.render_layer == "cutout"
     assert not leaves.is_opaque
     assert leaves.is_transparent
-    assert len(registry) == 13
+    tall_grass = registry.by_key("tall_grass")
+    assert tall_grass.render_layer == "cutout"
+    assert not tall_grass.is_solid
+    assert not tall_grass.is_opaque
+    assert registry.by_key("wildflower").id == 14
+    assert len(registry) == 15
 
 
 def test_registry_rejects_duplicate_ids_and_keys() -> None:
@@ -135,4 +140,4 @@ def test_load_block_registry_data_file() -> None:
     assert leaves.render_layer == "cutout"
     assert not leaves.is_opaque
     assert leaves.is_transparent
-    assert len(registry) == 13
+    assert len(registry) == 15

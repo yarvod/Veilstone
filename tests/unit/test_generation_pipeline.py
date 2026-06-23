@@ -9,11 +9,16 @@ from voxel_sandbox.domain.blocks import BlockRegistry, load_block_registry_from_
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.gameplay_constants import (
     DUNGEON_DENSITY,
+    GROUND_COVER_DENSITY_PLAINS,
+    GROUND_COVER_DENSITY_SWAMP,
+    GROUND_COVER_DENSITY_WOODS,
     HIGHLANDS_PILLAR_DENSITY,
     ORE_DENSITY,
     TREE_DENSITY_DEFAULT,
     TREE_DENSITY_SWAMP,
     TREE_DENSITY_WOODS,
+    WILDFLOWER_DENSITY_PLAINS,
+    WILDFLOWER_DENSITY_WOODS,
 )
 from voxel_sandbox.engine.generation import (
     BiomeSurfacePlacer,
@@ -54,7 +59,7 @@ def test_dimension_def_is_frozen() -> None:
 
 def test_dimension_has_six_decorators() -> None:
     generator = TerrainGenerator(WorldSeed.parse("decorators"))
-    assert len(generator._dimension.feature_decorators) == 6
+    assert len(generator._dimension.feature_decorators) == 7
 
 
 def test_generator_is_its_own_height_provider() -> None:
@@ -130,6 +135,8 @@ def test_generation_feature_block_ids_match_registry(block_registry: BlockRegist
     assert block_registry.by_key("gloam_lantern").id == 7
     assert block_registry.by_key("glowing_mushroom").id == 11
     assert block_registry.by_key("fireflies").id == 12
+    assert block_registry.by_key("tall_grass").id == 13
+    assert block_registry.by_key("wildflower").id == 14
 
 
 def test_generation_feature_densities_are_probabilities() -> None:
@@ -140,6 +147,11 @@ def test_generation_feature_densities_are_probabilities() -> None:
         TREE_DENSITY_DEFAULT,
         TREE_DENSITY_SWAMP,
         TREE_DENSITY_WOODS,
+        GROUND_COVER_DENSITY_PLAINS,
+        GROUND_COVER_DENSITY_WOODS,
+        GROUND_COVER_DENSITY_SWAMP,
+        WILDFLOWER_DENSITY_PLAINS,
+        WILDFLOWER_DENSITY_WOODS,
     ):
         assert 0.0 <= density <= 1.0
 
@@ -232,6 +244,21 @@ def test_gloom_swamp_decorator_places_glowing_mushrooms() -> None:
     assert chunk.get_block(5, 32, 7) == 11
 
 
+def test_ground_cover_density_stays_in_expected_range() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("ground-cover-density"))
+    tall_grass = 0
+    wildflowers = 0
+    for chunk_x in range(-4, 5):
+        for chunk_z in range(-4, 5):
+            chunk = generator.generate_chunk(ChunkCoord(chunk_x, chunk_z))
+            for section in chunk.sections:
+                tall_grass += int((section.blocks == 13).sum())
+                wildflowers += int((section.blocks == 14).sum())
+
+    assert 1500 <= tall_grass <= 2600
+    assert 20 <= wildflowers <= 70
+
+
 # ---------------------------------------------------------------------------
 # Protocol runtime checks (structural typing)
 # ---------------------------------------------------------------------------
@@ -250,6 +277,7 @@ def test_feature_decorator_protocol_structural() -> None:
     from voxel_sandbox.engine.generation.terrain import (
         _CaveDecorator,
         _DungeonDecorator,
+        _GroundCoverDecorator,
         _HighlandsFeatureDecorator,
         _OreDecorator,
         _TreeDecorator,
@@ -260,6 +288,7 @@ def test_feature_decorator_protocol_structural() -> None:
         _CaveDecorator,
         _OreDecorator,
         _TreeDecorator,
+        _GroundCoverDecorator,
         _DungeonDecorator,
         _HighlandsFeatureDecorator,
     ):

@@ -190,10 +190,9 @@ resource packs.
 Цель: мир должен давать красивые дали и больше живого наполнения.
 
 - [x] Add Settings UI control for `[world].render_distance`.
-- [x] Persist render distance changes and rebuild/reconfigure chunk streaming
-      safely.
+- [x] Persist render distance changes and rebuild/reconfigure chunk streaming safely.
 - [ ] Improve distant landscape readability and biome silhouettes.
-- [ ] Add more ground cover: grass, flowers, biome-specific small features.
+- [x] Add more ground cover: grass, flowers, biome-specific small features.
 - [ ] Add landmarks/points of interest that are visible at distance.
 - [ ] Add tests for feature density ranges and generation determinism.
 - [ ] Watch performance: higher render distance must not block render thread.

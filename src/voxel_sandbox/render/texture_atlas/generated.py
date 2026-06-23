@@ -32,6 +32,8 @@ _DEFAULT_COLORS: dict[str, tuple[int, int, int, int]] = {
     "minecraft:block/crafting_table_side": (72, 58, 82, 255),
     "minecraft:block/red_mushroom": (60, 200, 180, 255),
     "minecraft:block/glow_lichen": (200, 255, 100, 150),
+    "minecraft:block/short_grass": (95, 140, 75, 255),
+    "minecraft:block/dandelion": (230, 205, 70, 255),
 }
 
 
@@ -47,11 +49,7 @@ def create_default_block_tiles(tile_size: int = 32) -> dict[str, Image.Image]:
             for px in range(1, tile_size - 1):
                 seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
                 offset = int(seed >> 29) - 3
-                alpha = color[3]
-                if name == "minecraft:block/oak_leaves" and (
-                    (px + py) % 5 == 0 or (px * 3 + py) % 11 == 0
-                ):
-                    alpha = 0
+                alpha = _procedural_alpha(name, px, py, tile_size, color[3])
                 shade = (
                     *tuple(min(255, max(0, ch + offset)) for ch in color[:3]),
                     alpha,
@@ -59,6 +57,28 @@ def create_default_block_tiles(tile_size: int = 32) -> dict[str, Image.Image]:
                 draw.point((px, py), fill=shade)
         tiles[name] = image
     return tiles
+
+
+def _procedural_alpha(
+    name: str,
+    px: int,
+    py: int,
+    tile_size: int,
+    default_alpha: int,
+) -> int:
+    if name == "minecraft:block/oak_leaves" and ((px + py) % 5 == 0 or (px * 3 + py) % 11 == 0):
+        return 0
+    if name == "minecraft:block/short_grass":
+        mid = tile_size // 2
+        blade = mid - 1 <= px <= mid + 1 or abs(px - py) <= 1 or abs(px + py - tile_size) <= 1
+        return default_alpha if blade else 0
+    if name == "minecraft:block/dandelion":
+        mid = tile_size // 2
+        flower_y = tile_size // 3
+        stem = abs(px - mid) <= 1
+        flower = abs(px - mid) <= 4 and abs(py - flower_y) <= 4
+        return default_alpha if stem or flower else 0
+    return default_alpha
 
 
 def build_texture_atlas(tiles: dict[str, Image.Image], *, tile_size: int) -> GeneratedAtlas:
