@@ -10,6 +10,9 @@
   touching saves.
 - **Background update tasks** - in-app update checks/downloads now run on a
   background worker and report staged download progress through the menu status.
+- **Cancellable update downloads** - update downloads can be cancelled from the
+  Updates screen, and partial staged archives are cleaned up on cancellation or
+  progress callback failure.
 - **Release/update tooling** - added version metadata, release scripts, GitHub tag release packaging with platform zip assets, and CLI update check/download staging through GitHub Releases.
 - **Biome ground cover** - terrain generation now places deterministic cutout
   tall grass and wildflowers across plains, woods, and swamp biomes with

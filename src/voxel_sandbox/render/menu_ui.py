@@ -7,7 +7,7 @@ import time
 from dataclasses import replace
 from pathlib import Path
 from queue import Empty, Queue
-from threading import Thread
+from threading import Event, Thread
 from typing import TYPE_CHECKING, cast
 
 import moderngl
@@ -35,6 +35,10 @@ if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
 
 UpdateEvent = tuple[str, object]
+
+
+class _UpdateCancelled(Exception):
+    pass
 
 
 class MenuUI:
@@ -90,6 +94,7 @@ class MenuUI:
         self.downloaded_update_path: Path | None = None
         self._update_events: Queue[UpdateEvent] = Queue()
         self._update_worker: Thread | None = None
+        self._update_cancel_event = Event()
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -373,9 +378,16 @@ class MenuUI:
         def on_download() -> None:
             self._start_selected_update_download()
 
+        def on_cancel_task() -> None:
+            self._cancel_update_task()
+
         def on_cancel() -> None:
             win.menu.back()
             win._sync_game_state()
+
+        task_active = self._update_worker_active()
+        secondary_action = on_cancel_task if task_active else on_check
+        secondary_label = "Cancel" if task_active else "Refresh"
 
         if not self._updates_loaded:
             items: list[tuple[str, None]] = [("Check GitHub releases", None)]
@@ -384,12 +396,12 @@ class MenuUI:
                 0,
                 on_select,
                 on_check,
-                on_check,
+                secondary_action,
                 lambda: None,
                 lambda: None,
                 on_cancel,
                 primary_label="Check",
-                secondary_label="Refresh",
+                secondary_label=secondary_label,
                 edit_label="",
                 delete_label="",
                 cancel_label="Back",
@@ -403,12 +415,12 @@ class MenuUI:
                 0,
                 on_select,
                 on_check,
-                on_check,
+                secondary_action,
                 lambda: None,
                 lambda: None,
                 on_cancel,
                 primary_label="Check",
-                secondary_label="Refresh",
+                secondary_label=secondary_label,
                 edit_label="",
                 delete_label="",
                 cancel_label="Back",
@@ -432,12 +444,12 @@ class MenuUI:
             self.update_release_index - start_index,
             mapped_on_select,
             on_download,
-            on_check,
+            secondary_action,
             lambda: None,
             lambda: None,
             on_cancel,
             primary_label="Download",
-            secondary_label="Refresh",
+            secondary_label=secondary_label,
             edit_label="",
             delete_label="",
             cancel_label="Back",
@@ -448,6 +460,7 @@ class MenuUI:
         if self._update_worker_active():
             win.menu.status = "Update task already running..."
             return
+        self._update_cancel_event.clear()
         win.menu.status = "Checking GitHub releases..."
 
         def worker() -> None:
@@ -466,6 +479,7 @@ class MenuUI:
         if self._update_worker_active():
             win.menu.status = "Update task already running..."
             return
+        self._update_cancel_event.clear()
         if not self.update_release_items:
             self._start_update_release_check()
             return
@@ -482,6 +496,8 @@ class MenuUI:
         win.menu.status = f"Downloading {asset.name}..."
 
         def progress(received: int, total: int | None) -> None:
+            if self._update_cancel_event.is_set():
+                raise _UpdateCancelled
             self._update_events.put(
                 ("progress", self._update_progress_status(asset.name, received, total))
             )
@@ -489,6 +505,9 @@ class MenuUI:
         def worker() -> None:
             try:
                 path = download_release_asset(asset, progress_callback=progress)
+            except _UpdateCancelled:
+                self._update_events.put(("error", "Download cancelled."))
+                return
             except Exception as error:
                 self._update_events.put(("error", f"Download failed: {error}"))
                 return
@@ -532,6 +551,13 @@ class MenuUI:
 
     def _update_worker_active(self) -> bool:
         return self._update_worker is not None and self._update_worker.is_alive()
+
+    def _cancel_update_task(self) -> None:
+        if not self._update_worker_active():
+            self.win.menu.status = "No update task running."
+            return
+        self._update_cancel_event.set()
+        self.win.menu.status = "Cancelling update task..."
 
     def _update_progress_status(self, asset_name: str, received: int, total: int | None) -> str:
         if total:

@@ -157,16 +157,22 @@ def download_release_asset(
     http = client or requests.Session()
     response = http.get(asset.browser_download_url, stream=True, timeout=timeout)
     response.raise_for_status()
-    with tempfile.NamedTemporaryFile(dir=target_dir, delete=False) as temp_file:
-        temp_path = Path(temp_file.name)
-        received = 0
-        for chunk in response.iter_content(chunk_size=1024 * 256):
-            if chunk:
-                temp_file.write(chunk)
-                received += len(chunk)
-                if progress_callback is not None:
-                    progress_callback(received, asset.size or None)
-    temp_path.replace(target)
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target_dir, delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            received = 0
+            for chunk in response.iter_content(chunk_size=1024 * 256):
+                if chunk:
+                    temp_file.write(chunk)
+                    received += len(chunk)
+                    if progress_callback is not None:
+                        progress_callback(received, asset.size or None)
+        temp_path.replace(target)
+    except Exception:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+        raise
     return target
 
 

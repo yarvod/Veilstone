@@ -237,7 +237,7 @@ resource packs.
   packaged `_internal` resources and not over saves.
 - [x] Move network check/download work off the draw path into a background
   worker with progress status.
-- [ ] Add cancel state for in-progress update downloads.
+- [x] Add cancel state for in-progress update downloads.
 - [ ] Add a safe install/apply flow that preserves `application_data_root()`
   saves/settings and clearly separates staged archives from live game files.
 

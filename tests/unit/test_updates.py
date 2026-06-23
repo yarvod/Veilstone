@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
+import pytest
+
 from voxel_sandbox.app.updates import (
     GitHubRelease,
     ReleaseAsset,
@@ -111,6 +113,30 @@ def test_download_release_asset_writes_to_updates_staging(tmp_path: Path) -> Non
     assert path.read_bytes() == b"abcdef"
     assert client.requests == [("https://example.test/linux.zip", True)]
     assert progress == [(3, 6), (6, 6)]
+
+
+def test_download_release_asset_cleans_partial_file_on_progress_error(
+    tmp_path: Path,
+) -> None:
+    asset = ReleaseAsset(
+        name="Veilstone Linux x64.zip",
+        browser_download_url="https://example.test/linux.zip",
+        size=6,
+    )
+    client = FakeClient(FakeResponse(chunks=(b"abc", b"def")))
+
+    def fail_progress(_received: int, _total: int | None) -> None:
+        raise RuntimeError("cancelled")
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        download_release_asset(
+            asset,
+            destination_dir=tmp_path,
+            client=client,
+            progress_callback=fail_progress,
+        )
+
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_fetch_releases_filters_drafts_and_keeps_prereleases_by_default() -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from queue import Queue
+from threading import Event
 from types import SimpleNamespace
 from typing import Any
 
@@ -63,6 +64,7 @@ def _make_menu_ui() -> tuple[MenuUI, Any, RecordingUiRenderer]:
     menu_ui.downloaded_update_path = None
     menu_ui._update_events = Queue()
     menu_ui._update_worker = None
+    menu_ui._update_cancel_event = Event()
     return menu_ui, win, renderer
 
 
@@ -124,3 +126,41 @@ def test_update_screen_downloads_selected_release(monkeypatch: Any, tmp_path: Pa
 
     assert menu_ui.downloaded_update_path == target
     assert win.menu.status == f"Downloaded v0.2.0 to {target}."
+
+
+def test_update_screen_can_cancel_running_download(monkeypatch: Any, tmp_path: Path) -> None:
+    asset = ReleaseAsset("Veilstone_Test_v0_2_0.zip", "https://example.test/asset.zip", 4)
+    release = GitHubRelease(
+        tag_name="v0.2.0",
+        name="Veilstone v0.2.0",
+        html_url="https://example.test/release",
+        assets=(asset,),
+    )
+    started = Event()
+
+    def select_asset(_release: GitHubRelease) -> ReleaseAsset:
+        return asset
+
+    def download_asset(_asset: ReleaseAsset, *, progress_callback: Any = None) -> Path:
+        started.set()
+        menu_ui._update_cancel_event.wait(timeout=1.0)
+        assert progress_callback is not None
+        progress_callback(1, 4)
+        return tmp_path / asset.name
+
+    monkeypatch.setattr("voxel_sandbox.render.menu_ui.select_platform_asset", select_asset)
+    monkeypatch.setattr("voxel_sandbox.render.menu_ui.download_release_asset", download_asset)
+
+    menu_ui, win, _renderer = _make_menu_ui()
+    menu_ui.update_release_items = [release]
+    menu_ui._updates_loaded = True
+
+    menu_ui._start_selected_update_download()
+    assert started.wait(timeout=1.0)
+    menu_ui._cancel_update_task()
+    assert menu_ui._update_worker is not None
+    menu_ui._update_worker.join(timeout=1.0)
+    menu_ui._poll_update_events()
+
+    assert menu_ui.downloaded_update_path is None
+    assert win.menu.status == "Download cancelled."
