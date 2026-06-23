@@ -242,6 +242,8 @@ resource packs.
   keeping legacy local packs discoverable.
 - [x] Add a safe install/apply flow that preserves `application_data_root()`
   saves/settings and clearly separates staged archives from live game files.
+- [x] Package `data/` registries into release builds and verify them before
+  packaged smoke startup.
 
 ## Completed MVP Phases
 

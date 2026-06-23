@@ -4,6 +4,16 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ## Open
 
+### BUG-R001: Packaged app missed data registries
+
+- **Status:** fixed
+- **Affected area:** release packaging / packaged smoke startup
+- **Observed:** macOS `.app` passed `--version` and the old package verifier, then
+  failed on real startup with missing `Contents/Frameworks/data/items.toml`.
+- **Fix notes:** release packaging now includes root `data/`, and package
+  verification checks item, block, biome, and resource-pack mapping registries
+  before running the packaged smoke startup.
+
 ### BUG-G001: Player cannot reliably leave water onto shore
 
 - **Status:** fixed

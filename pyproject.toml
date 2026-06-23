@@ -41,6 +41,7 @@ packages = ["src/voxel_sandbox"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "config" = "voxel_sandbox/resources/config"
+"data" = "voxel_sandbox/resources/data"
 "assets/audio" = "voxel_sandbox/resources/assets/audio"
 "assets/entities" = "voxel_sandbox/resources/assets/entities"
 

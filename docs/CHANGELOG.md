@@ -127,6 +127,9 @@
 
 ### Fixed
 
+- **Packaged app data registries** - release builds now include `data/`
+  registries, package verification checks them, and wheel package resources
+  include data fallbacks so startup no longer fails on missing `data/items.toml`.
 - **Camera position setter regression** - `FirstPersonCamera.position` can be set
   as a tuple again, fixing the transparent foliage OpenGL smoke scene.
 - **Prerelease release tags** - release version tooling now accepts
