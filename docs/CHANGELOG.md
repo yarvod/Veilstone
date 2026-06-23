@@ -186,6 +186,9 @@
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
 ### Changed
+- **GitHub Actions runtime dependencies** - package workflow now uses Node
+  24-compatible action releases for checkout, uv setup, artifact transfer, and
+  GitHub Release publishing without the old force-Node env override.
 - **Named time command contract** - README and command tests now document the
   exact Minecraft-style tick values for `/time set` names, numeric wraparound,
   and the `twilight` preview freeze behavior.

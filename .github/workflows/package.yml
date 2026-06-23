@@ -1,8 +1,5 @@
 name: Package
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   workflow_dispatch:
   push:
@@ -29,7 +26,7 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
 
       - name: Install Linux OpenGL dependencies
         if: runner.os == 'Linux'
@@ -37,7 +34,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes libegl1-mesa-dev libgl1-mesa-dev zip
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           python-version: "3.13"
           enable-cache: true
@@ -102,7 +99,7 @@ jobs:
             zip -r "${asset_name}.zip" Veilstone
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: Veilstone-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.ref_name }}
           path: dist/*.zip
@@ -113,13 +110,13 @@ jobs:
     needs: native-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.1
         with:
           path: release-assets
           merge-multiple: true
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.1
         with:
           name: Veilstone ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
