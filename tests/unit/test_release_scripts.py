@@ -14,6 +14,9 @@ def _write_executable(path: Path, text: str) -> None:
 
 
 def test_release_sh_replace_tag_moves_existing_remote_tag(tmp_path: Path) -> None:
+    if os.name == "nt":
+        pytest.skip("release.sh smoke uses POSIX PATH semantics; release.bat covers Windows")
+
     bash = shutil.which("bash")
     if bash is None:
         pytest.skip("release.sh smoke requires bash")
