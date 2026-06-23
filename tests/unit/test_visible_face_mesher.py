@@ -55,6 +55,24 @@ def test_cutout_leaf_does_not_cull_neighbor_stone_face() -> None:
     assert greedy.triangle_count == 22
 
 
+def test_short_grass_uses_cross_quads_instead_of_cube_faces() -> None:
+    section = lit_section()
+    section.set_block(1, 1, 1, 13)
+    registry = create_core_block_registry()
+
+    visible = build_visible_face_mesh(section, registry, UVS)
+    greedy = build_greedy_mesh(section, registry, UVS)
+
+    assert visible.face_count == 4
+    assert visible.triangle_count == 8
+    assert greedy.face_count == 4
+    assert greedy.triangle_count == 8
+    assert round(float(visible.vertices[:, 0].min()), 2) == 1.12
+    assert round(float(visible.vertices[:, 0].max()), 2) == 1.88
+    assert round(float(visible.vertices[:, 1].min()), 2) == 1.0
+    assert round(float(visible.vertices[:, 1].max()), 2) == 1.82
+
+
 def test_empty_section_produces_empty_arrays() -> None:
     mesh = build_visible_face_mesh(lit_section(), create_core_block_registry(), UVS)
 

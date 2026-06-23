@@ -14,6 +14,7 @@ from voxel_sandbox.render.meshes.neighborhood import (
 from voxel_sandbox.render.meshes.visible_faces import (
     FACES,
     UVS,
+    append_cross_quads,
     build_quad_indices,
     sample_vertex_lighting,
 )
@@ -32,6 +33,7 @@ def build_greedy_mesh(
     max_block_id = max((definition.id for definition in registry), default=0)
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
+    cross_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     texture_lookups = {
         face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
         for face in ("top", "side", "bottom")
@@ -39,6 +41,7 @@ def build_greedy_mesh(
     for definition in registry:
         opaque_lookup[definition.id] = definition.is_opaque
         fluid_lookup[definition.id] = definition.is_fluid
+        cross_lookup[definition.id] = definition.render_shape == "cross"
         for face in texture_lookups:
             texture = getattr(definition, f"texture_{face}")
             if texture in texture_uvs:
@@ -58,7 +61,9 @@ def build_greedy_mesh(
             HALO_RADIUS + dy : HALO_RADIUS + dy + SECTION_SIZE,
             HALO_RADIUS + dz : HALO_RADIUS + dz + SECTION_SIZE,
         ]
-        coordinates = np.argwhere((blocks != 0) & ~fluid_lookup[blocks] & ~neighbor)
+        coordinates = np.argwhere(
+            (blocks != 0) & ~fluid_lookup[blocks] & ~cross_lookup[blocks] & ~neighbor
+        )
         if coordinates.size == 0:
             continue
         sky, block_light, ao = sample_vertex_lighting(
@@ -124,6 +129,17 @@ def build_greedy_mesh(
                     build_quad_indices(face_sky, face_block, face_ao, vertex_offset)
                 )
                 vertex_offset += 4
+
+    vertex_offset = append_cross_quads(
+        blocks,
+        cross_lookup,
+        texture_lookups["side"],
+        padded_sky,
+        padded_block,
+        vertex_batches,
+        index_batches,
+        vertex_offset,
+    )
 
     if not vertex_batches:
         return MeshData(

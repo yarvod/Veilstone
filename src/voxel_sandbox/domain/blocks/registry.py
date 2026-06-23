@@ -80,6 +80,7 @@ def load_block_registry_from_toml(path: Path) -> BlockRegistry:
                 texture_side=raw.get("texture_side", "missing"),
                 texture_bottom=raw.get("texture_bottom", "missing"),
                 render_layer=raw.get("render_layer", "opaque"),
+                render_shape=raw.get("render_shape", "cube"),
             )
         )
     return BlockRegistry(definitions)
@@ -251,6 +252,7 @@ def create_core_block_registry() -> BlockRegistry:
                 texture_side="minecraft:block/short_grass",
                 texture_bottom="minecraft:block/short_grass",
                 render_layer="cutout",
+                render_shape="cross",
             ),
             BlockDef(
                 14,
@@ -265,6 +267,7 @@ def create_core_block_registry() -> BlockRegistry:
                 texture_side="minecraft:block/dandelion",
                 texture_bottom="minecraft:block/dandelion",
                 render_layer="cutout",
+                render_shape="cross",
             ),
         )
     )

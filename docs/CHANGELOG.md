@@ -136,6 +136,9 @@
 
 ### Fixed
 
+- **Short grass block silhouette** - short grass and wildflowers now use a
+  data-driven crossed plant mesh instead of full cube cutout faces, reducing the
+  green cage/cube appearance in default and Minecraft-style resource packs.
 - **Packaged app data registries** - release builds now include `data/`
   registries, package verification checks them, and wheel package resources
   include data fallbacks so startup no longer fails on missing `data/items.toml`.

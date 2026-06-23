@@ -44,8 +44,10 @@ def test_core_registry_reserves_zero_for_air() -> None:
     short_grass = registry.by_key("short_grass")
     assert registry.by_key("tall_grass").id == short_grass.id
     assert short_grass.render_layer == "cutout"
+    assert short_grass.render_shape == "cross"
     assert not short_grass.is_solid
     assert not short_grass.is_opaque
+    assert registry.by_key("wildflower").render_shape == "cross"
     assert registry.by_key("wildflower").id == 14
     assert len(registry) == 15
 
@@ -152,4 +154,6 @@ def test_load_block_registry_data_file() -> None:
     assert leaves.render_layer == "cutout"
     assert not leaves.is_opaque
     assert leaves.is_transparent
+    assert registry.by_key("short_grass").render_shape == "cross"
+    assert registry.by_key("wildflower").render_shape == "cross"
     assert len(registry) == 15

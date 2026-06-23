@@ -31,6 +31,30 @@ FACES: Final[tuple[Face, ...]] = (
 )
 UVS: Final = ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0))
 
+CrossQuad = tuple[
+    tuple[tuple[float, float, float], ...],
+    tuple[float, float, float],
+]
+
+CROSS_QUADS: Final[tuple[CrossQuad, ...]] = (
+    (
+        ((0.12, 0.0, 0.12), (0.12, 0.82, 0.12), (0.88, 0.82, 0.88), (0.88, 0.0, 0.88)),
+        (0.707, 0.0, -0.707),
+    ),
+    (
+        ((0.88, 0.0, 0.88), (0.88, 0.82, 0.88), (0.12, 0.82, 0.12), (0.12, 0.0, 0.12)),
+        (-0.707, 0.0, 0.707),
+    ),
+    (
+        ((0.88, 0.0, 0.12), (0.88, 0.82, 0.12), (0.12, 0.82, 0.88), (0.12, 0.0, 0.88)),
+        (0.707, 0.0, 0.707),
+    ),
+    (
+        ((0.12, 0.0, 0.88), (0.12, 0.82, 0.88), (0.88, 0.82, 0.12), (0.88, 0.0, 0.12)),
+        (-0.707, 0.0, -0.707),
+    ),
+)
+
 
 def build_visible_face_mesh(
     section: ChunkSection | MeshingNeighborhood,
@@ -45,6 +69,7 @@ def build_visible_face_mesh(
     max_block_id = max((definition.id for definition in registry), default=0)
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
+    cross_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     texture_lookups = {
         face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
         for face in ("top", "side", "bottom")
@@ -52,6 +77,7 @@ def build_visible_face_mesh(
     for definition in registry:
         opaque_lookup[definition.id] = definition.is_opaque
         fluid_lookup[definition.id] = definition.is_fluid
+        cross_lookup[definition.id] = definition.render_shape == "cross"
         for face in texture_lookups:
             texture = getattr(definition, f"texture_{face}")
             if texture in texture_uvs:
@@ -70,7 +96,9 @@ def build_visible_face_mesh(
             HALO_RADIUS + dy : HALO_RADIUS + dy + SECTION_SIZE,
             HALO_RADIUS + dz : HALO_RADIUS + dz + SECTION_SIZE,
         ]
-        coordinates = np.argwhere((blocks != 0) & ~fluid_lookup[blocks] & ~neighbor)
+        coordinates = np.argwhere(
+            (blocks != 0) & ~fluid_lookup[blocks] & ~cross_lookup[blocks] & ~neighbor
+        )
         face_count = coordinates.shape[0]
         if face_count == 0:
             continue
@@ -102,12 +130,69 @@ def build_visible_face_mesh(
         index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
         vertex_offset += face_count * 4
 
+    vertex_offset = append_cross_quads(
+        blocks,
+        cross_lookup,
+        texture_lookups["side"],
+        padded_sky_light,
+        padded_block_light,
+        vertex_batches,
+        index_batches,
+        vertex_offset,
+    )
+
     if not vertex_batches:
         return MeshData(
             np.empty((0, 15), dtype=np.float32),
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
+
+
+def append_cross_quads(
+    blocks: NDArray[np.uint16],
+    cross_lookup: NDArray[np.bool_],
+    side_texture_lookup: NDArray[np.float32],
+    padded_sky_light: NDArray[np.float32],
+    padded_block_light: NDArray[np.float32],
+    vertex_batches: list[NDArray[np.float32]],
+    index_batches: list[NDArray[np.uint32]],
+    vertex_offset: int,
+) -> int:
+    coordinates = np.argwhere((blocks != 0) & cross_lookup[blocks])
+    block_count = coordinates.shape[0]
+    if block_count == 0:
+        return vertex_offset
+
+    quad_count = block_count * len(CROSS_QUADS)
+    vertices = np.empty((quad_count, 4, 15), dtype=np.float32)
+    sky_lights = np.empty((quad_count, 4), dtype=np.float32)
+    block_lights = np.empty((quad_count, 4), dtype=np.float32)
+    ao = np.ones((quad_count, 4), dtype=np.float32)
+    uv = np.asarray(UVS, dtype=np.float32)
+    block_ids = blocks[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
+    rectangles = side_texture_lookup[block_ids]
+
+    quad_index = 0
+    for block_index, coordinate in enumerate(coordinates):
+        base = coordinate.astype(np.float32)
+        sky = padded_sky_light[coordinate[0], coordinate[1], coordinate[2]]
+        block_light = padded_block_light[coordinate[0], coordinate[1], coordinate[2]]
+        for corners, normal in CROSS_QUADS:
+            vertices[quad_index, :, :3] = base[None, :] + np.asarray(corners, dtype=np.float32)
+            vertices[quad_index, :, 3:5] = uv
+            vertices[quad_index, :, 5:8] = np.asarray(normal, dtype=np.float32)
+            vertices[quad_index, :, 8] = sky
+            vertices[quad_index, :, 9] = block_light
+            vertices[quad_index, :, 10] = 1.0
+            vertices[quad_index, :, 11:15] = rectangles[block_index]
+            sky_lights[quad_index, :] = sky
+            block_lights[quad_index, :] = block_light
+            quad_index += 1
+
+    vertex_batches.append(vertices.reshape((-1, 15)))
+    index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
+    return vertex_offset + quad_count * 4
 
 
 def build_quad_indices(

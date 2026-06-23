@@ -33,15 +33,15 @@ implemented; move backlog items into the workplan when a slice becomes active.
 
 ### R-B001: Default short grass renders like green reinforcement cubes
 
-- **Status:** open
+- **Status:** fixed
 - **Observed:** default resource-pack grass/short grass can appear as green cage
   or crossed structural planes inside block-sized cubes instead of Minecraft-like
   small grass tufts.
 - **Desired:** default grass uses a Minecraft-like cross/plant model with correct
   cutout texture, tint, scale, placement, and no misleading full-cube silhouette.
-- **Candidate work:** verify plant block model data, procedural fallback texture,
-  atlas alpha/cutout handling, block outline rules, and resource-pack mapping for
-  `minecraft:block/short_grass` / `grass`.
+- **Fix notes:** `short_grass` and `wildflower` now use a data-driven
+  `render_shape = "cross"` plant mesh instead of full cube faces, covered by
+  block registry and visible/greedy mesher tests.
 
 ### R-B002: Minecraft resource-pack grass/foliage still looks distorted
 
@@ -54,6 +54,9 @@ implemented; move backlog items into the workplan when a slice becomes active.
 - **Candidate work:** separate block textures from plant textures, verify
   resource-pack aliases, and add visual smoke scenes for default and imported
   grass.
+- **Notes:** cross-shape plant meshing should reduce oversized sheet/cube
+  artifacts for imported plant textures; still needs visual verification with a
+  real Minecraft-like resource pack.
 
 ## Diagnostics
 

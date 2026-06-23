@@ -167,6 +167,7 @@ texture_top = "minecraft:block/short_grass"
 texture_side = "minecraft:block/short_grass"
 texture_bottom = "minecraft:block/short_grass"
 render_layer = "cutout"
+render_shape = "cross"
 
 [[block]]
 id = 14
@@ -181,3 +182,4 @@ texture_top = "minecraft:block/dandelion"
 texture_side = "minecraft:block/dandelion"
 texture_bottom = "minecraft:block/dandelion"
 render_layer = "cutout"
+render_shape = "cross"

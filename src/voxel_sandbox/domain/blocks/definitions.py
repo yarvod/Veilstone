@@ -31,6 +31,7 @@ class BlockDef:
     texture_side: str = "missing"
     texture_bottom: str = "missing"
     render_layer: str = "opaque"
+    render_shape: str = "cube"
 
     def __post_init__(self) -> None:
         if not 0 <= self.id <= 65535:
@@ -41,3 +42,5 @@ class BlockDef:
             raise ValueError("Block light emission must be between 0 and 15")
         if self.render_layer not in {"opaque", "cutout", "translucent"}:
             raise ValueError("Block render layer must be opaque, cutout, or translucent")
+        if self.render_shape not in {"cube", "cross"}:
+            raise ValueError("Block render shape must be cube or cross")
