@@ -11,6 +11,7 @@ uniform float aspect_ratio;
 
 out vec3 v_normal;
 out vec2 v_uv;
+out float v_face_kind;
 
 mat3 rotate_x(float angle) {
     float c = cos(angle);
@@ -44,14 +45,18 @@ mat3 rotate_z(float angle) {
 
 void main() {
     vec3 radians_rotation = radians(part_rotation_degrees);
-    mat3 rotation =
-        rotate_z(radians_rotation.z) *
-        rotate_y(radians_rotation.y) *
-        rotate_x(radians_rotation.x);
+    mat3 rotation = rotate_z(radians_rotation.z) * rotate_y(radians_rotation.y) * rotate_x(radians_rotation.x);
     vec3 local_position = rotation * (in_position * part_scale);
     vec3 clip_position = part_position + local_position;
     clip_position.x /= max(aspect_ratio, 0.001);
     gl_Position = vec4(clip_position, 1.0);
     v_normal = normalize(rotation * in_normal);
     v_uv = in_uv;
+    if (in_normal.y > 0.5) {
+        v_face_kind = 1.0;
+    } else if (in_normal.y < -0.5) {
+        v_face_kind = 2.0;
+    } else {
+        v_face_kind = 0.0;
+    }
 }

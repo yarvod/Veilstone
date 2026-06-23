@@ -7,6 +7,11 @@ from types import MappingProxyType
 
 from voxel_sandbox.domain.items.definitions import ItemDef, ItemStack, ItemType
 
+_ITEM_KEY_ALIASES = {
+    "grass": "grass_block",
+    "gloam_lantern": "lantern",
+}
+
 
 class ItemRegistry:
     def __init__(
@@ -29,6 +34,9 @@ class ItemRegistry:
                 by_block[definition.block_id] = definition
             by_id[definition.id] = definition
             by_key[definition.key] = definition
+        for alias, target in _ITEM_KEY_ALIASES.items():
+            if alias not in by_key and target in by_key:
+                by_key[alias] = by_key[target]
         self._by_id = MappingProxyType(by_id)
         self._by_key = MappingProxyType(by_key)
         self._by_block = MappingProxyType(by_block)
@@ -87,11 +95,11 @@ def create_core_item_registry() -> ItemRegistry:
     definitions = (
         ItemDef(1, "stone", "Stone", ItemType.BLOCK, block_id=1),
         ItemDef(2, "dirt", "Dirt", ItemType.BLOCK, block_id=2),
-        ItemDef(3, "grass", "Grass", ItemType.BLOCK, block_id=3),
+        ItemDef(3, "grass_block", "Grass Block", ItemType.BLOCK, block_id=3),
         ItemDef(4, "veilwood_log", "Veilwood Log", ItemType.BLOCK, block_id=4),
         ItemDef(5, "veilwood_leaves", "Veilwood Leaves", ItemType.BLOCK, block_id=5),
         ItemDef(6, "dusk_crystal", "Dusk Crystal", ItemType.RESOURCE),
-        ItemDef(7, "gloam_lantern", "Gloam Lantern", ItemType.BLOCK, block_id=7),
+        ItemDef(7, "lantern", "Lantern", ItemType.BLOCK, block_id=7),
         ItemDef(8, "water_vessel", "Water Vessel", ItemType.FLUID_CONTAINER, max_stack=1),
         ItemDef(9, "veilwood_planks", "Veilwood Planks", ItemType.BLOCK, block_id=9),
         ItemDef(10, "workbench", "Runecraft Table", ItemType.BLOCK, block_id=10),

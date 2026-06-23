@@ -18,6 +18,8 @@ def test_core_items_map_blocks_and_drops() -> None:
     registry = create_core_item_registry()
 
     assert registry.by_key("grass").block_id == 3
+    assert registry.by_key("grass_block").id == registry.by_key("grass").id
+    assert registry.by_key("lantern").id == registry.by_key("gloam_lantern").id
     assert registry.for_block(10) is not None
     assert registry.drop_for_block(6) == ItemStack(6, 1)
     assert registry.by_key("water_vessel").max_stack == 1
@@ -78,6 +80,8 @@ def test_load_item_registry_data_file() -> None:
     registry = load_item_registry_from_toml(data_path)
 
     assert registry.by_key("grass").block_id == 3
+    assert registry.by_key("grass_block").id == registry.by_key("grass").id
+    assert registry.by_key("lantern").id == registry.by_key("gloam_lantern").id
     assert registry.by_key("water_vessel").max_stack == 1
     assert registry.drop_for_block(6) == ItemStack(6, 1)
     assert len(registry) == 10

@@ -42,7 +42,7 @@ def build_player_viewmodel_snapshot(
     return PlayerViewmodelSnapshot(
         hand=hand,
         held_item=_held_item_snapshot(held_stack),
-        base_position=(0.68 if hand == "right" else -0.68, -0.92, -0.58),
+        base_position=(0.82 if hand == "right" else -0.82, -1.02, -0.55),
         bob_offset=bob_offset,
         swing_offset=_swing_offset(interaction, interaction_progress),
         swing_rotation_degrees=_swing_rotation(interaction, interaction_progress),

@@ -22,9 +22,12 @@ def test_core_registry_reserves_zero_for_air() -> None:
 
     assert registry.by_id(0).key == "air"
     assert registry.by_key("grass").id == 3
+    assert registry.by_key("grass_block").id == registry.by_key("grass").id
     assert registry.by_key("veilwood_log").id == 4
     assert registry.by_key("dusk_crystal_ore").id == 6
     assert registry.by_key("gloam_lantern").emits_light == 14
+    assert registry.by_key("lantern").id == registry.by_key("gloam_lantern").id
+    assert registry.by_key("lantern").render_layer == "cutout"
     assert registry.by_key("water").is_fluid
     assert not registry.by_key("water").is_solid
     assert registry.by_key("workbench").id == 10
@@ -114,6 +117,7 @@ def test_load_block_registry_from_toml(tmp_path: Path) -> None:
     assert registry.by_key("stone").material is Material.STONE
     assert registry.by_key("gloam_lantern").emits_light == 14
     assert registry.by_key("gloam_lantern").is_transparent
+    assert registry.by_key("gloam_lantern").render_layer == "cutout"
     assert registry.by_key("gloam_lantern").render_layer == "cutout"
 
 

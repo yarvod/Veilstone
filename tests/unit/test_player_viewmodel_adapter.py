@@ -23,10 +23,10 @@ def test_viewmodel_render_data_contains_hand_part() -> None:
     arm, hand = data.parts
     assert arm.name == "right_arm"
     assert arm.position == snapshot.base_position
-    assert arm.scale == (0.24, 0.28, 0.24)
+    assert arm.scale == (0.28, 0.18, 0.28)
     assert hand.name == "right_hand"
     assert hand.position[1] < arm.position[1]
-    assert hand.scale == (0.235, 0.16, 0.235)
+    assert hand.scale == (0.27, 0.075, 0.27)
     assert abs(hand.position[0] - arm.position[0]) < 0.02
     assert abs(hand.position[2] - arm.position[2]) < 0.04
     assert hand.color != arm.color
@@ -57,7 +57,10 @@ def test_viewmodel_render_data_uses_block_texture_for_held_block() -> None:
         block_registry=create_core_block_registry(),
     )
 
-    assert data.parts[2].texture_name == "grass_top"
+    assert data.parts[2].texture_name == "minecraft:block/grass_block_top"
+    assert data.parts[2].texture_top == "minecraft:block/grass_block_top"
+    assert data.parts[2].texture_side == "minecraft:block/grass_block_side"
+    assert data.parts[2].texture_bottom == "minecraft:block/dirt"
 
 
 def test_viewmodel_render_data_keeps_lantern_as_compact_held_block() -> None:

@@ -2,11 +2,14 @@
 
 in vec3 v_normal;
 in vec2 v_uv;
+in float v_face_kind;
 
 uniform vec3 part_color;
 uniform bool use_texture;
 uniform sampler2D viewmodel_texture;
-uniform vec4 uv_rect;
+uniform vec4 uv_rect_top;
+uniform vec4 uv_rect_side;
+uniform vec4 uv_rect_bottom;
 
 out vec4 frag_color;
 
@@ -15,6 +18,12 @@ void main() {
     float light = 0.68 + 0.32 * max(dot(normalize(v_normal), light_direction), 0.0);
     vec3 base_color = part_color;
     if (use_texture) {
+        vec4 uv_rect = uv_rect_side;
+        if (v_face_kind > 1.5) {
+            uv_rect = uv_rect_bottom;
+        } else if (v_face_kind > 0.5) {
+            uv_rect = uv_rect_top;
+        }
         vec2 atlas_uv = mix(uv_rect.xy, uv_rect.zw, v_uv);
         base_color = texture(viewmodel_texture, atlas_uv).rgb;
     }

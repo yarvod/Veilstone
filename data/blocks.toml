@@ -36,8 +36,8 @@ texture_bottom = "minecraft:block/dirt"
 
 [[block]]
 id = 3
-key = "grass"
-name = "Grass"
+key = "grass_block"
+name = "Grass Block"
 material = "earth"
 hardness = 0.6
 texture_top = "minecraft:block/grass_block_top"
@@ -79,8 +79,8 @@ texture_bottom = "minecraft:block/diamond_ore"
 
 [[block]]
 id = 7
-key = "gloam_lantern"
-name = "Gloam Lantern"
+key = "lantern"
+name = "Lantern"
 material = "light"
 hardness = 0.1
 is_solid = false
@@ -90,6 +90,7 @@ emits_light = 14
 texture_top = "minecraft:block/lantern"
 texture_side = "minecraft:block/lantern"
 texture_bottom = "minecraft:block/lantern"
+render_layer = "cutout"
 
 [[block]]
 id = 8

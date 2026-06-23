@@ -4,11 +4,13 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from PIL import Image
 
 from voxel_sandbox.render.texture_atlas.generated import GeneratedAtlas
+
+CACHE_VERSION = 2
 
 
 def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | None:
@@ -23,15 +25,31 @@ def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | Non
         image = Image.open(atlas_path).convert("RGBA")
     except (OSError, ValueError, json.JSONDecodeError):
         return None
+    if metadata.get("cache_version") != CACHE_VERSION:
+        return None
 
     width = int(metadata["width"])
     height = int(metadata["height"])
     if image.size != (width, height):
         return None
 
-    uvs = {str(key): tuple(float(value) for value in rect) for key, rect in metadata["uvs"].items()}
+    uvs = {str(key): _uv_rect(rect) for key, rect in metadata["uvs"].items()}
     pixels = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
     return GeneratedAtlas(width, height, pixels, uvs)
+
+
+def _uv_rect(value: object) -> tuple[float, float, float, float]:
+    if not isinstance(value, list | tuple):
+        raise ValueError("Cached texture atlas UV rect must contain four values")
+    values = cast("list[object] | tuple[object, ...]", value)
+    if len(values) != 4:
+        raise ValueError("Cached texture atlas UV rect must contain four values")
+    numbers: list[float] = []
+    for item in values:
+        if not isinstance(item, int | float):
+            raise ValueError("Cached texture atlas UV rect values must be numeric")
+        numbers.append(float(item))
+    return (numbers[0], numbers[1], numbers[2], numbers[3])
 
 
 def save_cached_atlas(cache_root: Path, pack_path: Path, atlas: GeneratedAtlas) -> None:
@@ -41,6 +59,7 @@ def save_cached_atlas(cache_root: Path, pack_path: Path, atlas: GeneratedAtlas) 
     image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
     image.save(cache_dir / "atlas.png")
     metadata: dict[str, Any] = {
+        "cache_version": CACHE_VERSION,
         "width": atlas.width,
         "height": atlas.height,
         "uvs": atlas.uvs,

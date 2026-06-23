@@ -15,7 +15,7 @@ def test_held_block_render_data_uses_block_texture_rect() -> None:
         arm_rotation=(0.0, 0.0, 0.0),
         item_registry=create_core_item_registry(),
         block_registry=create_core_block_registry(),
-        atlas_uvs={"grass_top": (0.25, 0.50, 0.375, 0.625)},
+        atlas_uvs={"minecraft:block/grass_block_top": (0.25, 0.50, 0.375, 0.625)},
     )
 
     assert data.texture_rect == (0.25, 0.50, 0.125, 0.125)

@@ -111,6 +111,11 @@
 
 ### Fixed
 
+- **Faithful grass and held block textures** - held block viewmodels now use the
+  same top/side/bottom texture faces as placed blocks, Faithful grass/leaves
+  receive Minecraft-style biome tint during atlas import, vanilla-like keys such
+  as `grass_block`/`lantern` are aliased, and lantern blocks render in the
+  cutout layer instead of opaque black cubes.
 - **First-person held lantern silhouette** - removed the temporary torch-like lantern handle model so held block items render as compact blocks instead of a second rod beside the arm.
 - **Dedicated server default save path** - omitted `server --world` now uses the Veilstone application data root instead of a relative install-directory path.
 - **New-world inventory UI state** - inventory logic now refreshes its active

@@ -8,6 +8,15 @@ from PIL import Image
 
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
+_BIOME_TINTS: dict[str, tuple[int, int, int]] = {
+    "minecraft:block/grass_block_top": (95, 159, 53),
+    "minecraft:block/grass_block_side_overlay": (95, 159, 53),
+    "minecraft:block/short_grass": (95, 159, 53),
+    "minecraft:block/tall_grass_top": (95, 159, 53),
+    "minecraft:block/tall_grass_bottom": (95, 159, 53),
+    "minecraft:block/oak_leaves": (72, 128, 47),
+}
+
 
 def resource_location_to_texture_path(resource: str) -> str:
     """Convert a resource location to its path inside a resource pack.
@@ -108,7 +117,28 @@ def load_block_textures(
         if animated:
             report.ignored_animations.append(resource_id)
 
-        result[resource_id] = image
+        result[resource_id] = _apply_resource_tint(resource_id, image)
         report.imported.append(resource_id)
 
     return result, report
+
+
+def _apply_resource_tint(resource_id: str, image: Image.Image) -> Image.Image:
+    tint = _BIOME_TINTS.get(resource_id)
+    if tint is None:
+        return image
+    red, green, blue, alpha = image.convert("RGBA").split()
+    tint_r, tint_g, tint_b = tint
+    return Image.merge(
+        "RGBA",
+        (
+            red.point(_tint_lut(tint_r)),
+            green.point(_tint_lut(tint_g)),
+            blue.point(_tint_lut(tint_b)),
+            alpha,
+        ),
+    )
+
+
+def _tint_lut(multiplier: int) -> list[int]:
+    return [value * multiplier // 255 for value in range(256)]

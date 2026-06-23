@@ -9,6 +9,7 @@ import io
 import json
 import zipfile
 from pathlib import Path
+from typing import cast
 
 import pytest
 from PIL import Image
@@ -148,6 +149,24 @@ def test_folder_import_resolves_stone(tmp_path: Path) -> None:
     tiles, report = load_block_textures(pack, _IDS, _FALLBACK)
     assert "minecraft:block/stone" in tiles
     assert "minecraft:block/stone" in report.imported
+
+
+def test_folder_import_applies_minecraft_grass_tint(tmp_path: Path) -> None:
+    pack = _make_folder_pack(tmp_path, {"grass_block_top": (16, 16), "stone": (16, 16)})
+    fallback = {
+        "minecraft:block/grass_block_top": Image.new("RGBA", (4, 4), (128, 128, 128, 255)),
+        "minecraft:block/stone": Image.new("RGBA", (4, 4), (50, 50, 50, 255)),
+    }
+    tiles, report = load_block_textures(pack, {key: None for key in fallback}, fallback)
+
+    grass_pixel = cast(
+        tuple[int, int, int, int], tiles["minecraft:block/grass_block_top"].getpixel((0, 0))
+    )
+    stone_pixel = cast(tuple[int, int, int, int], tiles["minecraft:block/stone"].getpixel((0, 0)))
+
+    assert "minecraft:block/grass_block_top" in report.imported
+    assert grass_pixel[1] > grass_pixel[0] > grass_pixel[2]
+    assert stone_pixel == (128, 128, 128, 255)
 
 
 def test_folder_import_missing_uses_fallback(tmp_path: Path) -> None:

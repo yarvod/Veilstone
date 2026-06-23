@@ -7,7 +7,7 @@ from typing import cast
 import moderngl
 import numpy as np
 
-from voxel_sandbox.render.player_viewmodel import PlayerViewmodelRenderData
+from voxel_sandbox.render.player_viewmodel import PlayerViewmodelRenderData, ViewmodelPart
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 
 
@@ -39,15 +39,20 @@ class FirstPersonViewmodelRenderer:
         cast("moderngl.Uniform", program["aspect_ratio"]).value = max(width, 1) / max(height, 1)
         draws = 0
         for part in data.parts:
-            texture_rect = _texture_rect(part.texture_name, atlas_uvs)
-            if block_texture is not None and texture_rect is not None:
+            texture_rects = _texture_rects(part, atlas_uvs)
+            if block_texture is not None and texture_rects is not None:
                 block_texture.use(0)
                 cast("moderngl.Uniform", program["use_texture"]).value = 1
                 cast("moderngl.Uniform", program["viewmodel_texture"]).value = 0
-                cast("moderngl.Uniform", program["uv_rect"]).value = texture_rect
+                top_rect, side_rect, bottom_rect = texture_rects
+                cast("moderngl.Uniform", program["uv_rect_top"]).value = top_rect
+                cast("moderngl.Uniform", program["uv_rect_side"]).value = side_rect
+                cast("moderngl.Uniform", program["uv_rect_bottom"]).value = bottom_rect
             else:
                 cast("moderngl.Uniform", program["use_texture"]).value = 0
-                cast("moderngl.Uniform", program["uv_rect"]).value = (0.0, 0.0, 1.0, 1.0)
+                cast("moderngl.Uniform", program["uv_rect_top"]).value = (0.0, 0.0, 1.0, 1.0)
+                cast("moderngl.Uniform", program["uv_rect_side"]).value = (0.0, 0.0, 1.0, 1.0)
+                cast("moderngl.Uniform", program["uv_rect_bottom"]).value = (0.0, 0.0, 1.0, 1.0)
             cast("moderngl.Uniform", program["part_position"]).value = part.position
             cast("moderngl.Uniform", program["part_scale"]).value = part.scale
             cast("moderngl.Uniform", program["part_rotation_degrees"]).value = part.rotation_degrees
@@ -60,6 +65,25 @@ class FirstPersonViewmodelRenderer:
         self.vertex_array.release()
         self.vertex_buffer.release()
         self.shader.release()
+
+
+def _texture_rects(
+    part: ViewmodelPart,
+    atlas_uvs: dict[str, tuple[float, float, float, float]] | None,
+) -> (
+    tuple[
+        tuple[float, float, float, float],
+        tuple[float, float, float, float],
+        tuple[float, float, float, float],
+    ]
+    | None
+):
+    top = _texture_rect(part.texture_top or part.texture_name, atlas_uvs)
+    side = _texture_rect(part.texture_side or part.texture_name, atlas_uvs)
+    bottom = _texture_rect(part.texture_bottom or part.texture_name, atlas_uvs)
+    if top is None or side is None or bottom is None:
+        return None
+    return top, side, bottom
 
 
 def _texture_rect(

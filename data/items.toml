@@ -19,8 +19,8 @@ block_id = 2
 
 [[item]]
 id = 3
-key = "grass"
-name = "Grass"
+key = "grass_block"
+name = "Grass Block"
 item_type = "block"
 block_id = 3
 
@@ -46,8 +46,8 @@ item_type = "resource"
 
 [[item]]
 id = 7
-key = "gloam_lantern"
-name = "Gloam Lantern"
+key = "lantern"
+name = "Lantern"
 item_type = "block"
 block_id = 7
 

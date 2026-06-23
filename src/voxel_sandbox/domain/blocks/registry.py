@@ -7,6 +7,11 @@ from types import MappingProxyType
 
 from voxel_sandbox.domain.blocks.definitions import BlockDef, Material
 
+_BLOCK_KEY_ALIASES = {
+    "grass": "grass_block",
+    "gloam_lantern": "lantern",
+}
+
 
 class BlockRegistry:
     def __init__(self, definitions: Iterable[BlockDef]) -> None:
@@ -19,6 +24,9 @@ class BlockRegistry:
                 raise ValueError(f"Duplicate block key: {definition.key}")
             by_id[definition.id] = definition
             by_key[definition.key] = definition
+        for alias, target in _BLOCK_KEY_ALIASES.items():
+            if alias not in by_key and target in by_key:
+                by_key[alias] = by_key[target]
         if 0 not in by_id or by_id[0].key != "air":
             raise ValueError("Block ID 0 must be registered as air")
         self._by_id = MappingProxyType(by_id)
@@ -91,9 +99,9 @@ def create_core_block_registry() -> BlockRegistry:
                 "Stone",
                 Material.STONE,
                 1.5,
-                texture_top="stone",
-                texture_side="stone",
-                texture_bottom="stone",
+                texture_top="minecraft:block/stone",
+                texture_side="minecraft:block/stone",
+                texture_bottom="minecraft:block/stone",
             ),
             BlockDef(
                 2,
@@ -101,19 +109,19 @@ def create_core_block_registry() -> BlockRegistry:
                 "Dirt",
                 Material.EARTH,
                 0.5,
-                texture_top="dirt",
-                texture_side="dirt",
-                texture_bottom="dirt",
+                texture_top="minecraft:block/dirt",
+                texture_side="minecraft:block/dirt",
+                texture_bottom="minecraft:block/dirt",
             ),
             BlockDef(
                 3,
-                "grass",
-                "Grass",
+                "grass_block",
+                "Grass Block",
                 Material.EARTH,
                 0.6,
-                texture_top="grass_top",
-                texture_side="grass_side",
-                texture_bottom="dirt",
+                texture_top="minecraft:block/grass_block_top",
+                texture_side="minecraft:block/grass_block_side",
+                texture_bottom="minecraft:block/dirt",
             ),
             BlockDef(
                 4,
@@ -121,9 +129,9 @@ def create_core_block_registry() -> BlockRegistry:
                 "Veilwood Log",
                 Material.WOOD,
                 1.8,
-                texture_top="veilwood_cut",
-                texture_side="veilwood_bark",
-                texture_bottom="veilwood_cut",
+                texture_top="minecraft:block/oak_log_top",
+                texture_side="minecraft:block/oak_log",
+                texture_bottom="minecraft:block/oak_log_top",
             ),
             BlockDef(
                 5,
@@ -133,9 +141,9 @@ def create_core_block_registry() -> BlockRegistry:
                 0.2,
                 is_opaque=False,
                 is_transparent=True,
-                texture_top="veilwood_leaves",
-                texture_side="veilwood_leaves",
-                texture_bottom="veilwood_leaves",
+                texture_top="minecraft:block/oak_leaves",
+                texture_side="minecraft:block/oak_leaves",
+                texture_bottom="minecraft:block/oak_leaves",
                 render_layer="cutout",
             ),
             BlockDef(
@@ -144,23 +152,24 @@ def create_core_block_registry() -> BlockRegistry:
                 "Dusk Crystal Ore",
                 Material.STONE,
                 3.0,
-                texture_top="dusk_crystal_ore",
-                texture_side="dusk_crystal_ore",
-                texture_bottom="dusk_crystal_ore",
+                texture_top="minecraft:block/diamond_ore",
+                texture_side="minecraft:block/diamond_ore",
+                texture_bottom="minecraft:block/diamond_ore",
             ),
             BlockDef(
                 7,
-                "gloam_lantern",
-                "Gloam Lantern",
+                "lantern",
+                "Lantern",
                 Material.LIGHT,
                 0.1,
                 is_solid=False,
                 is_opaque=False,
                 is_transparent=True,
                 emits_light=14,
-                texture_top="gloam_lantern",
-                texture_side="gloam_lantern",
-                texture_bottom="gloam_lantern",
+                texture_top="minecraft:block/lantern",
+                texture_side="minecraft:block/lantern",
+                texture_bottom="minecraft:block/lantern",
+                render_layer="cutout",
             ),
             BlockDef(
                 8,
@@ -172,9 +181,9 @@ def create_core_block_registry() -> BlockRegistry:
                 is_opaque=False,
                 is_transparent=True,
                 is_fluid=True,
-                texture_top="water",
-                texture_side="water",
-                texture_bottom="water",
+                texture_top="minecraft:block/water_still",
+                texture_side="minecraft:block/water_still",
+                texture_bottom="minecraft:block/water_still",
             ),
             BlockDef(
                 9,
@@ -182,9 +191,9 @@ def create_core_block_registry() -> BlockRegistry:
                 "Veilwood Planks",
                 Material.WOOD,
                 1.2,
-                texture_top="veilwood_planks",
-                texture_side="veilwood_planks",
-                texture_bottom="veilwood_planks",
+                texture_top="minecraft:block/oak_planks",
+                texture_side="minecraft:block/oak_planks",
+                texture_bottom="minecraft:block/oak_planks",
             ),
             BlockDef(
                 10,
@@ -192,9 +201,9 @@ def create_core_block_registry() -> BlockRegistry:
                 "Runecraft Table",
                 Material.WOOD,
                 1.8,
-                texture_top="runecraft_top",
-                texture_side="runecraft_side",
-                texture_bottom="veilwood_planks",
+                texture_top="minecraft:block/crafting_table_top",
+                texture_side="minecraft:block/crafting_table_side",
+                texture_bottom="minecraft:block/oak_planks",
             ),
             BlockDef(
                 11,
@@ -206,9 +215,9 @@ def create_core_block_registry() -> BlockRegistry:
                 is_opaque=False,
                 is_transparent=True,
                 emits_light=10,
-                texture_top="glowing_mushroom",
-                texture_side="glowing_mushroom",
-                texture_bottom="glowing_mushroom",
+                texture_top="minecraft:block/red_mushroom",
+                texture_side="minecraft:block/red_mushroom",
+                texture_bottom="minecraft:block/red_mushroom",
             ),
             BlockDef(
                 12,
@@ -220,9 +229,9 @@ def create_core_block_registry() -> BlockRegistry:
                 is_opaque=False,
                 is_transparent=True,
                 emits_light=6,
-                texture_top="fireflies",
-                texture_side="fireflies",
-                texture_bottom="fireflies",
+                texture_top="minecraft:block/glow_lichen",
+                texture_side="minecraft:block/glow_lichen",
+                texture_bottom="minecraft:block/glow_lichen",
             ),
             BlockDef(
                 13,
@@ -233,9 +242,9 @@ def create_core_block_registry() -> BlockRegistry:
                 is_solid=False,
                 is_opaque=False,
                 is_transparent=True,
-                texture_top="tall_grass",
-                texture_side="tall_grass",
-                texture_bottom="tall_grass",
+                texture_top="minecraft:block/short_grass",
+                texture_side="minecraft:block/short_grass",
+                texture_bottom="minecraft:block/short_grass",
                 render_layer="cutout",
             ),
             BlockDef(
@@ -247,9 +256,9 @@ def create_core_block_registry() -> BlockRegistry:
                 is_solid=False,
                 is_opaque=False,
                 is_transparent=True,
-                texture_top="wildflower",
-                texture_side="wildflower",
-                texture_bottom="wildflower",
+                texture_top="minecraft:block/dandelion",
+                texture_side="minecraft:block/dandelion",
+                texture_bottom="minecraft:block/dandelion",
                 render_layer="cutout",
             ),
         )
