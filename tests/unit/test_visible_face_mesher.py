@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import ChunkSection
 from voxel_sandbox.render.meshes import (
@@ -71,6 +73,7 @@ def test_short_grass_uses_cross_quads_instead_of_cube_faces() -> None:
     assert round(float(visible.vertices[:, 0].max()), 2) == 1.88
     assert round(float(visible.vertices[:, 1].min()), 2) == 1.0
     assert round(float(visible.vertices[:, 1].max()), 2) == 1.82
+    assert np.allclose(visible.vertices[:, 5:8], (0.0, 1.0, 0.0))
 
 
 def test_empty_section_produces_empty_arrays() -> None:

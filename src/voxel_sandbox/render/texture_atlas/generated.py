@@ -41,12 +41,19 @@ def create_default_block_tiles(tile_size: int = 32) -> dict[str, Image.Image]:
     """Return procedurally generated PIL images keyed by resource location."""
     tiles: dict[str, Image.Image] = {}
     for name, color in _DEFAULT_COLORS.items():
+        if name == "minecraft:block/short_grass":
+            tiles[name] = _create_default_short_grass_tile(tile_size)
+            continue
+        if name == "minecraft:block/dandelion":
+            tiles[name] = _create_default_dandelion_tile(tile_size)
+            continue
+
         image = Image.new("RGBA", (tile_size, tile_size))
         draw = ImageDraw.Draw(image)
         draw.rectangle((0, 0, tile_size - 1, tile_size - 1), fill=color)
         seed = sum((i + 1) * ord(c) for i, c in enumerate(name))
-        for py in range(1, tile_size - 1):
-            for px in range(1, tile_size - 1):
+        for py in range(tile_size):
+            for px in range(tile_size):
                 seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
                 offset = int(seed >> 29) - 3
                 alpha = _procedural_alpha(name, px, py, tile_size, color[3])
@@ -59,6 +66,57 @@ def create_default_block_tiles(tile_size: int = 32) -> dict[str, Image.Image]:
     return tiles
 
 
+def _create_default_short_grass_tile(tile_size: int) -> Image.Image:
+    image = Image.new("RGBA", (tile_size, tile_size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    width = max(1, round(tile_size / 18))
+    blades = (
+        ((2.5, 15.0), (3.8, 9.5), (54, 118, 42, 255)),
+        ((4.5, 15.0), (5.5, 6.5), (80, 146, 54, 255)),
+        ((6.5, 15.0), (7.0, 5.5), (112, 172, 63, 255)),
+        ((8.0, 15.0), (8.0, 7.0), (72, 136, 48, 255)),
+        ((9.5, 15.0), (11.0, 8.0), (98, 160, 56, 255)),
+        ((11.5, 15.0), (13.6, 10.0), (66, 126, 46, 255)),
+        ((5.7, 15.0), (3.8, 11.0), (92, 154, 54, 255)),
+        ((10.2, 15.0), (12.6, 9.2), (120, 180, 68, 255)),
+    )
+    for start, end, color in blades:
+        draw.line(
+            (*_tile_point(start[0], start[1], tile_size), *_tile_point(end[0], end[1], tile_size)),
+            fill=color,
+            width=width,
+        )
+    return image
+
+
+def _create_default_dandelion_tile(tile_size: int) -> Image.Image:
+    image = Image.new("RGBA", (tile_size, tile_size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    width = max(1, round(tile_size / 18))
+    draw.line(
+        (*_tile_point(8.0, 15.0, tile_size), *_tile_point(8.0, 6.2, tile_size)),
+        fill=(74, 136, 48, 255),
+        width=width,
+    )
+    flower = _tile_point(8.0, 5.0, tile_size)
+    radius = max(1, round(tile_size / 8))
+    draw.ellipse(
+        (flower[0] - radius, flower[1] - radius, flower[0] + radius, flower[1] + radius),
+        fill=(238, 213, 63, 255),
+    )
+    center = max(1, radius // 2)
+    draw.ellipse(
+        (flower[0] - center, flower[1] - center, flower[0] + center, flower[1] + center),
+        fill=(190, 144, 36, 255),
+    )
+    return image
+
+
+def _tile_point(x: float, y: float, tile_size: int) -> tuple[int, int]:
+    scale = (tile_size - 1) / 15.0
+    return round(x * scale), round(y * scale)
+
+
 def _procedural_alpha(
     name: str,
     px: int,
@@ -68,16 +126,6 @@ def _procedural_alpha(
 ) -> int:
     if name == "minecraft:block/oak_leaves" and ((px + py) % 5 == 0 or (px * 3 + py) % 11 == 0):
         return 0
-    if name == "minecraft:block/short_grass":
-        mid = tile_size // 2
-        blade = mid - 1 <= px <= mid + 1 or abs(px - py) <= 1 or abs(px + py - tile_size) <= 1
-        return default_alpha if blade else 0
-    if name == "minecraft:block/dandelion":
-        mid = tile_size // 2
-        flower_y = tile_size // 3
-        stem = abs(px - mid) <= 1
-        flower = abs(px - mid) <= 4 and abs(py - flower_y) <= 4
-        return default_alpha if stem or flower else 0
     return default_alpha
 
 
@@ -95,7 +143,7 @@ def build_texture_atlas(tiles: dict[str, Image.Image], *, tile_size: int) -> Gen
     for index, name in enumerate(names):
         tile_x = index % columns
         tile_y = index // columns
-        tile = tiles[name].convert("RGBA").resize((tile_size, tile_size), Image.NEAREST)
+        tile = tiles[name].convert("RGBA").resize((tile_size, tile_size), Image.Resampling.NEAREST)
         image.paste(tile, (tile_x * tile_size, tile_y * tile_size))
         u0 = tile_x / columns
         v0 = 1.0 - (tile_y + 1) / rows

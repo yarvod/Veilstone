@@ -136,6 +136,11 @@
 
 ### Fixed
 
+- **Grass plant rendering polish** - default short grass now uses sparse
+  bottom-rooted cutout blades without opaque texture borders, cross-plant quads
+  use top-biased lighting, and chunk texture variation no longer vertically
+  flips rooted resource-pack plant textures.
+
 - **Short grass block silhouette** - short grass and wildflowers now use a
   data-driven crossed plant mesh instead of full cube cutout faces, reducing the
   green cage/cube appearance in default and Minecraft-style resource packs.

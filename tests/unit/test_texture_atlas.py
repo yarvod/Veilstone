@@ -54,6 +54,29 @@ def test_default_ground_cover_tiles_contain_cutout_alpha() -> None:
         assert max(alphas) == 255
 
 
+def test_default_short_grass_is_sparse_upright_cutout() -> None:
+    grass = create_default_block_tiles(tile_size=16)["minecraft:block/short_grass"]
+    opaque_pixels = [
+        (x, y) for y in range(16) for x in range(16) if grass.getpixel((x, y))[3] >= 128
+    ]
+
+    assert 20 <= len(opaque_pixels) <= 85
+    assert all(y > 3 for _, y in opaque_pixels)
+    assert sum(1 for _, y in opaque_pixels if y >= 12) > sum(1 for _, y in opaque_pixels if y <= 7)
+
+    top_or_side_frame = [
+        grass.getpixel((x, y))[3]
+        for y in range(16)
+        for x in range(16)
+        if y == 0 or x == 0 or x == 15
+    ]
+    assert max(top_or_side_frame) == 0
+
+    opaque_colors = [grass.getpixel((x, y))[:3] for x, y in opaque_pixels]
+    assert min(sum(color) for color in opaque_colors) > 180
+    assert all(green >= red and green >= blue for red, green, blue in opaque_colors)
+
+
 def test_build_texture_atlas_contains_all_keys() -> None:
     tiles = create_default_block_tiles(tile_size=8)
     atlas = build_texture_atlas(tiles, tile_size=8)

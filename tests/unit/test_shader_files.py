@@ -37,3 +37,11 @@ def test_chunk_shader_discards_cutout_alpha() -> None:
 
     assert "base_color.a < 0.5" in fragment
     assert "discard;" in fragment
+
+
+def test_chunk_shader_does_not_flip_cutout_tiles_vertically() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
+
+    assert "tile_uv.x = 1.0 - tile_uv.x" in fragment
+    assert "tile_uv.y = 1.0 - tile_uv.y" not in fragment

@@ -52,9 +52,6 @@ void main() {
     if (variation > 0.5) {
         tile_uv.x = 1.0 - tile_uv.x;
     }
-    if (variation > 0.75 || variation < 0.25) {
-        tile_uv.y = 1.0 - tile_uv.y;
-    }
     vec2 atlas_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, tile_uv);
     vec4 base_color = texture(texture_atlas, atlas_uv);
     if (base_color.a < 0.5) {
