@@ -226,6 +226,20 @@ resource packs.
       full-cycle value if renderer needs it.
 - [ ] Expose/finalize named time semantics in command tests and README.
 
+### Phase C11: Release/update UX
+
+Цель: обновления должны проверяться и скачиваться из приложения, но не рисковать
+сохранениями игрока.
+
+- [x] Add Settings Updates screen listing GitHub Releases with current,
+  prerelease, and platform-zip availability markers.
+- [x] Download selected platform zip into app-data `updates/` staging, not into
+  packaged `_internal` resources and not over saves.
+- [ ] Move network check/download work off the draw path into a background
+  worker with progress/cancel state.
+- [ ] Add a safe install/apply flow that preserves `application_data_root()`
+  saves/settings and clearly separates staged archives from live game files.
+
 ## Completed MVP Phases
 
 ### Phase B1: Player Feel — MVP DONE

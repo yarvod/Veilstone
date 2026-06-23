@@ -12,6 +12,12 @@ import moderngl
 import pyglet
 
 from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.app.updates import (
+    GitHubRelease,
+    download_release_asset,
+    fetch_releases,
+    select_platform_asset,
+)
 from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
@@ -21,6 +27,7 @@ from voxel_sandbox.render.texture_packs.models import ImportReport
 from voxel_sandbox.render.ui.menu import MenuCommand, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
 from voxel_sandbox.render.world_manager import WorldManager
+from voxel_sandbox.version import __version__
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -73,6 +80,10 @@ class MenuUI:
         self._texture_pack_cache_time = time.perf_counter()
         self.texture_pack_index = 0
         self._tp_screen_active = False  # True while TEXTURE_PACKS screen is open
+        self.update_release_items: list[GitHubRelease] = []
+        self.update_release_index = 0
+        self._updates_loaded = False
+        self.downloaded_update_path: Path | None = None
 
     # ── OpenGL state ──────────────────────────────────────────────────────────
 
@@ -102,6 +113,8 @@ class MenuUI:
             self._draw_world_list(win.width // 2)
         elif win.menu.screen is Screen.TEXTURE_PACKS:
             self._draw_texture_pack_list()
+        elif win.menu.screen is Screen.UPDATES:
+            self._draw_update_list()
 
         win.ui_renderer.draw()
         if win.text_input is not None:
@@ -338,6 +351,151 @@ class MenuUI:
             delete_label="",
             cancel_label="Back",
         )
+
+    # ── Update list ───────────────────────────────────────────────────────────
+
+    def _draw_update_list(self) -> None:
+        win = self.win
+
+        def on_select(idx: int) -> None:
+            self.update_release_index = idx
+
+        def on_check() -> None:
+            self._refresh_update_release_list()
+
+        def on_download() -> None:
+            self._download_selected_update()
+
+        def on_cancel() -> None:
+            win.menu.back()
+            win._sync_game_state()
+
+        if not self._updates_loaded:
+            items: list[tuple[str, None]] = [("Check GitHub releases", None)]
+            win.ui_renderer.update_world_list(
+                items,
+                0,
+                on_select,
+                on_check,
+                on_check,
+                lambda: None,
+                lambda: None,
+                on_cancel,
+                primary_label="Check",
+                secondary_label="Refresh",
+                edit_label="",
+                delete_label="",
+                cancel_label="Back",
+            )
+            return
+
+        count = len(self.update_release_items)
+        if count == 0:
+            win.ui_renderer.update_world_list(
+                [("No releases found", None)],
+                0,
+                on_select,
+                on_check,
+                on_check,
+                lambda: None,
+                lambda: None,
+                on_cancel,
+                primary_label="Check",
+                secondary_label="Refresh",
+                edit_label="",
+                delete_label="",
+                cancel_label="Back",
+            )
+            return
+
+        self.update_release_index = max(0, min(self.update_release_index, count - 1))
+        start_index = max(0, self.update_release_index - 3)
+        end_index = min(count, start_index + 8)
+        start_index = max(0, end_index - 8)
+        visible_releases = self.update_release_items[start_index:end_index]
+        visible_items = [
+            (self._update_release_label(release), release) for release in visible_releases
+        ]
+
+        def mapped_on_select(visible_idx: int) -> None:
+            on_select(start_index + visible_idx)
+
+        win.ui_renderer.update_world_list(
+            visible_items,
+            self.update_release_index - start_index,
+            mapped_on_select,
+            on_download,
+            on_check,
+            lambda: None,
+            lambda: None,
+            on_cancel,
+            primary_label="Download",
+            secondary_label="Refresh",
+            edit_label="",
+            delete_label="",
+            cancel_label="Back",
+        )
+
+    def _refresh_update_release_list(self) -> None:
+        win = self.win
+        win.menu.status = "Checking GitHub releases..."
+        try:
+            self.update_release_items = list(fetch_releases())
+        except Exception as error:
+            self._updates_loaded = True
+            self.update_release_items = []
+            win.menu.status = f"Update check failed: {error}"
+            return
+
+        self._updates_loaded = True
+        self.update_release_index = 0
+        self.downloaded_update_path = None
+        if not self.update_release_items:
+            win.menu.status = "No GitHub releases found."
+            return
+
+        latest = self.update_release_items[0]
+        asset = select_platform_asset(latest)
+        suffix = "" if asset is not None else " (no zip for this platform)"
+        win.menu.status = f"Current {__version__}; latest {latest.tag_name}{suffix}."
+
+    def _download_selected_update(self) -> None:
+        win = self.win
+        if not self.update_release_items:
+            self._refresh_update_release_list()
+        if not (0 <= self.update_release_index < len(self.update_release_items)):
+            win.menu.status = "No update release selected."
+            return
+
+        release = self.update_release_items[self.update_release_index]
+        asset = select_platform_asset(release)
+        if asset is None:
+            win.menu.status = f"No zip asset for this platform in {release.tag_name}."
+            return
+
+        win.menu.status = f"Downloading {asset.name}..."
+        try:
+            path = download_release_asset(asset)
+        except Exception as error:
+            win.menu.status = f"Download failed: {error}"
+            return
+
+        self.downloaded_update_path = path
+        win.menu.status = f"Downloaded {release.tag_name} to {path}."
+
+    def _update_release_label(self, release: GitHubRelease) -> str:
+        asset = select_platform_asset(release)
+        tags: list[str] = []
+        if release.tag_name.strip().removeprefix("v") == __version__.strip().removeprefix("v"):
+            tags.append("current")
+        if release.prerelease:
+            tags.append("prerelease")
+        if asset is None:
+            tags.append("no platform zip")
+        if self.downloaded_update_path and asset and self.downloaded_update_path.name == asset.name:
+            tags.append("downloaded")
+        suffix = f" [{', '.join(tags)}]" if tags else ""
+        return f"{release.tag_name} - {release.name}{suffix}"
 
     def _apply_selected_texture_pack(self) -> None:
         win = self.win

@@ -2,26 +2,26 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any
 
 from voxel_sandbox.app.updates import (
     GitHubRelease,
     ReleaseAsset,
     check_for_update,
     download_release_asset,
+    fetch_releases,
     select_platform_asset,
 )
 
 
 class FakeResponse:
-    def __init__(self, payload: dict[str, Any] | None = None, chunks: Iterable[bytes] = ()) -> None:
-        self._payload = payload or {}
+    def __init__(self, payload: object | None = None, chunks: Iterable[bytes] = ()) -> None:
+        self._payload: object = {} if payload is None else payload
         self._chunks = tuple(chunks)
 
     def raise_for_status(self) -> None:
         return None
 
-    def json(self) -> dict[str, Any]:
+    def json(self) -> object:
         return self._payload
 
     def iter_content(self, chunk_size: int) -> Iterable[bytes]:
@@ -100,3 +100,58 @@ def test_download_release_asset_writes_to_updates_staging(tmp_path: Path) -> Non
     assert path == tmp_path / "Veilstone_Linux_x64.zip"
     assert path.read_bytes() == b"abcdef"
     assert client.requests == [("https://example.test/linux.zip", True)]
+
+
+def test_fetch_releases_filters_drafts_and_keeps_prereleases_by_default() -> None:
+    payload: list[object] = [
+        {
+            "tag_name": "v0.3.0",
+            "name": "Veilstone v0.3.0",
+            "html_url": "https://example.test/v0.3.0",
+            "assets": [],
+            "draft": False,
+            "prerelease": True,
+        },
+        {
+            "tag_name": "v0.2.0",
+            "name": "Veilstone v0.2.0",
+            "html_url": "https://example.test/v0.2.0",
+            "assets": [
+                {
+                    "name": "Veilstone_Linux_x64_v0_2_0.zip",
+                    "browser_download_url": "https://example.test/linux.zip",
+                    "size": 123,
+                }
+            ],
+            "draft": False,
+            "prerelease": False,
+        },
+        {
+            "tag_name": "v0.1.0",
+            "name": "Draft",
+            "html_url": "https://example.test/draft",
+            "assets": [],
+            "draft": True,
+            "prerelease": False,
+        },
+    ]
+    client = FakeClient(FakeResponse(payload))
+
+    releases = fetch_releases(client=client)
+
+    assert [release.tag_name for release in releases] == ["v0.3.0", "v0.2.0"]
+    assert releases[0].prerelease is True
+    assert releases[1].assets[0].name == "Veilstone_Linux_x64_v0_2_0.zip"
+    assert client.requests == [("https://api.github.com/repos/yarvod/Veilstone/releases", False)]
+
+
+def test_fetch_releases_can_hide_prereleases() -> None:
+    payload: list[object] = [
+        {"tag_name": "v0.3.0", "draft": False, "prerelease": True},
+        {"tag_name": "v0.2.0", "draft": False, "prerelease": False},
+    ]
+    client = FakeClient(FakeResponse(payload))
+
+    releases = fetch_releases(client=client, include_prereleases=False)
+
+    assert [release.tag_name for release in releases] == ["v0.2.0"]

@@ -8,7 +8,7 @@ from .menu import MenuController, Screen
 from .theme import VEILSTONE_THEME
 from .widgets import Button, Label, Panel, WorldCard
 
-_LIST_SCREENS = {Screen.SINGLEPLAYER, Screen.TEXTURE_PACKS}
+_LIST_SCREENS = {Screen.SINGLEPLAYER, Screen.TEXTURE_PACKS, Screen.UPDATES}
 
 
 class UiRenderer:

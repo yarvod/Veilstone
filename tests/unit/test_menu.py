@@ -29,6 +29,7 @@ def test_player_facing_menu_tree() -> None:
         "Render Distance",
         "Difficulty",
         "Texture Packs",
+        "Updates",
         "Audio",
         "Controls",
         "Back",
@@ -70,7 +71,7 @@ def test_audio_back_does_not_replace_settings_return_screen() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(6)
+    menu.select(7)
     menu.activate()
     assert menu.screen is Screen.AUDIO
     menu.select(len(menu.items) - 1)
@@ -96,6 +97,20 @@ def test_texture_pack_back_returns_to_settings() -> None:
     assert menu.screen is Screen.SETTINGS
 
 
+def test_updates_back_returns_to_settings() -> None:
+    menu = MenuController()
+    menu.select(2)
+    menu.activate()
+    assert menu.screen is Screen.SETTINGS
+
+    menu.select(6)
+    menu.activate()
+    assert menu.screen is Screen.UPDATES
+
+    menu.back()
+    assert menu.screen is Screen.SETTINGS
+
+
 def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert labels(Screen.SETTINGS) == [
         "Shadow Quality",
@@ -104,6 +119,7 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
         "Render Distance",
         "Difficulty",
         "Texture Packs",
+        "Updates",
         "Audio",
         "Controls",
         "Back",

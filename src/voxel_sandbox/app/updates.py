@@ -73,16 +73,37 @@ def fetch_latest_release(
     )
     response.raise_for_status()
     payload = _json_object(response.json())
-    assets = tuple(_release_assets(payload.get("assets", ())))
-    tag_name = str(payload.get("tag_name") or "")
-    return GitHubRelease(
-        tag_name=tag_name,
-        name=str(payload.get("name") or tag_name),
-        html_url=str(payload.get("html_url", "")),
-        assets=assets,
-        draft=bool(payload.get("draft", False)),
-        prerelease=bool(payload.get("prerelease", False)),
+    return _release_from_payload(payload)
+
+
+def fetch_releases(
+    repo_slug: str = REPO_SLUG,
+    *,
+    client: HttpClient | None = None,
+    timeout: float = 10.0,
+    include_prereleases: bool = True,
+) -> tuple[GitHubRelease, ...]:
+    http = client or requests.Session()
+    response = http.get(
+        f"{GITHUB_API_ROOT}/repos/{repo_slug}/releases",
+        headers={"Accept": "application/vnd.github+json"},
+        timeout=timeout,
     )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list):
+        raise ValueError("GitHub releases response must be a JSON array")
+    releases: list[GitHubRelease] = []
+    for item in cast(list[object], payload):
+        if not isinstance(item, Mapping):
+            continue
+        release = _release_from_payload(cast(Mapping[str, object], item))
+        if release.draft:
+            continue
+        if release.prerelease and not include_prereleases:
+            continue
+        releases.append(release)
+    return tuple(releases)
 
 
 def check_for_update(
@@ -217,6 +238,18 @@ def _json_object(value: Any) -> Mapping[str, object]:
     if not isinstance(value, Mapping):
         raise ValueError("GitHub release response must be a JSON object")
     return cast(Mapping[str, object], value)
+
+
+def _release_from_payload(payload: Mapping[str, object]) -> GitHubRelease:
+    tag_name = str(payload.get("tag_name") or "")
+    return GitHubRelease(
+        tag_name=tag_name,
+        name=str(payload.get("name") or tag_name),
+        html_url=str(payload.get("html_url", "")),
+        assets=tuple(_release_assets(payload.get("assets", ()))),
+        draft=bool(payload.get("draft", False)),
+        prerelease=bool(payload.get("prerelease", False)),
+    )
 
 
 def _release_assets(value: object) -> Iterable[ReleaseAsset]:

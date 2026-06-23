@@ -153,6 +153,33 @@ def test_texture_pack_screen_widgets_added_to_root_panel() -> None:
     assert r.world_actions_hbox2 in children
 
 
+def test_updates_screen_widgets_added_to_root_panel() -> None:
+    from voxel_sandbox.render.ui.menu import Screen
+
+    r = _make_renderer()
+    r._current_screen = Screen.UPDATES
+    r.update_world_list(
+        [("v0.2.0 - Veilstone v0.2.0", None)],
+        0,
+        lambda idx: None,
+        lambda: None,
+        lambda: None,
+        lambda: None,
+        lambda: None,
+        lambda: None,
+        primary_label="Download",
+        secondary_label="Refresh",
+        edit_label="",
+        delete_label="",
+        cancel_label="Back",
+    )
+
+    children = r.root_panel.children
+    assert r.world_list_vbox in children, "world_list_vbox must be in root_panel UPDATES"
+    assert r.world_actions_hbox1 in children
+    assert r.world_actions_hbox2 in children
+
+
 # ---------------------------------------------------------------------------
 # _layout covers both SINGLEPLAYER and TEXTURE_PACKS
 # ---------------------------------------------------------------------------

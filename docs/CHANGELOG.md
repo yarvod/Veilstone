@@ -4,6 +4,10 @@
 
 ### Added
 
+- **In-app update screen** - Settings now includes an Updates screen that lists
+  GitHub releases, marks current/prerelease/platform availability, and downloads
+  the selected platform zip into the app-data updates staging directory without
+  touching saves.
 - **Release/update tooling** - added version metadata, release scripts, GitHub tag release packaging with platform zip assets, and CLI update check/download staging through GitHub Releases.
 - **Biome ground cover** - terrain generation now places deterministic cutout
   tall grass and wildflowers across plains, woods, and swamp biomes with
