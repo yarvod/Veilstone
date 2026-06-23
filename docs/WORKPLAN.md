@@ -245,6 +245,9 @@ resource packs.
 - [x] Package `data/` registries into release builds and verify them before
   packaged smoke startup.
 
+- [x] Add release-script recovery mode for moving an existing failed-release tag
+ to the current fixed commit.
+
 ## Completed MVP Phases
 
 ### Phase B1: Player Feel — MVP DONE

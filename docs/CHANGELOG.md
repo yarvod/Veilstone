@@ -21,6 +21,9 @@
   Updates screen, and partial staged archives are cleaned up on cancellation or
   progress callback failure.
 - **Release/update tooling** - added version metadata, release scripts, GitHub tag release packaging with platform zip assets, and CLI update check/download staging through GitHub Releases.
+- **Release tag repair mode** - release scripts can now move an existing
+  remote tag to the current fixed commit with `--replace-tag` / `--retag`,
+  guarded by current-version checks and tag `--force-with-lease`.
 - **Biome ground cover** - terrain generation now places deterministic cutout
   tall grass and wildflowers across plains, woods, and swamp biomes with
   resource-pack mappings and density coverage.

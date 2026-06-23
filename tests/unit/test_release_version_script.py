@@ -70,3 +70,52 @@ def test_update_version_file_keeps_original_tag_but_normalized_version(
     text = version_file.read_text(encoding="utf-8")
     assert '__version__ = "0.0.1b1"' in text
     assert 'RELEASE_TAG = "v0.0.1-beta1"' in text
+
+
+def test_check_current_version_accepts_matching_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(
+        "\n".join(
+            (
+                "[project]",
+                'name = "voxel-sandbox"',
+                'version = "0.0.1b1"',
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    version_file = tmp_path / "version.py"
+    version_file.write_text(
+        "\n".join(
+            (
+                '__version__ = "0.0.1b1"',
+                'RELEASE_TAG = "v0.0.1-beta1"',
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(set_release_version, "PYPROJECT", pyproject)
+    monkeypatch.setattr(set_release_version, "VERSION_FILE", version_file)
+
+    set_release_version.check_current_version("0.0.1b1", "v0.0.1-beta1")
+
+
+def test_check_current_version_rejects_mismatched_release_tag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[project]\nversion = "0.0.1b1"\n', encoding="utf-8")
+    version_file = tmp_path / "version.py"
+    version_file.write_text(
+        '__version__ = "0.0.1b1"\nRELEASE_TAG = "v0.0.1-beta0"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(set_release_version, "PYPROJECT", pyproject)
+    monkeypatch.setattr(set_release_version, "VERSION_FILE", version_file)
+
+    with pytest.raises(SystemExit, match="RELEASE_TAG"):
+        set_release_version.check_current_version("0.0.1b1", "v0.0.1-beta1")

@@ -239,3 +239,30 @@ On macOS this produces `dist/Veilstone.app`; Windows and Linux produce a
 `dist/Veilstone` directory. Packaged builds store settings, saves, and crash logs
 in the platform user-data directory. `VEILSTONE_DATA_DIR` overrides the data
 directory for automated tests.
+
+## Release
+
+Create a new tagged release from a clean working tree:
+
+```bash
+sh scripts/release.sh -t v0.2.0
+```
+
+On Windows:
+
+```bat
+scripts\release.bat -t v0.2.0
+```
+
+If a tag already exists because a release build failed before the release was
+usable, fix the code, commit the fix, then move the same remote tag to the
+current commit:
+
+```bash
+sh scripts/release.sh -t v0.2.0 --replace-tag
+```
+
+The replace-tag mode does not create a version commit. It verifies that
+`pyproject.toml` and `src/voxel_sandbox/version.py` still match the requested
+tag, pushes `HEAD`, then force-updates only `refs/tags/<tag>` with
+`--force-with-lease` so the Package workflow rebuilds the same GitHub Release.
