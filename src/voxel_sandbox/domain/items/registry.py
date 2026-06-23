@@ -10,6 +10,10 @@ from voxel_sandbox.domain.items.definitions import ItemDef, ItemStack, ItemType
 _ITEM_KEY_ALIASES = {
     "grass": "grass_block",
     "gloam_lantern": "lantern",
+    "veilwood_log": "oak_log",
+    "veilwood_leaves": "oak_leaves",
+    "veilwood_planks": "oak_planks",
+    "workbench": "crafting_table",
 }
 
 
@@ -96,13 +100,13 @@ def create_core_item_registry() -> ItemRegistry:
         ItemDef(1, "stone", "Stone", ItemType.BLOCK, block_id=1),
         ItemDef(2, "dirt", "Dirt", ItemType.BLOCK, block_id=2),
         ItemDef(3, "grass_block", "Grass Block", ItemType.BLOCK, block_id=3),
-        ItemDef(4, "veilwood_log", "Veilwood Log", ItemType.BLOCK, block_id=4),
-        ItemDef(5, "veilwood_leaves", "Veilwood Leaves", ItemType.BLOCK, block_id=5),
+        ItemDef(4, "oak_log", "Oak Log", ItemType.BLOCK, block_id=4),
+        ItemDef(5, "oak_leaves", "Oak Leaves", ItemType.BLOCK, block_id=5),
         ItemDef(6, "dusk_crystal", "Dusk Crystal", ItemType.RESOURCE),
         ItemDef(7, "lantern", "Lantern", ItemType.BLOCK, block_id=7),
         ItemDef(8, "water_vessel", "Water Vessel", ItemType.FLUID_CONTAINER, max_stack=1),
-        ItemDef(9, "veilwood_planks", "Veilwood Planks", ItemType.BLOCK, block_id=9),
-        ItemDef(10, "workbench", "Runecraft Table", ItemType.BLOCK, block_id=10),
+        ItemDef(9, "oak_planks", "Oak Planks", ItemType.BLOCK, block_id=9),
+        ItemDef(10, "crafting_table", "Crafting Table", ItemType.BLOCK, block_id=10),
     )
     drops = {
         1: ItemStack(1, 1),

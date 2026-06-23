@@ -10,6 +10,11 @@ from voxel_sandbox.domain.blocks.definitions import BlockDef, Material
 _BLOCK_KEY_ALIASES = {
     "grass": "grass_block",
     "gloam_lantern": "lantern",
+    "veilwood_log": "oak_log",
+    "veilwood_leaves": "oak_leaves",
+    "veilwood_planks": "oak_planks",
+    "workbench": "crafting_table",
+    "tall_grass": "short_grass",
 }
 
 
@@ -125,8 +130,8 @@ def create_core_block_registry() -> BlockRegistry:
             ),
             BlockDef(
                 4,
-                "veilwood_log",
-                "Veilwood Log",
+                "oak_log",
+                "Oak Log",
                 Material.WOOD,
                 1.8,
                 texture_top="minecraft:block/oak_log_top",
@@ -135,8 +140,8 @@ def create_core_block_registry() -> BlockRegistry:
             ),
             BlockDef(
                 5,
-                "veilwood_leaves",
-                "Veilwood Leaves",
+                "oak_leaves",
+                "Oak Leaves",
                 Material.PLANT,
                 0.2,
                 is_opaque=False,
@@ -187,8 +192,8 @@ def create_core_block_registry() -> BlockRegistry:
             ),
             BlockDef(
                 9,
-                "veilwood_planks",
-                "Veilwood Planks",
+                "oak_planks",
+                "Oak Planks",
                 Material.WOOD,
                 1.2,
                 texture_top="minecraft:block/oak_planks",
@@ -197,8 +202,8 @@ def create_core_block_registry() -> BlockRegistry:
             ),
             BlockDef(
                 10,
-                "workbench",
-                "Runecraft Table",
+                "crafting_table",
+                "Crafting Table",
                 Material.WOOD,
                 1.8,
                 texture_top="minecraft:block/crafting_table_top",
@@ -235,8 +240,8 @@ def create_core_block_registry() -> BlockRegistry:
             ),
             BlockDef(
                 13,
-                "tall_grass",
-                "Tall Grass",
+                "short_grass",
+                "Short Grass",
                 Material.PLANT,
                 0.0,
                 is_solid=False,

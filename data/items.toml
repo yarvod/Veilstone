@@ -26,15 +26,15 @@ block_id = 3
 
 [[item]]
 id = 4
-key = "veilwood_log"
-name = "Veilwood Log"
+key = "oak_log"
+name = "Oak Log"
 item_type = "block"
 block_id = 4
 
 [[item]]
 id = 5
-key = "veilwood_leaves"
-name = "Veilwood Leaves"
+key = "oak_leaves"
+name = "Oak Leaves"
 item_type = "block"
 block_id = 5
 
@@ -60,15 +60,15 @@ max_stack = 1
 
 [[item]]
 id = 9
-key = "veilwood_planks"
-name = "Veilwood Planks"
+key = "oak_planks"
+name = "Oak Planks"
 item_type = "block"
 block_id = 9
 
 [[item]]
 id = 10
-key = "workbench"
-name = "Runecraft Table"
+key = "crafting_table"
+name = "Crafting Table"
 item_type = "block"
 block_id = 10
 

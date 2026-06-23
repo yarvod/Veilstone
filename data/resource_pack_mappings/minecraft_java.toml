@@ -14,7 +14,11 @@ grass_block = "minecraft:block/grass_block_top"
 grass_top = "minecraft:block/grass_block_top"
 grass_side = "minecraft:block/grass_block_side"
 
-# Veilstone wood (mapped to oak equivalents)
+# Oak blocks plus legacy Veilstone aliases.
+oak_log_top = "minecraft:block/oak_log_top"
+oak_log = "minecraft:block/oak_log"
+oak_leaves = "minecraft:block/oak_leaves"
+oak_planks = "minecraft:block/oak_planks"
 veilwood_cut = "minecraft:block/oak_log_top"
 veilwood_bark = "minecraft:block/oak_log"
 veilwood_leaves = "minecraft:block/oak_leaves"
@@ -23,7 +27,9 @@ veilwood_planks = "minecraft:block/oak_planks"
 # Fluids
 water = "minecraft:block/water_still"
 
-# Crafting table
+crafting_table = "minecraft:block/crafting_table_top"
+crafting_table_top = "minecraft:block/crafting_table_top"
+crafting_table_side = "minecraft:block/crafting_table_side"
 runecraft_top = "minecraft:block/crafting_table_top"
 runecraft_side = "minecraft:block/crafting_table_side"
 
@@ -33,5 +39,6 @@ lantern = "minecraft:block/lantern"
 gloam_lantern = "minecraft:block/lantern"
 glowing_mushroom = "minecraft:block/red_mushroom"
 fireflies = "minecraft:block/glow_lichen"
+short_grass = "minecraft:block/short_grass"
 tall_grass = "minecraft:block/short_grass"
 wildflower = "minecraft:block/dandelion"

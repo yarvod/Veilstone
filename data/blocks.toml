@@ -46,8 +46,8 @@ texture_bottom = "minecraft:block/dirt"
 
 [[block]]
 id = 4
-key = "veilwood_log"
-name = "Veilwood Log"
+key = "oak_log"
+name = "Oak Log"
 material = "wood"
 hardness = 1.8
 texture_top = "minecraft:block/oak_log_top"
@@ -56,8 +56,8 @@ texture_bottom = "minecraft:block/oak_log_top"
 
 [[block]]
 id = 5
-key = "veilwood_leaves"
-name = "Veilwood Leaves"
+key = "oak_leaves"
+name = "Oak Leaves"
 material = "plant"
 hardness = 0.2
 is_opaque = false
@@ -108,8 +108,8 @@ texture_bottom = "minecraft:block/water_still"
 
 [[block]]
 id = 9
-key = "veilwood_planks"
-name = "Veilwood Planks"
+key = "oak_planks"
+name = "Oak Planks"
 material = "wood"
 hardness = 1.2
 texture_top = "minecraft:block/oak_planks"
@@ -118,8 +118,8 @@ texture_bottom = "minecraft:block/oak_planks"
 
 [[block]]
 id = 10
-key = "workbench"
-name = "Runecraft Table"
+key = "crafting_table"
+name = "Crafting Table"
 material = "wood"
 hardness = 1.8
 texture_top = "minecraft:block/crafting_table_top"
@@ -156,8 +156,8 @@ texture_bottom = "minecraft:block/glow_lichen"
 
 [[block]]
 id = 13
-key = "tall_grass"
-name = "Tall Grass"
+key = "short_grass"
+name = "Short Grass"
 material = "plant"
 hardness = 0.0
 is_solid = false

@@ -23,22 +23,29 @@ def test_core_registry_reserves_zero_for_air() -> None:
     assert registry.by_id(0).key == "air"
     assert registry.by_key("grass").id == 3
     assert registry.by_key("grass_block").id == registry.by_key("grass").id
-    assert registry.by_key("veilwood_log").id == 4
+    assert registry.by_key("oak_log").id == 4
+    assert registry.by_key("veilwood_log").id == registry.by_key("oak_log").id
     assert registry.by_key("dusk_crystal_ore").id == 6
     assert registry.by_key("gloam_lantern").emits_light == 14
     assert registry.by_key("lantern").id == registry.by_key("gloam_lantern").id
     assert registry.by_key("lantern").render_layer == "cutout"
     assert registry.by_key("water").is_fluid
     assert not registry.by_key("water").is_solid
-    assert registry.by_key("workbench").id == 10
-    leaves = registry.by_key("veilwood_leaves")
+    assert registry.by_key("crafting_table").id == 10
+    assert registry.by_key("workbench").id == registry.by_key("crafting_table").id
+
+    leaves = registry.by_key("oak_leaves")
+    assert registry.by_key("veilwood_leaves").id == leaves.id
+    assert registry.by_key("oak_planks").id == 9
+    assert registry.by_key("veilwood_planks").id == registry.by_key("oak_planks").id
     assert leaves.render_layer == "cutout"
     assert not leaves.is_opaque
     assert leaves.is_transparent
-    tall_grass = registry.by_key("tall_grass")
-    assert tall_grass.render_layer == "cutout"
-    assert not tall_grass.is_solid
-    assert not tall_grass.is_opaque
+    short_grass = registry.by_key("short_grass")
+    assert registry.by_key("tall_grass").id == short_grass.id
+    assert short_grass.render_layer == "cutout"
+    assert not short_grass.is_solid
+    assert not short_grass.is_opaque
     assert registry.by_key("wildflower").id == 14
     assert len(registry) == 15
 
@@ -140,7 +147,8 @@ def test_load_block_registry_data_file() -> None:
 
     assert registry.by_id(0).key == "air"
     assert registry.by_key("water").is_fluid
-    leaves = registry.by_key("veilwood_leaves")
+    leaves = registry.by_key("oak_leaves")
+    assert registry.by_key("veilwood_leaves").id == leaves.id
     assert leaves.render_layer == "cutout"
     assert not leaves.is_opaque
     assert leaves.is_transparent

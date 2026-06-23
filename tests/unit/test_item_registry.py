@@ -20,6 +20,14 @@ def test_core_items_map_blocks_and_drops() -> None:
     assert registry.by_key("grass").block_id == 3
     assert registry.by_key("grass_block").id == registry.by_key("grass").id
     assert registry.by_key("lantern").id == registry.by_key("gloam_lantern").id
+    assert registry.by_key("oak_log").block_id == 4
+    assert registry.by_key("veilwood_log").id == registry.by_key("oak_log").id
+    assert registry.by_key("oak_leaves").block_id == 5
+    assert registry.by_key("veilwood_leaves").id == registry.by_key("oak_leaves").id
+    assert registry.by_key("oak_planks").block_id == 9
+    assert registry.by_key("veilwood_planks").id == registry.by_key("oak_planks").id
+    assert registry.by_key("crafting_table").block_id == 10
+    assert registry.by_key("workbench").id == registry.by_key("crafting_table").id
     assert registry.for_block(10) is not None
     assert registry.drop_for_block(6) == ItemStack(6, 1)
     assert registry.by_key("water_vessel").max_stack == 1
@@ -82,6 +90,14 @@ def test_load_item_registry_data_file() -> None:
     assert registry.by_key("grass").block_id == 3
     assert registry.by_key("grass_block").id == registry.by_key("grass").id
     assert registry.by_key("lantern").id == registry.by_key("gloam_lantern").id
+    assert registry.by_key("oak_log").block_id == 4
+    assert registry.by_key("veilwood_log").id == registry.by_key("oak_log").id
+    assert registry.by_key("oak_leaves").block_id == 5
+    assert registry.by_key("veilwood_leaves").id == registry.by_key("oak_leaves").id
+    assert registry.by_key("oak_planks").block_id == 9
+    assert registry.by_key("veilwood_planks").id == registry.by_key("oak_planks").id
+    assert registry.by_key("crafting_table").block_id == 10
+    assert registry.by_key("workbench").id == registry.by_key("crafting_table").id
     assert registry.by_key("water_vessel").max_stack == 1
     assert registry.drop_for_block(6) == ItemStack(6, 1)
     assert len(registry) == 10
