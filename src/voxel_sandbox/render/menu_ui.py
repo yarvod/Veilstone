@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, cast
 import moderngl
 import pyglet
 
+from voxel_sandbox.app.paths import resource_packs_root
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.app.updates import (
     GitHubRelease,
@@ -285,10 +286,26 @@ class MenuUI:
     # ── Texture pack list ───────────────────────────────────────────────────
 
     def _resource_packs_dir(self) -> Path:
+        return resource_packs_root()
+
+    def _legacy_resource_packs_dir(self) -> Path:
         return Path("resource_packs")
 
     def _discover_texture_packs(self) -> list[tuple[str, Path | None]]:
-        return self.win.app_runtime.texture_packs.discover(self._resource_packs_dir())
+        packs = self.win.app_runtime.texture_packs.discover(self._resource_packs_dir())
+        legacy_root = self._legacy_resource_packs_dir()
+        if legacy_root == self._resource_packs_dir() or not legacy_root.exists():
+            return packs
+
+        seen = {None if path is None else path.resolve() for _, path in packs}
+        for label, path in self.win.app_runtime.texture_packs.discover(legacy_root):
+            key = None if path is None else path.resolve()
+            if key in seen:
+                continue
+            suffix = "" if path is None else " [legacy]"
+            packs.append((label + suffix, path))
+            seen.add(key)
+        return packs
 
     def _refresh_texture_pack_list(self) -> None:
         now = time.perf_counter()

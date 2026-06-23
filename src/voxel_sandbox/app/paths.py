@@ -40,5 +40,9 @@ def updates_root() -> Path:
     return application_data_root() / "updates"
 
 
+def resource_packs_root() -> Path:
+    return application_data_root() / "resource_packs"
+
+
 def default_server_world_path() -> Path:
     return application_data_root() / "server_world"

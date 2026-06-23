@@ -174,6 +174,9 @@
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
 ### Changed
+- **Resource pack storage root** - texture pack imports now target app-data
+  `resource_packs/`, while legacy local `resource_packs/` remain discoverable,
+  so app updates do not overwrite user packs.
 - **First-person arm proportions** - shortened the blue sleeve into a cuff and
   made the skin hand/forearm the dominant cuboid so the viewmodel no longer
   reads as two separate rods.

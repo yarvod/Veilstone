@@ -238,6 +238,8 @@ resource packs.
 - [x] Move network check/download work off the draw path into a background
   worker with progress status.
 - [x] Add cancel state for in-progress update downloads.
+- [x] Move imported texture/resource packs into `application_data_root()` while
+  keeping legacy local packs discoverable.
 - [ ] Add a safe install/apply flow that preserves `application_data_root()`
   saves/settings and clearly separates staged archives from live game files.
 

@@ -1,3 +1,5 @@
+# pyright: reportPrivateUsage=false, reportAttributeAccessIssue=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownLambdaType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -66,3 +68,48 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(tmp_path: 
     assert saved_settings == [win.settings]
     assert win.settings.graphics.resource_pack_path == str(pack)
     assert win.menu.status == "Texture pack applied: Pack (1 fallback, 1 missing)."
+
+
+def test_texture_pack_root_uses_app_data_directory(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "voxel_sandbox.render.menu_ui.resource_packs_root",
+        lambda: tmp_path / "resource_packs",
+    )
+
+    menu_ui = MenuUI.__new__(MenuUI)
+
+    assert menu_ui._resource_packs_dir() == tmp_path / "resource_packs"
+
+
+def test_texture_pack_discovery_includes_legacy_packs(tmp_path: Path, monkeypatch) -> None:
+    app_root = tmp_path / "data_packs"
+    legacy_root = tmp_path / "legacy_packs"
+    app_pack = app_root / "AppPack"
+    legacy_pack = legacy_root / "LegacyPack"
+    app_pack.mkdir(parents=True)
+    legacy_pack.mkdir(parents=True)
+
+    monkeypatch.setattr(
+        "voxel_sandbox.render.menu_ui.resource_packs_root",
+        lambda: app_root,
+    )
+
+    class FakeTexturePackService:
+        def discover(self, root: Path) -> list[tuple[str, Path | None]]:
+            if root == app_root:
+                return [("Default", None), ("AppPack", app_pack)]
+            if root == legacy_root:
+                return [("Default", None), ("LegacyPack", legacy_pack)]
+            return []
+
+    menu_ui = MenuUI.__new__(MenuUI)
+    menu_ui.win = SimpleNamespace(
+        app_runtime=SimpleNamespace(texture_packs=FakeTexturePackService())
+    )
+    monkeypatch.setattr(menu_ui, "_legacy_resource_packs_dir", lambda: legacy_root)
+
+    assert menu_ui._discover_texture_packs() == [
+        ("Default", None),
+        ("AppPack", app_pack),
+        ("LegacyPack [legacy]", legacy_pack),
+    ]
