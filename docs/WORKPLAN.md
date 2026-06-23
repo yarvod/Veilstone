@@ -12,6 +12,9 @@
 Выполненная история живёт в `docs/CHANGELOG.md`; актуальные баги и quality debt —
 в `docs/BUGS.md`.
 
+Incoming product observations that are not yet active work live in
+`docs/BACKLOG.md`; promote them into this workplan when a focused slice starts.
+
 ## Product Direction
 
 Игрок должен ощущаться настоящей сущностью в мире:
@@ -196,6 +199,8 @@ resource packs.
 - [ ] Add landmarks/points of interest that are visible at distance.
 - [ ] Add tests for feature density ranges and generation determinism.
 - [ ] Watch performance: higher render distance must not block render thread.
+- [ ] Profile render distance above two chunks and split generation/meshing/upload
+      stalls into bounded streaming work.
 
 ### Phase C9: Debug, HUD, screenshot, and perspective controls
 
@@ -208,6 +213,9 @@ resource packs.
 - [ ] Expand debug overlay with coordinates, FPS/frame timings, chunk/mesh
       counts, memory estimate, Python/runtime info, CPU/GPU device strings where
       available.
+- [x] Show practical F3 diagnostics for performance/spawn debugging: FPS, frame
+      ms, block/chunk coordinates, facing, biome, memory estimate, active render
+      distance, loaded chunk counts, mesh counts, and runtime/device details.
 - [ ] Move lighting/AO/fog/meshing toggles to Settings UI or explicit dev menu.
 - [x] Remove player-facing dependence on F6/F7/F8/F9 for graphics settings once
       Settings UI equivalents exist.

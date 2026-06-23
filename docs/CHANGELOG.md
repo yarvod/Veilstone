@@ -7,6 +7,12 @@
 - **Debug overlay runtime diagnostics** - F3 debug overlay now includes Python
   runtime/platform and current frame size alongside existing chunk, mesh, entity,
   network, and coordinate counters.
+- **Product backlog** - added a dedicated backlog for multiplayer spawn/streaming
+  failures, grass/resource-pack rendering defects, F3 diagnostics gaps, and
+  render-distance performance work.
+- **Expanded F3 diagnostics** - F3 now reports FPS, frame time, facing, biome,
+  memory estimate, render distance, and mesh upload budget alongside existing
+  coordinates, chunk, mesh, entity, network, runtime, and selection data.
 - **Safe staged update installer** - the Updates screen can now prepare and
   launch an external installer script for downloaded release zips; the script
   waits for the running app to exit, swaps the app bundle/folder, cleans the

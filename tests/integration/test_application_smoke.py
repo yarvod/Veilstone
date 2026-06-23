@@ -84,8 +84,15 @@ def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
             window.mgl_context.finish()
 
             text = window._hud.debug_label.text
+            assert "FPS " in text
+            assert "Frame " in text
             assert "Block " in text
             assert "Chunk " in text
+            assert "Facing " in text
+            assert "Biome " in text
+            assert "Memory " in text
+            assert "Render distance " in text
+            assert "Mesh uploads/frame " in text
             assert "Network singleplayer" in text
             assert "Remote players 0" in text
             assert "Runtime Python " in text

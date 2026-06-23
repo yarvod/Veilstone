@@ -12,6 +12,11 @@ from pyglet.window import key
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.ui.menu import platform_font_name
 
+try:
+    import resource
+except ImportError:  # pragma: no cover - Windows does not provide resource.
+    resource = None
+
 _UI_FONT = platform_font_name(sys.platform)
 
 
@@ -30,6 +35,7 @@ class HudView(Protocol):
     hud_batch: Any
     hud_text_group: Any
     world_renderer: Any
+    world_runtime: Any
     player: Any
     camera: Any
     settings: Any
@@ -76,6 +82,10 @@ class HudWindowAdapter:
     @property
     def world_renderer(self) -> Any:
         return self._window.world_renderer
+
+    @property
+    def world_runtime(self) -> Any:
+        return self._window.world_runtime
 
     @property
     def player(self) -> Any:
@@ -223,13 +233,24 @@ class HudController:
         frame = win.frame_snapshot()
         x, y, z = win.camera.position
         fps = pyglet.clock.get_frequency()
+        frame_ms = 1000.0 / fps if fps > 0 else 0.0
         now = time.perf_counter()
         if now - self._last_update_time >= 0.2:
             self._last_update_time = now
+            block_x, block_y, block_z = int(x), int(y), int(z)
+            chunk_x, chunk_z = block_x // 16, block_z // 16
+            facing = _facing_from_yaw(win.camera.yaw_degrees)
+            biome = _biome_key_at(win, block_x, block_z)
+            memory = _process_memory_label()
             new_debug_text = (
+                f"FPS {fps:5.1f} Frame {frame_ms:5.1f} ms\n"
                 f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
                 f"Grounded {win.player.on_ground}  VelocityY {win.player.velocity_y:5.2f}\n"
-                f"Yaw {win.camera.yaw_degrees:6.1f}  Pitch {win.camera.pitch_degrees:5.1f}"
+                f"Yaw {win.camera.yaw_degrees:6.1f}  Pitch {win.camera.pitch_degrees:5.1f} "
+                f"Facing {facing}\n"
+                f"Biome {biome} Memory {memory} "
+                f"Render distance {win.settings.world.render_distance} "
+                f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame}"
                 f"\nChunks {win.world_renderer.loaded_chunks}  "
                 f"Pending {win.world_renderer.pending_chunks}  "
                 f"Mesh queue {win.world_renderer.pending_meshes}  "
@@ -246,8 +267,8 @@ class HudController:
                 f"Entities {len(win.entities.world.alive)}  "
                 f"Mobs {len(win.entities.world.mob_ai)}  "
                 f"Drops {len(win.entities.world.items)}  Entity draws {entity_draws}\n"
-                f"Block {int(x):d} {int(y):d} {int(z):d} "
-                f"Chunk {int(x) // 16:d} {int(z) // 16:d} "
+                f"Block {block_x:d} {block_y:d} {block_z:d} "
+                f"Chunk {chunk_x:d} {chunk_z:d} "
                 f"Remote players {len(win.remote_player_entities)}\n"
                 f"Network {'client' if win.network_session is not None else 'singleplayer'} "
                 f"Known players {len(win.network_players)}\n"
@@ -340,3 +361,33 @@ class HudController:
             return "empty"
         definition = win.item_registry.by_id(selected.item_id)
         return f"{definition.name} x{selected.count}"
+
+
+def _facing_from_yaw(yaw_degrees: float) -> str:
+    yaw = yaw_degrees % 360.0
+    if 45.0 <= yaw < 135.0:
+        return "west"
+    if 135.0 <= yaw < 225.0:
+        return "north"
+    if 225.0 <= yaw < 315.0:
+        return "east"
+    return "south"
+
+
+def _biome_key_at(win: HudView, block_x: int, block_z: int) -> str:
+    try:
+        return str(win.world_runtime.generation.biome_key_at(block_x, block_z))
+    except (AttributeError, LookupError, ValueError):
+        return "unknown"
+
+
+def _process_memory_label() -> str:
+    if resource is None:
+        return "n/a"
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    max_rss = float(usage.ru_maxrss)
+    if sys.platform == "darwin":
+        max_rss /= 1024 * 1024
+    else:
+        max_rss /= 1024
+    return f"{max_rss:.0f} MB"
