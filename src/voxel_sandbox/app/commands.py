@@ -61,12 +61,16 @@ type GameCommand = (
 )
 
 _NAMED_TIMES = {
+    "dawn": 23000,
     "sunrise": 0,
-    "day": 0,
+    "day": 1000,
+    "morning": 4320,
+    "late_sunrise": 4320,
+    "late-sunrise": 4320,
     "noon": 6000,
-    "twilight": 13800,
     "sunset": 12000,
     "night": 13000,
+    "twilight": 13800,
     "midnight": 18000,
 }
 

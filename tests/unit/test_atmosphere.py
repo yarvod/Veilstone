@@ -11,6 +11,9 @@ from voxel_sandbox.render.atmosphere import (
 
 
 def test_daylight_peaks_at_noon_and_has_night_floor() -> None:
+    assert abs(daylight_factor(0.0) - 0.52) < 1e-9
+    assert abs(daylight_factor(1000 / 24000) - 0.88) < 1e-9
+    assert abs(daylight_factor(0.18) - 0.98) < 1e-9
     assert abs(daylight_factor(0.25) - 1.0) < 1e-9
     assert abs(daylight_factor(0.75) - 0.37) < 1e-9
     assert abs(daylight_factor(1.25) - 1.0) < 1e-9

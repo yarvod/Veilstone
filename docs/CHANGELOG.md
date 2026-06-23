@@ -149,6 +149,9 @@
 
 ### Changed
 
+- **Minecraft-like time semantics** - `/time set day` now targets early bright day,
+  `sunrise` remains the horizon, and atmosphere daylight uses explicit
+  dawn/day/sunset/night keyframes so new-world late sunrise reads bright.
 - **First-person hand silhouette** - widened and tightened the sleeve/hand
   cuboids so the viewmodel reads as one connected Minecraft-like arm instead
   of two separated rods.

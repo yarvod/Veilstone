@@ -2,6 +2,19 @@ from __future__ import annotations
 
 import math
 
+_DAYLIGHT_KEYFRAMES = (
+    (0.0, 0.52),
+    (1000 / 24000, 0.88),
+    (4320 / 24000, 0.98),
+    (0.25, 1.0),
+    (11000 / 24000, 0.98),
+    (0.5, 0.62),
+    (13000 / 24000, 0.37),
+    (0.75, 0.37),
+    (23000 / 24000, 0.30),
+    (1.0, 0.52),
+)
+
 
 def sun_direction(time_of_day: float) -> tuple[float, float, float]:
     angle = (time_of_day % 1.0) * math.tau
@@ -16,11 +29,15 @@ def celestial_light_direction(time_of_day: float) -> tuple[float, float, float]:
 
 
 def daylight_factor(time_of_day: float) -> float:
-    """Return ambient daylight for a normalized day position."""
-    sun_sin = math.sin((time_of_day % 1.0) * math.tau)
-    moon_sin = max(0.0, -sun_sin)
-    # The night (moonlight) now provides extra ambient light (up to +0.25)
-    return 0.12 + 0.88 * max(0.0, sun_sin) + 0.25 * moon_sin
+    """Return ambient daylight normalized for the current day position."""
+    phase = time_of_day % 1.0
+    for index, (start_time, start_light) in enumerate(_DAYLIGHT_KEYFRAMES[:-1]):
+        end_time, end_light = _DAYLIGHT_KEYFRAMES[index + 1]
+        if start_time <= phase <= end_time:
+            span = max(end_time - start_time, 1e-9)
+            amount = _smoothstep((phase - start_time) / span)
+            return start_light + (end_light - start_light) * amount
+    return _DAYLIGHT_KEYFRAMES[-1][1]
 
 
 def sky_color(daylight: float) -> tuple[float, float, float, float]:
@@ -33,3 +50,8 @@ def sky_color(daylight: float) -> tuple[float, float, float, float]:
         night[2] + (day[2] - night[2]) * amount,
         1.0,
     )
+
+
+def _smoothstep(value: float) -> float:
+    amount = min(1.0, max(0.0, value))
+    return amount * amount * (3.0 - 2.0 * amount)

@@ -221,8 +221,8 @@ resource packs.
 
 - [x] Make default full day/night cycle 20 minutes (`1200` seconds).
 - [x] Make `/time set day` mean beginning of day/sunrise, not noon.
-- [ ] Tune dawn/day/sunset/night proportions toward Minecraft-like feel.
-- [ ] Add explicit dawn/sunset transition tuning rather than only one linear
+- [x] Tune dawn/day/sunset/night proportions toward Minecraft-like feel.
+- [x] Add explicit dawn/sunset transition tuning rather than only one linear
       full-cycle value if renderer needs it.
 - [ ] Expose/finalize named time semantics in command tests and README.
 
