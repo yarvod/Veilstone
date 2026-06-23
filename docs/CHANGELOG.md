@@ -110,6 +110,9 @@
 - **Stronger architecture guardrails** — import-linter now also enforces that `engine` does not import `render`, and `application` does not import Pyglet or ModernGL.
 
 ### Fixed
+- **Faithful grass side overlay** - Minecraft Java grass side textures now
+  composite the biome-tinted `grass_block_side_overlay` layer and invalidate
+  older texture-pack atlas caches.
 
 - **Faithful grass and held block textures** - held block viewmodels now use the
   same top/side/bottom texture faces as placed blocks, Faithful grass/leaves

@@ -10,7 +10,7 @@ from PIL import Image
 
 from voxel_sandbox.render.texture_atlas.generated import GeneratedAtlas
 
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 
 
 def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | None:

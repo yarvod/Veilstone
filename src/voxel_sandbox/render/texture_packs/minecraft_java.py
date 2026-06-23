@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import zipfile
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from PIL import Image
@@ -117,10 +117,27 @@ def load_block_textures(
         if animated:
             report.ignored_animations.append(resource_id)
 
+        image = _apply_resource_overlays(resource_id, image, _load)
         result[resource_id] = _apply_resource_tint(resource_id, image)
         report.imported.append(resource_id)
 
     return result, report
+
+
+def _apply_resource_overlays(
+    resource_id: str,
+    image: Image.Image,
+    load: Callable[[str], Image.Image | None],
+) -> Image.Image:
+    if resource_id != "minecraft:block/grass_block_side":
+        return image
+    overlay_path = resource_location_to_texture_path("minecraft:block/grass_block_side_overlay")
+    overlay = load(overlay_path)
+    if overlay is None:
+        return image
+    overlay, _ = _first_frame(overlay)
+    tinted_overlay = _apply_resource_tint("minecraft:block/grass_block_side_overlay", overlay)
+    return Image.alpha_composite(image.convert("RGBA"), tinted_overlay.convert("RGBA"))
 
 
 def _apply_resource_tint(resource_id: str, image: Image.Image) -> Image.Image:

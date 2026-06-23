@@ -169,6 +169,34 @@ def test_folder_import_applies_minecraft_grass_tint(tmp_path: Path) -> None:
     assert stone_pixel == (128, 128, 128, 255)
 
 
+def test_folder_import_composes_grass_side_overlay(tmp_path: Path) -> None:
+    pack_dir = tmp_path / "fake_pack"
+    block_dir = pack_dir / "assets" / "minecraft" / "textures" / "block"
+    block_dir.mkdir(parents=True)
+    (pack_dir / "pack.mcmeta").write_text(
+        json.dumps({"pack": {"pack_format": 18, "description": "Fake pack"}}),
+        encoding="utf-8",
+    )
+    side = Image.new("RGBA", (4, 4), (96, 64, 32, 255))
+    overlay = Image.new("RGBA", (4, 4), (255, 255, 255, 0))
+    overlay.putpixel((0, 0), (255, 255, 255, 255))
+    side.save(block_dir / "grass_block_side.png")
+    overlay.save(block_dir / "grass_block_side_overlay.png")
+    fallback = {"minecraft:block/grass_block_side": Image.new("RGBA", (4, 4), (50, 50, 50, 255))}
+
+    tiles, report = load_block_textures(pack_dir, {key: None for key in fallback}, fallback)
+
+    overlay_pixel = cast(
+        tuple[int, int, int, int], tiles["minecraft:block/grass_block_side"].getpixel((0, 0))
+    )
+    base_pixel = cast(
+        tuple[int, int, int, int], tiles["minecraft:block/grass_block_side"].getpixel((1, 1))
+    )
+    assert "minecraft:block/grass_block_side" in report.imported
+    assert overlay_pixel[:3] == (95, 159, 53)
+    assert base_pixel == (96, 64, 32, 255)
+
+
 def test_folder_import_missing_uses_fallback(tmp_path: Path) -> None:
     pack = _make_folder_pack(tmp_path, {"stone": (16, 16), "dirt": (16, 16)})
     _tiles, report = load_block_textures(pack, _IDS, _FALLBACK)
