@@ -146,6 +146,9 @@
 
 ### Changed
 
+- **First-person hand silhouette** - widened and tightened the sleeve/hand
+  cuboids so the viewmodel reads as one connected Minecraft-like arm instead
+  of two separated rods.
 - **Live render-distance apply** - changing render distance in Settings now
   updates active chunk streaming immediately while still saving user settings.
 - **First-person viewmodel gait sway** - first-person hand and held item pose

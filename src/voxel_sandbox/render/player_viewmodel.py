@@ -111,14 +111,14 @@ def _arm_parts(
     sleeve = ViewmodelPart(
         name=f"{snapshot.hand}_arm",
         position=hand_position,
-        scale=(0.16, 0.42, 0.16),
+        scale=(0.22, 0.34, 0.22),
         rotation_degrees=rotation,
         color=(0.18, 0.36, 0.68),
     )
     hand = ViewmodelPart(
         name=f"{snapshot.hand}_hand",
-        position=_add(hand_position, (-side * 0.03, -0.28, -0.08)),
-        scale=(0.17, 0.16, 0.17),
+        position=_add(hand_position, (-side * 0.01, -0.24, -0.03)),
+        scale=(0.21, 0.18, 0.21),
         rotation_degrees=rotation,
         color=(0.82, 0.62, 0.44),
     )

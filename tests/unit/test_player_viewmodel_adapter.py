@@ -23,10 +23,12 @@ def test_viewmodel_render_data_contains_hand_part() -> None:
     arm, hand = data.parts
     assert arm.name == "right_arm"
     assert arm.position == snapshot.base_position
-    assert arm.scale == (0.16, 0.42, 0.16)
+    assert arm.scale == (0.22, 0.34, 0.22)
     assert hand.name == "right_hand"
     assert hand.position[1] < arm.position[1]
-    assert hand.scale == (0.17, 0.16, 0.17)
+    assert hand.scale == (0.21, 0.18, 0.21)
+    assert abs(hand.position[0] - arm.position[0]) < 0.02
+    assert abs(hand.position[2] - arm.position[2]) < 0.04
     assert hand.color != arm.color
 
 
