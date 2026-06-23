@@ -23,10 +23,10 @@ def test_viewmodel_render_data_contains_hand_part() -> None:
     arm, hand = data.parts
     assert arm.name == "right_arm"
     assert arm.position == snapshot.base_position
-    assert arm.scale == (0.22, 0.34, 0.22)
+    assert arm.scale == (0.24, 0.28, 0.24)
     assert hand.name == "right_hand"
     assert hand.position[1] < arm.position[1]
-    assert hand.scale == (0.21, 0.18, 0.21)
+    assert hand.scale == (0.235, 0.16, 0.235)
     assert abs(hand.position[0] - arm.position[0]) < 0.02
     assert abs(hand.position[2] - arm.position[2]) < 0.04
     assert hand.color != arm.color
@@ -43,7 +43,7 @@ def test_viewmodel_render_data_adds_held_item_part() -> None:
     assert [part.name for part in data.parts] == ["right_arm", "right_hand", "held_item_block"]
     assert data.parts[2].position != data.parts[0].position
     assert data.parts[2].position != data.parts[1].position
-    assert data.parts[2].scale == (0.18, 0.18, 0.18)
+    assert data.parts[2].scale == (0.16, 0.16, 0.16)
 
 
 def test_viewmodel_render_data_uses_block_texture_for_held_block() -> None:
@@ -60,7 +60,7 @@ def test_viewmodel_render_data_uses_block_texture_for_held_block() -> None:
     assert data.parts[2].texture_name == "grass_top"
 
 
-def test_viewmodel_render_data_uses_torch_like_lantern_model() -> None:
+def test_viewmodel_render_data_keeps_lantern_as_compact_held_block() -> None:
     snapshot = build_player_viewmodel_snapshot(
         None,
         held_stack=ItemStack(item_id=7, count=1),
@@ -71,11 +71,9 @@ def test_viewmodel_render_data_uses_torch_like_lantern_model() -> None:
     assert [part.name for part in data.parts] == [
         "right_arm",
         "right_hand",
-        "held_item_lantern_handle",
-        "held_item_lantern_head",
+        "held_item_block",
     ]
-    assert data.parts[2].scale[1] > data.parts[2].scale[0]
-    assert data.parts[3].position != data.parts[2].position
+    assert data.parts[2].scale == (0.16, 0.16, 0.16)
 
 
 def test_viewmodel_render_data_applies_bob_and_swing_to_hand() -> None:

@@ -58,30 +58,12 @@ def _held_item_parts(
 ) -> tuple[ViewmodelPart, ...]:
     assert snapshot.held_item is not None
     side = 1.0 if snapshot.hand == "right" else -1.0
-    if snapshot.held_item.item_id == 7:
-        handle_position = _add(hand_position, (-side * 0.06, 0.26, -0.12))
-        rotation = _add((-18.0, side * -10.0, side * 10.0), snapshot.swing_rotation_degrees)
-        handle = ViewmodelPart(
-            name="held_item_lantern_handle",
-            position=handle_position,
-            scale=(0.045, 0.26, 0.045),
-            rotation_degrees=rotation,
-            color=(0.30, 0.20, 0.10),
-        )
-        head = ViewmodelPart(
-            name="held_item_lantern_head",
-            position=_add(hand_position, (-side * 0.06, 0.08, -0.12)),
-            scale=(0.13, 0.13, 0.13),
-            rotation_degrees=rotation,
-            color=(1.0, 0.68, 0.24),
-        )
-        return handle, head
     block = ViewmodelPart(
         name="held_item_block",
-        position=_add(hand_position, (-side * 0.08, 0.20, -0.20)),
-        scale=(0.18, 0.18, 0.18),
+        position=_add(hand_position, (-side * 0.04, 0.12, -0.08)),
+        scale=(0.16, 0.16, 0.16),
         rotation_degrees=_add(
-            (-26.0, side * -38.0, side * 14.0),
+            (-22.0, side * -30.0, side * 10.0),
             snapshot.swing_rotation_degrees,
         ),
         color=(0.44, 0.70, 0.32),
@@ -107,18 +89,18 @@ def _arm_parts(
     snapshot: PlayerViewmodelSnapshot, hand_position: Vec3
 ) -> tuple[ViewmodelPart, ViewmodelPart]:
     side = 1.0 if snapshot.hand == "right" else -1.0
-    rotation = _add((-34.0, side * -8.0, side * -28.0), snapshot.swing_rotation_degrees)
+    rotation = _add((-28.0, side * -6.0, side * -18.0), snapshot.swing_rotation_degrees)
     sleeve = ViewmodelPart(
         name=f"{snapshot.hand}_arm",
         position=hand_position,
-        scale=(0.22, 0.34, 0.22),
+        scale=(0.24, 0.28, 0.24),
         rotation_degrees=rotation,
         color=(0.18, 0.36, 0.68),
     )
     hand = ViewmodelPart(
         name=f"{snapshot.hand}_hand",
-        position=_add(hand_position, (-side * 0.01, -0.24, -0.03)),
-        scale=(0.21, 0.18, 0.21),
+        position=_add(hand_position, (-side * 0.006, -0.19, -0.02)),
+        scale=(0.235, 0.16, 0.235),
         rotation_degrees=rotation,
         color=(0.82, 0.62, 0.44),
     )
