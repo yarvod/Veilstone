@@ -120,6 +120,8 @@
 
 ### Fixed
 
+- **Release version script idempotency** - releasing the already-current version
+  no longer reports `project.version` as missing.
 - **Windows CI UI tests** - UI renderer tests now skip when the runner exposes a
   display without shader-capable OpenGL, avoiding `glCreateShader` failures on
   package builds.

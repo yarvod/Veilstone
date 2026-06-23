@@ -29,14 +29,15 @@ def version_from_tag(tag: str) -> str:
 
 def update_pyproject(version: str) -> None:
     text = PYPROJECT.read_text(encoding="utf-8")
+    pattern = r'(?m)^version = "[^"]+"$'
+    if not re.search(pattern, text):
+        raise SystemExit("Could not find project.version in pyproject.toml")
     updated = re.sub(
-        r'(?m)^version = "[^"]+"$',
+        pattern,
         f'version = "{version}"',
         text,
         count=1,
     )
-    if updated == text:
-        raise SystemExit("Could not find project.version in pyproject.toml")
     PYPROJECT.write_text(updated, encoding="utf-8")
 
 
