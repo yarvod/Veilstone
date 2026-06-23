@@ -110,6 +110,10 @@
 - **Stronger architecture guardrails** — import-linter now also enforces that `engine` does not import `render`, and `application` does not import Pyglet or ModernGL.
 
 ### Fixed
+
+- **Windows CI UI tests** - UI renderer tests now skip when the runner exposes a
+  display without shader-capable OpenGL, avoiding `glCreateShader` failures on
+  package builds.
 - **Faithful grass side overlay** - Minecraft Java grass side textures now
   composite the biome-tinted `grass_block_side_overlay` layer and invalidate
   older texture-pack atlas caches.

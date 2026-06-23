@@ -1,23 +1,18 @@
 """Unit tests for UiRenderer widget interaction and list screen support."""
 
+# pyright: reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownArgumentType=false
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
 
 import pytest
 
+from tests.support.pyglet_gl import has_shader_capable_gl
 
-def _has_display() -> bool:
-    try:
-        import pyglet
-
-        d = pyglet.display.get_display()
-        return len(d.get_screens()) > 0
-    except Exception:
-        return False
-
-
-pytestmark = pytest.mark.skipif(not _has_display(), reason="requires active display")
+pytestmark = pytest.mark.skipif(
+    not has_shader_capable_gl(), reason="requires shader-capable OpenGL display"
+)
 
 
 def _make_renderer(w: int = 800, h: int = 600):

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import pyglet
 import pytest
 
-if not pyglet.display.get_display().get_screens():
-    pytest.skip("UI interaction tests require an active display", allow_module_level=True)
+from tests.support.pyglet_gl import has_shader_capable_gl
+
+if not has_shader_capable_gl():
+    pytest.skip("UI interaction tests require shader-capable OpenGL", allow_module_level=True)
 
 from pyglet.window import mouse
 
