@@ -39,6 +39,16 @@ def test_chunk_shader_discards_cutout_alpha() -> None:
     assert "discard;" in fragment
 
 
+def test_chunk_shader_preserves_thin_cutout_shadow_samples() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
+
+    assert "center_visibility" in fragment
+    assert "filtered_visibility" in fragment
+    assert "return min(filtered_visibility, center_visibility + 0.18);" in fragment
+    assert "max(shadow_bias, 0.004)" not in fragment
+
+
 def test_chunk_shader_does_not_flip_cutout_tiles_randomly() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
@@ -63,6 +73,7 @@ def test_chunk_shader_keeps_world_shadows_readable() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
 
-    assert "max(shadow_bias, 0.004)" in fragment
+    assert "max(shadow_bias, 0.0015)" in fragment
+    assert "center_visibility" in fragment
     assert "float shadow = mix(0.34, 1.0, sample_shadow())" in fragment
     assert "float ambient_sky = sky * 0.36" in fragment

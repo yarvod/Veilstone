@@ -38,9 +38,8 @@ implemented; move backlog items into workplan when a slice becomes active.
 - **Observed:** default resource-pack grass/short grass can appear as green cage
   or crossed structural planes inside block-sized cubes instead of
   Minecraft-like small grass tufts.
-- **Desired:** default grass uses a Minecraft-like cross/plant model with
-  correct cutout texture, tint, scale, placement, and no misleading full-cube
-  silhouette.
+- **Desired:** default grass uses Minecraft-like cross/plant model with correct
+  cutout texture, tint, scale, placement, and no misleading full-cube silhouette.
 - **Fix notes:** `short_grass` and `wildflower` now use data-driven
   `render_shape = "cross"` plant mesh instead of full cube faces. Procedural
   short-grass fallback uses sparse bottom-rooted cutout blades without opaque
@@ -52,39 +51,52 @@ implemented; move backlog items into workplan when a slice becomes active.
 - **Status:** open
 - **Observed:** applying a Minecraft-like resource pack can make grass/foliage
   render as distorted curtains or oversized cutout sheets.
-- **Desired:** Minecraft Java-style grass/foliage textures map to the same
-  model semantics as Minecraft: grass block top/side overlay blocks and small
-  crossed planes for plant blocks.
-- **Fix notes:** plant cutouts keep upright UV orientation because the chunk
-  shader no longer applies random vertical flips.
+- **Desired:** Minecraft Java-style grass/foliage textures map to the same model
+  semantics as Minecraft: grass-block top/side overlay blocks and small
+  crossed-plane plant blocks.
+- **Fix notes:** plant cutouts keep upright UV orientation because chunk shader
+  no longer applies random vertical flips.
 - **Candidate work:** verify real imported packs visually, then handle remaining
-  texture-pack alias/color/tint issues as concrete imported-pack failures.
+  texture-pack alias/color/tint issues for concrete imported-pack failures.
 
-### R-B003: Cutout Plant Shadows Still Use Full Crossed Planes
+### R-B003: Cutout Plant Shadows Too Faint On Terrain
 
 - **Status:** fixed
-- **Observed:** visible plant rendering discards transparent texels, but the
-  current shadow-depth path can still treat crossed cutout plant planes as solid
-  sheets.
-- **Desired:** grass/foliage shadows respect alpha cutouts or skip tiny plant
-  shadow casters until the depth pass carries atlas UV/alpha data.
-- **Fix notes:** chunk shadow-depth rendering now receives atlas UV/rect
-  attributes, binds the block atlas, and discards transparent texels before
-  writing depth.
+- **Observed:** visible plant rendering discards transparent texels, but thin
+  cutout caster shadows could disappear after receiver bias and 3x3 PCF
+  filtering, so grass appeared to cast no terrain shadow.
+- **Desired:** grass/foliage shadows respect alpha cutouts and remain readable
+  enough on nearby terrain without turning transparent texture planes into
+  solid-sheet shadows.
+- **Fix notes:** chunk shadow-depth rendering receives atlas UV/rect attributes,
+  binds the block atlas, discards transparent texels before writing depth, and
+  the receiver shader preserves center shadow hits so thin plant samples are not
+  blurred away.
 
 ### R-B004: Grass Block Surface Tiling Still Looks Too Noisy
 
 - **Status:** open
-- **Observed:** grass-block surfaces can read as repeated noisy pixels instead
-  of a continuous Minecraft-like green ground cover, especially with detailed
+- **Observed:** grass-block surfaces read as repeated noisy pixels instead of
+  continuous Minecraft-like green ground cover, especially with detailed
   resource packs at shallow camera angles.
 - **Desired:** terrain keeps source texture resolution, but large grass fields
-  read as a coherent surface without visible atlas seams, random tile flips, or
+  read as coherent surface without visible atlas seams, random tile flips, or
   harsh per-block discontinuity.
-- **Candidate work:** add grass material visual pass with atlas gutters/mip-safe
-  sampling, optional distance-biased texture filtering, biome color smoothing,
-  and/or subtle terrain overlay blending that does not blur inventory/held-item
-  textures.
+- **Candidate work:** add a grass material visual pass with atlas gutters or
+  mip-safe sampling, optional distance-biased texture filtering, biome color
+  smoothing, and/or subtle terrain overlay blending that does not blur
+  inventory/held-item textures.
+
+### R-B005: Vegetation Wind Animation
+
+- **Status:** open
+- **Observed:** grass, leaves, and future plants are static.
+- **Desired:** grass, leaves, and vegetation use subtle Minecraft-like wind sway
+  that preserves blocky silhouettes, respects resource-pack textures, and keeps
+  collision/gameplay state deterministic.
+- **Candidate work:** drive visual-only vertex shader sway from world time,
+  biome/wind settings, and block/material kind; add screenshots/manual smoke
+  scenes for still and animated vegetation.
 
 ## Diagnostics
 
@@ -94,9 +106,10 @@ implemented; move backlog items into workplan when a slice becomes active.
 - **Observed:** F3 does not yet show enough practical debugging information such
   as FPS, precise coordinates, chunk/block coordinates, memory, biome, facing,
   render distance, chunk/mesh counts, and runtime/device details.
-- **Desired:** F3 is useful for diagnosing world streaming, performance, spawn,
-  biome, and rendering issues without adding expensive per-frame telemetry.
-- **Candidate work:** extend cached HUD debug data integration tests.
+- **Desired:** F3 should be useful for diagnosing world streaming, performance,
+  spawn, biome, and rendering issues without adding expensive per-frame
+  telemetry.
+- **Candidate work:** extend cached HUD debug data and integration tests.
 
 ## Performance
 

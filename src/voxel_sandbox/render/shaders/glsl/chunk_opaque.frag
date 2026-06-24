@@ -35,17 +35,23 @@ float sample_shadow() {
             || projected.y <= 0.0 || projected.y >= 1.0) {
         return 1.0;
     }
+    float receiver_bias = max(shadow_bias, 0.0015);
+    float center_visibility = texture(
+        shadow_map,
+        vec3(projected.xy, projected.z - receiver_bias)
+    );
     float visibility = 0.0;
     for (int x = -1; x <= 1; ++x) {
         for (int y = -1; y <= 1; ++y) {
             vec2 offset = vec2(x, y) * shadow_texel_size;
             visibility += texture(
                 shadow_map,
-                vec3(projected.xy + offset, projected.z - max(shadow_bias, 0.004))
+                vec3(projected.xy + offset, projected.z - receiver_bias)
             );
         }
     }
-    return visibility / 9.0;
+    float filtered_visibility = visibility / 9.0;
+    return min(filtered_visibility, center_visibility + 0.18);
 }
 
 void main() {

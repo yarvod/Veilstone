@@ -136,6 +136,9 @@
 
 ### Fixed
 
+- **Readable cutout plant shadows** - terrain shadow sampling now preserves
+  center shadow-map hits so thin alpha-tested grass/foliage casters are not
+  blurred away by receiver filtering, making nearby plant shadows visible.
 - **Fuller cutout and mob shadow casters** - chunk/entity shadow-depth rendering
   now disables face culling so crossed grass planes and all cuboid mob parts can
   write complete silhouettes into the shadow map.
