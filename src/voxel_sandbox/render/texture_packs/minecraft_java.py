@@ -8,13 +8,16 @@ from PIL import Image
 
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
+_PLAINS_GRASS_TINT = (145, 189, 89)
+_PLAINS_FOLIAGE_TINT = (89, 174, 48)
+
 _BIOME_TINTS: dict[str, tuple[int, int, int]] = {
-    "minecraft:block/grass_block_top": (95, 159, 53),
-    "minecraft:block/grass_block_side_overlay": (95, 159, 53),
-    "minecraft:block/short_grass": (95, 159, 53),
-    "minecraft:block/tall_grass_top": (95, 159, 53),
-    "minecraft:block/tall_grass_bottom": (95, 159, 53),
-    "minecraft:block/oak_leaves": (72, 128, 47),
+    "minecraft:block/grass_block_top": _PLAINS_GRASS_TINT,
+    "minecraft:block/grass_block_side_overlay": _PLAINS_GRASS_TINT,
+    "minecraft:block/short_grass": _PLAINS_GRASS_TINT,
+    "minecraft:block/tall_grass_top": _PLAINS_GRASS_TINT,
+    "minecraft:block/tall_grass_bottom": _PLAINS_GRASS_TINT,
+    "minecraft:block/oak_leaves": _PLAINS_FOLIAGE_TINT,
 }
 
 

@@ -57,3 +57,12 @@ def test_shadow_depth_shader_discards_cutout_alpha() -> None:
     assert "uniform sampler2D texture_atlas" in fragment
     assert "texture(texture_atlas, atlas_uv).a < 0.5" in fragment
     assert "discard;" in fragment
+
+
+def test_chunk_shader_keeps_world_shadows_readable() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
+
+    assert "max(shadow_bias, 0.004)" in fragment
+    assert "float shadow = mix(0.34, 1.0, sample_shadow())" in fragment
+    assert "float ambient_sky = sky * 0.36" in fragment

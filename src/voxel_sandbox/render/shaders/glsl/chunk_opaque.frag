@@ -39,7 +39,10 @@ float sample_shadow() {
     for (int x = -1; x <= 1; ++x) {
         for (int y = -1; y <= 1; ++y) {
             vec2 offset = vec2(x, y) * shadow_texel_size;
-            visibility += texture(shadow_map, vec3(projected.xy + offset, projected.z - shadow_bias));
+            visibility += texture(
+                shadow_map,
+                vec3(projected.xy + offset, projected.z - max(shadow_bias, 0.004))
+            );
         }
     }
     return visibility / 9.0;
@@ -53,10 +56,10 @@ void main() {
         discard;
     }
     float sky = vertex_sky_light * daylight;
-    float shadow = mix(0.58, 1.0, sample_shadow());
+    float shadow = mix(0.34, 1.0, sample_shadow());
     float sun_light = sky * vertex_directional * shadow;
-    float ambient_sky = sky * 0.50;
-    float light_level = max(max(sun_light, ambient_sky), max(vertex_block_light, 0.16));
+    float ambient_sky = sky * 0.36;
+    float light_level = max(max(sun_light, ambient_sky), max(vertex_block_light, 0.12));
     vec3 block_warmth = vec3(1.0, 0.66, 0.34) * vertex_block_light * 0.32;
     float readable_ao = mix(0.72, 1.0, vertex_ao);
     vec3 lit_color = base_color.rgb * day_tint * light_level * readable_ao;

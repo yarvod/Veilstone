@@ -193,7 +193,7 @@ def test_folder_import_composes_grass_side_overlay(tmp_path: Path) -> None:
         tuple[int, int, int, int], tiles["minecraft:block/grass_block_side"].getpixel((1, 1))
     )
     assert "minecraft:block/grass_block_side" in report.imported
-    assert overlay_pixel[:3] == (95, 159, 53)
+    assert overlay_pixel[:3] == (145, 189, 89)
     assert base_pixel == (96, 64, 32, 255)
 
 

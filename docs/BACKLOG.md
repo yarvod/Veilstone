@@ -72,6 +72,20 @@ implemented; move backlog items into workplan when a slice becomes active.
   attributes, binds the block atlas, and discards transparent texels before
   writing depth.
 
+### R-B004: Grass Block Surface Tiling Still Looks Too Noisy
+
+- **Status:** open
+- **Observed:** grass-block surfaces can read as repeated noisy pixels instead
+  of a continuous Minecraft-like green ground cover, especially with detailed
+  resource packs at shallow camera angles.
+- **Desired:** terrain keeps source texture resolution, but large grass fields
+  read as a coherent surface without visible atlas seams, random tile flips, or
+  harsh per-block discontinuity.
+- **Candidate work:** add grass material visual pass with atlas gutters/mip-safe
+  sampling, optional distance-biased texture filtering, biome color smoothing,
+  and/or subtle terrain overlay blending that does not blur inventory/held-item
+  textures.
+
 ## Diagnostics
 
 ### DX-B001: F3 Overlay Lacks Minecraft-Like Diagnostics

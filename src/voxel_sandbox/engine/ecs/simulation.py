@@ -35,6 +35,8 @@ class EntitySimulation:
     ) -> EntityId:
         entity = self.world.create()
         self.world.transforms.set(entity, Transform(*position))
+        self.world.velocities.set(entity, Velocity())
+        self.world.colliders.set(entity, Collider(0.28, 0.28))
         self.world.items.set(entity, ItemEntity(stack))
         self.world.lifetimes.set(entity, Lifetime(300.0))
         self.world.render_models.set(
@@ -121,6 +123,15 @@ class EntitySimulation:
             lifetime.remaining -= delta_time
             if lifetime.remaining <= 0.0:
                 self.world.destroy(entity)
+
+        if is_solid is not None:
+            for entity, _item in tuple(self.world.items.items()):
+                transform = self.world.transforms.get(entity)
+                velocity = self.world.velocities.get(entity)
+                collider = self.world.colliders.get(entity)
+                if transform is None or velocity is None or collider is None:
+                    continue
+                _update_vertical(transform, velocity, collider, delta_time, is_solid, is_hazard)
 
         for entity, ai in tuple(self.world.mob_ai.items()):
             transform = self.world.transforms[entity]

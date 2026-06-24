@@ -136,6 +136,12 @@
 
 ### Fixed
 
+- **Readable world shadows and grass tint** - chunk shadows now read darker in
+  daylight without over-darkening ambient light, imported Minecraft-style grass
+  and leaves use a lighter plains tint, and default grass fallback colors are
+  brighter.
+- **Dropped item gravity** - ECS item drops now receive small physics
+  components and fall when the supporting block below them is removed.
 - **Cutout plant shadows and atlas seams** - chunk shadow depth now respects
   atlas alpha cutouts, world block atlases use clamped nearest sampling without
   mipmap bleeding, and chunk shaders no longer randomly flip atlas tiles between
