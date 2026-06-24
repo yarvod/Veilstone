@@ -767,7 +767,7 @@ class DemoWorldRenderer:
         shadow_map.framebuffer.use()
         self.context.viewport = (0, 0, shadow_map.size, shadow_map.size)
         self.context.clear(depth=1.0)
-        self.context.cull_face = "front"
+        self.context.disable(moderngl.CULL_FACE)
         self.texture.use(0)
         cast("moderngl.Uniform", program["texture_atlas"]).value = 0
         cast("moderngl.Uniform", program["light_matrix"]).write(

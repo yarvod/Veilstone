@@ -22,3 +22,13 @@ def test_shadow_depth_mesh_receives_atlas_cutout_attributes() -> None:
     assert '"3f 2f 24x 4f"' in source
     assert '"in_uv"' in source
     assert '"in_atlas_rect"' in source
+
+
+def test_shadow_depth_pass_renders_cutout_and_entity_faces_without_culling() -> None:
+    source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py").read_text(
+        encoding="utf-8"
+    )
+    shadow_pass = source[source.index("def _render_shadow_depth") :]
+
+    assert "self.context.disable(moderngl.CULL_FACE)" in shadow_pass
+    assert 'self.context.cull_face = "front"' not in shadow_pass

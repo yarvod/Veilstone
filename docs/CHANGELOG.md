@@ -136,6 +136,9 @@
 
 ### Fixed
 
+- **Fuller cutout and mob shadow casters** - chunk/entity shadow-depth rendering
+  now disables face culling so crossed grass planes and all cuboid mob parts can
+  write complete silhouettes into the shadow map.
 - **Readable world shadows and grass tint** - chunk shadows now read darker in
   daylight without over-darkening ambient light, imported Minecraft-style grass
   and leaves use a lighter plains tint, and default grass fallback colors are
