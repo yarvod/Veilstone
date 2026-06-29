@@ -243,6 +243,50 @@ class RenderModelSnapshot:
     icon_camera: str
 ```
 
+### R-B007: Iris/PBR-Like Shader Material Pipeline
+
+- **Status:** open
+- **Observed:** Veilstone supports Minecraft Java-style color textures, cutout
+  alpha, fog, smooth lighting, AO, water animation, and shadow maps, but not
+  shaderpack-style material inputs such as normal/specular/emissive/parallax
+  maps. PBR resource packs therefore import mostly as flat color atlases.
+- **Desired:** high-quality mode can make resource packs read closer to
+  Iris/shaderpack screenshots: directional light, soft-ish block shadows,
+  emissive blocks, richer water/sky response, normal/specular material detail,
+  and optional screen-space reflections where hardware allows it.
+- **Architecture direction:** keep shader/material metadata in render-facing
+  snapshots and atlas build outputs. Domain registries should name block/item
+  identity and gameplay data only. Renderer owns quality tiers and extra GPU
+  textures; application/settings select tiers.
+- **Candidate work:** extend texture-pack import to discover common PBR maps
+  (`*_n`, `*_s`, emissive conventions, later LabPBR-style metadata); build
+  parallel material atlases; add `MaterialVisualSnapshot` carrying texture rects
+  plus material flags; split chunk shader into quality variants instead of
+  piling branches into one shader.
+- **Acceptance idea:** a deterministic PBR fixture pack produces color, normal,
+  and material atlases with matching UV rects; low-tier renders the same chunks
+  without binding those atlases; high-tier screenshot/manual smoke scene shows
+  visible normal/specular/emissive differences.
+
+### R-B008: Scalable Visual Quality Tiers
+
+- **Status:** open
+- **Observed:** realistic graphics and weak-machine 60 FPS pull in opposite
+  directions if every effect is always on.
+- **Desired:** settings expose clear presets such as `low_60`, `balanced`,
+  `high`, and `cinematic`, each mapping to concrete render behavior: render
+  distance, shadows, AO, water quality, clouds, vegetation wind, PBR maps,
+  reflections, and postprocess.
+- **Architecture direction:** use a small render-quality policy object consumed
+  by renderer construction and live settings updates. Avoid scattering
+  independent booleans across `GameWindow` and `DemoWorldRenderer`.
+- **Candidate work:** add preset data under settings, convert current graphics
+  flags into resolved `RenderQualityProfile`, and keep F3 showing active preset
+  plus expensive enabled effects.
+- **Acceptance idea:** changing presets in Settings updates active runtime
+  without world reload; low preset disables high-cost shader paths and keeps
+  visual fallback correct.
+
 ## Diagnostics
 
 ### DX-B001: F3 Overlay Lacks Minecraft-Like Diagnostics
@@ -416,3 +460,26 @@ except ImportError:
 - **Candidate work:** queue-based propagation budgets, chunk-local dirty masks,
   cross-chunk neighbor invalidation tests, and stress scenes for breaking blocks
   near water/light sources.
+
+### PERF-B007: Low-End 60 FPS Baseline
+
+- **Status:** open
+- **Observed:** default settings currently favor a nice prototype view: render
+  distance 2, process-backed generation and meshing workers, smooth lighting,
+  AO, fog, medium shadows, and clouds. On a two-core low-end machine, worker
+  processes, simulation, rendering, and OS scheduling can compete for the same
+  CPU budget.
+- **Desired:** a `low_60` profile targets stable 60 FPS at 720p on a two-core
+  CPU-class machine before high-end visual effects are enabled. The profile can
+  look simpler, but it must remain readable, Minecraft-like, and free of chunk
+  upload stutter during normal walking.
+- **Architecture direction:** measure first. Keep frame timing and queue
+  counters outside render hot paths, then tune worker counts, upload budgets,
+  render distance, and shader variants through `RenderQualityProfile`.
+- **Candidate work:** add benchmark/manual smoke route for a deterministic
+  walking camera path; record p50/p95/p99 frame time, mesh/generation/upload
+  queue depths, visible sections, and enabled effects; compare `low_60`,
+  `balanced`, and `high` presets.
+- **Acceptance idea:** benchmark output proves p95 frame time stays below
+  16.7 ms on the target low profile in a controlled scene, or documents the
+  measured blocker subsystem before any expensive visual feature is promoted.
