@@ -499,6 +499,9 @@ class GameWindow(pyglet.window.Window):
                 player_snapshot = build_player_render_snapshot(
                     self.player,
                     yaw_degrees=self.camera.yaw_degrees,
+                    head_pitch_degrees=self.camera.pitch_degrees,
+                    name=self.player_name,
+                    health=self.player_health,
                     animation=self._player_animation_snapshot,
                     held_stack=self.hotbar.selected,
                 )

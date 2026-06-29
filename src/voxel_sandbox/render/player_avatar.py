@@ -20,6 +20,11 @@ class PlayerAvatarRenderData:
     transform: Transform
     model: RenderModel
     held_item: HeldItem | None = None
+    name: str = "Player"
+    health: float = 20.0
+    max_health: float = 20.0
+    head_pitch_degrees: float = 0.0
+    status_flags: tuple[str, ...] = ()
 
 
 def build_player_avatar_render_data(
@@ -45,6 +50,11 @@ def build_player_avatar_render_data(
             if snapshot.held_item is not None
             else None
         ),
+        name=snapshot.name,
+        health=snapshot.health,
+        max_health=snapshot.max_health,
+        head_pitch_degrees=snapshot.head_pitch_degrees,
+        status_flags=snapshot.status_flags,
     )
 
 

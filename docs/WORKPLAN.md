@@ -105,7 +105,7 @@ F-клавиши должны быть player-facing управлением, а 
 одну систему анимации и один render pipeline. Это ключевая база для
 мультиплеера.
 
-- [ ] Define first-class player entity render snapshot:
+- [x] Define first-class player entity render snapshot:
       position/orientation, body pose, head yaw/pitch, limb animation phase,
       held item, name, health/status flags where needed.
 - [ ] Make local third-person player rendering use the same player snapshot path

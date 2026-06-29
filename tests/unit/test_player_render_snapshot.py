@@ -16,7 +16,13 @@ def test_build_player_render_snapshot_captures_player_view_data() -> None:
     player.in_water = True
     player.on_ground = False
 
-    snapshot = build_player_render_snapshot(player, yaw_degrees=725.0)
+    snapshot = build_player_render_snapshot(
+        player,
+        yaw_degrees=725.0,
+        head_pitch_degrees=120.0,
+        name="Explorer",
+        health=12.5,
+    )
 
     assert snapshot.position == (3.0, 64.0, -2.0)
     assert snapshot.eye_position == player.eye_position
@@ -26,6 +32,11 @@ def test_build_player_render_snapshot_captures_player_view_data() -> None:
     assert snapshot.in_water is True
     assert snapshot.on_ground is False
     assert snapshot.vertical_velocity == -1.5
+    assert snapshot.head_pitch_degrees == 89.0
+    assert snapshot.name == "Explorer"
+    assert snapshot.health == 12.5
+    assert snapshot.max_health == 20.0
+    assert snapshot.status_flags == ("swimming", "airborne")
     assert snapshot.animation is None
     assert snapshot.held_item is None
 
@@ -40,6 +51,25 @@ def test_build_player_render_snapshot_is_detached_from_player_mutation() -> None
 
     assert snapshot.position == (1.0, 2.0, 3.0)
     assert snapshot.yaw_degrees == 270.0
+
+
+def test_build_player_render_snapshot_sanitizes_entity_metadata() -> None:
+    player = PlayerController(x=1.0, y=2.0, z=3.0)
+    player.on_ground = True
+    snapshot = build_player_render_snapshot(
+        player,
+        yaw_degrees=0.0,
+        head_pitch_degrees=-120.0,
+        name="",
+        health=999.0,
+        max_health=16.0,
+    )
+
+    assert snapshot.name == "Player"
+    assert snapshot.head_pitch_degrees == -89.0
+    assert snapshot.health == 16.0
+    assert snapshot.max_health == 16.0
+    assert snapshot.status_flags == ()
 
 
 def test_build_player_render_snapshot_can_carry_animation_snapshot() -> None:

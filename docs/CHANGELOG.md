@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Player entity render snapshot metadata** - player render snapshots now carry
+  head pitch, display name, health, max health, and status flags so local and
+  remote player presentation can converge without reading raw `GameWindow`
+  state.
 - **F3 device and cached telemetry diagnostics** - debug overlay now includes
   renderer device/version information and caches slow runtime/memory telemetry
   separately from fast FPS/position updates.

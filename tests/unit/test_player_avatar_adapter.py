@@ -26,6 +26,11 @@ def test_build_player_avatar_render_data_maps_snapshot_to_entity_inputs() -> Non
         in_water=False,
         on_ground=True,
         vertical_velocity=0.0,
+        head_pitch_degrees=-20.0,
+        name="LocalHero",
+        health=14.0,
+        max_health=20.0,
+        status_flags=("airborne",),
     )
 
     data = build_player_avatar_render_data(snapshot)
@@ -35,6 +40,11 @@ def test_build_player_avatar_render_data_maps_snapshot_to_entity_inputs() -> Non
     assert data.model.key == "remote_player"
     assert data.model.scale == (0.6, 1.8, 0.6)
     assert data.held_item is None
+    assert data.name == "LocalHero"
+    assert data.health == 14.0
+    assert data.max_health == 20.0
+    assert data.head_pitch_degrees == -20.0
+    assert data.status_flags == ("airborne",)
 
 
 def test_build_player_avatar_world_contains_single_renderable_entity() -> None:
