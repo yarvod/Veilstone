@@ -235,7 +235,9 @@ class HudController:
         fps = pyglet.clock.get_frequency()
         frame_ms = 1000.0 / fps if fps > 0 else 0.0
         now = time.perf_counter()
-        if now - self._last_update_time >= 0.2:
+        if win.debug_overlay_visible and (
+            not self.debug_label.text or now - self._last_update_time >= 0.2
+        ):
             self._last_update_time = now
             block_x, block_y, block_z = int(x), int(y), int(z)
             chunk_x, chunk_z = block_x // 16, block_z // 16

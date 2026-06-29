@@ -79,7 +79,6 @@ def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
         try:
             window.menu.screen = Screen.GAME
             window.debug_overlay_visible = True
-            window._hud._last_update_time = 0.0
             window.on_draw()
             window.mgl_context.finish()
 

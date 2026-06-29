@@ -140,6 +140,10 @@
 
 ### Fixed
 
+- **F3 debug overlay first-frame visibility** - debug diagnostics now populate
+  immediately when F3 is enabled, so FPS, position, chunk, biome, memory, and
+  mesh stats are visible in the real game window without waiting for a later
+  throttled HUD refresh.
 - **Readable cutout plant shadows** - terrain shadow sampling now preserves
   center shadow-map hits so thin alpha-tested grass/foliage casters are not
   blurred away by receiver filtering, making nearby plant shadows visible.
