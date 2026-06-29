@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Settings Development graphics menu** - smooth lighting, ambient occlusion,
+  fog, and mesher comparison toggles now live in Settings -> Development and
+  persist through user settings instead of relying on hidden F-key bindings.
+- **Minecraft-feel architecture guardrail** - active workplan now requires new
+  visual/UI/audio/network/gameplay slices to avoid adding state or orchestration
+  to `GameWindow`, with full `GameWindow` decomposition tracked in backlog.
 - **Block interaction feedback event** - block breaking and placing now publish
   a shared interaction-start event before completion events, so viewmodel swing,
   future particles, audio, and network presentation can share one gameplay
@@ -72,9 +78,9 @@
   the shared player model path.
 - **Player nameplate snapshots** - added application/render data for remote
   player nameplates above character heads with distance fade visibility rules.
-- **Developer-only graphics F-key toggles** - graphics renderer toggles moved
-  from plain `F6`-`F9` to `Ctrl+F6`-`Ctrl+F9`, keeping normal F-keys free for
-  player-facing controls.
+- **Developer-only graphics controls** - graphics renderer toggles moved out of
+  plain `F6`-`F9` bindings and now live in Settings -> Development, keeping
+  function keys focused on player-facing controls.
 - **Screenshot shortcut** - `F2` saves a PNG screenshot under the user data
   screenshots directory.
 - **HUD visibility shortcut** - `F1` now toggles HUD visibility at runtime.

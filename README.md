@@ -114,10 +114,7 @@ For the live prioritized list, see `docs/WORKPLAN.md` and `docs/BUGS.md`.
 - `F3`: toggle debug overlay.
 - `F5`: cycle camera perspective.
 - `Ctrl+F5`: reload shaders.
-- `Ctrl+F6`: developer smooth-lighting toggle.
-- `Ctrl+F7`: developer ambient-occlusion toggle.
-- `Ctrl+F8`: developer fog toggle.
-- `Ctrl+F9`: developer meshing comparison toggle.
+- Developer graphics toggles live in Settings -> Development.
 
 Useful commands:
 

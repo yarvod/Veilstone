@@ -17,6 +17,7 @@ class Screen(Enum):
     PAUSE = auto()
     CONTROLS = auto()
     AUDIO = auto()
+    DEVELOPMENT = auto()
     TEXTURE_PACKS = auto()
     UPDATES = auto()
 
@@ -43,6 +44,10 @@ class MenuCommand(Enum):
     CYCLE_EFFECTS_VOLUME = auto()
     CYCLE_MUSIC_VOLUME = auto()
     CYCLE_AMBIENCE_VOLUME = auto()
+    TOGGLE_SMOOTH_LIGHTING = auto()
+    TOGGLE_AMBIENT_OCCLUSION = auto()
+    TOGGLE_FOG = auto()
+    TOGGLE_MESHER = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +84,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Updates", target=Screen.UPDATES),
         MenuItem("Audio", target=Screen.AUDIO),
         MenuItem("Controls", target=Screen.CONTROLS),
+        MenuItem("Development", target=Screen.DEVELOPMENT),
         MenuItem("Back", action="settings_back"),
     ),
     Screen.CONTROLS: (
@@ -94,6 +100,13 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Effects", action="cycle_effects_volume"),
         MenuItem("Music", action="cycle_music_volume"),
         MenuItem("Ambience", action="cycle_ambience_volume"),
+        MenuItem("Back", target=Screen.SETTINGS),
+    ),
+    Screen.DEVELOPMENT: (
+        MenuItem("Smooth Lighting", action="toggle_smooth_lighting"),
+        MenuItem("Ambient Occlusion", action="toggle_ambient_occlusion"),
+        MenuItem("Fog", action="toggle_fog"),
+        MenuItem("Mesher", action="toggle_mesher"),
         MenuItem("Back", target=Screen.SETTINGS),
     ),
     Screen.PAUSE: (
@@ -163,6 +176,7 @@ class MenuController:
             Screen.PAUSE: Screen.GAME,
             Screen.CONTROLS: Screen.SETTINGS,
             Screen.AUDIO: Screen.SETTINGS,
+            Screen.DEVELOPMENT: Screen.SETTINGS,
             Screen.TEXTURE_PACKS: Screen.SETTINGS,
             Screen.UPDATES: Screen.SETTINGS,
             Screen.GAME: Screen.PAUSE,
@@ -218,6 +232,14 @@ class MenuController:
             return MenuCommand.CYCLE_MUSIC_VOLUME
         elif action == "cycle_ambience_volume":
             return MenuCommand.CYCLE_AMBIENCE_VOLUME
+        elif action == "toggle_smooth_lighting":
+            return MenuCommand.TOGGLE_SMOOTH_LIGHTING
+        elif action == "toggle_ambient_occlusion":
+            return MenuCommand.TOGGLE_AMBIENT_OCCLUSION
+        elif action == "toggle_fog":
+            return MenuCommand.TOGGLE_FOG
+        elif action == "toggle_mesher":
+            return MenuCommand.TOGGLE_MESHER
         elif action == "settings_back":
             self._go_to(self._settings_return)
         return MenuCommand.NONE

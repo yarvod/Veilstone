@@ -192,6 +192,26 @@ class MenuUI:
     def _menu_item_label(self, index: int) -> str:
         win = self.win
         item = win.menu.items[index]
+        smooth_lighting = getattr(
+            win.world_renderer,
+            "smooth_lighting",
+            win.settings.graphics.smooth_lighting,
+        )
+        ambient_occlusion = getattr(
+            win.world_renderer,
+            "ambient_occlusion",
+            win.settings.graphics.ambient_occlusion,
+        )
+        fog_enabled = getattr(
+            win.world_renderer,
+            "fog_enabled",
+            win.settings.graphics.fog,
+        )
+        greedy_meshing = getattr(
+            win.world_renderer,
+            "greedy_meshing",
+            win.settings.graphics.greedy_meshing,
+        )
         values = {
             "cycle_shadows": win.settings.graphics.shadow_quality,
             "toggle_clouds": "on" if win.settings.graphics.clouds else "off",
@@ -207,6 +227,10 @@ class MenuUI:
             "cycle_effects_volume": f"{win.settings.audio.effects:.0%}",
             "cycle_music_volume": f"{win.settings.audio.music:.0%}",
             "cycle_ambience_volume": f"{win.settings.audio.ambience:.0%}",
+            "toggle_smooth_lighting": "on" if smooth_lighting else "off",
+            "toggle_ambient_occlusion": "on" if ambient_occlusion else "off",
+            "toggle_fog": "on" if fog_enabled else "off",
+            "toggle_mesher": "greedy" if greedy_meshing else "visible",
         }
         value = values.get(item.action or "")
         return item.label if value is None else f"{item.label}: {value}"
@@ -805,6 +829,13 @@ class MenuUI:
             MenuCommand.CYCLE_AMBIENCE_VOLUME,
         }:
             self._cycle_audio_volume(command)
+        elif command in {
+            MenuCommand.TOGGLE_SMOOTH_LIGHTING,
+            MenuCommand.TOGGLE_AMBIENT_OCCLUSION,
+            MenuCommand.TOGGLE_FOG,
+            MenuCommand.TOGGLE_MESHER,
+        }:
+            self._toggle_development_graphics(command)
         elif command is MenuCommand.CREATE_WORLD:
             self._begin_text_input(
                 TextPurpose.WORLD_NAME,
@@ -840,6 +871,46 @@ class MenuUI:
         changed_live = win.world_renderer.set_render_distance(next_distance)
         suffix = "applied." if changed_live else "already active."
         win.menu.status = f"Render distance saved {next_distance} chunks; {suffix}"
+        save_user_settings(win.settings)
+
+    def _toggle_development_graphics(self, command: MenuCommand) -> None:
+        win = self.win
+        match command:
+            case MenuCommand.TOGGLE_SMOOTH_LIGHTING:
+                win.world_renderer.toggle_smooth_lighting()
+                enabled = bool(win.world_renderer.smooth_lighting)
+                win.settings = replace(
+                    win.settings,
+                    graphics=replace(win.settings.graphics, smooth_lighting=enabled),
+                )
+                status = f"Smooth lighting {'enabled' if enabled else 'disabled'}."
+            case MenuCommand.TOGGLE_AMBIENT_OCCLUSION:
+                win.world_renderer.toggle_ambient_occlusion()
+                enabled = bool(win.world_renderer.ambient_occlusion)
+                win.settings = replace(
+                    win.settings,
+                    graphics=replace(win.settings.graphics, ambient_occlusion=enabled),
+                )
+                status = f"Ambient occlusion {'enabled' if enabled else 'disabled'}."
+            case MenuCommand.TOGGLE_FOG:
+                win.world_renderer.toggle_fog()
+                enabled = bool(win.world_renderer.fog_enabled)
+                win.settings = replace(
+                    win.settings,
+                    graphics=replace(win.settings.graphics, fog=enabled),
+                )
+                status = f"Fog {'enabled' if enabled else 'disabled'}."
+            case MenuCommand.TOGGLE_MESHER:
+                win.world_renderer.toggle_mesher()
+                enabled = bool(win.world_renderer.greedy_meshing)
+                win.settings = replace(
+                    win.settings,
+                    graphics=replace(win.settings.graphics, greedy_meshing=enabled),
+                )
+                status = f"Mesher saved as {'greedy' if enabled else 'visible'}."
+            case _:
+                return
+        win.menu.status = status
         save_user_settings(win.settings)
 
     # ── Audio helpers ─────────────────────────────────────────────────────────

@@ -9,6 +9,25 @@ Items in this file may include implementation sketches. Treat those sketches as
 directional notes, not accepted design until promoted into an active plan and
 validated against `docs/ARCHITECTURE.md`.
 
+## Architecture Cleanup
+
+### ARCH-B001: Finish GameWindow Decomposition
+
+- **Status:** open
+- **Observed:** `GameWindow` remains the practical composition root and several
+  controllers still receive the full window instead of narrow ports.
+- **Desired:** `GameWindow` becomes a thin presentation shell: application
+  use-cases own orchestration, snapshots cross render/network/UI boundaries,
+  renderer adapters consume render data, and tests cover most behavior without
+  constructing Pyglet/ModernGL objects.
+- **Candidate work:** split HUD/debug snapshots, input command ports, gameplay
+  command use-cases, network presentation adapters, world-runtime lifecycle
+  ownership, and renderer settings ports into small independently verified
+  slices.
+- **Acceptance idea:** architecture docs/watchlist no longer list `GameWindow`
+  as broad runtime owner, import-linter contracts remain green, and new
+  Minecraft-feel features can be added without adding state to `render/window.py`.
+
 ## Multiplayer
 
 ### MP-B001: Second Player Can Spawn Underground Far From Expected Origin

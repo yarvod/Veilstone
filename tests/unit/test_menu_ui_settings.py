@@ -1,3 +1,5 @@
+# pyright: reportPrivateUsage=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownMemberType=false, reportAttributeAccessIssue=false
+
 from __future__ import annotations
 
 from dataclasses import replace
@@ -42,3 +44,54 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
     assert world_renderer.render_distance == 6
     assert saved[-1].world.render_distance == 6
     assert win.menu.status == "Render distance saved 6 chunks; applied."
+
+
+def test_development_graphics_menu_labels_and_toggles(monkeypatch) -> None:
+    saved: list[AppSettings] = []
+    monkeypatch.setattr("voxel_sandbox.render.menu_ui.save_user_settings", saved.append)
+    menu = MenuController()
+    menu.screen = Screen.DEVELOPMENT
+
+    class FakeWorldRenderer:
+        def __init__(self) -> None:
+            self.smooth_lighting = True
+            self.ambient_occlusion = True
+            self.fog_enabled = True
+            self.greedy_meshing = True
+
+        def toggle_smooth_lighting(self) -> None:
+            self.smooth_lighting = not self.smooth_lighting
+
+        def toggle_ambient_occlusion(self) -> None:
+            self.ambient_occlusion = not self.ambient_occlusion
+
+        def toggle_fog(self) -> None:
+            self.fog_enabled = not self.fog_enabled
+
+        def toggle_mesher(self) -> None:
+            self.greedy_meshing = not self.greedy_meshing
+
+    win = SimpleNamespace(
+        settings=AppSettings(),
+        menu=menu,
+        world_renderer=FakeWorldRenderer(),
+    )
+    menu_ui = MenuUI.__new__(MenuUI)
+    menu_ui.win = win
+
+    assert menu_ui._menu_item_label(0) == "Smooth Lighting: on"
+    assert menu_ui._menu_item_label(1) == "Ambient Occlusion: on"
+    assert menu_ui._menu_item_label(2) == "Fog: on"
+    assert menu_ui._menu_item_label(3) == "Mesher: greedy"
+
+    menu_ui._handle_menu_command(MenuCommand.TOGGLE_SMOOTH_LIGHTING)
+    assert win.world_renderer.smooth_lighting is False
+    assert win.settings.graphics.smooth_lighting is False
+    assert saved[-1].graphics.smooth_lighting is False
+    assert win.menu.status == "Smooth lighting disabled."
+
+    menu_ui._handle_menu_command(MenuCommand.TOGGLE_MESHER)
+    assert win.world_renderer.greedy_meshing is False
+    assert win.settings.graphics.greedy_meshing is False
+    assert saved[-1].graphics.greedy_meshing is False
+    assert win.menu.status == "Mesher saved as visible."

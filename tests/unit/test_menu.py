@@ -32,6 +32,7 @@ def test_player_facing_menu_tree() -> None:
         "Updates",
         "Audio",
         "Controls",
+        "Development",
         "Back",
     ]
     assert labels(Screen.PAUSE) == ["Resume", "Open to LAN", "Settings", "Main Menu"]
@@ -122,6 +123,7 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
         "Updates",
         "Audio",
         "Controls",
+        "Development",
         "Back",
     ]
     menu = MenuController()
@@ -143,6 +145,25 @@ def test_controls_menu_exposes_rebinding_actions() -> None:
     assert menu.activate() is MenuCommand.REBIND_FORWARD
     menu.select(4)
     assert menu.activate() is MenuCommand.REBIND_JUMP
+
+
+def test_development_menu_exposes_graphics_toggles() -> None:
+    assert labels(Screen.DEVELOPMENT) == [
+        "Smooth Lighting",
+        "Ambient Occlusion",
+        "Fog",
+        "Mesher",
+        "Back",
+    ]
+    menu = MenuController()
+    menu.screen = Screen.DEVELOPMENT
+    assert menu.activate() is MenuCommand.TOGGLE_SMOOTH_LIGHTING
+    menu.select(1)
+    assert menu.activate() is MenuCommand.TOGGLE_AMBIENT_OCCLUSION
+    menu.select(2)
+    assert menu.activate() is MenuCommand.TOGGLE_FOG
+    menu.select(3)
+    assert menu.activate() is MenuCommand.TOGGLE_MESHER
 
 
 def test_open_to_lan_returns_application_command() -> None:

@@ -195,17 +195,17 @@ class TestOnKeyPress:
         win.world_renderer.toggle_fog.assert_not_called()
         win.world_renderer.toggle_mesher.assert_not_called()
 
-    def test_ctrl_graphics_function_keys_keep_dev_toggles(self):
+    def test_ctrl_graphics_function_keys_do_not_toggle_renderer_settings(self):
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(key.F6, key.MOD_CTRL)
         h.on_key_press(key.F7, key.MOD_CTRL)
         h.on_key_press(key.F8, key.MOD_CTRL)
         h.on_key_press(key.F9, key.MOD_CTRL)
-        win.world_renderer.toggle_smooth_lighting.assert_called_once()
-        win.world_renderer.toggle_ambient_occlusion.assert_called_once()
-        win.world_renderer.toggle_fog.assert_called_once()
-        win.world_renderer.toggle_mesher.assert_called_once()
+        win.world_renderer.toggle_smooth_lighting.assert_not_called()
+        win.world_renderer.toggle_ambient_occlusion.assert_not_called()
+        win.world_renderer.toggle_fog.assert_not_called()
+        win.world_renderer.toggle_mesher.assert_not_called()
 
     def test_hotbar_digit_selects_slot(self):
         win = _make_win(in_game=True)
