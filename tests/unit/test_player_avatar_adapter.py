@@ -10,7 +10,9 @@ from voxel_sandbox.application.player_render import (
     PlayerHeldItemSnapshot,
     PlayerRenderSnapshot,
 )
+from voxel_sandbox.engine.ecs import EntityWorld, HeldItem
 from voxel_sandbox.render.player_avatar import (
+    apply_player_avatar_render_data,
     build_player_avatar_render_data,
     build_player_avatar_world,
 )
@@ -146,3 +148,27 @@ def test_build_player_avatar_world_carries_held_item_component() -> None:
     assert held_item.item_id == 3
     assert held_item.count == 1
     assert held_item.hand == "right"
+
+
+def test_apply_player_avatar_render_data_removes_stale_held_item() -> None:
+    snapshot = PlayerRenderSnapshot(
+        position=(4.0, 5.0, 6.0),
+        eye_position=(4.0, 6.62, 6.0),
+        yaw_degrees=90.0,
+        width=0.6,
+        height=1.8,
+        in_water=False,
+        on_ground=True,
+        vertical_velocity=0.0,
+    )
+    world = EntityWorld()
+    entity = world.create()
+    world.held_items.set(entity, HeldItem(item_id=3, count=1))
+
+    apply_player_avatar_render_data(
+        world,
+        entity,
+        build_player_avatar_render_data(snapshot),
+    )
+
+    assert world.held_items.get(entity) is None

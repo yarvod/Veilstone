@@ -1,18 +1,27 @@
 from __future__ import annotations
 
 import logging
+import math
 import queue
 import time
 from typing import TYPE_CHECKING, cast
 
+from voxel_sandbox.application.player_render import (
+    PlayerHeldItemSnapshot,
+    PlayerRenderSnapshot,
+)
 from voxel_sandbox.domain.blocks.structures import StructureSnapshot, StructureWorld
 from voxel_sandbox.engine.authority import LocalWorldAuthority, NetworkWorldAuthority
 from voxel_sandbox.engine.chunks import ChunkCoord
-from voxel_sandbox.engine.ecs import AnimationState, HeldItem, RenderModel, Transform
+from voxel_sandbox.engine.ecs import AnimationState
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import ClientSession, LanServer, Message, decode_chunk_blocks
 from voxel_sandbox.network.discovery import DiscoveryResponder
 from voxel_sandbox.network.interpolation import SnapshotInterpolator
+from voxel_sandbox.render.player_avatar import (
+    apply_player_avatar_render_data,
+    build_player_avatar_render_data,
+)
 from voxel_sandbox.render.ui.menu import Screen
 
 if TYPE_CHECKING:
@@ -21,7 +30,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-def _held_item_from_player(player: dict[str, object]) -> HeldItem | None:
+def _held_item_from_player(player: dict[str, object]) -> PlayerHeldItemSnapshot | None:
     raw_held_item = player.get("held_item")
     if not isinstance(raw_held_item, dict):
         return None
@@ -39,7 +48,7 @@ def _held_item_from_player(player: dict[str, object]) -> HeldItem | None:
         or hand not in {"left", "right"}
     ):
         return None
-    return HeldItem(item_id=item_id, count=count, hand=str(hand))
+    return PlayerHeldItemSnapshot(item_id=item_id, count=count, hand=str(hand))
 
 
 class NetworkController:
@@ -177,6 +186,10 @@ class NetworkController:
 
     def sync_remote_players(self, players: dict[int, dict[str, object]]) -> None:
         win = self.win
+        entities = win.entities
+        if entities is None:
+            return
+        entity_world = entities.world
         local_id = win.network_session.player_id if win.network_session is not None else None
         visible_ids: set[int] = set()
         for raw_id, raw_player in players.items():
@@ -197,50 +210,59 @@ class NetworkController:
                 continue
             entity = win.remote_player_entities.get(raw_id)
             if entity is None:
-                entity = win.entities.world.create()
+                entity = entity_world.create()
                 win.remote_player_entities[raw_id] = entity
                 win.remote_player_interpolation[raw_id] = SnapshotInterpolator()
-                win.entities.world.render_models.set(
-                    entity,
-                    RenderModel("remote_player", (0.72, 0.58, 0.88), (0.65, 1.8, 0.65)),
-                )
-                win.entities.world.transforms.set(
-                    entity,
-                    Transform(float(coordinates[0]), float(coordinates[1]), float(coordinates[2])),
-                )
-                win.entities.world.animations.set(entity, AnimationState())
-            animation = win.entities.world.animations.get(entity)
-            transform = win.entities.world.transforms.get(entity)
             raw_yaw = player.get("yaw", 0.0)
-            if transform is not None and isinstance(raw_yaw, int | float):
-                transform.yaw = float(raw_yaw)
-            if animation is not None:
-                raw_phase = player.get("animation_phase", 0.0)
-                animation.phase = float(raw_phase) if isinstance(raw_phase, int | float) else 0.0
-                animation.speed = 1.8 if player.get("animation_state") == "walk" else 0.0
+            yaw_radians = float(raw_yaw) if isinstance(raw_yaw, int | float) else 0.0
+            raw_phase = player.get("animation_phase", 0.0)
+            animation = AnimationState(
+                phase=float(raw_phase) if isinstance(raw_phase, int | float) else 0.0,
+                speed=1.8 if player.get("animation_state") == "walk" else 0.0,
+            )
             held_item = _held_item_from_player(player)
-            if held_item is not None:
-                win.entities.world.held_items.set(entity, held_item)
-            else:
-                win.entities.world.held_items.remove(entity)
+            name = player.get("name", f"Player {raw_id}")
+            snapshot = PlayerRenderSnapshot(
+                position=position_tuple,
+                eye_position=(position_tuple[0], position_tuple[1] + 1.62, position_tuple[2]),
+                yaw_degrees=math.degrees(yaw_radians - math.pi / 2.0),
+                width=0.65,
+                height=1.8,
+                in_water=False,
+                on_ground=player.get("animation_state") != "airborne",
+                vertical_velocity=0.0,
+                name=name if isinstance(name, str) else f"Player {raw_id}",
+                animation=None,
+                held_item=held_item,
+            )
+            apply_player_avatar_render_data(
+                entity_world,
+                entity,
+                build_player_avatar_render_data(snapshot),
+                animation=animation,
+            )
             win.remote_player_interpolation[raw_id].push(
                 time.monotonic(),
                 position_tuple,
             )
             visible_ids.add(raw_id)
         for player_id in set(win.remote_player_entities) - visible_ids:
-            win.entities.world.destroy(win.remote_player_entities.pop(player_id))
+            entity_world.destroy(win.remote_player_entities.pop(player_id))
             win.remote_player_interpolation.pop(player_id, None)
 
     def update_remote_players(self) -> None:
         win = self.win
+        entities = win.entities
+        if entities is None:
+            return
+        entity_world = entities.world
         now = time.monotonic()
         for player_id, interpolation in win.remote_player_interpolation.items():
             position = interpolation.sample(now)
             entity = win.remote_player_entities.get(player_id)
             if position is None or entity is None:
                 continue
-            transform = win.entities.world.transforms.get(entity)
+            transform = entity_world.transforms.get(entity)
             if transform is not None:
                 transform.x, transform.y, transform.z = position
 

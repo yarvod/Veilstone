@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from voxel_sandbox.application.player_render import PlayerRenderSnapshot
 from voxel_sandbox.engine.ecs import (
     AnimationState,
+    EntityId,
     EntityWorld,
     HeldItem,
     RenderModel,
@@ -58,21 +59,36 @@ def build_player_avatar_render_data(
     )
 
 
+def apply_player_avatar_render_data(
+    world: EntityWorld,
+    entity: EntityId,
+    data: PlayerAvatarRenderData,
+    *,
+    animation: AnimationState | None = None,
+) -> None:
+    """Apply shared player avatar render data to an ECS entity."""
+    world.transforms.set(entity, data.transform)
+    world.render_models.set(entity, data.model)
+    if data.held_item is not None:
+        world.held_items.set(entity, data.held_item)
+    else:
+        world.held_items.remove(entity)
+    if animation is not None:
+        world.animations.set(entity, animation)
+
+
 def build_player_avatar_world(snapshot: PlayerRenderSnapshot) -> EntityWorld:
     """Build a transient EntityWorld containing only the local player avatar."""
     data = build_player_avatar_render_data(snapshot)
     world = EntityWorld()
     entity = world.create()
-    world.transforms.set(entity, data.transform)
-    world.render_models.set(entity, data.model)
-    if data.held_item is not None:
-        world.held_items.set(entity, data.held_item)
-    if snapshot.animation is not None:
-        world.animations.set(
-            entity,
-            AnimationState(
-                phase=snapshot.animation.gait_phase,
-                speed=snapshot.animation.movement_amount,
-            ),
+    animation = (
+        AnimationState(
+            phase=snapshot.animation.gait_phase,
+            speed=snapshot.animation.movement_amount,
         )
+        if snapshot.animation is not None
+        else None
+    )
+    apply_player_avatar_render_data(world, entity, data, animation=animation)
     return world

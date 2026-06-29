@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Shared player avatar render adapter path** - remote player entities now apply
+  `PlayerRenderSnapshot` through the same avatar render adapter used by the
+  local third-person player, preserving yaw, held items, animation phase, and
+  stale held-item cleanup without duplicating model component wiring.
 - **Player entity render snapshot metadata** - player render snapshots now carry
   head pitch, display name, health, max health, and status flags so local and
   remote player presentation can converge without reading raw `GameWindow`

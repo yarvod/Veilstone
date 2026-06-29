@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import queue
 from unittest.mock import MagicMock
 
@@ -336,6 +337,31 @@ def test_sync_remote_players_maps_held_item_component():
     assert held_item.item_id == 3
     assert held_item.count == 2
     assert held_item.hand == "left"
+
+
+def test_sync_remote_players_uses_player_avatar_adapter() -> None:
+    win = _make_win()
+    win.entities.world = EntityWorld()
+    win.network_session = MagicMock(player_id=99)
+    nc = NetworkController(win)
+
+    nc.sync_remote_players(
+        {
+            1: {
+                "position": [1.0, 64.0, 2.0],
+                "yaw": math.pi,
+                "name": "RemoteHero",
+            }
+        }
+    )
+
+    entity = win.remote_player_entities[1]
+    transform = win.entities.world.transforms[entity]
+    model = win.entities.world.render_models[entity]
+    assert model.key == "remote_player"
+    assert model.color == (0.45, 0.68, 1.0)
+    assert model.scale == (0.65, 1.8, 0.65)
+    assert math.isclose(transform.yaw, math.pi)
 
 
 def test_sync_remote_players_removes_stale_held_item_component():

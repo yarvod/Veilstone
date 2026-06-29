@@ -108,8 +108,8 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Define first-class player entity render snapshot:
       position/orientation, body pose, head yaw/pitch, limb animation phase,
       held item, name, health/status flags where needed.
-- [ ] Make local third-person player rendering use the same player snapshot path
-      as remote players.
+- [x] Make local third-person player rendering use the same player snapshot path
+  as remote players.
 - [x] Add render-layer held item/block cuboid support for player avatar entities.
 - [x] Add camera perspective modes: first person, third-person back,
       third-person front.
