@@ -1,3 +1,5 @@
+# pyright: reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownMemberType=false
+
 from __future__ import annotations
 
 import tempfile
@@ -65,7 +67,7 @@ def test_invalid_saved_position_recovers_without_losing_inventory() -> None:
             window.close()
 
 
-def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
+def test_debug_overlay_shows_minecraft_like_diagnostics(monkeypatch) -> None:
     import pyglet
 
     if not pyglet.display.get_display().get_screens():
@@ -75,6 +77,17 @@ def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
     from voxel_sandbox.render.window import GameWindow
 
     with tempfile.TemporaryDirectory(prefix="veilstone-debug-hud-") as directory:
+        memory_reads: list[int] = []
+
+        def fake_memory_label() -> str:
+            memory_reads.append(1)
+            return "123 MB"
+
+        monkeypatch.setattr(
+            "voxel_sandbox.render.hud_controller._process_memory_label",
+            fake_memory_label,
+        )
+
         window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
         try:
             window.menu.screen = Screen.GAME
@@ -95,7 +108,12 @@ def test_debug_overlay_shows_minecraft_like_diagnostics() -> None:
             assert "Network singleplayer" in text
             assert "Remote players 0" in text
             assert "Runtime Python " in text
+            assert "Device " in text
+            assert "Memory 123 MB" in text
             assert "Frame " in text
+            window._hud._last_update_time = 0.0
+            window.on_draw()
+            assert len(memory_reads) == 1
         finally:
             window.close()
 

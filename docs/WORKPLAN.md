@@ -217,7 +217,7 @@ resource packs.
 - [x] Add perspective cycling for first/third-person modes.
 - [x] Add or reserve hide-HUD behavior.
 - [x] Add or reserve screenshot behavior.
-- [ ] Expand debug overlay with coordinates, FPS/frame timings, chunk/mesh
+- [x] Expand debug overlay with coordinates, FPS/frame timings, chunk/mesh
       counts, memory estimate, Python/runtime info, CPU/GPU device strings where
       available.
 - [x] Show practical F3 diagnostics for performance/spawn debugging: FPS, frame
@@ -226,7 +226,7 @@ resource packs.
 - [x] Move lighting/AO/fog/meshing toggles to Settings UI or explicit dev menu.
 - [x] Remove player-facing dependence on F6/F7/F8/F9 for graphics settings once
       Settings UI equivalents exist.
-- [ ] Keep expensive system telemetry out of per-frame hot paths; cache or
+- [x] Keep expensive system telemetry out of per-frame hot paths; cache or
       update slow diagnostics at low frequency.
 
 ### Phase C10: Time-of-day polish

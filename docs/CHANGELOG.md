@@ -4,6 +4,9 @@
 
 ### Added
 
+- **F3 device and cached telemetry diagnostics** - debug overlay now includes
+  renderer device/version information and caches slow runtime/memory telemetry
+  separately from fast FPS/position updates.
 - **Settings Development graphics menu** - smooth lighting, ambient occlusion,
   fog, and mesher comparison toggles now live in Settings -> Development and
   persist through user settings instead of relying on hidden F-key bindings.

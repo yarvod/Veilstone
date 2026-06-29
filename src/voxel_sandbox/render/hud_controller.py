@@ -27,6 +27,13 @@ class HudFrameSnapshot:
     inventory_open: bool
 
 
+@dataclass(slots=True)
+class DebugSlowTelemetry:
+    memory: str = "n/a"
+    runtime: str = ""
+    device: str = "unknown"
+
+
 class HudView(Protocol):
     """Narrow window-facing surface used by HUD rendering."""
 
@@ -53,6 +60,7 @@ class HudView(Protocol):
     player_health: float
     text_input: str
     _inv_ctrl: Any
+    debug_device_label: str
 
     def frame_snapshot(self) -> HudFrameSnapshot: ...
 
@@ -155,6 +163,13 @@ class HudWindowAdapter:
     def _inv_ctrl(self) -> Any:
         return self._window._inv_ctrl
 
+    @property
+    def debug_device_label(self) -> str:
+        info = getattr(self._window.mgl_context, "info", {})
+        renderer = str(info.get("GL_RENDERER") or info.get("GL_VENDOR") or "unknown")
+        version = str(info.get("GL_VERSION") or "unknown")
+        return f"{renderer} ({version})"
+
     def frame_snapshot(self) -> HudFrameSnapshot:
         return HudFrameSnapshot(
             width=self._window.width,
@@ -169,6 +184,8 @@ class HudController:
     def __init__(self, win: HudView) -> None:
         self.win = win
         self._last_update_time = time.time()
+        self._last_slow_telemetry_time = 0.0
+        self._slow_telemetry = DebugSlowTelemetry()
         self.debug_label = pyglet.text.Label(
             "",
             x=10,
@@ -243,14 +260,22 @@ class HudController:
             chunk_x, chunk_z = block_x // 16, block_z // 16
             facing = _facing_from_yaw(win.camera.yaw_degrees)
             biome = _biome_key_at(win, block_x, block_z)
-            memory = _process_memory_label()
+            if now - self._last_slow_telemetry_time >= 1.0 or not self._slow_telemetry.runtime:
+                self._last_slow_telemetry_time = now
+                self._slow_telemetry = DebugSlowTelemetry(
+                    memory=_process_memory_label(),
+                    runtime=(
+                        f"Python {sys.version_info.major}.{sys.version_info.minor} {sys.platform}"
+                    ),
+                    device=win.debug_device_label,
+                )
             new_debug_text = (
                 f"FPS {fps:5.1f} Frame {frame_ms:5.1f} ms\n"
                 f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
                 f"Grounded {win.player.on_ground}  VelocityY {win.player.velocity_y:5.2f}\n"
                 f"Yaw {win.camera.yaw_degrees:6.1f}  Pitch {win.camera.pitch_degrees:5.1f} "
                 f"Facing {facing}\n"
-                f"Biome {biome} Memory {memory} "
+                f"Biome {biome} Memory {self._slow_telemetry.memory} "
                 f"Render distance {win.settings.world.render_distance} "
                 f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame}"
                 f"\nChunks {win.world_renderer.loaded_chunks}  "
@@ -274,8 +299,8 @@ class HudController:
                 f"Remote players {len(win.remote_player_entities)}\n"
                 f"Network {'client' if win.network_session is not None else 'singleplayer'} "
                 f"Known players {len(win.network_players)}\n"
-                f"Runtime Python {sys.version_info.major}.{sys.version_info.minor} "
-                f"{sys.platform}  Frame {frame.width}x{frame.height}\n"
+                f"Runtime {self._slow_telemetry.runtime} Frame {frame.width}x{frame.height}\n"
+                f"Device {self._slow_telemetry.device}\n"
                 f"Animation states {self._animation_debug_summary()}\n"
                 f"Selected {self._selected_item_name()}  "
                 "[1-9 hotbar, E inventory, C craft, Q drop]"
