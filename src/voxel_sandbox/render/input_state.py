@@ -44,7 +44,13 @@ except (ImportError, IndexError):
 
 from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.domain.blocks import BlockRegistry
-from voxel_sandbox.engine.events import BlockBroken, BlockPlaced, EntityDamaged, EntityDied
+from voxel_sandbox.engine.events import (
+    BlockBroken,
+    BlockInteractionStarted,
+    BlockPlaced,
+    EntityDamaged,
+    EntityDied,
+)
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextPurpose
 
@@ -309,7 +315,15 @@ class InputHandler:
                 win.inventory_status = "Water cannot be mined"
                 return
             if win.world_renderer.set_block(hit.block, 0):
-                win.start_player_interaction(PlayerInteraction.BREAK_BLOCK)
+                win.events.publish(
+                    BlockInteractionStarted(
+                        "break",
+                        block_id,
+                        hit.block,
+                        hit.block,
+                        hit.normal,
+                    )
+                )
                 win.events.publish(BlockBroken(block_id, hit.block))
                 win._net.send_block_action(hit.block, 0)
                 drop = win.item_registry.drop_for_block(block_id)
@@ -334,7 +348,15 @@ class InputHandler:
             if definition.block_id is None:
                 return
             if win.world_renderer.set_block(hit.previous, definition.block_id):
-                win.start_player_interaction(PlayerInteraction.PLACE_BLOCK)
+                win.events.publish(
+                    BlockInteractionStarted(
+                        "place",
+                        definition.block_id,
+                        hit.previous,
+                        hit.block,
+                        hit.normal,
+                    )
+                )
                 win.events.publish(BlockPlaced(definition.block_id, hit.previous))
                 win._net.send_block_action(hit.previous, definition.block_id)
                 win.inventory.take_from_slot(win.hotbar.selected_index)

@@ -86,7 +86,7 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Render selected held item/block as a first 3D cuboid MVP in the hand.
 - [x] Add attack/break/place swing animation with clear start, progress, finish,
       and cancellation behavior.
-- [ ] Add block breaking feedback hook so hand animation, sound, particles later
+- [x] Add block breaking feedback hook so hand animation, sound, particles later
       can share the same interaction event.
 - [ ] Add local player shadow path where render quality allows it.
 - [x] Add tests for gait phase, interaction state transitions, and snapshot

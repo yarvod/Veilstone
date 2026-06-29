@@ -50,6 +50,7 @@ from voxel_sandbox.engine.authority import (
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkCoord
 from voxel_sandbox.engine.events import (
     BlockBroken,
+    BlockInteractionStarted,
     BlockPlaced,
     EntityDamaged,
     EntityDied,
@@ -652,10 +653,19 @@ class GameWindow(pyglet.window.Window):
             self.set_exclusive_mouse(should_capture)
 
     def _subscribe_audio_events(self) -> None:
+        self.events.subscribe(BlockInteractionStarted, self._start_block_interaction)
         self.events.subscribe(BlockBroken, self._play_block_event)
         self.events.subscribe(BlockPlaced, self._play_block_event)
         self.events.subscribe(EntityDamaged, self._play_entity_damaged_event)
         self.events.subscribe(EntityDied, self._play_entity_died_event)
+
+    def _start_block_interaction(self, event: BlockInteractionStarted) -> None:
+        interaction = (
+            PlayerInteraction.PLACE_BLOCK
+            if event.action == "place"
+            else PlayerInteraction.BREAK_BLOCK
+        )
+        self.start_player_interaction(interaction)
 
     def _play_block_event(self, event: BlockBroken | BlockPlaced) -> None:
         material = self._block_registry().by_id(event.block_id).material.value

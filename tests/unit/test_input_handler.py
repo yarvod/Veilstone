@@ -5,6 +5,13 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from voxel_sandbox.application.player_animation import PlayerInteraction
+from voxel_sandbox.engine.events import (
+    BlockBroken,
+    BlockInteractionStarted,
+    BlockPlaced,
+    EventBus,
+)
+from voxel_sandbox.engine.physics.raycast import RaycastHit
 from voxel_sandbox.render.input_state import InputHandler, KeyState, key, mouse
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
@@ -316,6 +323,67 @@ class TestOnMousePress:
 
         win.start_player_interaction.assert_called_once_with(PlayerInteraction.ATTACK)
         win.entities.damage.assert_called_once()
+
+    def test_left_click_block_publishes_interaction_started_before_break(self):
+        win = _make_win(in_game=True)
+        win.mouse_captured = True
+        win.events = EventBus()
+        published: list[BlockInteractionStarted | BlockBroken] = []
+        win.events.subscribe(BlockInteractionStarted, published.append)
+        win.events.subscribe(BlockBroken, published.append)
+        win.entities.target_mob.return_value = None
+        win.structure_world.raycast_entity.return_value = None
+        win.world_renderer.raycast.return_value = RaycastHit(
+            block=(1, 2, 3),
+            previous=(1, 2, 2),
+            normal=(0, 0, -1),
+            distance=2.0,
+            block_id=4,
+        )
+        win.world_renderer.get_block.return_value = 4
+        win.world_renderer.set_block.return_value = True
+        win.world_runtime.block_registry.by_id.return_value = MagicMock(is_fluid=False)
+        win.item_registry.drop_for_block.return_value = None
+
+        h = InputHandler(win)
+        h.on_mouse_press(0, 0, mouse.LEFT, 0)
+
+        assert published == [
+            BlockInteractionStarted("break", 4, (1, 2, 3), (1, 2, 3), (0, 0, -1)),
+            BlockBroken(4, (1, 2, 3)),
+        ]
+        win.start_player_interaction.assert_not_called()
+
+    def test_right_click_block_publishes_interaction_started_before_place(self):
+        win = _make_win(in_game=True)
+        win.mouse_captured = True
+        win.events = EventBus()
+        published: list[BlockInteractionStarted | BlockPlaced] = []
+        win.events.subscribe(BlockInteractionStarted, published.append)
+        win.events.subscribe(BlockPlaced, published.append)
+        win.entities.target_mob.return_value = None
+        win.structure_world.raycast_entity.return_value = None
+        win.world_renderer.raycast.return_value = RaycastHit(
+            block=(1, 2, 3),
+            previous=(1, 2, 2),
+            normal=(0, 0, -1),
+            distance=2.0,
+            block_id=4,
+        )
+        win.world_renderer.get_block.return_value = 4
+        win.world_renderer.set_block.return_value = True
+        win.hotbar.selected = MagicMock(item_id="oak_planks")
+        win.player.intersects_block.return_value = False
+        win.item_registry.by_id.return_value = MagicMock(block_id=5)
+
+        h = InputHandler(win)
+        h.on_mouse_press(0, 0, mouse.RIGHT, 0)
+
+        assert published == [
+            BlockInteractionStarted("place", 5, (1, 2, 2), (1, 2, 3), (0, 0, -1)),
+            BlockPlaced(5, (1, 2, 2)),
+        ]
+        win.start_player_interaction.assert_not_called()
 
 
 class TestOnMouseScroll:

@@ -3,9 +3,19 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import cast
 
-type GameEvent = BlockBroken | BlockPlaced | EntityDamaged | EntityDied
+type GameEvent = BlockInteractionStarted | BlockBroken | BlockPlaced | EntityDamaged | EntityDied
 type EventHandler[T: GameEvent] = Callable[[T], None]
+
+
+@dataclass(frozen=True, slots=True)
+class BlockInteractionStarted:
+    action: str
+    block_id: int
+    position: tuple[int, int, int]
+    target_position: tuple[int, int, int]
+    normal: tuple[int, int, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,14 +47,14 @@ class EntityDied:
 
 class EventBus:
     def __init__(self) -> None:
-        self._handlers: dict[type[GameEvent], list[EventHandler]] = defaultdict(list)
+        self._handlers: dict[type[GameEvent], list[Callable[[GameEvent], None]]] = defaultdict(list)
 
     def subscribe[T: GameEvent](
         self,
         event_type: type[T],
         handler: EventHandler[T],
     ) -> None:
-        self._handlers[event_type].append(handler)
+        self._handlers[event_type].append(cast(Callable[[GameEvent], None], handler))
 
     def publish(self, event: GameEvent) -> None:
         for handler in tuple(self._handlers[type(event)]):

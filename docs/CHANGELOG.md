@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Block interaction feedback event** - block breaking and placing now publish
+  a shared interaction-start event before completion events, so viewmodel swing,
+  future particles, audio, and network presentation can share one gameplay
+  hook instead of observing raw input separately.
 - **Debug overlay runtime diagnostics** - F3 debug overlay now includes Python
   runtime/platform and current frame size alongside existing chunk, mesh, entity,
   network, and coordinate counters.
