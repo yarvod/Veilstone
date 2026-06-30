@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Player landing and splash audio events** - player landing and water
+  enter/exit transitions now publish gameplay events that the audio bridge maps
+  to tuned movement sounds.
 - **Local player avatar shadows** - third-person local player avatars now share
   the entity shadow pass with remote/player entities, covered by OpenGL smoke
   coverage and real-game visual screenshot verification.

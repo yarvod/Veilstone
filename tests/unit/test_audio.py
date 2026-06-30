@@ -45,6 +45,14 @@ def test_step_material_sounds_are_tuned_separately_from_block_actions() -> None:
     assert bus.registry.get("step.stone").gain < bus.registry.get("block.stone").gain
 
 
+def test_player_movement_sounds_are_registered() -> None:
+    bus = create_audio_bus(AudioSettings(), NullAudioBackend())
+
+    assert "player.land" in bus.registry
+    assert "player.splash" in bus.registry
+    assert bus.registry.get("player.land").gain > bus.registry.get("footstep").gain
+
+
 def test_director_changes_music_and_biome_ambience_once() -> None:
     backend = NullAudioBackend()
     bus = create_audio_bus(AudioSettings(), backend)

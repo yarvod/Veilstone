@@ -136,8 +136,10 @@ F-клавиши должны быть player-facing управлением, а 
       accumulator.
 - [x] Add per-material step sound tuning with sane default gain ranges.
 - [x] Add walk/sprint cadence tests.
-- [ ] Later: add landing, swimming, splash, and block interaction sounds through
-      gameplay events, not direct renderer calls.
+- [x] Add landing and water enter/exit splash sounds through gameplay events,
+  not direct renderer calls.
+- [ ] Later: add continuous swimming stroke/loop polish and distinct splash
+  assets.
 
 ### Phase C4: Water playability and rendering
 

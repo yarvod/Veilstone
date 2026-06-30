@@ -36,6 +36,10 @@ from voxel_sandbox.application.player_camera import (
     camera_position_for_perspective,
     cycle_perspective_mode,
 )
+from voxel_sandbox.application.player_movement_events import (
+    build_player_movement_event_state,
+    detect_player_movement_events,
+)
 from voxel_sandbox.application.player_render import build_player_render_snapshot
 from voxel_sandbox.application.player_viewmodel import build_player_viewmodel_snapshot
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
@@ -54,10 +58,12 @@ from voxel_sandbox.engine.events import (
     BlockPlaced,
     EntityDamaged,
     EntityDied,
+    PlayerLanded,
+    PlayerWaterTransition,
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator
-from voxel_sandbox.engine.physics import PlayerInput
+from voxel_sandbox.engine.physics import PlayerController, PlayerInput
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import (
     ClientSession,
@@ -152,6 +158,9 @@ class GameWindow(pyglet.window.Window):
         self.game_state = GameStateMachine()
         self.ui_renderer = UiRenderer(self.width, self.height)
         spawn_x, spawn_y, spawn_z = self._rebuild_world_runtime()
+        self._player_movement_event_state = build_player_movement_event_state(
+            cast(PlayerController, self.player)
+        )
         self._sync_camera_to_player()
         self.key_state = KeyState()
         self.item_registry = self.app_runtime.content_registries.item_registry
@@ -403,6 +412,7 @@ class GameWindow(pyglet.window.Window):
             jump=self.key_state.is_pressed(self.control_bindings["jump"]),
             sprint=sprint,
         )
+        previous_movement_event_state = self._player_movement_event_state
         self.player.update(
             player_input,
             self.camera.yaw_degrees,
@@ -411,6 +421,15 @@ class GameWindow(pyglet.window.Window):
             is_solid=self._is_solid_combined,
             is_fluid=self._is_fluid_at,
         )
+        current_movement_event_state = build_player_movement_event_state(
+            cast(PlayerController, self.player)
+        )
+        for event in detect_player_movement_events(
+            previous_movement_event_state, current_movement_event_state
+        ):
+            self.events.publish(event)
+        self._player_movement_event_state = current_movement_event_state
+
         self._player_animation_state, self._player_animation_snapshot = advance_player_animation(
             self._player_animation_state,
             PlayerAnimationInput(
@@ -673,6 +692,8 @@ class GameWindow(pyglet.window.Window):
         self.events.subscribe(BlockPlaced, self._play_block_event)
         self.events.subscribe(EntityDamaged, self._play_entity_damaged_event)
         self.events.subscribe(EntityDied, self._play_entity_died_event)
+        self.events.subscribe(PlayerLanded, self._play_player_landed_event)
+        self.events.subscribe(PlayerWaterTransition, self._play_player_water_transition_event)
 
     def _start_block_interaction(self, event: BlockInteractionStarted) -> None:
         interaction = (
@@ -716,6 +737,14 @@ class GameWindow(pyglet.window.Window):
             )
         )
 
+    def _play_player_landed_event(self, event: PlayerLanded) -> None:
+        key_name = "player.land" if "player.land" in self.audio.registry else "footstep"
+        self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, event.position))
+
+    def _play_player_water_transition_event(self, event: PlayerWaterTransition) -> None:
+        key_name = "player.splash" if "player.splash" in self.audio.registry else "footstep"
+        self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, event.position))
+
     def _control_symbols(self) -> dict[str, int]:
         controls = self.settings.controls
         return {
@@ -727,7 +756,8 @@ class GameWindow(pyglet.window.Window):
         }
 
     def _sync_camera_to_player(self) -> None:
-        ex, ey, ez = self.player.eye_position
+        player = cast(PlayerController, self.player)
+        ex, ey, ez = player.eye_position
         animation = self._player_animation_snapshot
         self.camera.x, self.camera.y, self.camera.z = camera_position_for_perspective(
             (ex, ey + (animation.camera_bob_y if animation is not None else 0.0), ez),

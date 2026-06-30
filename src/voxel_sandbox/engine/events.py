@@ -5,7 +5,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
-type GameEvent = BlockInteractionStarted | BlockBroken | BlockPlaced | EntityDamaged | EntityDied
+type GameEvent = (
+    BlockInteractionStarted
+    | BlockBroken
+    | BlockPlaced
+    | EntityDamaged
+    | EntityDied
+    | PlayerLanded
+    | PlayerWaterTransition
+)
 type EventHandler[T: GameEvent] = Callable[[T], None]
 
 
@@ -43,6 +51,18 @@ class EntityDied:
     entity_id: int
     kind: str
     position: tuple[float, float, float]
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerLanded:
+    position: tuple[float, float, float]
+    vertical_velocity: float
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerWaterTransition:
+    position: tuple[float, float, float]
+    entered: bool
 
 
 class EventBus:

@@ -59,6 +59,18 @@ group = "effects"
 gain = 0.62
 
 [[audio]]
+key = "player.land"
+path = "audio/footstep.wav"
+group = "effects"
+gain = 0.14
+
+[[audio]]
+key = "player.splash"
+path = "audio/footstep.wav"
+group = "effects"
+gain = 0.12
+
+[[audio]]
 key = "mob.passive_hurt"
 paths = ["audio/cow/hurt_1.wav", "audio/cow/hurt_2.wav"]
 group = "effects"
