@@ -48,6 +48,7 @@ from voxel_sandbox.render.meshes.worker import SectionMeshWorker
 from voxel_sandbox.render.perf import RenderQueueSnapshot
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
+from voxel_sandbox.render.streaming_schedule import drain_fifo_keys, frame_budget
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 
@@ -366,10 +367,11 @@ class DemoWorldRenderer:
 
     def update_streaming(self, center: ChunkCoord) -> None:
         if not self.remote_mode:
+            chunk_budget = frame_budget(self.uploads_per_frame)
             batch = self._streamer.update(
                 center,
-                max_completed=self.uploads_per_frame,
-                max_submitted=self.uploads_per_frame,
+                max_completed=chunk_budget,
+                max_submitted=chunk_budget,
             )
             for coord in batch.unloaded:
                 self._remove_chunk(coord)
@@ -393,10 +395,7 @@ class DemoWorldRenderer:
         self._queue_stream_remesh(affected_chunks.values())
 
     def _flush_stream_relight_queue(self) -> None:
-        budget = max(0, self.uploads_per_frame)
-        centers = tuple(self._stream_relight_queue)[:budget]
-        for center in centers:
-            self._stream_relight_queue.pop(center, None)
+        centers = drain_fifo_keys(self._stream_relight_queue, self.uploads_per_frame)
         if centers:
             self._queue_stream_remesh(self._relight_neighborhood(centers))
 
@@ -407,9 +406,7 @@ class DemoWorldRenderer:
                 self._stream_remesh_queue[key] = None
 
     def _flush_stream_remesh_queue(self) -> None:
-        budget = max(0, self.mesh_uploads_per_frame)
-        for key in tuple(self._stream_remesh_queue)[:budget]:
-            self._stream_remesh_queue.pop(key, None)
+        for key in drain_fifo_keys(self._stream_remesh_queue, self.mesh_uploads_per_frame):
             self._schedule_section(key)
 
     def render(
