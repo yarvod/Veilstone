@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Gameplay controller window adapter** - `GameplayController` now receives a `GameplayView` adapter instead of the full `GameWindow`; real client smoke startup passed after the wiring change.
 - **Gameplay controller typing guards** - command handling now guards local player/entity access and texture-pack service wiring, making `render/gameplay_controller.py` focused-Pyright clean while D1 controller-port extraction continues.
 - **Bounded render-distance streaming** - chunk submission, relight work, and remesh scheduling now use per-frame budgets; the frame-streaming benchmark can run synthetic moving-player profiles with render-distance and warmup controls.
 - **Distant world readability coverage** - terrain generation now uses registry

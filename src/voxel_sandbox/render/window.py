@@ -74,7 +74,11 @@ from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.entity_renderer import EntityRenderer
 from voxel_sandbox.render.first_person_viewmodel import FirstPersonViewmodelRenderer
-from voxel_sandbox.render.gameplay_controller import GameplayController
+from voxel_sandbox.render.gameplay_controller import (
+    GameplayController,
+    GameplayView,
+    GameplayWindowAdapter,
+)
 from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
     InputHandler,
@@ -134,7 +138,7 @@ class GameWindow(pyglet.window.Window):
         self.mgl_context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
         self.settings = settings
         self.app_runtime = app_runtime or build_app_runtime(settings)
-        self._gameplay = GameplayController(self)
+        self._gameplay = GameplayController(cast(GameplayView, GameplayWindowAdapter(self)))
         self.audio = self.app_runtime.audio
         self.audio_director = self.app_runtime.audio_director
         self.events = self.app_runtime.event_bus

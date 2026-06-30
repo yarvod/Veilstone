@@ -159,8 +159,8 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 ### WATCH-A002: Controllers still receive full GameWindow
 
 - **Status:** investigating
-- **Affected area:** `render/gameplay_controller.py`, `render/hud_controller.py`, `render/network_controller.py`
-- **Notes:** Tracked by Phase A A6/A7.
+- **Affected area:** `render/inventory_ui.py`, `render/network_controller.py`; `render/gameplay_controller.py` now uses a window adapter but still needs narrower command ports.
+- **Notes:** Tracked by Phase D1 controller-port cleanup.
 
 ### WATCH-A003: DemoWorldRenderer owns world and rendering concerns
 

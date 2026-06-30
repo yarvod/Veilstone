@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import replace
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from voxel_sandbox.app.commands import (
     CommandError,
@@ -17,7 +17,7 @@ from voxel_sandbox.app.commands import (
     ToggleStructureCommand,
     parse_command,
 )
-from voxel_sandbox.app.settings import save_user_settings
+from voxel_sandbox.app.settings import AppSettings, save_user_settings
 from voxel_sandbox.application.resource_packs import (
     ApplyResourcePackUseCase,
     TexturePackServicePort,
@@ -30,8 +30,34 @@ if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
 
 
+class GameplayView(Protocol):
+    app_runtime: Any
+    world_runtime: Any
+    settings: AppSettings
+    world_renderer: Any
+    active_save_root: Any
+    network_session: Any | None
+    network_players: dict[int, dict[str, object]]
+    player: PlayerController | None
+    camera: Any
+    lan_server: Any | None
+    structure_world: Any
+    entities: Any | None
+    inventory_status: str
+
+    def _is_solid_combined(self, x: int, y: int, z: int) -> bool: ...
+
+
+class GameplayWindowAdapter:
+    def __init__(self, window: GameWindow) -> None:
+        self._window = window
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._window, name)
+
+
 class GameplayController:
-    def __init__(self, win: GameWindow) -> None:
+    def __init__(self, win: GameplayView) -> None:
         self.win = win
         texture_packs = win.app_runtime.texture_packs
         if texture_packs is None:

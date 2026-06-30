@@ -268,6 +268,19 @@ focused discovery → implementation → tests/checks → docs updates → commi
 
 Work in small coherent phases.
 
+## Real Game Verification
+
+For UI, rendering, controls, audio, movement, mobs, world streaming, resource
+packs, or other player-facing gameplay changes, do not rely only on unit tests.
+Run the real application path whenever the environment allows it: use smoke
+tests, hidden-window benchmarks, manual/automated movement through the world,
+F3/debug overlay checks, texture-pack switching, mob/object behavior checks, and
+screenshots saved under the normal screenshot flow. Record the exact command,
+key result, and screenshot path in docs or the final report when the check is
+part of accepting the slice. If OpenGL/display/audio is unavailable, document
+that limitation and run the closest deterministic headless or hidden-window
+coverage instead.
+
 Before editing:
 
 1. Understand the task.
