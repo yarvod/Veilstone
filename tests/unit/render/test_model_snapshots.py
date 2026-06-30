@@ -22,6 +22,20 @@ def test_block_model_snapshot_keeps_minecraft_texture_locations() -> None:
     assert model.texture_for_face("top") == "minecraft:block/grass_block_top"
     assert model.texture_for_face("side") == "minecraft:block/grass_block_side"
     assert model.texture_for_face("bottom") == "minecraft:block/dirt"
+    assert model.tint_for_face("top") == "grass"
+    assert model.tint_for_face("side") is None
+    assert model.tint_for_face("bottom") is None
+
+
+def test_block_model_snapshot_marks_tinted_vegetation_textures() -> None:
+    blocks = create_core_block_registry()
+
+    short_grass = build_block_model_snapshot(blocks.by_key("short_grass").id, blocks)
+    leaves = build_block_model_snapshot(blocks.by_key("oak_leaves").id, blocks)
+
+    assert short_grass.tint_for_face("side") == "grass"
+    assert short_grass.render_shape == "cross"
+    assert leaves.tint_for_face("top") == "foliage"
 
 
 def test_item_model_snapshot_resolves_block_item_model() -> None:

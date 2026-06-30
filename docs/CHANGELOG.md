@@ -7,6 +7,9 @@
 - **Phase D architecture cleanup completed** - controller/HUD/runtime snapshot
   workplan is closed; active workplan now promotes Minecraft-like terrain
   visual polish and F3 diagnostics from `docs/BACKLOG.md`.
+- **Grass/foliage tint model metadata** - render-facing block model snapshots
+  now mark grass and foliage textures with tint kinds, establishing the typed
+  path needed to tint Faithful-style grayscale vegetation assets.
 
 - **HUD debug text snapshot** - F3 debug text assembly now routes through a
   `HudView` snapshot method instead of `HudController` reading chunk, renderer,

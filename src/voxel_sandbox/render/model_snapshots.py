@@ -16,6 +16,9 @@ class BlockModelSnapshot:
     texture_top: str
     texture_side: str
     texture_bottom: str
+    tint_top: str | None
+    tint_side: str | None
+    tint_bottom: str | None
     render_layer: str
     render_shape: str
 
@@ -25,6 +28,13 @@ class BlockModelSnapshot:
         if face == "bottom":
             return self.texture_bottom
         return self.texture_top
+
+    def tint_for_face(self, face: str) -> str | None:
+        if face == "side":
+            return self.tint_side
+        if face == "bottom":
+            return self.tint_bottom
+        return self.tint_top
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,9 +62,23 @@ def build_block_model_snapshot(
         texture_top=block.texture_top,
         texture_side=block.texture_side,
         texture_bottom=block.texture_bottom,
+        tint_top=_texture_tint_kind(block.texture_top),
+        tint_side=_texture_tint_kind(block.texture_side),
+        tint_bottom=_texture_tint_kind(block.texture_bottom),
         render_layer=block.render_layer,
         render_shape=block.render_shape,
     )
+
+
+def _texture_tint_kind(texture: str) -> str | None:
+    if texture in {
+        "minecraft:block/grass_block_top",
+        "minecraft:block/short_grass",
+    }:
+        return "grass"
+    if texture in {"minecraft:block/oak_leaves"}:
+        return "foliage"
+    return None
 
 
 def build_item_model_snapshot(

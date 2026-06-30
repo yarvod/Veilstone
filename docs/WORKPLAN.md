@@ -42,6 +42,9 @@ Promoted backlog: `R-B004`, `DX-B001`, `R-B005`.
 
 ### Phase E1: Grass/Terrain Material Coherence
 
+- Findings: Faithful-style `grass_block_top`, `short_grass`, and `oak_leaves`
+  are grayscale/tint-driven assets; current chunk mesh path has no tint channel,
+  so renderer work must carry tint metadata beyond model snapshots.
 - [ ] Audit default and Faithful-style grass block texture routing, atlas rects,
   tint, mip/filter settings, and terrain sampling paths.
 - [ ] Add focused tests/fixtures proving grass material lookup, tint, atlas
