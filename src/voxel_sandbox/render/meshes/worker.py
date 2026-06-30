@@ -21,6 +21,9 @@ class CompletedMesh:
     transparent_mesh: MeshData
 
 
+MeshTask = tuple[SectionCoord, int, MeshingNeighborhood]
+
+
 class SectionMeshWorker:
     def __init__(
         self,
@@ -99,7 +102,7 @@ class SectionMeshWorker:
         smooth_lighting: bool,
         ambient_occlusion: bool,
     ) -> None:
-        batch_args = []
+        batch_args: list[MeshTask] = []
         for key, neighborhood in tasks.items():
             revision = self._revisions.get(key, 0) + 1
             self._revisions[key] = revision
@@ -203,12 +206,12 @@ class SectionMeshWorker:
 
     def _build_chunk(
         self,
-        tasks: tuple[tuple[SectionCoord, int, MeshingNeighborhood], ...],
+        tasks: tuple[MeshTask, ...],
         greedy: bool,
         smooth_lighting: bool,
         ambient_occlusion: bool,
     ) -> tuple[CompletedMesh, ...]:
-        results = []
+        results: list[CompletedMesh] = []
         for key, revision, neighborhood in tasks:
             results.append(
                 self._build(key, revision, neighborhood, greedy, smooth_lighting, ambient_occlusion)
@@ -256,12 +259,12 @@ def _build_process_mesh(
 
 
 def _build_chunk_process_mesh(
-    tasks: tuple[tuple[SectionCoord, int, MeshingNeighborhood], ...],
+    tasks: tuple[MeshTask, ...],
     greedy: bool,
     smooth_lighting: bool,
     ambient_occlusion: bool,
 ) -> tuple[CompletedMesh, ...]:
-    results = []
+    results: list[CompletedMesh] = []
     for key, revision, neighborhood in tasks:
         results.append(
             _build_process_mesh(

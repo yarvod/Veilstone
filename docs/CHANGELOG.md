@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Mesh worker typing cleanup** - section/chunk mesh worker task batches now carry explicit mesh-task/result types; focused worker Pyright is clean and hidden frame-streaming RD3 smoke stayed within p95 10.808 ms.
+
 - **Menu UI world-list typing cleanup** - `MenuUI` now tracks saved worlds as `(name, Path)` tuples and keeps the focused menu UI Pyright gate clean while preserving real client startup smoke.
 
 - **Controller-slice real smoke coverage** - D1 controller/input slices now have real app smoke coverage for `/resourcepack default`, Faithful apply/reset, F3 debug overlay, F5 perspective, F2 screenshot, inventory UI, LAN, and remote-render paths.
