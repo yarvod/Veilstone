@@ -2,12 +2,13 @@
 
 ## Overview
 
-Активная цель: после закрытия Minecraft-like gameplay-feel Phase C стабилизировать
-архитектуру, чтобы следующие визуальные, аудио, inventory и resource-pack фичи не
-наращивали `GameWindow` и `DemoWorldRenderer` как супер-классы.
+Активная цель: после закрытия Phase D architecture cleanup перейти к
+Minecraft-like visual/resource-pack polish, начиная с травы, terrain material
+coherence и F3 diagnostics, не возвращая логику в `GameWindow` или
+`DemoWorldRenderer`.
 
-Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
-`docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
+Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist —
+в `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
 
 ## Product Direction
 
@@ -19,80 +20,66 @@
   расползаться по render-классам;
 - visual/resource-pack work uses Minecraft-style content paths under
   `resource_packs/default/assets/<namespace>/textures|sounds/...`;
-- real-game smoke checks обязательны для UI/render/audio/controls changes;
+- new texture/audio assets must be added through the default resource pack
+  folder routing, not hard-coded legacy fallbacks;
+- real-game smoke checks обязательны для UI/render/audio/controls changes:
+  launch the real app, interact with the feature, capture screenshots when the
+  display is available, and record blocker details when Cocoa/OpenGL display is
+  unavailable;
 - focused Pyright обязателен для затронутых typed boundaries; full Pyright пока
   tracked как known-red `BUG-Q001`.
 
 ## Current Phase
 
-### Phase D: Architecture Cleanup And Runtime Diagnostics
+### Phase E: Minecraft-Like Terrain Visual Polish And Diagnostics
 
-Цель: раздербанить оставшиеся странные зависимости вокруг `GameWindow`,
-`DemoWorldRenderer` и chunk/runtime orchestration, сохранив игру runnable после
-каждого маленького среза.
+Promoted backlog: `R-B004`, `DX-B001`, `R-B005`.
 
-Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
-`WORLD-B004`, `DX-B002`.
+Цель: сделать траву и terrain surfaces визуально ближе к Minecraft-like style,
+дать F3 enough diagnostics для проверки FPS/координат/чанков/биомов/очередей и
+подготовить render-only vegetation motion без накопления нового долга в
+`GameWindow`.
 
-### Phase D1: Controller Ports Instead Of Full GameWindow
+### Phase E1: Grass/Terrain Material Coherence
 
-- [x] Map remaining controllers/use cases that still receive full `GameWindow` (`GameplayController`, `InventoryController`, `NetworkController`; HUD already uses an adapter).
-- [x] Route `GameplayController` through `GameplayView`/`GameplayWindowAdapter`
-      instead of passing the full `GameWindow` object.
-- [x] Route `InventoryController` through `InventoryView`/`InventoryWindowAdapter`
-      instead of passing the full `GameWindow` object.
-- [x] Route `NetworkController` through `NetworkView`/`NetworkWindowAdapter`
-      instead of passing the full `GameWindow` object.
-- [x] Route `InputHandler` through `InputView`/`InputWindowAdapter` with
-      inventory and network input ports instead of private `GameWindow` members.
-- [x] Shrink `GameplayView`/`InventoryView`/`NetworkView`/`InputView` toward
-      narrower command, UI, and session ports instead of broad window-adapter
-      surfaces.
-- [x] Extract remaining HUD/debug snapshot reads so HUD code does not depend on
-      broad window state; inventory draw now goes through `InventoryHudPort`.
-- [x] Keep `/resourcepack`, F-key controls, inventory, and debug overlay smoke
-      tested through real app paths after each controller slice.
-- [x] Update `docs/ARCHITECTURE.md` and `docs/BUGS.md` watchlist as each window
-      dependency is removed.
+- [ ] Audit default and Faithful-style grass block texture routing, atlas rects,
+  tint, mip/filter settings, and terrain sampling paths.
+- [ ] Add focused tests/fixtures proving grass material lookup, tint, atlas
+  gutter/mipmap metadata, and inventory/held-item texture paths stay separate.
+- [ ] Implement Minecraft-like grass field smoothing or distance-safe sampling
+  through render/material snapshots or renderer helpers, not window/controller
+  state.
+- [ ] Verify default and Faithful-style packs in the real app: walk on grass,
+  inspect shallow camera angles, tree shadows, grass color continuity, and
+  capture screenshots when display is available.
 
-### Phase D2: Chunk Runtime Pipeline And Perf Snapshots
+### Phase E2: Minecraft-Like F3 Diagnostics
 
-- [x] Move chunk streaming/relight/remesh scheduling policy behind a runtime or
-      render-pipeline helper instead of adding more orchestration to
-      `DemoWorldRenderer`.
-- [x] Add `RuntimePerfSnapshot` or equivalent application/render-facing data for
-      frame/update/render timings, chunk queues, mesh queues, and visible chunks.
-- [x] Feed F3/debug overlay from cached perf snapshots without expensive
-      per-frame telemetry reads.
-- [x] Add focused tests for scheduling priority/budgets without constructing
-      Pyglet or ModernGL.
-- [x] Keep `benchmark-frame-streaming --render-distance 3/4` as the real hidden
-      window performance smoke for this phase.
+- [ ] Extend cached HUD debug snapshots with practical diagnostics: FPS/frame
+  timing, precise player coordinates, block/chunk coordinates, facing, biome or
+  terrain profile, render distance, chunk/mesh queues, visible chunks, and
+  active resource pack.
+- [ ] Keep diagnostics low-frequency/cached so F3 does not perform expensive
+  per-frame reads.
+- [ ] Add unit coverage for debug snapshot content without constructing Pyglet
+  or ModernGL.
+- [ ] Real-game smoke F3 overlay: toggle F3, walk, inspect FPS/coords/chunk
+  values updating, and save screenshot evidence when display is available.
 
-### Phase D3: Block/Item Model Snapshot Layer
+### Phase E3: Render-Only Vegetation Motion
 
-- [x] Define render-facing block/item model snapshot data for chunk blocks,
-      held items, dropped items, inventory icons, and remote held items.
-- [x] Route inventory item/block icons, first-person held items, dropped items,
-      and remote held items through the snapshot layer instead of UI-local
-      texture lookup rules.
-- [x] Keep resource-pack texture lookup Minecraft-like and folder-routable for
-      default and user packs.
-- [x] Add unit coverage proving registry/resource-pack data maps to stable model
-      snapshots without OpenGL.
-
-### Phase D4: Reference Gameplay Snapshot Scenes
-
-- [x] Add deterministic debug scene fixtures for generation, water, foliage,
-      lighting, mob movement, inventory icons, and first-person interaction.
-- [x] Add dev-only reference gameplay scene command with isometric capture
-      metadata sidecar: seed, resource pack, render distance, and settings.
-- [x] Use numeric summaries first; promote visual golden checks only when output
-      is stable enough not to churn.
+- [ ] Define render-facing vegetation wind data for grass/leaves/plants that
+  preserves deterministic gameplay/collision state.
+- [ ] Add subtle quality-gated grass/leaf sway in renderer/material code without
+  changing domain block definitions or resource-pack folder routing.
+- [ ] Add tests for animation parameter plumbing and disabled/low-quality
+  fallback behavior without OpenGL.
+- [ ] Real-game smoke: inspect grass/leaves near spawn, verify shadows remain
+  readable and FPS/debug overlay stays sane.
 
 ## Check Gate
 
-Run before commits unless a narrower WIP checkpoint is explicitly documented:
+Run before commits unless narrower WIP checkpoint explicitly documented:
 
 ```bash
 uv run lint-imports
