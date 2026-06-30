@@ -50,10 +50,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** entity animation / mobs
-- **Observed:** cow and zombie walk loops do not convincingly match actual leg
+- **Observed:** cow and zombie walk loops do not convincingly match leg
   placement, speed, turning, or step contact.
-- **Next action:** drive animation phase from entity velocity and grounded state;
-  add tests for phase advancement and idle reset.
+- **Fix notes:** locomotion animation phase now advances from actual grounded
+  horizontal velocity and resets while idle or blocked.
+- **Next action:** run real visual mob smoke when an active display is available,
+  then add explicit idle/walk/turn/hurt/death presentation separation.
 
 ### BUG-G005: Leaf/resource-pack transparency not rendered cutout
 

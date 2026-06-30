@@ -140,7 +140,6 @@ class EntitySimulation:
             velocity = self.world.velocities[entity]
             if is_solid is not None:
                 _update_vertical(transform, velocity, collider, delta_time, is_solid, is_hazard)
-            animation.phase += delta_time
             if ai.knockback_remaining > 0.0:
                 ai.knockback_remaining = max(0.0, ai.knockback_remaining - delta_time)
                 _move_knockback(
@@ -213,6 +212,8 @@ class EntitySimulation:
             actual_speed = 0.0
             move_x = 0.0
             move_z = 0.0
+            previous_x = transform.x
+            previous_z = transform.z
             if speed > 0.0:
                 target_yaw = math.atan2(ai.direction_x, -ai.direction_z)
                 transform.yaw = _approach_angle(transform.yaw, target_yaw, delta_time * 3.8)
@@ -264,7 +265,11 @@ class EntitySimulation:
             velocity.z = move_z
             if is_solid is None:
                 transform.y = float(ground)
-            animation.speed = actual_speed
+            if delta_time > 0.0:
+                velocity.x = (transform.x - previous_x) / delta_time
+                velocity.z = (transform.z - previous_z) / delta_time
+            grounded = is_solid is None or _mob_grounded(transform, collider, is_solid)
+            _advance_locomotion_animation(animation, velocity, delta_time, grounded)
             _advance_animation_state(animation, ai.state, delta_time)
         return player_damage
 
@@ -417,6 +422,28 @@ def _advance_animation_state(
         animation.state_phase = 0.0
     else:
         animation.state_phase += delta_time
+
+
+def _advance_locomotion_animation(
+    animation: AnimationState,
+    velocity: Velocity,
+    delta_time: float,
+    grounded: bool,
+) -> None:
+    horizontal_speed = math.hypot(velocity.x, velocity.z) if grounded else 0.0
+    animation.speed = horizontal_speed
+    if horizontal_speed <= 0.03:
+        animation.phase = 0.0
+        return
+    animation.phase += delta_time * horizontal_speed
+
+
+def _mob_grounded(
+    transform: Transform,
+    collider: Collider,
+    is_solid: Callable[[int, int, int], bool],
+) -> bool:
+    return _mob_collides(transform.x, transform.y - 0.05, transform.z, collider, is_solid)
 
 
 def _mob_collides(

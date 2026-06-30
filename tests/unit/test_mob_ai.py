@@ -201,3 +201,60 @@ def test_mob_yaw_faces_its_actual_movement_direction() -> None:
     assert abs(yaw_error) < 0.07
     assert abs(velocity.x / movement_length - math.sin(transform.yaw)) < 1e-9
     assert abs(velocity.z / movement_length + math.cos(transform.yaw)) < 1e-9
+
+
+def test_mob_animation_phase_advances_from_actual_ground_velocity() -> None:
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 10.0, 0.0))
+    ai = simulation.world.mob_ai[mob]
+    ai.state = MobState.WANDER
+    ai.direction_x = 0.0
+    ai.direction_z = -1.0
+    ai.state_time = 5.0
+
+    simulation.update(0.5, (20.0, 10.0, 20.0), flat_ground, no_hazard)
+
+    animation = simulation.world.animations[mob]
+    assert animation.speed > 0.0
+    assert math.isclose(animation.phase, animation.speed * 0.5)
+
+
+def test_mob_animation_phase_resets_while_idle() -> None:
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 10.0, 0.0))
+    ai = simulation.world.mob_ai[mob]
+    animation = simulation.world.animations[mob]
+    ai.state = MobState.IDLE
+    ai.direction_x = 0.0
+    ai.direction_z = 0.0
+    ai.state_time = 5.0
+    animation.phase = 1.2
+    animation.speed = 0.7
+
+    simulation.update(0.5, (20.0, 10.0, 20.0), flat_ground, no_hazard)
+
+    assert animation.phase == 0.0
+    assert animation.speed == 0.0
+
+
+def test_mob_animation_uses_zero_speed_when_hazard_blocks_displacement() -> None:
+    def hazard_ahead(x: int, y: int, z: int) -> bool:
+        del x, y
+        return z < 0
+
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 10.0, 0.0))
+    ai = simulation.world.mob_ai[mob]
+    ai.state = MobState.WANDER
+    ai.direction_x = 0.0
+    ai.direction_z = -1.0
+    ai.state_time = 5.0
+
+    simulation.update(0.5, (20.0, 10.0, 20.0), flat_ground, hazard_ahead)
+
+    animation = simulation.world.animations[mob]
+    velocity = simulation.world.velocities[mob]
+    assert animation.phase == 0.0
+    assert animation.speed == 0.0
+    assert velocity.x == 0.0
+    assert velocity.z == 0.0

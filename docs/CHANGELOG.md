@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Mob locomotion animation phase** - mob walk animation phase now advances
+  from actual grounded horizontal velocity instead of raw frame time, with tests
+  for moving, idle, and blocked-displacement cases.
 - **Water surface smoothing** - water mesh generation now smooths top vertices
   across neighboring fluid levels without changing voxel simulation rules,
   covered by unit geometry checks and real-game screenshot smoke
