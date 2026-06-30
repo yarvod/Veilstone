@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Water shore movement coverage** - player physics tests now lock down swim
+  buoyancy, slow sinking, shore step-up, and collision against taller shore
+  walls, with runtime smoke coverage against `GameWindow` world blocks.
 - **Water fluid correctness coverage** - water unit tests now lock down
   cross-chunk level propagation and dirty mesh/save flags before render-side
   flow smoothing work.

@@ -147,7 +147,7 @@ F-клавиши должны быть player-facing управлением, а 
 
 - [x] Fix player inability to reliably climb from water onto shore.
 - [x] Add regression test for water-to-land movement at shore blocks.
-- [ ] Verify swimming, buoyancy, jump/step-up, and collision rules do not fight
+- [x] Verify swimming, buoyancy, jump/step-up, and collision rules do not fight
       each other near shore blocks.
 - [ ] Smooth visible water flow transitions after block breaks.
 - [ ] Keep near-term simulation Minecraft-like voxel water: sources, flow,
