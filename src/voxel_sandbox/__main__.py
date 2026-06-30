@@ -48,6 +48,15 @@ def build_parser() -> argparse.ArgumentParser:
         "foliage-smoke-scene",
         help="Print the transparent foliage manual smoke-test scene",
     )
+    reference_scene = subparsers.add_parser(
+        "reference-gameplay-scene",
+        help="Print deterministic reference gameplay scene summary",
+    )
+    reference_scene.add_argument("--metadata", default=None)
+    reference_scene.add_argument("--seed", type=int, default=1337)
+    reference_scene.add_argument("--resource-pack", default="default")
+    reference_scene.add_argument("--render-distance", type=int, default=3)
+    reference_scene.add_argument("--settings-profile", default="dev-reference")
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",

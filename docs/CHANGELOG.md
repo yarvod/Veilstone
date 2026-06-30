@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Reference gameplay scene CLI** - added deterministic `reference-gameplay-scene`
+  fixtures covering water, foliage, lighting, mob movement, inventory icons, and
+  first-person interaction, with numeric summaries and isometric capture
+  metadata sidecar support. Real CLI smoke wrote
+  `saves/screenshots/reference_gameplay_scene_20260701.json`.
+
 - **Block/item model snapshots** - render-facing block/item model snapshots now resolve Minecraft-style texture ids for inventory icons, first-person held items, dropped items, and remote held items through one helper. Focused tests pass, real client smoke passed with F3/F5/inventory screenshot `saves/screenshots/veilstone_20260701_002605.png`, and movement/attack smoke moved the player `6.706` blocks with animation state `attack`.
 
 - **Streaming scheduling helper** - chunk streaming, relight, and remesh queue budget drains now route through a pure render scheduling helper with focused tests; RD3 hidden frame-streaming smoke passed p95 `9.897 ms`.

@@ -83,11 +83,11 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
 
 ### Phase D4: Reference Gameplay Snapshot Scenes
 
-- [ ] Add deterministic debug scene fixtures for generation, water, foliage,
+- [x] Add deterministic debug scene fixtures for generation, water, foliage,
       lighting, mob movement, inventory icons, and first-person interaction.
-- [ ] Add dev-only screenshot/isometric capture command with metadata sidecar
-      seed, resource pack, render distance, and settings.
-- [ ] Use numeric summaries first; promote visual golden checks only when output
+- [x] Add dev-only reference gameplay scene command with isometric capture
+      metadata sidecar: seed, resource pack, render distance, and settings.
+- [x] Use numeric summaries first; promote visual golden checks only when output
       is stable enough not to churn.
 
 ## Check Gate

@@ -88,6 +88,19 @@ def run_command(args: argparse.Namespace) -> int:
         from voxel_sandbox.tools.foliage_smoke_scene import run_preview
 
         return run_preview()
+    if command == "reference-gameplay-scene":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.reference_gameplay_scene import run_preview
+
+        metadata = getattr(args, "metadata", None)
+        return run_preview(
+            metadata_path=Path(str(metadata)) if metadata else None,
+            seed=int(getattr(args, "seed", 1337)),
+            resource_pack=str(getattr(args, "resource_pack", "default")),
+            render_distance=int(getattr(args, "render_distance", 3)),
+            settings_profile=str(getattr(args, "settings_profile", "dev-reference")),
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 
