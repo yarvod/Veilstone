@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Block/item model snapshots** - render-facing block/item model snapshots now resolve Minecraft-style texture ids for inventory icons, first-person held items, dropped items, and remote held items through one helper. Focused tests pass, real client smoke passed with F3/F5/inventory screenshot `saves/screenshots/veilstone_20260701_002605.png`, and movement/attack smoke moved the player `6.706` blocks with animation state `attack`.
+
 - **Streaming scheduling helper** - chunk streaming, relight, and remesh queue budget drains now route through a pure render scheduling helper with focused tests; RD3 hidden frame-streaming smoke passed p95 `9.897 ms`.
 
 - **Runtime perf debug snapshots** - added render-facing runtime performance snapshots for update/render timings and chunk/mesh queue depths; F3 now reads cached perf data and real HUD smoke passed with screenshot `saves/screenshots/veilstone_20260701_001314.png`. Hidden frame streaming smoke passed RD3 p95 `10.073 ms` and RD4 p95 `12.282 ms`.

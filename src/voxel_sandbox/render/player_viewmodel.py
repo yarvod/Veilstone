@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from voxel_sandbox.application.player_viewmodel import PlayerViewmodelSnapshot
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemRegistry
+from voxel_sandbox.render.model_snapshots import (
+    BlockModelSnapshot,
+    build_item_block_model_snapshot,
+)
 
 type Vec3 = tuple[float, float, float]
 
@@ -61,6 +65,7 @@ def _held_item_parts(
 ) -> tuple[ViewmodelPart, ...]:
     assert snapshot.held_item is not None
     side = 1.0 if snapshot.hand == "right" else -1.0
+    block_model = _held_item_block_model(snapshot, item_registry, block_registry)
     block = ViewmodelPart(
         name="held_item_block",
         position=_add(hand_position, (-side * 0.04, 0.12, -0.08)),
@@ -70,39 +75,26 @@ def _held_item_parts(
             snapshot.swing_rotation_degrees,
         ),
         color=(0.44, 0.70, 0.32),
-        texture_name=_held_block_texture_name(snapshot, item_registry, block_registry),
-        texture_top=_held_block_texture(snapshot, item_registry, block_registry, "top"),
-        texture_side=_held_block_texture(snapshot, item_registry, block_registry, "side"),
-        texture_bottom=_held_block_texture(snapshot, item_registry, block_registry, "bottom"),
+        texture_name=block_model.texture_top if block_model is not None else None,
+        texture_top=block_model.texture_top if block_model is not None else None,
+        texture_side=block_model.texture_side if block_model is not None else None,
+        texture_bottom=block_model.texture_bottom if block_model is not None else None,
     )
     return (block,)
 
 
-def _held_block_texture_name(
+def _held_item_block_model(
     snapshot: PlayerViewmodelSnapshot,
     item_registry: ItemRegistry | None,
     block_registry: BlockRegistry | None,
-) -> str | None:
-    return _held_block_texture(snapshot, item_registry, block_registry, "top")
-
-
-def _held_block_texture(
-    snapshot: PlayerViewmodelSnapshot,
-    item_registry: ItemRegistry | None,
-    block_registry: BlockRegistry | None,
-    face: str,
-) -> str | None:
+) -> BlockModelSnapshot | None:
     if item_registry is None or block_registry is None or snapshot.held_item is None:
         return None
-    item = item_registry.by_id(snapshot.held_item.item_id)
-    if item.block_id is None:
-        return None
-    block = block_registry.by_id(item.block_id)
-    if face == "side":
-        return block.texture_side
-    if face == "bottom":
-        return block.texture_bottom
-    return block.texture_top
+    return build_item_block_model_snapshot(
+        snapshot.held_item.item_id,
+        item_registry,
+        block_registry,
+    )
 
 
 def _arm_parts(

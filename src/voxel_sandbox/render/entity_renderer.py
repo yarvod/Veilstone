@@ -28,6 +28,7 @@ from voxel_sandbox.render.entity_models import (
     ModelPart,
 )
 from voxel_sandbox.render.math3d import camera_matrix
+from voxel_sandbox.render.model_snapshots import item_block_atlas_rect
 from voxel_sandbox.render.player_held_item import (
     PlayerHeldItemRenderData,
     build_player_held_item_render_data,
@@ -155,12 +156,14 @@ class EntityRenderer:
                 ):
                     item_entity = world.items.get(entity)
                     if item_entity is not None:
-                        item_def = item_registry.by_id(item_entity.stack.item_id)
-                        if item_def.block_id is not None:
-                            texture_name = block_registry.by_id(item_def.block_id).texture_top
-                            atlas_rect = atlas_uvs.get(texture_name)
-                            if atlas_rect is not None:
-                                texture_rect = _atlas_bounds_to_rect(atlas_rect)
+                        atlas_rect = item_block_atlas_rect(
+                            item_entity.stack.item_id,
+                            item_registry,
+                            block_registry,
+                            atlas_uvs,
+                        )
+                        if atlas_rect is not None:
+                            texture_rect = _atlas_bounds_to_rect(atlas_rect)
 
                 if texture_rect is not None and block_texture is not None:
                     block_texture.use(0)

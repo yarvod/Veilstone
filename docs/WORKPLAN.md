@@ -71,13 +71,14 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
 
 ### Phase D3: Block/Item Model Snapshot Layer
 
-- [ ] Define render-facing block/item model snapshot data for chunk blocks,
+- [x] Define render-facing block/item model snapshot data for chunk blocks,
       held items, dropped items, inventory icons, and remote held items.
-- [ ] Route inventory 3D item/block icons through the snapshot layer instead of
-      UI-local rendering rules.
-- [ ] Keep resource-pack texture lookup Minecraft-like and folder-routable for
+- [x] Route inventory item/block icons, first-person held items, dropped items,
+      and remote held items through the snapshot layer instead of UI-local
+      texture lookup rules.
+- [x] Keep resource-pack texture lookup Minecraft-like and folder-routable for
       default and user packs.
-- [ ] Add unit coverage proving registry/resource-pack data maps to stable model
+- [x] Add unit coverage proving registry/resource-pack data maps to stable model
       snapshots without OpenGL.
 
 ### Phase D4: Reference Gameplay Snapshot Scenes

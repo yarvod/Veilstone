@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemRegistry
 from voxel_sandbox.engine.ecs import HeldItem
+from voxel_sandbox.render.model_snapshots import item_block_atlas_rect
 
 type Vec3 = tuple[float, float, float]
 type TextureRect = tuple[float, float, float, float]
@@ -57,11 +58,12 @@ def _held_block_texture_rect(
 ) -> TextureRect | None:
     if item_registry is None or block_registry is None or atlas_uvs is None:
         return None
-    item = item_registry.by_id(held_item.item_id)
-    if item.block_id is None:
-        return None
-    texture_name = block_registry.by_id(item.block_id).texture_top
-    atlas_rect = atlas_uvs.get(texture_name)
+    atlas_rect = item_block_atlas_rect(
+        held_item.item_id,
+        item_registry,
+        block_registry,
+        atlas_uvs,
+    )
     if atlas_rect is None:
         return None
     return _atlas_bounds_to_rect(atlas_rect)

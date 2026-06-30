@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemDef, ItemRegistry, ItemType
+from voxel_sandbox.render.model_snapshots import item_block_texture_name
 from voxel_sandbox.render.texture_atlas import create_block_atlas
 
 ICON_SIZE = 32
@@ -22,8 +23,8 @@ def create_item_icons(
     )
     icons: dict[int, pyglet.image.AbstractImage] = {}
     for item in items:
-        if item.block_id is not None:
-            texture = blocks.by_id(item.block_id).texture_top
+        texture = item_block_texture_name(item.id, items, blocks)
+        if texture is not None:
             image = _crop_atlas_tile(atlas_image, atlas.uvs[texture])
         else:
             image = _draw_non_block_icon(item)
