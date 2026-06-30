@@ -61,6 +61,27 @@ def test_hud_player_list_snapshot_filters_local_network_player() -> None:
     assert snapshot.lines == ("Players Online:", "You (Local)", "Alex", "Player 8")
 
 
+def test_hud_remote_nameplate_snapshot_uses_remote_player_state() -> None:
+    window = _fake_window()
+    visible_entity = object()
+    missing_transform_entity = object()
+    window.remote_player_entities = {
+        7: visible_entity,
+        8: missing_transform_entity,
+    }
+    window.network_players = {7: {"name": "Alex"}}
+    window.entities.world.transforms = {
+        visible_entity: SimpleNamespace(position=(11.0, 65.0, -2.0))
+    }
+    adapter = HudWindowAdapter(window)
+
+    snapshots = adapter.remote_nameplate_snapshots()
+
+    assert len(snapshots) == 1
+    assert snapshots[0].text == "Alex"
+    assert snapshots[0].world_position == (11.0, 67.14999999999999, -2.0)
+
+
 def _fake_window() -> SimpleNamespace:
     return SimpleNamespace(
         width=1280,

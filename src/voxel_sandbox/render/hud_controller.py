@@ -11,7 +11,10 @@ from pyglet.window import key
 
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.perf import RuntimePerfSnapshot
-from voxel_sandbox.render.player_nameplate import build_remote_player_nameplate_render_data
+from voxel_sandbox.render.player_nameplate import (
+    PlayerNameplateRenderData,
+    build_remote_player_nameplate_render_data,
+)
 from voxel_sandbox.render.ui.menu import platform_font_name
 
 try:
@@ -103,6 +106,8 @@ class HudView(Protocol):
     ) -> HudDebugTextSnapshot: ...
 
     def player_list_snapshot(self) -> HudPlayerListSnapshot: ...
+
+    def remote_nameplate_snapshots(self) -> tuple[PlayerNameplateRenderData, ...]: ...
 
 
 @dataclass(slots=True)
@@ -292,6 +297,24 @@ class HudWindowAdapter:
             names.append("You (Singleplayer)")
         return HudPlayerListSnapshot(lines=tuple(names))
 
+    def remote_nameplate_snapshots(self) -> tuple[PlayerNameplateRenderData, ...]:
+        win = self._window
+        snapshots: list[PlayerNameplateRenderData] = []
+        for player_id, entity in win.remote_player_entities.items():
+            transform = win.entities.world.transforms.get(entity)
+            if transform is None:
+                continue
+            name = win.network_players.get(player_id, {}).get("name", f"Player {player_id}")
+            render_data = build_remote_player_nameplate_render_data(
+                player_id=player_id,
+                name=str(name),
+                player_position=transform.position,
+                camera_position=win.camera.position,
+            )
+            if render_data is not None:
+                snapshots.append(render_data)
+        return tuple(snapshots)
+
 
 class HudController:
     """Owns HUD labels and draws the in-game overlay."""
@@ -412,19 +435,7 @@ class HudController:
             max(frame.width, 1) / max(frame.height, 1),
             win.settings.camera.field_of_view,
         )
-        for player_id, entity in win.remote_player_entities.items():
-            transform = win.entities.world.transforms.get(entity)
-            if transform is None:
-                continue
-            name = win.network_players.get(player_id, {}).get("name", f"Player {player_id}")
-            render_data = build_remote_player_nameplate_render_data(
-                player_id=player_id,
-                name=str(name),
-                player_position=transform.position,
-                camera_position=win.camera.position,
-            )
-            if render_data is None:
-                continue
+        for render_data in win.remote_nameplate_snapshots():
             pos = np.array([*render_data.world_position, 1.0], dtype=np.float32)
             clip = matrix @ pos
             w = clip[3]

@@ -13,6 +13,10 @@
   `HudView` snapshot method instead of direct HUD reads from network session
   state; focused HUD tests and real TAB smoke passed.
 
+- **HUD remote-nameplate snapshot** - remote player nameplate render data now
+  routes through `HudView` snapshots instead of direct HUD reads from network
+  players and ECS transforms; focused HUD tests and real client smoke passed.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.
