@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Texture-pack report typing cleanup** - import reports now use typed string-list factories so focused texture-pack model Pyright stays clean.
+
 - **Mesh worker typing cleanup** - section/chunk mesh worker task batches now carry explicit mesh-task/result types; focused worker Pyright is clean and hidden frame-streaming RD3 smoke stayed within p95 10.808 ms.
 
 - **Menu UI world-list typing cleanup** - `MenuUI` now tracks saved worlds as `(name, Path)` tuples and keeps the focused menu UI Pyright gate clean while preserving real client startup smoke.

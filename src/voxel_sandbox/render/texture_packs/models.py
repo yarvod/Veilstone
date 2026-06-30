@@ -14,11 +14,15 @@ class TexturePackInfo:
     tile_size: int | None
 
 
+def _str_list() -> list[str]:
+    return []
+
+
 @dataclass
 class ImportReport:
     pack_id: str
-    imported: list[str] = field(default_factory=list)
-    missing: list[str] = field(default_factory=list)
-    fallback: list[str] = field(default_factory=list)
-    ignored_animations: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    imported: list[str] = field(default_factory=_str_list)
+    missing: list[str] = field(default_factory=_str_list)
+    fallback: list[str] = field(default_factory=_str_list)
+    ignored_animations: list[str] = field(default_factory=_str_list)
+    warnings: list[str] = field(default_factory=_str_list)
