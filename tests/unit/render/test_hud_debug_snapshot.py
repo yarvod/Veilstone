@@ -37,6 +37,30 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
     assert "Target (1, 2, 3)" in snapshot.text
 
 
+def test_hud_player_list_snapshot_formats_singleplayer() -> None:
+    adapter = HudWindowAdapter(_fake_window())
+
+    snapshot = adapter.player_list_snapshot()
+
+    assert snapshot.lines == ("Players Online:", "You (Singleplayer)")
+    assert snapshot.text == "Players Online:\nYou (Singleplayer)"
+
+
+def test_hud_player_list_snapshot_filters_local_network_player() -> None:
+    window = _fake_window()
+    window.network_session = SimpleNamespace(player_id=42)
+    window.network_players = {
+        42: {"name": "Local"},
+        7: {"name": "Alex"},
+        8: {},
+    }
+    adapter = HudWindowAdapter(window)
+
+    snapshot = adapter.player_list_snapshot()
+
+    assert snapshot.lines == ("Players Online:", "You (Local)", "Alex", "Player 8")
+
+
 def _fake_window() -> SimpleNamespace:
     return SimpleNamespace(
         width=1280,

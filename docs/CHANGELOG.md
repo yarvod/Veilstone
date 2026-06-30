@@ -9,6 +9,10 @@
   entity, network, and settings state directly; focused HUD tests and real F3
   smoke screenshot `saves/screenshots/veilstone_20260701_004726.png` passed.
 
+- **HUD player-list snapshot** - TAB player-list text now routes through a
+  `HudView` snapshot method instead of direct HUD reads from network session
+  state; focused HUD tests and real TAB smoke passed.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.

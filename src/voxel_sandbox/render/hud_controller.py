@@ -41,6 +41,15 @@ class HudDebugTextSnapshot:
     text: str
 
 
+@dataclass(frozen=True, slots=True)
+class HudPlayerListSnapshot:
+    lines: tuple[str, ...]
+
+    @property
+    def text(self) -> str:
+        return "\n".join(self.lines)
+
+
 class InventoryHudPort(Protocol):
     def draw_hotbar(self) -> None: ...
 
@@ -92,6 +101,8 @@ class HudView(Protocol):
         animation_summary: str,
         selected_item_name: str,
     ) -> HudDebugTextSnapshot: ...
+
+    def player_list_snapshot(self) -> HudPlayerListSnapshot: ...
 
 
 @dataclass(slots=True)
@@ -267,6 +278,20 @@ class HudWindowAdapter:
             text += f"\nTarget {win.world_renderer.selection.block}"
         return HudDebugTextSnapshot(text=text)
 
+    def player_list_snapshot(self) -> HudPlayerListSnapshot:
+        win = self._window
+        names = ["Players Online:"]
+        if win.network_session is not None:
+            names.append("You (Local)")
+            local_id = win.network_session.player_id
+            for player_id, player in win.network_players.items():
+                if player_id == local_id:
+                    continue
+                names.append(str(player.get("name", f"Player {player_id}")))
+        else:
+            names.append("You (Singleplayer)")
+        return HudPlayerListSnapshot(lines=tuple(names))
+
 
 class HudController:
     """Owns HUD labels and draws the in-game overlay."""
@@ -374,20 +399,10 @@ class HudController:
         else:
             self.debug_label.visible = False
             self.hud_top_left_label.visible = True
-            self.hud_top_left_label.y = win.height - 10
+        self.hud_top_left_label.y = win.height - 10
 
         if win.key_state.is_pressed(key.TAB):
-            names = ["Players Online:"]
-            if win.network_session is not None:
-                names.append("You (Local)")
-                local_id = win.network_session.player_id
-                for p_id, p in win.network_players.items():
-                    if p_id == local_id:
-                        continue
-                    names.append(str(p.get("name", f"Player {p_id}")))
-            else:
-                names.append("You (Singleplayer)")
-            self.player_list_label.text = "\n".join(names)
+            self.player_list_label.text = win.player_list_snapshot().text
             self.player_list_label.x = frame.width // 2
             self.player_list_label.y = frame.height // 2
             self.player_list_label.draw()
