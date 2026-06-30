@@ -99,8 +99,8 @@ class UiRenderer:
             self.world_list_vbox.children.clear()
             for i, w in enumerate(worlds):
 
-                def make_cb(idx=i):
-                    def cb():
+                def make_cb(idx: int = i) -> Callable[[], None]:
+                    def cb() -> None:
                         on_select(idx)
 
                     return cb

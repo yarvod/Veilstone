@@ -17,6 +17,7 @@ class Widget:
         self.enabled = True
         self.hovered = False
         self.pressed = False
+        self.on_hover: Callable[[], None] | None = None
 
     def contains(self, x: int, y: int) -> bool:
         return self.bounds.contains(x, y)
