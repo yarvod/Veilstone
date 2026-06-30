@@ -43,7 +43,6 @@ class NetworkView(Protocol):
     player: Any
     player_name: str
     remote_chunks_received: int
-    requested_remote_chunks: set[ChunkCoord]
     structure_world: Any
     world_renderer: Any
     world_runtime: Any
@@ -74,6 +73,10 @@ class NetworkView(Protocol):
     def clear_remote_players(self) -> None: ...
 
     def update_remote_player_positions(self, timestamp: float, *, delay: float) -> None: ...
+
+    def request_remote_chunk_from_server(self, coord: ChunkCoord) -> bool: ...
+
+    def clear_remote_chunk_requests(self) -> None: ...
 
 
 class NetworkWindowAdapter:
@@ -140,6 +143,18 @@ class NetworkWindowAdapter:
             if position is not None and transform is not None:
                 transform.x, transform.y, transform.z = position
 
+    def request_remote_chunk_from_server(self, coord: ChunkCoord) -> bool:
+        if coord in self._window.requested_remote_chunks:
+            return False
+        if self._window.authority is None:
+            return False
+        self._window.authority.request_chunk(coord.x, coord.z)
+        self._window.requested_remote_chunks.add(coord)
+        return True
+
+    def clear_remote_chunk_requests(self) -> None:
+        self._window.requested_remote_chunks.clear()
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -189,8 +204,7 @@ class NetworkController:
             joined.get("structure_revision", 0),
         )
         win.inventory_status = f"Connected as player {joined['player_id']}"
-        win.authority.request_chunk(0, 0)
-        win.requested_remote_chunks.add(ChunkCoord(0, 0))
+        win.request_remote_chunk_from_server(ChunkCoord(0, 0))
         win.menu.screen = Screen.GAME
         win._sync_game_state()
         win._sync_mouse_capture()
@@ -262,7 +276,7 @@ class NetworkController:
         elif message_type == "session_reconnected":
             win.last_snapshot_sequence = 0
             win.network_players.clear()
-            win.requested_remote_chunks.clear()
+            win.clear_remote_chunk_requests()
             joined = message.get("joined")
             if isinstance(joined, dict):
                 win.last_structure_revision = -1
@@ -508,8 +522,5 @@ class NetworkController:
             desired,
             key=lambda item: (item.x - center.x) ** 2 + (item.z - center.z) ** 2,
         ):
-            if coord in win.requested_remote_chunks:
-                continue
-            if win.authority is not None:
-                win.authority.request_chunk(coord.x, coord.z)
-            return
+            if win.request_remote_chunk_from_server(coord):
+                return

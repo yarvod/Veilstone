@@ -86,6 +86,18 @@ def _make_win() -> MagicMock:
     def remote_player_ids() -> set[int]:
         return set(win.remote_player_entities)
 
+    def request_remote_chunk_from_server(coord: ChunkCoord) -> bool:
+        if coord in win.requested_remote_chunks:
+            return False
+        if win.authority is None:
+            return False
+        win.authority.request_chunk(coord.x, coord.z)
+        win.requested_remote_chunks.add(coord)
+        return True
+
+    def clear_remote_chunk_requests() -> None:
+        win.requested_remote_chunks.clear()
+
     win.remote_entity_world.side_effect = remote_entity_world
     win.local_network_player_id.side_effect = local_network_player_id
     win.remote_player_entity.side_effect = remote_player_entity
@@ -95,6 +107,8 @@ def _make_win() -> MagicMock:
     win.pop_remote_player_entity.side_effect = pop_remote_player_entity
     win.clear_remote_players.side_effect = clear_remote_players
     win.update_remote_player_positions.side_effect = update_remote_player_positions
+    win.request_remote_chunk_from_server.side_effect = request_remote_chunk_from_server
+    win.clear_remote_chunk_requests.side_effect = clear_remote_chunk_requests
     return win
 
 
@@ -304,6 +318,7 @@ class TestRequestRemoteChunk:
         nc.request_remote_chunk()
         # Should request (0,0) as nearest
         win.authority.request_chunk.assert_called_once_with(0, 0)
+        assert ChunkCoord(0, 0) in win.requested_remote_chunks
 
 
 class TestApplyMessage:

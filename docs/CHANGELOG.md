@@ -38,6 +38,10 @@
   now calls a `GameplayView` resource-pack command instead of building the
   apply use-case from broad app-runtime/save-root fields inside the controller.
 
+- **Narrower remote chunk request port** - `NetworkController` now asks
+  `NetworkView` to request and track remote chunks instead of reading and
+  mutating the requested-chunk set directly.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.
