@@ -57,7 +57,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G005: Leaf/resource-pack transparency not rendered cutout
 
-- **Status:** investigating
+- **Status:** fixed
 - **Affected area:** texture packs / block rendering
 - **Observed:** textures with transparent regions, including Faithful-style
   leaves, did not show the world through holes like Minecraft leaves.
@@ -66,6 +66,10 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   non-occluders, Faithful oak-leaf alpha is preserved through atlas import, and
   a dedicated foliage smoke scene exercises leaves in front of an opaque
   backdrop through the real draw path when an OpenGL display is available.
+
+- **Fix notes:** texture-pack discovery now exposes a single canonical
+  `Default` entry, local Java-style packs such as Faithful are not mislabeled
+  legacy, and hot-swapping packs preserves chunk shadow-depth meshes.
 
 ### BUG-G006: Inventory UI is functional but not Minecraft-polished
 
@@ -134,7 +138,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** typing / quality gate
-- **Observed:** `uv run pyright` reports 514 existing strict typing errors across engine, render, tests, and infrastructure.
+- **Observed:** `uv run pyright` reports 512 existing strict typing errors across engine, render, tests, and infrastructure.
 - **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
 - **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 

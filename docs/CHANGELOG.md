@@ -167,6 +167,10 @@
 
 ### Fixed
 
+- **Texture-pack apply shadows and labels** - Texture Packs now shows a single
+  canonical `Default`, local Java-style packs such as Faithful are not labeled
+  legacy, cached non-default packs report their own name, and applying packs
+  preserves chunk shadow-depth meshes.
 - **F3 debug overlay first-frame visibility** - debug diagnostics now populate
   immediately when F3 is enabled, so FPS, position, chunk, biome, memory, and
   mesh stats are visible in the real game window without waiting for a later

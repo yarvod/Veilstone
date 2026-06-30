@@ -19,7 +19,7 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(tmp_path: 
 
     class FakeTexturePackService:
         def discover(self, root: Path) -> list[tuple[str, Path | None]]:
-            return [("Default", None), ("Pack", pack)]
+            return [("Pack", pack)]
 
         def load_block_atlas(
             self,
@@ -81,12 +81,18 @@ def test_texture_pack_root_uses_app_data_directory(tmp_path: Path, monkeypatch) 
     assert menu_ui._resource_packs_dir() == tmp_path / "resource_packs"
 
 
-def test_texture_pack_discovery_includes_legacy_packs(tmp_path: Path, monkeypatch) -> None:
+def test_texture_pack_discovery_has_single_default_and_local_packs(
+    tmp_path: Path, monkeypatch
+) -> None:
     app_root = tmp_path / "data_packs"
     legacy_root = tmp_path / "legacy_packs"
+    app_default = app_root / "default"
     app_pack = app_root / "AppPack"
-    legacy_pack = legacy_root / "LegacyPack"
+    legacy_default = legacy_root / "default"
+    legacy_pack = legacy_root / "Faithful-32x-1.21.11"
+    app_default.mkdir(parents=True)
     app_pack.mkdir(parents=True)
+    legacy_default.mkdir(parents=True)
     legacy_pack.mkdir(parents=True)
 
     monkeypatch.setattr(
@@ -97,9 +103,12 @@ def test_texture_pack_discovery_includes_legacy_packs(tmp_path: Path, monkeypatc
     class FakeTexturePackService:
         def discover(self, root: Path) -> list[tuple[str, Path | None]]:
             if root == app_root:
-                return [("Default", None), ("AppPack", app_pack)]
+                return [("default", app_default), ("AppPack", app_pack)]
             if root == legacy_root:
-                return [("Default", None), ("LegacyPack", legacy_pack)]
+                return [
+                    ("default", legacy_default),
+                    ("Faithful-32x-1.21.11", legacy_pack),
+                ]
             return []
 
     menu_ui = MenuUI.__new__(MenuUI)
@@ -111,5 +120,15 @@ def test_texture_pack_discovery_includes_legacy_packs(tmp_path: Path, monkeypatc
     assert menu_ui._discover_texture_packs() == [
         ("Default", None),
         ("AppPack", app_pack),
-        ("LegacyPack [legacy]", legacy_pack),
+        ("Faithful-32x-1.21.11", legacy_pack),
     ]
+
+
+def test_texture_pack_status_names_cached_non_default_pack() -> None:
+    menu_ui = MenuUI.__new__(MenuUI)
+
+    assert menu_ui._texture_pack_status("Default", None) == "Default texture pack applied."
+    assert (
+        menu_ui._texture_pack_status("Faithful-32x-1.21.11", None)
+        == "Texture pack applied: Faithful-32x-1.21.11."
+    )

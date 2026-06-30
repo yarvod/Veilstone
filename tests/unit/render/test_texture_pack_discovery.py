@@ -28,11 +28,10 @@ def test_discover_texture_packs_lists_default_folder_and_zip(tmp_path: Path) -> 
     packs = discover_texture_packs(tmp_path)
 
     assert packs == [
-        ("Default", None),
         ("FolderPack", folder_pack),
         ("ZipPack.zip", zip_pack),
     ]
 
 
-def test_discover_texture_packs_missing_root_returns_default(tmp_path: Path) -> None:
-    assert discover_texture_packs(tmp_path / "missing") == [("Default", None)]
+def test_discover_texture_packs_missing_root_returns_empty(tmp_path: Path) -> None:
+    assert discover_texture_packs(tmp_path / "missing") == []

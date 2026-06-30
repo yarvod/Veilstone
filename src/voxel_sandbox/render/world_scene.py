@@ -517,7 +517,11 @@ class DemoWorldRenderer:
         self.mesh_cache.release()
         assert self.shader.program is not None
         assert self.water_shader.program is not None
-        self.mesh_cache = SectionMeshCache(self.context, self.shader.program)
+        self.mesh_cache = SectionMeshCache(
+            self.context,
+            self.shader.program,
+            self.shadow_shader.program if self.shadow_map is not None else None,
+        )
         self.water_mesh_cache = SectionMeshCache(self.context, self.water_shader.program)
         self._remesh_all()
 

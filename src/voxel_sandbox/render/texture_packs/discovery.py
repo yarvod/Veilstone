@@ -6,7 +6,7 @@ from voxel_sandbox.render.texture_packs.minecraft_java import is_minecraft_java_
 
 
 def discover_texture_packs(root: Path) -> list[tuple[str, Path | None]]:
-    packs: list[tuple[str, Path | None]] = [("Default", None)]
+    packs: list[tuple[str, Path | None]] = []
     if not root.exists():
         return packs
 

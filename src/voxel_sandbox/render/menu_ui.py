@@ -26,7 +26,10 @@ from voxel_sandbox.app.updates import (
     fetch_releases,
     select_platform_asset,
 )
-from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
+from voxel_sandbox.application.resource_packs import (
+    ApplyResourcePackUseCase,
+    TexturePackServicePort,
+)
 from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
 from voxel_sandbox.infrastructure.storage import WorldStorage
@@ -321,19 +324,26 @@ class MenuUI:
         return Path("resource_packs")
 
     def _discover_texture_packs(self) -> list[tuple[str, Path | None]]:
-        packs = self.win.app_runtime.texture_packs.discover(self._resource_packs_dir())
-        legacy_root = self._legacy_resource_packs_dir()
-        if legacy_root == self._resource_packs_dir() or not legacy_root.exists():
-            return packs
+        packs: list[tuple[str, Path | None]] = [("Default", None)]
+        seen: set[Path | None] = {None}
+        texture_packs = cast(TexturePackServicePort, self.win.app_runtime.texture_packs)
 
-        seen = {None if path is None else path.resolve() for _, path in packs}
-        for label, path in self.win.app_runtime.texture_packs.discover(legacy_root):
-            key = None if path is None else path.resolve()
-            if key in seen:
-                continue
-            suffix = "" if path is None else " [legacy]"
-            packs.append((label + suffix, path))
-            seen.add(key)
+        def add_discovered(root: Path) -> None:
+            for label, path in texture_packs.discover(root):
+                if path is not None and path.name.casefold() == "default":
+                    continue
+                key = None if path is None else path.resolve()
+                if key in seen:
+                    continue
+                packs.append((label, path))
+                seen.add(key)
+
+        resource_root = self._resource_packs_dir()
+        add_discovered(resource_root)
+        legacy_root = self._legacy_resource_packs_dir()
+        if legacy_root == resource_root or not legacy_root.exists():
+            return packs
+        add_discovered(legacy_root)
         return packs
 
     def _refresh_texture_pack_list(self) -> None:
@@ -667,7 +677,7 @@ class MenuUI:
             report = next_report
 
         result = ApplyResourcePackUseCase(
-            texture_packs=win.app_runtime.texture_packs,
+            texture_packs=cast(TexturePackServicePort, win.app_runtime.texture_packs),
             settings_store=win.app_runtime.settings_store,
         ).execute(
             path=None if pack_path is None else str(pack_path),
@@ -747,7 +757,9 @@ class MenuUI:
 
     def _texture_pack_status(self, label: str, report: ImportReport | None) -> str:
         if report is None:
-            return "Default texture pack applied."
+            if label == "Default":
+                return "Default texture pack applied."
+            return f"Texture pack applied: {label}."
         details: list[str] = []
         if report.fallback:
             details.append(f"{len(report.fallback)} fallback")

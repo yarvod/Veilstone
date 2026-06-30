@@ -213,6 +213,41 @@ def test_shadow_quality_modes_render(quality: str) -> None:
             window.close()
 
 
+def test_texture_pack_apply_preserves_shadow_depth_cache() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    settings = AppSettings()
+    settings = replace(
+        settings,
+        graphics=replace(settings.graphics, shadow_quality="low"),
+    )
+    with tempfile.TemporaryDirectory(prefix="veilstone-pack-shadow-smoke-") as directory:
+        save_root = Path(directory)
+        window = GameWindow(settings, visible=False, save_root=save_root)
+        try:
+            window.menu.screen = Screen.GAME
+            atlas = load_active_block_atlas(
+                None,
+                registry=window.world_runtime.block_registry,
+                cache_root=save_root / "texture_cache",
+            )
+            window.world_renderer.apply_texture_pack(atlas)
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.world_renderer.shadow_map is not None
+            assert window.world_renderer.mesh_cache.depth_program is not None
+        finally:
+            window.close()
+
+
 def test_third_person_local_player_participates_in_shadow_pass() -> None:
     import pyglet
 
