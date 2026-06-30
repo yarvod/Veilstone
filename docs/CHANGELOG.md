@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Inventory presentation snapshots** - item count text, tooltips, cursor labels,
+  and crafting result feedback now come from application-level presentation
+  snapshots instead of render UI duplicating inventory/item rules. Real-game
+  inventory smoke screenshot: `saves/screenshots/veilstone_20260630_164513.png`.
 - **Mob animation state and contact phase** - cow/zombie locomotion now separates
   idle, walk, attack, hurt, and death poses; blocked mobs stop advancing foot
   phase; future footstep sounds can use the same contact phase as rendering.

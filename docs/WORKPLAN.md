@@ -182,20 +182,20 @@ resource packs.
 - [x] Document supported vs planned resource-pack features.
 - [x] Add a smoke/manual test scene or fixture for transparent foliage.
 
-### Phase C7: Inventory and item presentation
+### Phase C7: Inventory item presentation
 
 Цель: инвентарь должен быть функциональным и визуально похожим на Minecraft UX.
 
-- [ ] Add render-facing item icon/model snapshots separate from inventory rules.
-- [x] Show Minecraft-like stack count in the lower-right corner of item icons.
-- [x] Show hover tooltip with item name.
+- [x] Add render-facing item icon/model snapshots separate from inventory rules.
+- [x] Show Minecraft-like stack count in lower-right corner item icons.
+- [x] Show hover tooltip item name.
 - [x] Add drag-and-drop slot movement.
 - [x] Add clear selected/hover visual states.
-- [x] Add clear drag visual states.
-- [ ] Improve crafting UX without coupling UI directly to domain internals.
+- [x] Add clear drag states.
+- [x] Improve crafting UX without coupling UI directly to domain internals.
 - [ ] Later: 3D item/block icons in inventory once item model rendering exists.
-- [ ] Keep inventory domain pure; UI should send commands/use cases, not mutate
-      domain internals directly.
+- [x] Keep inventory domain pure; UI commands/use cases, not mutate domain
+  internals directly.
 
 ### Phase C11: Bundled default resource pack
 

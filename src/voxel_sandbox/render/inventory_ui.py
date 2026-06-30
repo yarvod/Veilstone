@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING, cast
 
 import pyglet
 
+from voxel_sandbox.application.inventory_presentation import (
+    build_crafting_result_snapshot,
+    build_item_icon_snapshot,
+)
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
@@ -490,6 +494,11 @@ class InventoryController:
             )
         result_x, result_y = self._crafting_result_position()
         result_stack = self.crafting_result_stack()
+        result_snapshot = build_crafting_result_snapshot(
+            result_stack,
+            win.crafting_grid,
+            win.item_registry,
+        )
         self._draw_item_slot(
             self.crafting_result_slot,
             self.crafting_result_icon,
@@ -498,28 +507,25 @@ class InventoryController:
             result_x,
             result_y,
             56,
-            selected=result_stack is not None,
-            hovered=hovered_result,
+            selected=result_snapshot.available,
+            hovered=hovered_result
+            or (result_snapshot.has_inputs and not result_snapshot.available),
         )
         self.crafting_arrow.x = result_x - 50
         self.crafting_arrow.y = result_y + 28
         self.crafting_arrow.draw()
-        self._inv_status_label.text = win.inventory_status
+        self._inv_status_label.text = result_snapshot.status_text or win.inventory_status
         self._inv_status_label.x = center_x
         self._inv_status_label.y = center_y - 270
         self._inv_status_label.draw()
         if win.cursor_stack is not None:
-            definition = win.item_registry.by_id(win.cursor_stack.item_id)
-            self.cursor_item_icon.image = self.item_icon_images[win.cursor_stack.item_id]
+            cursor_snapshot = build_item_icon_snapshot(win.cursor_stack, win.item_registry)
+            self.cursor_item_icon.image = self.item_icon_images[cursor_snapshot.item_id]
             self.cursor_item_icon.scale = 38 / ICON_SIZE
             self.cursor_item_icon.x = win.mouse_x + 8
             self.cursor_item_icon.y = win.mouse_y + 8
             self.cursor_item_icon.draw()
-            self.cursor_item_label.text = (
-                f"{definition.name} {win.cursor_stack.count}"
-                if win.cursor_stack.count > 1
-                else definition.name
-            )
+            self.cursor_item_label.text = cursor_snapshot.tooltip
             self.cursor_item_label.x = win.mouse_x + 48
             self.cursor_item_label.y = win.mouse_y + 10
             self.cursor_item_label.draw()
@@ -561,14 +567,15 @@ class InventoryController:
             icon.visible = False
             count_label.text = ""
             return
+        snapshot = build_item_icon_snapshot(stack, self.win.item_registry)
         icon.visible = True
-        icon.image = self.item_icon_images[stack.item_id]
+        icon.image = self.item_icon_images[snapshot.item_id]
         icon.scale = (size - 12) / ICON_SIZE
         icon.x = x + 6
         icon.y = y + 6
         if getattr(icon, "batch", None) is None:
             icon.draw()
-        count_label.text = str(stack.count) if stack.count > 1 else ""
+        count_label.text = snapshot.count_text
         count_label.x = x + size - 4
         count_label.y = y + 2
         if getattr(count_label, "batch", None) is None:
@@ -606,8 +613,7 @@ class InventoryController:
         stack = self.hovered_stack_at(self.win.mouse_x, self.win.mouse_y)
         if stack is None:
             return
-        definition = self.win.item_registry.by_id(stack.item_id)
-        text = definition.name if stack.count == 1 else f"{definition.name} x{stack.count}"
+        text = build_item_icon_snapshot(stack, self.win.item_registry).tooltip
         width = max(96, len(text) * 8 + 18)
         x = min(self.win.mouse_x + 14, self.win.width - width - 8)
         y = min(self.win.mouse_y + 24, self.win.height - 34)
