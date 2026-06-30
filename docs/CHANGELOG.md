@@ -30,6 +30,10 @@
   debug shader or whole hotbar object for F-key, number-key, scroll, and
   placement input; those paths now use command/query methods with focused tests.
 
+- **Narrower remote-player network ports** - `NetworkController` no longer
+  mutates remote-player entity/interpolation dictionaries directly; remote
+  entity lifecycle and movement updates now go through `NetworkView` commands.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.

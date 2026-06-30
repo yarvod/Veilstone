@@ -31,7 +31,6 @@ if TYPE_CHECKING:
 
 class NetworkView(Protocol):
     authority: Any
-    entities: Any
     inventory_status: str
     lan_block_actions: Any
     lan_discovery: Any | None
@@ -44,8 +43,6 @@ class NetworkView(Protocol):
     player: Any
     player_name: str
     remote_chunks_received: int
-    remote_player_entities: dict[int, Any]
-    remote_player_interpolation: dict[int, SnapshotInterpolator]
     requested_remote_chunks: set[ChunkCoord]
     structure_world: Any
     world_renderer: Any
@@ -54,6 +51,29 @@ class NetworkView(Protocol):
     def _sync_game_state(self) -> None: ...
 
     def _sync_mouse_capture(self) -> None: ...
+
+    def remote_entity_world(self) -> Any | None: ...
+
+    def local_network_player_id(self) -> int | None: ...
+
+    def remote_player_entity(self, player_id: int) -> Any | None: ...
+
+    def remember_remote_player_entity(self, player_id: int, entity: Any) -> None: ...
+
+    def push_remote_player_position(
+        self,
+        player_id: int,
+        timestamp: float,
+        position: tuple[float, float, float],
+    ) -> None: ...
+
+    def remote_player_ids(self) -> set[int]: ...
+
+    def pop_remote_player_entity(self, player_id: int) -> Any | None: ...
+
+    def clear_remote_players(self) -> None: ...
+
+    def update_remote_player_positions(self, timestamp: float, *, delay: float) -> None: ...
 
 
 class NetworkWindowAdapter:
@@ -65,6 +85,60 @@ class NetworkWindowAdapter:
 
     def __setattr__(self, name: str, value: Any) -> None:
         setattr(self._window, name, value)
+
+    def remote_entity_world(self) -> Any | None:
+        entities = self._window.entities
+        if entities is None:
+            return None
+        return entities.world
+
+    def local_network_player_id(self) -> int | None:
+        session = self._window.network_session
+        return session.player_id if session is not None else None
+
+    def remote_player_entity(self, player_id: int) -> Any | None:
+        return self._window.remote_player_entities.get(player_id)
+
+    def remember_remote_player_entity(self, player_id: int, entity: Any) -> None:
+        self._window.remote_player_entities[player_id] = entity
+        self._window.remote_player_interpolation[player_id] = SnapshotInterpolator()
+
+    def push_remote_player_position(
+        self,
+        player_id: int,
+        timestamp: float,
+        position: tuple[float, float, float],
+    ) -> None:
+        self._window.remote_player_interpolation[player_id].push(timestamp, position)
+
+    def remote_player_ids(self) -> set[int]:
+        return set(self._window.remote_player_entities)
+
+    def pop_remote_player_entity(self, player_id: int) -> Any | None:
+        entity = self._window.remote_player_entities.pop(player_id, None)
+        self._window.remote_player_interpolation.pop(player_id, None)
+        return entity
+
+    def clear_remote_players(self) -> None:
+        entity_world = self.remote_entity_world()
+        if entity_world is not None:
+            for entity in self._window.remote_player_entities.values():
+                entity_world.destroy(entity)
+        self._window.remote_player_entities.clear()
+        self._window.remote_player_interpolation.clear()
+
+    def update_remote_player_positions(self, timestamp: float, *, delay: float) -> None:
+        entity_world = self.remote_entity_world()
+        if entity_world is None:
+            return
+        for player_id, entity in self._window.remote_player_entities.items():
+            interpolator = self._window.remote_player_interpolation.get(player_id)
+            if interpolator is None:
+                continue
+            position = interpolator.sample(timestamp - delay)
+            transform = entity_world.transforms.get(entity)
+            if position is not None and transform is not None:
+                transform.x, transform.y, transform.z = position
 
 
 LOGGER = logging.getLogger(__name__)
@@ -202,10 +276,7 @@ class NetworkController:
             assert win.network_session is not None
             win.network_session.close()
             win.network_session = None
-            for entity in win.remote_player_entities.values():
-                win.entities.world.destroy(entity)
-            win.remote_player_entities.clear()
-            win.remote_player_interpolation.clear()
+            win.clear_remote_players()
             win.menu.screen = Screen.MULTIPLAYER
             win._sync_game_state()
             win.menu.status = "Disconnected: reconnect attempts exhausted."
@@ -226,11 +297,10 @@ class NetworkController:
 
     def sync_remote_players(self, players: dict[int, dict[str, object]]) -> None:
         win = self.win
-        entities = win.entities
-        if entities is None:
+        entity_world = win.remote_entity_world()
+        if entity_world is None:
             return
-        entity_world = entities.world
-        local_id = win.network_session.player_id if win.network_session is not None else None
+        local_id = win.local_network_player_id()
         visible_ids: set[int] = set()
         for raw_id, raw_player in players.items():
             player = raw_player
@@ -248,11 +318,10 @@ class NetworkController:
             )
             if raw_id == local_id:
                 continue
-            entity = win.remote_player_entities.get(raw_id)
+            entity = win.remote_player_entity(raw_id)
             if entity is None:
                 entity = entity_world.create()
-                win.remote_player_entities[raw_id] = entity
-                win.remote_player_interpolation[raw_id] = SnapshotInterpolator()
+                win.remember_remote_player_entity(raw_id, entity)
             raw_yaw = player.get("yaw", 0.0)
             yaw_radians = float(raw_yaw) if isinstance(raw_yaw, int | float) else 0.0
             raw_phase = player.get("animation_phase", 0.0)
@@ -281,30 +350,19 @@ class NetworkController:
                 build_player_avatar_render_data(snapshot),
                 animation=animation,
             )
-            win.remote_player_interpolation[raw_id].push(
+            win.push_remote_player_position(
+                raw_id,
                 time.monotonic(),
                 position_tuple,
             )
             visible_ids.add(raw_id)
-        for player_id in set(win.remote_player_entities) - visible_ids:
-            entity_world.destroy(win.remote_player_entities.pop(player_id))
-            win.remote_player_interpolation.pop(player_id, None)
+        for player_id in win.remote_player_ids() - visible_ids:
+            entity = win.pop_remote_player_entity(player_id)
+            if entity is not None:
+                entity_world.destroy(entity)
 
     def update_remote_players(self) -> None:
-        win = self.win
-        entities = win.entities
-        if entities is None:
-            return
-        entity_world = entities.world
-        now = time.monotonic()
-        for player_id, interpolation in win.remote_player_interpolation.items():
-            position = interpolation.sample(now)
-            entity = win.remote_player_entities.get(player_id)
-            if position is None or entity is None:
-                continue
-            transform = entity_world.transforms.get(entity)
-            if transform is not None:
-                transform.x, transform.y, transform.z = position
+        self.win.update_remote_player_positions(time.monotonic(), delay=0.0)
 
     def send_block_action(self, block: tuple[int, int, int], block_id: int) -> None:
         win = self.win

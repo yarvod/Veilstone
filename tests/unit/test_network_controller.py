@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import math
 import queue
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.ecs import EntityWorld
+from voxel_sandbox.network.interpolation import SnapshotInterpolator
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.ui.menu import Screen
 
@@ -31,6 +33,68 @@ def _make_win() -> MagicMock:
     win.player.x = 0.0
     win.player.y = 64.0
     win.player.z = 0.0
+
+    def remote_entity_world() -> Any | None:
+        entities = win.entities
+        if entities is None:
+            return None
+        return entities.world
+
+    def remember_remote_player_entity(player_id: int, entity: Any) -> None:
+        win.remote_player_entities[player_id] = entity
+        win.remote_player_interpolation[player_id] = SnapshotInterpolator()
+
+    def push_remote_player_position(
+        player_id: int,
+        timestamp: float,
+        position: tuple[float, float, float],
+    ) -> None:
+        win.remote_player_interpolation[player_id].push(timestamp, position)
+
+    def pop_remote_player_entity(player_id: int) -> Any | None:
+        entity = win.remote_player_entities.pop(player_id, None)
+        win.remote_player_interpolation.pop(player_id, None)
+        return entity
+
+    def clear_remote_players() -> None:
+        entity_world = remote_entity_world()
+        if entity_world is not None:
+            for entity in win.remote_player_entities.values():
+                entity_world.destroy(entity)
+        win.remote_player_entities.clear()
+        win.remote_player_interpolation.clear()
+
+    def update_remote_player_positions(timestamp: float, *, delay: float) -> None:
+        entity_world = remote_entity_world()
+        if entity_world is None:
+            return
+        for player_id, interpolation in win.remote_player_interpolation.items():
+            position = interpolation.sample(timestamp - delay)
+            entity = win.remote_player_entities.get(player_id)
+            if position is None or entity is None:
+                continue
+            transform = entity_world.transforms.get(entity)
+            if transform is not None:
+                transform.x, transform.y, transform.z = position
+
+    def local_network_player_id() -> int | None:
+        return win.network_session.player_id if win.network_session is not None else None
+
+    def remote_player_entity(player_id: int) -> Any | None:
+        return win.remote_player_entities.get(player_id)
+
+    def remote_player_ids() -> set[int]:
+        return set(win.remote_player_entities)
+
+    win.remote_entity_world.side_effect = remote_entity_world
+    win.local_network_player_id.side_effect = local_network_player_id
+    win.remote_player_entity.side_effect = remote_player_entity
+    win.remember_remote_player_entity.side_effect = remember_remote_player_entity
+    win.push_remote_player_position.side_effect = push_remote_player_position
+    win.remote_player_ids.side_effect = remote_player_ids
+    win.pop_remote_player_entity.side_effect = pop_remote_player_entity
+    win.clear_remote_players.side_effect = clear_remote_players
+    win.update_remote_player_positions.side_effect = update_remote_player_positions
     return win
 
 
@@ -190,7 +254,9 @@ class TestReplaceStructureSnapshots:
         win = _make_win()
         win.last_structure_revision = 0
         nc = NetworkController(win)
-        snapshots = [{"id": "test", "blocks": {}}]
+        snapshots: list[dict[str, object]] = [
+            {"id": "test", "blocks": cast(dict[object, object], {})}
+        ]
         nc.replace_structure_snapshots(snapshots, 1)
         win.structure_world.replace_from_snapshots.assert_called_once()
         assert win.last_structure_revision == 1
