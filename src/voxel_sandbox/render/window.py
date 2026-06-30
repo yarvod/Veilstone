@@ -79,7 +79,7 @@ from voxel_sandbox.render.gameplay_controller import (
     GameplayView,
     GameplayWindowAdapter,
 )
-from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
+from voxel_sandbox.render.hud_controller import HudController, HudView, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
     InputHandler,
     InputView,
@@ -250,7 +250,7 @@ class GameWindow(pyglet.window.Window):
         self.hud_bg_group = pyglet.graphics.Group(order=0)
         self.hud_fg_group = pyglet.graphics.Group(order=1)
         self.hud_text_group = pyglet.graphics.Group(order=2)
-        self._hud = HudController(HudWindowAdapter(self))
+        self._hud = HudController(cast(HudView, HudWindowAdapter(self)))
         self._inv_ctrl = InventoryController(cast(InventoryView, InventoryWindowAdapter(self)))
         self._net = NetworkController(cast(NetworkView, NetworkWindowAdapter(self)))
         self.menu_ui = MenuUI(self)

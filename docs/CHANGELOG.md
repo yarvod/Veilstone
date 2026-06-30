@@ -4,6 +4,8 @@
 
 ### Added
 
+- **HUD adapter cast wiring** - `GameWindow` now wires `HudController` through the same explicit `HudView` cast pattern as the other transitional window adapters.
+
 - **UI hover callback typing cleanup** - `Widget` now owns an explicit optional hover callback and UI renderer callbacks are typed; focused UI renderer/widgets Pyright is clean.
 
 - **Texture-pack report typing cleanup** - import reports now use typed string-list factories so focused texture-pack model Pyright stays clean.
