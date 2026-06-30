@@ -14,12 +14,14 @@ def test_build_command_packages_data_directory_on_macos(tmp_path: Path) -> None:
     command = build_command(tmp_path, platform="darwin")
 
     assert f"{tmp_path / 'data'}:data" in _add_data_values(command)
+    assert f"{tmp_path / 'resource_packs'}:resource_packs" in _add_data_values(command)
 
 
 def test_build_command_packages_data_directory_on_windows(tmp_path: Path) -> None:
     command = build_command(tmp_path, platform="win32")
 
     assert f"{tmp_path / 'data'};data" in _add_data_values(command)
+    assert f"{tmp_path / 'resource_packs'};resource_packs" in _add_data_values(command)
 
 
 def test_wheel_package_includes_data_resources() -> None:
@@ -28,3 +30,4 @@ def test_wheel_package_includes_data_resources() -> None:
 
     force_include = metadata["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"]
     assert force_include["data"] == "voxel_sandbox/resources/data"
+    assert force_include["resource_packs"] == "voxel_sandbox/resources/resource_packs"

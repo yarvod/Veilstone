@@ -4,6 +4,9 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
+from PIL import Image
+
+from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.render.texture_atlas.generated import (
     GeneratedAtlas,
@@ -35,15 +38,19 @@ def load_active_block_atlas(
     report_callback: Callable[[ImportReport], None] | None = None,
     cache_root: Path | None = None,
 ) -> GeneratedAtlas:
-    """Build the active block atlas for the given registry.
+    """Build active block atlas from the registry.
 
-    If resource_pack_path is None, returns the default procedural atlas.
-    Otherwise imports textures from the pack, uses fallback tiles for missing ones.
+    resource_pack_path None loads the bundled default pack. Generated tiles are
+    only a fallback when bundled textures are unavailable.
+    Otherwise imports a texture pack, using bundled default tiles for missing ones.
     """
-    fallback_tiles = create_default_block_tiles(fallback_tile_size)
+    generated_tiles = create_default_block_tiles(fallback_tile_size)
+    texture_ids = _collect_texture_ids(registry)
+    fallback_tiles = _load_default_pack_tiles(texture_ids, generated_tiles)
 
     if resource_pack_path is None:
-        return build_texture_atlas(fallback_tiles, tile_size=fallback_tile_size)
+        tile_size = _detect_tile_size(fallback_tiles, fallback_tile_size)
+        return build_texture_atlas(fallback_tiles, tile_size=tile_size)
 
     if cache_root is not None:
         try:
@@ -54,7 +61,6 @@ def load_active_block_atlas(
             LOGGER.info("Texture pack %s: loaded atlas from cache", resource_pack_path.name)
             return cached
 
-    texture_ids = _collect_texture_ids(registry)
     imported_tiles, report = load_block_textures(resource_pack_path, texture_ids, fallback_tiles)
 
     _log_report(report, resource_pack_path)
@@ -76,7 +82,19 @@ def load_active_block_atlas(
     return atlas
 
 
-def _detect_tile_size(imported_tiles: dict, fallback: int) -> int:
+def _load_default_pack_tiles(
+    texture_ids: dict[str, None],
+    generated_tiles: dict[str, Image.Image],
+) -> dict[str, Image.Image]:
+    default_pack = resource_path("resource_packs/default")
+    if not default_pack.exists():
+        return generated_tiles
+    tiles, report = load_block_textures(default_pack, texture_ids, generated_tiles)
+    _log_report(report, default_pack)
+    return {**generated_tiles, **tiles}
+
+
+def _detect_tile_size(imported_tiles: dict[str, Image.Image], fallback: int) -> int:
     for img in imported_tiles.values():
         return img.width
     return fallback

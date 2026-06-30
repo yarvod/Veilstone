@@ -29,6 +29,8 @@ def build_command(root: Path, platform: str = sys.platform) -> list[str]:
         f"{root / 'assets'}{separator}assets",
         "--add-data",
         f"{root / 'data'}{separator}data",
+        "--add-data",
+        f"{root / 'resource_packs'}{separator}resource_packs",
     ]
     icon_name = {
         "darwin": "veilstone.icns",

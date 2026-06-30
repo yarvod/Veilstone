@@ -14,6 +14,10 @@ from typing import cast
 import pytest
 from PIL import Image
 
+from voxel_sandbox.app.paths import resource_path
+from voxel_sandbox.domain.blocks import create_core_block_registry
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas
+from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 from voxel_sandbox.render.texture_packs.minecraft_java import (
     is_minecraft_java_pack,
     load_block_textures,
@@ -272,3 +276,34 @@ def test_rgb_png_converted_to_rgba(tmp_path: Path) -> None:
     ids = {"minecraft:block/stone": None}
     tiles, _ = load_block_textures(pack, ids, {})
     assert tiles["minecraft:block/stone"].mode == "RGBA"
+
+
+def test_default_atlas_loads_bundled_resource_pack() -> None:
+    atlas = load_active_block_atlas(None, registry=create_core_block_registry())
+
+    assert atlas.width % 16 == 0
+    assert "minecraft:block/stone" in atlas.uvs
+    assert "minecraft:block/grass_block_top" in atlas.uvs
+
+
+def test_user_pack_missing_textures_fallback_to_bundled_default(tmp_path: Path) -> None:
+    pack = _make_folder_pack(tmp_path, {"stone": (16, 16)})
+    atlas = load_active_block_atlas(pack, registry=create_core_block_registry())
+    expected = Image.open(
+        resource_path("resource_packs/default/assets/minecraft/textures/block/dirt.png")
+    ).convert("RGBA")
+    expected_pixels = {
+        cast(tuple[int, int, int, int], expected.getpixel((x, y)))
+        for y in range(expected.height)
+        for x in range(expected.width)
+    }
+
+    assert _sample_atlas_tile(atlas, "minecraft:block/dirt") in expected_pixels
+
+
+def _sample_atlas_tile(atlas: GeneratedAtlas, resource_id: str) -> tuple[int, int, int, int]:
+    image = Image.frombytes("RGBA", (atlas.width, atlas.height), atlas.pixels)
+    u0, v0, u1, v1 = atlas.uvs[resource_id]
+    x = int(((u0 + u1) / 2.0) * atlas.width)
+    y = int(((v0 + v1) / 2.0) * atlas.height)
+    return cast(tuple[int, int, int, int], image.getpixel((x, y)))

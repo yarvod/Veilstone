@@ -195,6 +195,22 @@ resource packs.
 - [ ] Keep inventory domain pure; UI should send commands/use cases, not mutate
       domain internals directly.
 
+### Phase C11: Bundled default resource pack
+
+Цель: дефолтный визуал должен быть Minecraft-like resource pack, а не отдельная
+процедурная ветка, чтобы built-in textures, пользовательские Java-style packs и
+fallback routing использовали одну модель папок и matching.
+
+- [x] Add committed `resource_packs/default` Java-style pack with original
+      Minecraft-like pixel-art block textures.
+- [x] Route `Default` texture-pack loading through bundled pack folder before
+      falling back to procedural generated tiles.
+- [x] Use bundled default pack as fallback source when user packs miss supported
+      block textures.
+- [x] Package bundled resource packs in release builds and add regression tests
+      for discovery/loading/cache behavior.
+- [x] Run real game visual smoke with default pack and screenshot output.
+
 ### Phase C8: World generation and distance
 
 Цель: мир должен давать красивые дали и больше живого наполнения.

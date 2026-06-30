@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Bundled default resource pack** - Veilstone now ships an original Minecraft-like `resource_packs/default` Java-style pack and uses it for default atlas loading and missing-texture fallback before procedural tiles.
 - **Shared player avatar render adapter path** - remote player entities now apply
   `PlayerRenderSnapshot` through the same avatar render adapter used by the
   local third-person player, preserving yaw, held items, animation phase, and

@@ -5,9 +5,11 @@ Veilstone supports a focused Minecraft Java-style block texture subset.
 ## Supported
 
 - Folder or ZIP packs with `pack.mcmeta`.
+- Bundled `resource_packs/default` folder uses the same Java-style layout as
+  user packs and is the fallback source for missing supported block textures.
 - Block texture resource locations such as `minecraft:block/stone`.
 - Runtime apply through `/resourcepack <path>` and the Settings texture-pack UI.
-- Atlas cache reuse under the save cache root.
+- Atlas cache reuse under the save cache root for user packs.
 - Alpha-tested cutout blocks for leaf-style textures. Blocks marked with
   `render_layer = "cutout"` discard transparent atlas texels in the chunk shader.
 - Faithful-style `oak_leaves.png` alpha is preserved through import.
