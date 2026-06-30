@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Water surface smoothing** - water mesh generation now smooths top vertices
+  across neighboring fluid levels without changing voxel simulation rules,
+  covered by unit geometry checks and real-game screenshot smoke
+  `saves/screenshots/veilstone_20260630_124156.png`.
 - **Water shore movement coverage** - player physics tests now lock down swim
   buoyancy, slow sinking, shore step-up, and collision against taller shore
   walls, with runtime smoke coverage against `GameWindow` world blocks.

@@ -149,10 +149,10 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Add regression test for water-to-land movement at shore blocks.
 - [x] Verify swimming, buoyancy, jump/step-up, and collision rules do not fight
       each other near shore blocks.
-- [ ] Smooth visible water flow transitions after block breaks.
-- [ ] Keep near-term simulation Minecraft-like voxel water: sources, flow,
+- [x] Smooth visible water flow transitions after block breaks.
+- [x] Keep near-term simulation Minecraft-like voxel water: sources, flow,
       levels, chunk boundaries.
-- [ ] Treat smooth continuous water, waves, ripples, splashes, and player
+- [x] Treat smooth continuous water, waves, ripples, splashes, and player
       surface disturbance as later renderer effects over voxel simulation.
 - [x] Add debug visualization or tests for fluid levels/dirty propagation before
       adding expensive visual smoothing.

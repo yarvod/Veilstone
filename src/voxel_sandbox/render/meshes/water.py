@@ -21,6 +21,38 @@ from voxel_sandbox.render.meshes.visible_faces import (
 FLUID_MAX_LEVEL = 8
 
 
+def _fluid_render_heights(levels: NDArray[np.uint8]) -> NDArray[np.float32]:
+    heights = np.where(levels > 0, levels, FLUID_MAX_LEVEL).astype(np.float32)
+    heights /= FLUID_MAX_LEVEL
+    return heights
+
+
+def _smooth_top_vertex_heights(
+    coordinates: NDArray[np.intp],
+    corners: NDArray[np.float32],
+    padded_fluid: NDArray[np.bool_],
+    padded_heights: NDArray[np.float32],
+) -> NDArray[np.float32]:
+    heights = np.zeros((coordinates.shape[0], corners.shape[0]), dtype=np.float32)
+    padded_y = coordinates[:, 1] + HALO_RADIUS
+
+    for vertex_index, corner in enumerate(corners):
+        if corner[1] != 1.0:
+            continue
+        x_offsets = (-1, 0) if corner[0] == 0.0 else (0, 1)
+        z_offsets = (-1, 0) if corner[2] == 0.0 else (0, 1)
+        best = np.zeros(coordinates.shape[0], dtype=np.float32)
+        for x_offset in x_offsets:
+            for z_offset in z_offsets:
+                padded_x = coordinates[:, 0] + HALO_RADIUS + x_offset
+                padded_z = coordinates[:, 2] + HALO_RADIUS + z_offset
+                sample_fluid = padded_fluid[padded_x, padded_y, padded_z]
+                sample_heights = padded_heights[padded_x, padded_y, padded_z]
+                best = np.maximum(best, np.where(sample_fluid, sample_heights, 0.0))
+        heights[:, vertex_index] = best
+    return heights
+
+
 def build_water_mesh(
     section: ChunkSection | MeshingNeighborhood,
     registry: BlockRegistry,
@@ -48,6 +80,7 @@ def build_water_mesh(
     )
     padded_fluid = fluid_lookup[padded_blocks]
     padded_opaque = opaque_lookup[padded_blocks]
+    padded_render_heights = _fluid_render_heights(padded_metadata)
     padded_sky = neighborhood.sky_light.astype(np.float32) / 15.0
     padded_block = neighborhood.block_light.astype(np.float32) / 15.0
     vertex_batches: list[NDArray[np.float32]] = []
@@ -79,13 +112,16 @@ def build_water_mesh(
         if face_count == 0:
             continue
         block_ids = blocks[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
-        levels = metadata[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
-        heights = np.where(levels > 0, levels, FLUID_MAX_LEVEL).astype(np.float32)
-        heights /= FLUID_MAX_LEVEL
         corners_array = np.asarray(corners, dtype=np.float32)
         positions = coordinates[:, None, :].astype(np.float32) + corners_array[None, :, :]
         top_vertices = corners_array[:, 1] == 1.0
-        positions[:, top_vertices, 1] = coordinates[:, None, 1] + heights[:, None]
+        smooth_heights = _smooth_top_vertex_heights(
+            coordinates,
+            corners_array,
+            padded_fluid,
+            padded_render_heights,
+        )
+        positions[:, top_vertices, 1] = coordinates[:, None, 1] + smooth_heights[:, top_vertices]
         if dy == 0:
             adjacent_fluid = neighbor_fluid[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
             adjacent_levels = neighbor_heights[

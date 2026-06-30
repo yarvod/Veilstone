@@ -26,12 +26,13 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G002: Water flow surface looks interrupted after block breaks
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** fluid simulation / water rendering
 - **Observed:** flowing water after removing blocks can look visually broken or
   choppy instead of forming a smooth Minecraft-like continuous flow surface.
-- **Next action:** fluid level and dirty propagation coverage is in place; add
-  surface interpolation/render smoothing without changing voxel water rules.
+- **Fix notes:** water mesh generation now smooths top surface vertices across
+  neighboring fluid levels using render-side geometry only; voxel water source,
+  level, and chunk-boundary rules remain unchanged.
 
 ### BUG-G003: Footstep audio and movement presentation are not unified
 
