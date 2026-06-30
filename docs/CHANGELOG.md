@@ -34,6 +34,10 @@
   mutates remote-player entity/interpolation dictionaries directly; remote
   entity lifecycle and movement updates now go through `NetworkView` commands.
 
+- **Narrower gameplay resource-pack port** - `/resourcepack` command handling
+  now calls a `GameplayView` resource-pack command instead of building the
+  apply use-case from broad app-runtime/save-root fields inside the controller.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.

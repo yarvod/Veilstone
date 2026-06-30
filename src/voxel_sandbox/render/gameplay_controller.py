@@ -31,11 +31,9 @@ if TYPE_CHECKING:
 
 
 class GameplayView(Protocol):
-    app_runtime: Any
     world_runtime: Any
     settings: AppSettings
     world_renderer: Any
-    active_save_root: Any
     network_session: Any | None
     network_players: dict[int, dict[str, object]]
     player: PlayerController | None
@@ -46,6 +44,8 @@ class GameplayView(Protocol):
     inventory_status: str
 
     def _is_solid_combined(self, x: int, y: int, z: int) -> bool: ...
+
+    def apply_resource_pack(self, path: str | None) -> str: ...
 
 
 class GameplayWindowAdapter:
@@ -58,17 +58,28 @@ class GameplayWindowAdapter:
     def __setattr__(self, name: str, value: Any) -> None:
         setattr(self._window, name, value)
 
+    def apply_resource_pack(self, path: str | None) -> str:
+        texture_packs = self._window.app_runtime.texture_packs
+        if texture_packs is None:
+            raise RuntimeError("GameplayController requires texture-pack service")
+        result = ApplyResourcePackUseCase(
+            texture_packs=cast(TexturePackServicePort, texture_packs),
+            settings_store=self._window.app_runtime.settings_store,
+        ).execute(
+            path=path,
+            settings=self._window.settings,
+            renderer=self._window.world_renderer,
+            block_registry=cast(BlockRegistry, self._window.world_runtime.block_registry),
+            cache_root=self._window.active_save_root.parent / "texture_cache",
+        )
+        if result.applied:
+            self._window.settings = result.settings
+        return result.status
+
 
 class GameplayController:
     def __init__(self, win: GameplayView) -> None:
         self.win = win
-        texture_packs = win.app_runtime.texture_packs
-        if texture_packs is None:
-            raise RuntimeError("GameplayController requires a texture-pack service")
-        self._apply_resource_pack = ApplyResourcePackUseCase(
-            texture_packs=cast(TexturePackServicePort, texture_packs),
-            settings_store=win.app_runtime.settings_store,
-        )
 
     def _block_registry(self) -> BlockRegistry:
         return cast(BlockRegistry, self.win.world_runtime.block_registry)
@@ -127,16 +138,7 @@ class GameplayController:
 
     def _handle_resource_pack(self, command: ResourcePackCommand) -> None:
         win = self.win
-        result = self._apply_resource_pack.execute(
-            path=command.path,
-            settings=win.settings,
-            renderer=win.world_renderer,
-            block_registry=self._block_registry(),
-            cache_root=win.active_save_root.parent / "texture_cache",
-        )
-        if result.applied:
-            win.settings = result.settings
-        win.inventory_status = result.status
+        win.inventory_status = win.apply_resource_pack(command.path)
 
     def _handle_teleport(self, command: TeleportCommand) -> None:
         win = self.win

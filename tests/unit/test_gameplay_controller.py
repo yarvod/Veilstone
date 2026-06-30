@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from voxel_sandbox.app.settings import AppSettings
-from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
 from voxel_sandbox.render.gameplay_controller import GameplayController
 
 # ---------------------------------------------------------------------------
@@ -135,22 +134,19 @@ def test_teleport_without_network_fails(ctrl, win) -> None:
 
 
 def test_resourcepack_nonexistent_path_sets_error(ctrl, win) -> None:
+    win.apply_resource_pack.return_value = "Texture pack not found: /nonexistent/path/to/pack.zip"
     ctrl.execute_command("/resourcepack /nonexistent/path/to/pack.zip")
+    win.apply_resource_pack.assert_called_once_with("/nonexistent/path/to/pack.zip")
     assert "not found" in win.inventory_status.lower()
 
 
 def test_resourcepack_default_calls_apply(ctrl, win) -> None:
-    mock_atlas = MagicMock(return_value=MagicMock())
-    settings_store = MagicMock()
-    texture_packs = MagicMock()
-    texture_packs.load_block_atlas = mock_atlas
-    ctrl._apply_resource_pack = ApplyResourcePackUseCase(texture_packs, settings_store)
+    win.apply_resource_pack.return_value = "Texture pack applied."
 
     ctrl.execute_command("/resourcepack default")
 
-    mock_atlas.assert_called_once()
-    win.world_renderer.apply_texture_pack.assert_called_once()
-    settings_store.save.assert_called_once()
+    win.apply_resource_pack.assert_called_once_with(None)
+    assert win.inventory_status == "Texture pack applied."
 
 
 # ---------------------------------------------------------------------------
