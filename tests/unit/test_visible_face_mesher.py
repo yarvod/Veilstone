@@ -76,6 +76,22 @@ def test_short_grass_uses_cross_quads_instead_of_cube_faces() -> None:
     assert np.allclose(visible.vertices[:, 5:8], (0.0, 1.0, 0.0))
 
 
+def test_short_grass_samples_light_from_air_above() -> None:
+    section = lit_section()
+    section.sky_light.fill(0)
+    section.sky_light[1, 2, 1] = 15
+    section.set_block(1, 1, 1, 13)
+    registry = create_core_block_registry()
+
+    visible = build_visible_face_mesh(section, registry, UVS)
+    greedy = build_greedy_mesh(section, registry, UVS)
+
+    assert visible.face_count == 4
+    assert greedy.face_count == 4
+    assert visible.vertices[:, 8].min() == 1.0
+    assert greedy.vertices[:, 8].min() == 1.0
+
+
 def test_empty_section_produces_empty_arrays() -> None:
     mesh = build_visible_face_mesh(lit_section(), create_core_block_registry(), UVS)
 

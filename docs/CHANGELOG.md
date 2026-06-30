@@ -177,6 +177,9 @@
 
 ### Fixed
 
+- **Short grass lighting** - crossed plant meshes now sample light from their
+  own cell and the air above, preventing grass and flowers from turning nearly
+  black because of shifted halo light samples.
 - **Texture-pack apply shadows and labels** - Texture Packs now shows a single
   canonical `Default`, local Java-style packs such as Faithful are not labeled
   legacy, cached non-default packs report their own name, and applying packs

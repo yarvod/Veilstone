@@ -178,8 +178,16 @@ def append_cross_quads(
     quad_index = 0
     for block_index, coordinate in enumerate(coordinates):
         base = coordinate.astype(np.float32)
-        sky = padded_sky_light[coordinate[0], coordinate[1], coordinate[2]]
-        block_light = padded_block_light[coordinate[0], coordinate[1], coordinate[2]]
+        sample = coordinate + HALO_RADIUS
+        above = sample + np.asarray((0, 1, 0), dtype=np.int64)
+        sky = max(
+            padded_sky_light[sample[0], sample[1], sample[2]],
+            padded_sky_light[above[0], above[1], above[2]],
+        )
+        block_light = max(
+            padded_block_light[sample[0], sample[1], sample[2]],
+            padded_block_light[above[0], above[1], above[2]],
+        )
         for corners, normal in CROSS_QUADS:
             vertices[quad_index, :, :3] = base[None, :] + np.asarray(corners, dtype=np.float32)
             vertices[quad_index, :, 3:5] = uv
