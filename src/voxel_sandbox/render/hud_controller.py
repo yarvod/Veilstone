@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import time
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import numpy as np
 import pyglet
@@ -35,6 +35,18 @@ class DebugSlowTelemetry:
     device: str = "unknown"
 
 
+class InventoryHudPort(Protocol):
+    def draw_hotbar(self) -> None: ...
+
+    def draw_health(self) -> None: ...
+
+    def draw_held_item(self) -> None: ...
+
+    def update_hud_status(self) -> None: ...
+
+    def draw_inventory(self) -> None: ...
+
+
 class HudView(Protocol):
     """Narrow window-facing surface used by HUD rendering."""
 
@@ -59,8 +71,8 @@ class HudView(Protocol):
     key_state: Any
     menu_ui: Any
     player_health: float
-    text_input: str
-    _inv_ctrl: Any
+    text_input: str | None
+    inventory_hud: InventoryHudPort
     debug_device_label: str
 
     def frame_snapshot(self) -> HudFrameSnapshot: ...
@@ -157,12 +169,12 @@ class HudWindowAdapter:
         return self._window.player_health
 
     @property
-    def text_input(self) -> str:
+    def text_input(self) -> str | None:
         return self._window.text_input
 
     @property
-    def _inv_ctrl(self) -> Any:
-        return self._window._inv_ctrl
+    def inventory_hud(self) -> InventoryHudPort:
+        return cast(InventoryHudPort, object.__getattribute__(self._window, "_inv_ctrl"))
 
     @property
     def debug_device_label(self) -> str:
@@ -380,12 +392,12 @@ class HudController:
         self.crosshair.visible = not frame.inventory_open
         self.crosshair.x = frame.width // 2
         self.crosshair.y = frame.height // 2
-        win._inv_ctrl.draw_hotbar()
-        win._inv_ctrl.draw_health()
-        win._inv_ctrl.draw_held_item()
-        win._inv_ctrl.update_hud_status()
+        win.inventory_hud.draw_hotbar()
+        win.inventory_hud.draw_health()
+        win.inventory_hud.draw_held_item()
+        win.inventory_hud.update_hud_status()
         if frame.inventory_open:
-            win._inv_ctrl.draw_inventory()
+            win.inventory_hud.draw_inventory()
         if win.text_input is not None:
             win.menu_ui._draw_text_input()
         win.hud_batch.draw()
