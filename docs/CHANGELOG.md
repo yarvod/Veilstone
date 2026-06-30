@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Controller-slice real smoke coverage** - D1 controller/input slices now have real app smoke coverage for `/resourcepack default`, Faithful apply/reset, F3 debug overlay, F5 perspective, F2 screenshot, inventory UI, LAN, and remote-render paths.
+
 - **Input handler window adapter** - `InputHandler` now receives an `InputView` adapter with inventory/network input ports instead of reading `GameWindow` private controllers directly; F3/F5/F2 hidden-window smoke passed with screenshot `saves/screenshots/veilstone_20260630_204701.png`.
 
 - **HUD inventory draw port** - `HudController` now renders hotbar, health, held item, and inventory UI through `InventoryHudPort` instead reading `GameWindow._inv_ctrl`; focused HUD Pyright is clean and F3 debug-overlay screenshot smoke passed at `saves/screenshots/veilstone_20260630_203815.png`.
