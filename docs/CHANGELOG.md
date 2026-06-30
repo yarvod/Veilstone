@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Menu UI world-list typing cleanup** - `MenuUI` now tracks saved worlds as `(name, Path)` tuples and keeps the focused menu UI Pyright gate clean while preserving real client startup smoke.
+
 - **Controller-slice real smoke coverage** - D1 controller/input slices now have real app smoke coverage for `/resourcepack default`, Faithful apply/reset, F3 debug overlay, F5 perspective, F2 screenshot, inventory UI, LAN, and remote-render paths.
 
 - **Input handler window adapter** - `InputHandler` now receives an `InputView` adapter with inventory/network input ports instead of reading `GameWindow` private controllers directly; F3/F5/F2 hidden-window smoke passed with screenshot `saves/screenshots/veilstone_20260630_204701.png`.

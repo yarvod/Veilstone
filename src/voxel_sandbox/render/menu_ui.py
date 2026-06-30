@@ -8,7 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Event, Thread
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import moderngl
 import pyglet
@@ -91,7 +91,7 @@ class MenuUI:
             color=(245, 220, 140, 255),
         )
         self.world_list_index = 0
-        self.world_list_items: list[tuple[str, ...]] = list(WorldManager._saved_worlds())
+        self.world_list_items: list[tuple[str, Path]] = list(WorldManager._saved_worlds())
         self._world_list_cache_time = time.perf_counter()
         self.texture_pack_items: list[tuple[str, Path | None]] = self._discover_texture_packs()
         self._texture_pack_cache_time = time.perf_counter()
@@ -706,7 +706,7 @@ class MenuUI:
             win.menu.status = "Import requires tkinter (not available)."
             return
 
-        root_tk = tk.Tk()
+        root_tk = cast(Any, tk.Tk())
         root_tk.withdraw()
         root_tk.lift()
         root_tk.attributes("-topmost", True)
