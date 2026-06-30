@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import queue
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Final, cast
@@ -100,6 +101,7 @@ from voxel_sandbox.render.network_controller import (
     NetworkView,
     NetworkWindowAdapter,
 )
+from voxel_sandbox.render.perf import RuntimePerfSnapshot, RuntimePerfTracker
 from voxel_sandbox.render.player_avatar import build_player_avatar_world
 from voxel_sandbox.render.player_viewmodel import build_player_viewmodel_render_data
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
@@ -250,6 +252,7 @@ class GameWindow(pyglet.window.Window):
         self.hud_bg_group = pyglet.graphics.Group(order=0)
         self.hud_fg_group = pyglet.graphics.Group(order=1)
         self.hud_text_group = pyglet.graphics.Group(order=2)
+        self._perf = RuntimePerfTracker()
         self._hud = HudController(cast(HudView, HudWindowAdapter(self)))
         self._inv_ctrl = InventoryController(cast(InventoryView, InventoryWindowAdapter(self)))
         self._net = NetworkController(cast(NetworkView, NetworkWindowAdapter(self)))
@@ -306,43 +309,49 @@ class GameWindow(pyglet.window.Window):
         return self._block_registry().by_id(block_id).is_fluid
 
     def fixed_update(self, delta_time: float) -> None:
-        self._net.apply_lan_block_actions()
-        if not self.menu.in_game:
-            self.audio_director.set_game_state("menu")
-            self.audio_director.set_biome("")
+        update_start = time.perf_counter()
+        try:
+            self._net.apply_lan_block_actions()
+            if not self.menu.in_game:
+                self.audio_director.set_game_state("menu")
+                self.audio_director.set_biome("")
+                self.audio.update(
+                    self.camera.position,
+                    self.camera.direction,
+                )
+                return
+            self.audio_director.set_game_state(
+                "night" if self.world_renderer.daylight < 0.25 else "exploration"
+            )
+            terrain_height = self._terrain_generator().height_at(
+                math.floor(self.player.x), math.floor(self.player.z)
+            )
+            self.audio_director.set_biome(
+                "cave" if self.player.y < terrain_height - 3 else "surface"
+            )
             self.audio.update(
                 self.camera.position,
                 self.camera.direction,
             )
-            return
-        self.audio_director.set_game_state(
-            "night" if self.world_renderer.daylight < 0.25 else "exploration"
-        )
-        terrain_height = self._terrain_generator().height_at(
-            math.floor(self.player.x), math.floor(self.player.z)
-        )
-        self.audio_director.set_biome("cave" if self.player.y < terrain_height - 3 else "surface")
-        self.audio.update(
-            self.camera.position,
-            self.camera.direction,
-        )
-        invalid_position_reason = self._worlds.invalid_player_position_reason()
-        if invalid_position_reason is not None:
-            previous_position = (self.player.x, self.player.y, self.player.z)
-            self._worlds.move_player_to_spawn()
-            self.inventory_status = f"Recovered position: {invalid_position_reason}"
-            LOGGER.error(
-                "Player position recovered to spawn: reason=%s position=%s",
-                invalid_position_reason,
-                previous_position,
+            invalid_position_reason = self._worlds.invalid_player_position_reason()
+            if invalid_position_reason is not None:
+                previous_position = (self.player.x, self.player.y, self.player.z)
+                self._worlds.move_player_to_spawn()
+                self.inventory_status = f"Recovered position: {invalid_position_reason}"
+                LOGGER.error(
+                    "Player position recovered to spawn: reason=%s position=%s",
+                    invalid_position_reason,
+                    previous_position,
+                )
+            self.world_renderer.update(delta_time)
+            center = ChunkCoord(
+                math.floor(self.camera.x / SECTION_SIZE),
+                math.floor(self.camera.z / SECTION_SIZE),
             )
-        self.world_renderer.update(delta_time)
-        center = ChunkCoord(
-            math.floor(self.camera.x / SECTION_SIZE),
-            math.floor(self.camera.z / SECTION_SIZE),
-        )
-        self.world_renderer.update_streaming(center)
-        self._network_accumulator += delta_time
+            self.world_renderer.update_streaming(center)
+            self._network_accumulator += delta_time
+        finally:
+            self._perf.record_update(time.perf_counter() - update_start)
         if self.network_session is not None:
             self._net.process_messages()
             self._net.update_remote_players()
@@ -467,9 +476,11 @@ class GameWindow(pyglet.window.Window):
             material = self._block_registry().by_id(block_id).material.value
             key_name = footstep_sound_key(material, self.audio.registry)
             self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, self.camera.position))
+        self._perf.record_update(time.perf_counter() - update_start)
         self._sync_camera_to_player()
 
     def on_draw(self) -> None:
+        render_start = time.perf_counter()
         framebuffer_width, framebuffer_height = self._framebuffer_size()
         self.mgl_context.screen.use()
         self.mgl_context.viewport = (0, 0, framebuffer_width, framebuffer_height)
@@ -482,6 +493,7 @@ class GameWindow(pyglet.window.Window):
             self.menu_ui._draw_menu()
             self.mgl_context.disable(moderngl.BLEND)
             self.mgl_context.enable(moderngl.DEPTH_TEST)
+            self._perf.record_render(time.perf_counter() - render_start)
             return
         self.mgl_context.clear(*clear_color, depth=1.0)
         self.sky_renderer.render(
@@ -640,6 +652,7 @@ class GameWindow(pyglet.window.Window):
         if not self.hud_hidden and not getattr(self.settings.development, "disable_hud", False):
             self._hud.draw(entity_draws)
         self.mgl_context.enable(moderngl.DEPTH_TEST)
+        self._perf.record_render(time.perf_counter() - render_start)
 
     def on_resize(self, width: int, height: int) -> None:
         super().on_resize(width, height)
@@ -653,6 +666,13 @@ class GameWindow(pyglet.window.Window):
             width, height = get_size()
             return max(int(width), 1), max(int(height), 1)
         return max(int(self.width), 1), max(int(self.height), 1)
+
+    @property
+    def runtime_perf_snapshot(self) -> RuntimePerfSnapshot:
+        return self._perf.snapshot(
+            fps=pyglet.clock.get_frequency(),
+            queues=self.world_renderer.perf_queues(),
+        )
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         self._input.on_key_press(symbol, modifiers)

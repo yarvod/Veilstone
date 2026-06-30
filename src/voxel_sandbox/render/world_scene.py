@@ -45,6 +45,7 @@ from voxel_sandbox.render.meshes import (
 from voxel_sandbox.render.meshes.gpu_cache import GpuSectionMesh, SectionMeshCache
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
+from voxel_sandbox.render.perf import RenderQueueSnapshot
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas
@@ -233,6 +234,15 @@ class DemoWorldRenderer:
     @property
     def pending_meshes(self) -> int:
         return self.mesh_worker.pending_count
+
+    def perf_queues(self) -> RenderQueueSnapshot:
+        return RenderQueueSnapshot(
+            loaded_chunks=self.loaded_chunks,
+            pending_chunks=self.pending_chunks,
+            pending_meshes=self.pending_meshes,
+            pending_stream_remeshes=len(self._stream_remesh_queue),
+            visible_sections=self.visible_sections,
+        )
 
     def get_block(self, x: int, y: int, z: int) -> int:
         return self._streamer.get_block(x, y, z)

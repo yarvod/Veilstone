@@ -60,13 +60,13 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
 - [ ] Move chunk streaming/relight/remesh scheduling policy behind a runtime or
       render-pipeline helper instead of adding more orchestration to
       `DemoWorldRenderer`.
-- [ ] Add `RuntimePerfSnapshot` or equivalent application/render-facing data for
+- [x] Add `RuntimePerfSnapshot` or equivalent application/render-facing data for
       frame/update/render timings, chunk queues, mesh queues, and visible chunks.
-- [ ] Feed F3/debug overlay from cached perf snapshots without expensive
+- [x] Feed F3/debug overlay from cached perf snapshots without expensive
       per-frame telemetry reads.
 - [ ] Add focused tests for scheduling priority/budgets without constructing
       Pyglet or ModernGL.
-- [ ] Keep `benchmark-frame-streaming --render-distance 3/4` as the real hidden
+- [x] Keep `benchmark-frame-streaming --render-distance 3/4` as the real hidden
       window performance smoke for this phase.
 
 ### Phase D3: Block/Item Model Snapshot Layer

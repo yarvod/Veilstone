@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Runtime perf debug snapshots** - added render-facing runtime performance snapshots for update/render timings and chunk/mesh queue depths; F3 now reads cached perf data and real HUD smoke passed with screenshot `saves/screenshots/veilstone_20260701_001314.png`. Hidden frame streaming smoke passed RD3 p95 `10.073 ms` and RD4 p95 `12.282 ms`.
+
 - **HUD adapter cast wiring** - `GameWindow` now wires `HudController` through the same explicit `HudView` cast pattern as the other transitional window adapters.
 
 - **UI hover callback typing cleanup** - `Widget` now owns an explicit optional hover callback and UI renderer callbacks are typed; focused UI renderer/widgets Pyright is clean.

@@ -10,6 +10,7 @@ import pyglet
 from pyglet.window import key
 
 from voxel_sandbox.render.math3d import camera_matrix
+from voxel_sandbox.render.perf import RuntimePerfSnapshot
 from voxel_sandbox.render.player_nameplate import build_remote_player_nameplate_render_data
 from voxel_sandbox.render.ui.menu import platform_font_name
 
@@ -74,6 +75,7 @@ class HudView(Protocol):
     text_input: str | None
     inventory_hud: InventoryHudPort
     debug_device_label: str
+    runtime_perf_snapshot: RuntimePerfSnapshot
 
     def frame_snapshot(self) -> HudFrameSnapshot: ...
 
@@ -183,6 +185,10 @@ class HudWindowAdapter:
         version = str(info.get("GL_VERSION") or "unknown")
         return f"{renderer} ({version})"
 
+    @property
+    def runtime_perf_snapshot(self) -> RuntimePerfSnapshot:
+        return self._window.runtime_perf_snapshot
+
     def frame_snapshot(self) -> HudFrameSnapshot:
         return HudFrameSnapshot(
             width=self._window.width,
@@ -261,9 +267,8 @@ class HudController:
     def draw(self, entity_draws: int) -> None:
         win = self.win
         frame = win.frame_snapshot()
+        perf = win.runtime_perf_snapshot
         x, y, z = win.camera.position
-        fps = pyglet.clock.get_frequency()
-        frame_ms = 1000.0 / fps if fps > 0 else 0.0
         now = time.perf_counter()
         if win.debug_overlay_visible and (
             not self.debug_label.text or now - self._last_update_time >= 0.2
@@ -283,7 +288,8 @@ class HudController:
                     device=win.debug_device_label,
                 )
             new_debug_text = (
-                f"FPS {fps:5.1f} Frame {frame_ms:5.1f} ms\n"
+                f"FPS {perf.fps:5.1f} Frame {perf.frame_ms:5.1f} ms "
+                f"Update {perf.update_ms:5.1f} Render {perf.render_ms:5.1f}\n"
                 f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
                 f"Grounded {win.player.on_ground}  VelocityY {win.player.velocity_y:5.2f}\n"
                 f"Yaw {win.camera.yaw_degrees:6.1f}  Pitch {win.camera.pitch_degrees:5.1f} "
@@ -291,10 +297,11 @@ class HudController:
                 f"Biome {biome} Memory {self._slow_telemetry.memory} "
                 f"Render distance {win.settings.world.render_distance} "
                 f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame}"
-                f"\nChunks {win.world_renderer.loaded_chunks}  "
-                f"Pending {win.world_renderer.pending_chunks}  "
-                f"Mesh queue {win.world_renderer.pending_meshes}  "
-                f"Visible sections {win.world_renderer.visible_sections}\n"
+                f"\nChunks {perf.queues.loaded_chunks}  "
+                f"Pending {perf.queues.pending_chunks}  "
+                f"Mesh queue {perf.queues.pending_meshes}  "
+                f"Stream remesh {perf.queues.pending_stream_remeshes}  "
+                f"Visible sections {perf.queues.visible_sections}\n"
                 f"Faces {win.world_renderer.face_count}  "
                 f"Triangles {win.world_renderer.triangle_count}  "
                 f"Draws {win.world_renderer.draw_calls}\n"
@@ -322,9 +329,9 @@ class HudController:
                 new_debug_text += f"\nTarget {win.world_renderer.selection.block}"
             if self.debug_label.text != new_debug_text:
                 self.debug_label.text = new_debug_text
-            new_hud_text = f"FPS: {fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
-            if self.hud_top_left_label.text != new_hud_text:
-                self.hud_top_left_label.text = new_hud_text
+        new_hud_text = f"FPS: {perf.fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
+        if self.hud_top_left_label.text != new_hud_text:
+            self.hud_top_left_label.text = new_hud_text
 
         if win.debug_overlay_visible:
             self.debug_label.visible = True
