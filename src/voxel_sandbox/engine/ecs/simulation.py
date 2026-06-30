@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
+from voxel_sandbox.engine.ecs.animation import mob_step_index
 from voxel_sandbox.engine.ecs.components import (
     AnimationState,
     Collider,
@@ -434,8 +435,13 @@ def _advance_locomotion_animation(
     animation.speed = horizontal_speed
     if horizontal_speed <= 0.03:
         animation.phase = 0.0
+        animation.step_index = 0
+        animation.footstep_due = False
         return
+    previous_step_index = animation.step_index
     animation.phase += delta_time * horizontal_speed
+    animation.step_index = mob_step_index(animation.phase, horizontal_speed)
+    animation.footstep_due = animation.step_index > previous_step_index
 
 
 def _mob_grounded(

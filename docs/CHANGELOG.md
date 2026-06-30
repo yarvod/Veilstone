@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Mob animation state and contact phase** - cow/zombie locomotion now separates
+  idle, walk, attack, hurt, and death poses; blocked mobs stop advancing foot
+  phase; future footstep sounds can use the same contact phase as rendering.
+  Real-game smoke screenshot:
+  `saves/screenshots/veilstone_20260630_163807.png`.
 - **Mob locomotion animation phase** - mob walk animation phase now advances
   from actual grounded horizontal velocity instead of raw frame time, with tests
   for moving, idle, and blocked-displacement cases.

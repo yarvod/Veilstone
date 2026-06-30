@@ -48,14 +48,15 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G004: Mob walk animations slide and do not match locomotion
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** entity animation / mobs
-- **Observed:** cow and zombie walk loops do not convincingly match leg
+- **Observed:** cow and zombie walk loops did not convincingly match leg
   placement, speed, turning, or step contact.
 - **Fix notes:** locomotion animation phase now advances from actual grounded
-  horizontal velocity and resets while idle or blocked.
-- **Next action:** run real visual mob smoke when an active display is available,
-  then add explicit idle/walk/turn/hurt/death presentation separation.
+  horizontal velocity, resets while idle/blocked, drives distinct
+  idle/walk/attack/hurt/death poses, and exposes footstep contact from the same
+  phase used by rendering. Real-game smoke screenshot:
+  `saves/screenshots/veilstone_20260630_163807.png`.
 
 ### BUG-G005: Leaf/resource-pack transparency not rendered cutout
 

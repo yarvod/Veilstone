@@ -5,6 +5,7 @@ import math
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.engine.ecs import EntitySimulation, MobKind, MobState
+from voxel_sandbox.engine.ecs.animation import mob_step_index
 
 
 def flat_ground(x: int, z: int) -> int:
@@ -235,6 +236,8 @@ def test_mob_animation_phase_resets_while_idle() -> None:
 
     assert animation.phase == 0.0
     assert animation.speed == 0.0
+    assert animation.step_index == 0
+    assert not animation.footstep_due
 
 
 def test_mob_animation_uses_zero_speed_when_hazard_blocks_displacement() -> None:
@@ -258,3 +261,46 @@ def test_mob_animation_uses_zero_speed_when_hazard_blocks_displacement() -> None
     assert animation.speed == 0.0
     assert velocity.x == 0.0
     assert velocity.z == 0.0
+
+
+def test_mob_animation_uses_actual_speed_when_wall_blocks_displacement() -> None:
+    def wall_ahead(x: int, y: int, z: int) -> bool:
+        del y, z
+        return x >= 0
+
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (-0.3, 1.0, 0.0))
+    ai = simulation.world.mob_ai[mob]
+    ai.state = MobState.WANDER
+    ai.direction_x = 1.0
+    ai.direction_z = 0.0
+    ai.state_time = 5.0
+
+    simulation.update(0.5, (20.0, 1.0, 20.0), flat_ground, no_hazard, wall_ahead)
+
+    animation = simulation.world.animations[mob]
+    velocity = simulation.world.velocities[mob]
+    assert animation.phase == 0.0
+    assert animation.speed == 0.0
+    assert velocity.x == 0.0
+    assert velocity.z == 0.0
+
+
+def test_mob_footstep_contact_uses_animation_phase() -> None:
+    simulation = EntitySimulation(seed=2)
+    mob = simulation.spawn_mob(MobKind.PASSIVE, (0.0, 10.0, 0.0))
+    ai = simulation.world.mob_ai[mob]
+    ai.state = MobState.WANDER
+    ai.direction_x = 0.0
+    ai.direction_z = -1.0
+    ai.state_time = 5.0
+
+    saw_contact = False
+    for _ in range(90):
+        simulation.update(1.0 / 30.0, (20.0, 10.0, 20.0), flat_ground, no_hazard)
+        animation = simulation.world.animations[mob]
+        saw_contact = saw_contact or animation.footstep_due
+
+    animation = simulation.world.animations[mob]
+    assert saw_contact
+    assert animation.step_index == mob_step_index(animation.phase, animation.speed)

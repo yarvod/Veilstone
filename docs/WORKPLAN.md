@@ -164,9 +164,9 @@ F-клавиши должны быть player-facing управлением, а 
 
 - [x] Replace one-loop walk animation with locomotion-driven animation phase.
 - [x] Sync cow/zombie leg movement to actual velocity and ground contact.
-- [ ] Add idle, walk, turn, hurt/death animation state separation.
-- [ ] Avoid sliding/ice-skating mobs when they slow down, turn, or hit obstacles.
-- [ ] Sync future mob footstep sounds to animation contact phase.
+- [x] Add idle, walk, turn, hurt/death animation state separation.
+- [x] Avoid sliding/ice-skating mobs when they slow down, turn, or hit obstacles.
+- [x] Sync future mob footstep sounds to animation contact phase.
 - [x] Add focused tests for animation phase advancement from entity velocity.
 
 ### Phase C6: Texture transparency and resource-pack correctness

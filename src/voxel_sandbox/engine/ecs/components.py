@@ -79,6 +79,8 @@ class MobState(Enum):
 class AnimationState:
     phase: float = 0.0
     speed: float = 0.0
+    step_index: int = 0
+    footstep_due: bool = False
     state: MobState = MobState.IDLE
     state_phase: float = 0.0
     hurt_remaining: float = 0.0

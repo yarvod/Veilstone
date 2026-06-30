@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import cast
 
 from voxel_sandbox.engine.ecs import MobState
+from voxel_sandbox.engine.ecs.animation import mob_locomotion_cycle
 from voxel_sandbox.render.entity_models import EntityModelDef, Vec3
 
 
@@ -112,10 +113,16 @@ def animated_pose(
     look_yaw: float = 0.0,
 ) -> Pose:
     pose: Pose = {}
-    cycle = animation_time * (2.2 + speed * 1.2)
-    swing = math.sin(cycle) * min(0.48, 0.10 + speed * 0.14)
-    step_lift = (1.0 - math.cos(cycle * 2.0)) * min(0.018, speed * 0.012)
-    weight_shift = math.sin(cycle) * min(0.035, speed * 0.025)
+    gait_active = speed > 0.05 and state not in {
+        MobState.ATTACK,
+        MobState.HURT,
+        MobState.DEATH,
+        MobState.GRAZE,
+    }
+    cycle = mob_locomotion_cycle(animation_time, speed)
+    swing = math.sin(cycle) * min(0.48, 0.10 + speed * 0.14) if gait_active else 0.0
+    step_lift = (1.0 - math.cos(cycle * 2.0)) * min(0.018, speed * 0.012) if gait_active else 0.0
+    weight_shift = math.sin(cycle) * min(0.035, speed * 0.025) if gait_active else 0.0
     bob = math.sin(animation_time * 1.7) * 0.006 + step_lift
     pose["body"] = PartPose(
         offset=(0.0, bob, 0.0),
@@ -156,9 +163,24 @@ def animated_pose(
         pose["arm_left"] = PartPose(rotation=(-1.2 * attack, 0.0, 0.0))
         pose["arm_right"] = PartPose(rotation=(-1.2 * attack, 0.0, 0.0))
     elif state is MobState.HURT:
-        pose["body"] = PartPose(rotation=(0.0, 0.0, math.sin(animation_time * 28.0) * 0.18))
+        recoil = math.sin(min(animation_time, 0.25) / 0.25 * math.pi)
+        pose["body"] = PartPose(offset=(0.0, 0.03 * recoil, 0.06), rotation=(-0.12, 0.0, 0.22))
+        pose["head"] = PartPose(rotation=(-0.18, look_yaw, -0.16))
     elif state is MobState.DEATH:
         pose["body"] = PartPose(offset=(0.0, -0.32, 0.0), rotation=(0.0, 0.0, 1.35))
+        pose["head"] = PartPose(offset=(0.0, -0.12, -0.08), rotation=(0.18, look_yaw, 1.1))
+        for name in (
+            "leg_front_left",
+            "leg_front_right",
+            "leg_back_left",
+            "leg_back_right",
+            "leg_left",
+            "leg_right",
+            "arm_left",
+            "arm_right",
+        ):
+            if any(part.name == name for part in model.parts):
+                pose[name] = PartPose(rotation=(0.0, 0.0, 0.75))
     return pose
 
 

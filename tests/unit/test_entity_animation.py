@@ -164,16 +164,21 @@ def test_animation_graph_produces_distinct_walk_attack_hurt_and_death_poses() ->
     model = models.get("hostile")
     graph = AnimationGraph(clips)
 
+    idle = graph.evaluate(model, MobState.IDLE, 0.7, 0.0)
     walk = graph.evaluate(model, MobState.CHASE, 0.2, 2.0)
     attack = graph.evaluate(model, MobState.ATTACK, 0.2, 0.0)
     hurt = graph.evaluate(model, MobState.HURT, 0.1, 0.0)
     death = graph.evaluate(model, MobState.DEATH, 0.5, 0.0)
     graze = graph.evaluate(models.get("passive"), MobState.GRAZE, 0.5, 0.0)
 
+    assert idle["leg_left"].rotation == (0.0, 0.0, 0.0)
+    assert walk["leg_left"].rotation[0] != 0.0
     assert walk["leg_left"] != attack.get("leg_left")
     assert walk["arm_left"].rotation[0] > 0.7
     assert attack["arm_left"].rotation[0] < -0.5
     assert hurt["body"].rotation != death["body"].rotation
+    assert hurt["head"].rotation != death["head"].rotation
+    assert death["arm_left"].rotation[2] > 0.5
     assert graze["head"].offset[1] < -0.3
     assert graze["head"].rotation[0] < -0.6
 
