@@ -143,7 +143,6 @@ class InputView(Protocol):
     inventory_open: bool
     hotbar: Any
     debug_shader: Any
-    debug_overlay_visible: bool
     hud_hidden: bool
     settings: Any
     mouse_captured: bool
@@ -182,6 +181,8 @@ class InputView(Protocol):
     def save_screenshot(self) -> object: ...
 
     def cycle_perspective(self) -> None: ...
+
+    def toggle_debug_overlay(self) -> None: ...
 
     def start_player_interaction(self, interaction: PlayerInteraction) -> None: ...
 
@@ -225,6 +226,9 @@ class InputWindowAdapter:
 
     def sync_game_state(self) -> None:
         self._window._sync_game_state()
+
+    def toggle_debug_overlay(self) -> None:
+        self._window.debug_overlay_visible = not self._window.debug_overlay_visible
 
 
 class InputHandler:
@@ -320,7 +324,7 @@ class InputHandler:
             win.save_screenshot()
             return
         if symbol == key.F3:
-            win.debug_overlay_visible = not win.debug_overlay_visible
+            win.toggle_debug_overlay()
             return
         if ord("1") <= symbol <= ord("9"):
             win.hotbar.select(symbol - ord("1"))
