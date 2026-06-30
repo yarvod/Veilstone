@@ -141,8 +141,6 @@ class InputView(Protocol):
     menu_ui: Any
     key_state: KeyState
     inventory_open: bool
-    hotbar: Any
-    debug_shader: Any
     settings: Any
     mouse_captured: bool
     ui_renderer: Any
@@ -184,6 +182,16 @@ class InputView(Protocol):
     def toggle_debug_overlay(self) -> None: ...
 
     def toggle_hud_visibility(self) -> None: ...
+
+    def reload_debug_shader(self) -> None: ...
+
+    def select_hotbar_slot(self, slot: int) -> None: ...
+
+    def selected_hotbar_stack(self) -> Any: ...
+
+    def selected_hotbar_index(self) -> int: ...
+
+    def cycle_hotbar(self, direction: int) -> None: ...
 
     def start_player_interaction(self, interaction: PlayerInteraction) -> None: ...
 
@@ -233,6 +241,21 @@ class InputWindowAdapter:
 
     def toggle_hud_visibility(self) -> None:
         self._window.hud_hidden = not self._window.hud_hidden
+
+    def reload_debug_shader(self) -> None:
+        self._window.debug_shader.reload(force=True)
+
+    def select_hotbar_slot(self, slot: int) -> None:
+        self._window.hotbar.select(slot)
+
+    def selected_hotbar_stack(self) -> Any:
+        return self._window.hotbar.selected
+
+    def selected_hotbar_index(self) -> int:
+        return int(self._window.hotbar.selected_index)
+
+    def cycle_hotbar(self, direction: int) -> None:
+        self._window.hotbar.cycle(direction)
 
 
 class InputHandler:
@@ -308,7 +331,7 @@ class InputHandler:
             elif symbol == key.C:
                 win.inventory_input.take_crafting_result()
             elif ord("1") <= symbol <= ord("9"):
-                win.hotbar.select(symbol - ord("1"))
+                win.select_hotbar_slot(symbol - ord("1"))
             return
         if symbol == key.ESCAPE:
             win.menu.back()
@@ -316,7 +339,7 @@ class InputHandler:
             win.sync_mouse_capture()
             return
         if symbol == key.F5 and modifiers & key.MOD_CTRL:
-            win.debug_shader.reload(force=True)
+            win.reload_debug_shader()
             return
         if symbol == key.F5:
             win.cycle_perspective()
@@ -331,7 +354,7 @@ class InputHandler:
             win.toggle_debug_overlay()
             return
         if ord("1") <= symbol <= ord("9"):
-            win.hotbar.select(symbol - ord("1"))
+            win.select_hotbar_slot(symbol - ord("1"))
             return
         if symbol == key.Q:
             win.inventory_input.drop_selected_item()
@@ -468,7 +491,7 @@ class InputHandler:
                 win.inventory_input.open(3)
                 win.sync_mouse_capture()
                 return
-            selected = win.hotbar.selected
+            selected = win.selected_hotbar_stack()
             if selected is None or win.player.intersects_block(hit.previous):
                 return
             definition = win.item_registry.by_id(selected.item_id)
@@ -486,7 +509,7 @@ class InputHandler:
                 )
                 win.events.publish(BlockPlaced(definition.block_id, hit.previous))
                 win.network_input.send_block_action(hit.previous, definition.block_id)
-                win.inventory.take_from_slot(win.hotbar.selected_index)
+                win.inventory.take_from_slot(win.selected_hotbar_index())
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         del x, y, scroll_x
@@ -502,7 +525,7 @@ class InputHandler:
                 )
             return
         if win.menu.in_game and not win.inventory_open and scroll_y:
-            win.hotbar.cycle(-1 if scroll_y > 0 else 1)
+            win.cycle_hotbar(-1 if scroll_y > 0 else 1)
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
         win = self.win

@@ -155,7 +155,7 @@ class TestOnKeyPress:
         win.inventory_open = True
         h = InputHandler(win)
         h.on_key_press(ord("3"), 0)
-        win.hotbar.select.assert_called_once_with(2)
+        win.select_hotbar_slot.assert_called_once_with(2)
 
     def test_in_game_escape_calls_menu_back(self):
         win = _make_win(in_game=True)
@@ -196,7 +196,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(key.F5, key.MOD_CTRL)
-        win.debug_shader.reload.assert_called_once_with(force=True)
+        win.reload_debug_shader.assert_called_once()
         win.cycle_perspective.assert_not_called()
 
     def test_plain_graphics_function_keys_do_not_toggle_renderer_settings(self):
@@ -225,7 +225,7 @@ class TestOnKeyPress:
         win = _make_win(in_game=True)
         h = InputHandler(win)
         h.on_key_press(ord("1"), 0)
-        win.hotbar.select.assert_called_once_with(0)
+        win.select_hotbar_slot.assert_called_once_with(0)
 
     def test_q_drops_item(self):
         win = _make_win(in_game=True)
@@ -386,7 +386,8 @@ class TestOnMousePress:
         )
         win.world_renderer.get_block.return_value = 4
         win.world_renderer.set_block.return_value = True
-        win.hotbar.selected = MagicMock(item_id="oak_planks")
+        win.selected_hotbar_stack.return_value = MagicMock(item_id="oak_planks")
+        win.selected_hotbar_index.return_value = 2
         win.player.intersects_block.return_value = False
         win.item_registry.by_id.return_value = MagicMock(block_id=5)
 
@@ -397,6 +398,7 @@ class TestOnMousePress:
             BlockInteractionStarted("place", 5, (1, 2, 2), (1, 2, 3), (0, 0, -1)),
             BlockPlaced(5, (1, 2, 2)),
         ]
+        win.inventory.take_from_slot.assert_called_once_with(2)
         win.start_player_interaction.assert_not_called()
 
 
@@ -407,7 +409,7 @@ class TestOnMouseScroll:
         win.menu.screen = Screen.GAME
         h = InputHandler(win)
         h.on_mouse_scroll(0, 0, 0, 1)
-        win.hotbar.cycle.assert_called_once_with(-1)
+        win.cycle_hotbar.assert_called_once_with(-1)
 
     def test_cycles_hotbar_down(self):
         win = _make_win(in_game=True)
@@ -415,14 +417,14 @@ class TestOnMouseScroll:
         win.menu.screen = Screen.GAME
         h = InputHandler(win)
         h.on_mouse_scroll(0, 0, 0, -1)
-        win.hotbar.cycle.assert_called_once_with(1)
+        win.cycle_hotbar.assert_called_once_with(1)
 
     def test_no_cycle_when_inventory_open(self):
         win = _make_win(in_game=True)
         win.inventory_open = True
         h = InputHandler(win)
         h.on_mouse_scroll(0, 0, 0, 1)
-        win.hotbar.cycle.assert_not_called()
+        win.cycle_hotbar.assert_not_called()
 
 
 class TestInventoryDrag:
@@ -542,7 +544,7 @@ class TestInventoryDrag:
         win.text_input = MagicMock()
         h = InputHandler(win)
         h.on_mouse_scroll(0, 0, 0, 1)
-        win.hotbar.cycle.assert_not_called()
+        win.cycle_hotbar.assert_not_called()
 
     def test_singleplayer_scroll_navigates_world_list(self):
         win = _make_win(in_game=False, screen=Screen.SINGLEPLAYER)
