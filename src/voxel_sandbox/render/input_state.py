@@ -143,7 +143,6 @@ class InputView(Protocol):
     inventory_open: bool
     hotbar: Any
     debug_shader: Any
-    hud_hidden: bool
     settings: Any
     mouse_captured: bool
     ui_renderer: Any
@@ -183,6 +182,8 @@ class InputView(Protocol):
     def cycle_perspective(self) -> None: ...
 
     def toggle_debug_overlay(self) -> None: ...
+
+    def toggle_hud_visibility(self) -> None: ...
 
     def start_player_interaction(self, interaction: PlayerInteraction) -> None: ...
 
@@ -229,6 +230,9 @@ class InputWindowAdapter:
 
     def toggle_debug_overlay(self) -> None:
         self._window.debug_overlay_visible = not self._window.debug_overlay_visible
+
+    def toggle_hud_visibility(self) -> None:
+        self._window.hud_hidden = not self._window.hud_hidden
 
 
 class InputHandler:
@@ -318,7 +322,7 @@ class InputHandler:
             win.cycle_perspective()
             return
         if symbol == key.F1:
-            win.hud_hidden = not win.hud_hidden
+            win.toggle_hud_visibility()
             return
         if symbol == key.F2:
             win.save_screenshot()

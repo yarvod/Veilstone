@@ -4,9 +4,9 @@
 
 ### Added
 
-- **Input debug command port** - F3 debug overlay toggling now routes through an
-  `InputView` command instead of direct window field mutation, with focused
-  input tests and Pyright clean.
+- **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
+  toggles now route through `InputView` commands instead of direct window field
+  mutation, with focused input tests and Pyright clean.
 
 - **Reference gameplay scene CLI** - added deterministic `reference-gameplay-scene`
   fixtures covering water, foliage, lighting, mob movement, inventory icons, and

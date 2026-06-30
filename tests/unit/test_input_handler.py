@@ -39,6 +39,7 @@ def _make_win(*, in_game: bool = True, screen: Screen = Screen.SINGLEPLAYER) -> 
     win.toggle_debug_overlay.side_effect = lambda: setattr(
         win, "debug_overlay_visible", not win.debug_overlay_visible
     )
+    win.toggle_hud_visibility.side_effect = lambda: setattr(win, "hud_hidden", not win.hud_hidden)
     win.inventory_input = win._inv_ctrl
     win.network_input = win._net
     return win
@@ -176,6 +177,7 @@ class TestOnKeyPress:
         win.hud_hidden = False
         h = InputHandler(win)
         h.on_key_press(key.F1, 0)
+        win.toggle_hud_visibility.assert_called_once()
         assert win.hud_hidden is True
 
     def test_f2_saves_screenshot(self):
