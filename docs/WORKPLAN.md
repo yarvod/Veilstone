@@ -36,7 +36,7 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
 
 ### Phase D1: Controller Ports Instead Of Full GameWindow
 
-- [ ] Map remaining controllers/use cases that still receive full `GameWindow`.
+- [x] Map remaining controllers/use cases that still receive full `GameWindow` (`GameplayController`, `InventoryController`, `NetworkController`; HUD already uses an adapter).
 - [ ] Extract narrow ports/snapshots for gameplay command handling without
       passing the window object.
 - [ ] Extract HUD/debug snapshot reads so HUD code does not depend on broad

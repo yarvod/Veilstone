@@ -18,9 +18,13 @@ from voxel_sandbox.app.commands import (
     parse_command,
 )
 from voxel_sandbox.app.settings import save_user_settings
-from voxel_sandbox.application.resource_packs import ApplyResourcePackUseCase
+from voxel_sandbox.application.resource_packs import (
+    ApplyResourcePackUseCase,
+    TexturePackServicePort,
+)
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.generation import TerrainGenerator
+from voxel_sandbox.engine.physics.player import PlayerController
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -29,8 +33,11 @@ if TYPE_CHECKING:
 class GameplayController:
     def __init__(self, win: GameWindow) -> None:
         self.win = win
+        texture_packs = win.app_runtime.texture_packs
+        if texture_packs is None:
+            raise RuntimeError("GameplayController requires a texture-pack service")
         self._apply_resource_pack = ApplyResourcePackUseCase(
-            texture_packs=win.app_runtime.texture_packs,
+            texture_packs=cast(TexturePackServicePort, texture_packs),
             settings_store=win.app_runtime.settings_store,
         )
 
@@ -39,6 +46,12 @@ class GameplayController:
 
     def _terrain_generator(self) -> TerrainGenerator:
         return cast(TerrainGenerator, self.win.world_runtime.generation)
+
+    def _player(self) -> PlayerController:
+        player = self.win.player
+        if player is None:
+            raise RuntimeError("GameplayController requires a local player")
+        return player
 
     def execute_command(self, source: str) -> None:
         win = self.win
@@ -116,7 +129,8 @@ class GameplayController:
                     target_pos = float(values[0]), float(values[1]), float(values[2])
                 break
         if target_pos is not None:
-            win.player.x, win.player.y, win.player.z = target_pos
+            player = self._player()
+            player.x, player.y, player.z = target_pos
             win.inventory_status = f"Teleported to {command.target_name}."
         else:
             win.inventory_status = f"Player {command.target_name} not found."
@@ -127,10 +141,11 @@ class GameplayController:
             win.inventory_status = "Structure commands require a local authoritative world."
             return
         distance = 5.0
+        player = self._player()
         origin = (
-            math.floor(win.player.x + win.camera.direction[0] * distance),
-            math.floor(win.player.y),
-            math.floor(win.player.z + win.camera.direction[2] * distance),
+            math.floor(player.x + win.camera.direction[0] * distance),
+            math.floor(player.y),
+            math.floor(player.z + win.camera.direction[2] * distance),
         )
         entity = win.lan_server.spawn_structure(command.key, origin)
         win.structure_world = win.lan_server.structure_world
@@ -168,13 +183,17 @@ class GameplayController:
             win.settings,
             gameplay=replace(win.settings.gameplay, difficulty=difficulty),
         )
-        self._maintain_population((win.player.x, win.player.y, win.player.z))
+        player = self._player()
+        self._maintain_population((player.x, player.y, player.z))
         save_user_settings(win.settings)
 
     def _maintain_population(self, center: tuple[float, float, float]) -> None:
         win = self.win
+        entities = win.entities
+        if entities is None:
+            return
         hostile_count = 0 if win.settings.gameplay.difficulty == "peaceful" else 1
-        win.entities.maintain_population(
+        entities.maintain_population(
             center,
             self._terrain_generator().height_at,
             self._is_entity_hazard,
