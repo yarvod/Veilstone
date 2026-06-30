@@ -19,17 +19,36 @@ The main instability is ownership, not missing packages. Several outer-adapter o
 
 ## Current Hotspots
 
-`GameWindow` in `render/window.py` is still the practical composition root. It creates or owns settings-derived renderer configuration, audio runtime, camera, world renderer, player controller, key state, item registry, inventory, hotbar, recipe book, entity simulation, structure world, entity renderer, sky renderer, controllers, network session, LAN server, authority, persistence restore, autosave, chunk streaming, population maintenance, input, update, and draw coordination.
+`GameWindow` in `render/window.py` is still the practical composition root. It
+creates or owns settings-derived renderer configuration, audio runtime, camera,
+world renderer, player controller, key state, item registry, inventory, hotbar,
+recipe book, entity simulation, structure world, entity renderer, sky renderer,
+controllers, network session, LAN server, authority, persistence restore,
+autosave, chunk streaming, population maintenance, input, update, and draw
+coordination.
 
-Controllers still receive the whole window:
+Controller/input migration is in a transitional adapter phase:
 
-- `GameplayController(self)` parses commands and mutates `world_renderer`, `settings`, persisted settings, player position, LAN structures, texture packs, renderer mesh caches, and UI status.
-- `HudController(self)` reads many window fields and owns Pyglet labels directly.
-- `NetworkController(self)` mutates network session, authority, structure world, remote chunks, entities, menu state, status text, and renderer remote mode.
+- `GameplayController`, `InventoryController`, `NetworkController`, and
+  `InputHandler` receive render-layer view adapters instead of the full
+  `GameWindow` object.
+- `HudController` still reads broad window state through `HudWindowAdapter`, but
+  inventory drawing now goes through an `InventoryHudPort`.
+- These adapters are still intentionally broad compatibility surfaces. New
+  player-facing work should add or reuse narrow command, UI, session, inventory,
+  network, resource-pack, and snapshot ports rather than adding more direct
+  `GameWindow` state reads.
 
-`DemoWorldRenderer` in `render/world_scene.py` owns more than rendering. It loads block and biome registries, creates `WorldStorage`, creates `TerrainGenerator`, owns `ChunkStreamer`, runs fluid and lighting updates, imports texture packs, creates mesh workers, owns GPU resources, performs raycasts and block mutation, drives streaming, and handles autosave. This makes rendering hard to test and makes world simulation depend on a GPU-facing class.
+`DemoWorldRenderer` in `render/world_scene.py` owns more than rendering. It
+loads block and biome registries, creates `WorldStorage`, creates
+`TerrainGenerator`, owns `ChunkStreamer`, runs fluid and lighting updates,
+imports texture packs, creates mesh workers, owns GPU resources, performs
+raycasts and block mutation, drives streaming, and handles autosave. This makes
+rendering hard to test and makes world simulation depend on a GPU-facing class.
 
-Resource pack application is spread across command/UI/render boundaries. The target is one application use case so `/resourcepack`, Settings UI, and future pack reload commands all call the same workflow.
+Resource pack application now goes through a shared application use case for
+`/resourcepack` and Settings UI. Future pack reload commands should continue to
+call that workflow instead of mutating renderer/settings state directly.
 
 ## Target Direction
 

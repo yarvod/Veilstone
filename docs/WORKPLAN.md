@@ -52,7 +52,7 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
       broad window state; inventory draw now goes through `InventoryHudPort`.
 - [x] Keep `/resourcepack`, F-key controls, inventory, and debug overlay smoke
       tested through real app paths after each controller slice.
-- [ ] Update `docs/ARCHITECTURE.md` and `docs/BUGS.md` watchlist as each window
+- [x] Update `docs/ARCHITECTURE.md` and `docs/BUGS.md` watchlist as each window
       dependency is removed.
 
 ### Phase D2: Chunk Runtime Pipeline And Perf Snapshots
