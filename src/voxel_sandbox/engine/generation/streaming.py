@@ -220,7 +220,13 @@ class ChunkStreamer:
             self._metadata_overrides[(x, y, z)] = level
         return changed
 
-    def update(self, center: ChunkCoord, *, max_completed: int) -> StreamBatch:
+    def update(
+        self,
+        center: ChunkCoord,
+        *,
+        max_completed: int,
+        max_submitted: int | None = None,
+    ) -> StreamBatch:
         self._desired = self._desired_coords(center)
         unloaded = tuple(coord for coord in self._loaded if coord not in self._desired)
         for coord in unloaded:
@@ -233,7 +239,12 @@ class ChunkStreamer:
                 del self._pending[coord]
 
         missing = self._desired - self._loaded.keys() - self._pending.keys()
-        for coord in sorted(missing, key=lambda item: _distance_squared(item, center)):
+        missing_coords = sorted(missing, key=lambda item: _distance_squared(item, center))
+        if max_submitted is not None:
+            if max_submitted < 0:
+                raise ValueError("max_submitted cannot be negative")
+            missing_coords = missing_coords[:max_submitted]
+        for coord in missing_coords:
             if self._backend == "process":
                 self._pending[coord] = self._executor.submit(
                     _generate_chunk_task,

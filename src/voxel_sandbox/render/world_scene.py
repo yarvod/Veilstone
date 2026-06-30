@@ -133,6 +133,8 @@ class DemoWorldRenderer:
         self.animation_time = 0.0
         self._fluid_accumulator = 0.0
         self.remote_mode = False
+        self._stream_relight_queue: dict[ChunkCoord, None] = {}
+        self._stream_remesh_queue: dict[SectionCoord, None] = {}
         if (
             self.shader.program is None
             or self.water_shader.program is None
@@ -354,24 +356,51 @@ class DemoWorldRenderer:
 
     def update_streaming(self, center: ChunkCoord) -> None:
         if not self.remote_mode:
-            batch = self._streamer.update(center, max_completed=self.uploads_per_frame)
+            batch = self._streamer.update(
+                center,
+                max_completed=self.uploads_per_frame,
+                max_submitted=self.uploads_per_frame,
+            )
             for coord in batch.unloaded:
                 self._remove_chunk(coord)
-            affected_chunks = {chunk.coord: chunk for chunk in batch.loaded}
-            for loaded_chunk in batch.loaded:
-                for chunk in self._relight_neighborhood((loaded_chunk.coord,)):
-                    affected_chunks[chunk.coord] = chunk
-                for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                    nc = ChunkCoord(loaded_chunk.coord.x + dx, loaded_chunk.coord.z + dz)
-                    if nc not in affected_chunks:
-                        neighbor = self._streamer.get_chunk(nc)
-                        if neighbor is not None:
-                            affected_chunks[nc] = neighbor
-            for unloaded_coord in batch.unloaded:
-                for chunk in self._relight_neighborhood((unloaded_coord,)):
-                    affected_chunks[chunk.coord] = chunk
-            for chunk in affected_chunks.values():
-                self._schedule_chunk(chunk)
+            for chunk in batch.loaded:
+                self._stream_relight_queue[chunk.coord] = None
+            for coord in batch.unloaded:
+                self._stream_relight_queue[coord] = None
+            self._queue_loaded_chunk_boundaries(batch.loaded)
+        self._flush_stream_relight_queue()
+        self._flush_stream_remesh_queue()
+
+    def _queue_loaded_chunk_boundaries(self, chunks: Iterable[Chunk]) -> None:
+        affected_chunks = {chunk.coord: chunk for chunk in chunks}
+        for loaded_chunk in chunks:
+            for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nc = ChunkCoord(loaded_chunk.coord.x + dx, loaded_chunk.coord.z + dz)
+                if nc not in affected_chunks:
+                    neighbor = self._streamer.get_chunk(nc)
+                    if neighbor is not None:
+                        affected_chunks[nc] = neighbor
+        self._queue_stream_remesh(affected_chunks.values())
+
+    def _flush_stream_relight_queue(self) -> None:
+        budget = max(0, self.uploads_per_frame)
+        centers = tuple(self._stream_relight_queue)[:budget]
+        for center in centers:
+            self._stream_relight_queue.pop(center, None)
+        if centers:
+            self._queue_stream_remesh(self._relight_neighborhood(centers))
+
+    def _queue_stream_remesh(self, chunks: Iterable[Chunk]) -> None:
+        for chunk in chunks:
+            for section_y in range(len(chunk.sections)):
+                key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
+                self._stream_remesh_queue[key] = None
+
+    def _flush_stream_remesh_queue(self) -> None:
+        budget = max(0, self.mesh_uploads_per_frame)
+        for key in tuple(self._stream_remesh_queue)[:budget]:
+            self._stream_remesh_queue.pop(key, None)
+            self._schedule_section(key)
 
     def render(
         self,
@@ -567,6 +596,9 @@ class DemoWorldRenderer:
                 self.water_mesh_cache.upload(key, water_mesh)
 
     def _remove_chunk(self, coord: ChunkCoord) -> None:
+        self._stream_relight_queue.pop(coord, None)
+        for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
+            self._stream_remesh_queue.pop(SectionCoord(coord.x, section_y, coord.z), None)
         self.mesh_worker.invalidate_chunk(coord.x, coord.z)
         for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
             key = SectionCoord(coord.x, section_y, coord.z)

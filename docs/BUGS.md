@@ -88,17 +88,19 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G007: World generation lacks distant richness
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** generation / settings UI / streaming
-- **Observed:** terrain still needs profiling evidence that higher render
-  distance does not stall render-thread work.
-- **Fix notes:** Settings now exposes `[world].render_distance`, persists it,
-  and applies changes to active chunk streaming without requiring a world reload.
+- **Observed:** terrain lacked distant biome silhouettes, visible landmarks,
+  and profiling evidence that higher render distance avoided render-thread stalls.
+- **Fix notes:** Settings exposes `[world].render_distance`, persists it, and
+  applies changes to active chunk streaming without requiring a world reload.
   Biome-aware tall grass/wildflower ground cover, biome base-height silhouettes,
-  and deterministic landmark density coverage now make distant terrain more
-  readable.
-- **Next action:** profile render distance above two chunks and split
-  generation/meshing/upload stalls into bounded streaming work where needed.
+  deterministic landmark density coverage, bounded chunk submission, coalesced
+  relighting, and section-budgeted remesh scheduling now make distant terrain
+  readable without large streaming spikes.
+- **Verification:** `benchmark-frame-streaming --render-distance 3 --frames 240
+  --warmup-frames 30` measured avg 4.921 ms, p95 9.898 ms, max 14.145 ms;
+  render distance 4 stress measured avg 5.803 ms, p95 12.521 ms, max 20.686 ms.
 
 ### BUG-S001: Creating/deleting worlds reused stale save state
 

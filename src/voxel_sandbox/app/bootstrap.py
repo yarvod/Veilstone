@@ -62,7 +62,12 @@ def run_command(args: argparse.Namespace) -> int:
     if command == "benchmark-frame-streaming":
         from voxel_sandbox.tools.benchmark_frame_streaming import run_benchmark
 
-        return run_benchmark(settings)
+        return run_benchmark(
+            settings,
+            frames=int(getattr(args, "frames", 240)),
+            warmup_frames=int(getattr(args, "warmup_frames", 30)),
+            render_distance=getattr(args, "render_distance", None),
+        )
     if command == "benchmark-network":
         from voxel_sandbox.tools.benchmark_network import run_benchmark
 

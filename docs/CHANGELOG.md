@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Bounded render-distance streaming** - chunk submission, relight work, and remesh scheduling now use per-frame budgets; the frame-streaming benchmark can run synthetic moving-player profiles with render-distance and warmup controls.
 - **Distant world readability coverage** - terrain generation now uses registry
   biome base heights for stronger highland/plain/swamp silhouettes, with
   deterministic distant landmark density coverage for ruins, camps, and spires.

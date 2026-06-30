@@ -161,6 +161,14 @@ class BlockBroken:
   commands. Store numeric summaries first; visual golden images can follow only
   after render output stabilizes enough to avoid churn.
 
+### WORLD-B005: Swimming Stroke Audio Polish
+
+- **Status:** open
+- **Observed:** water enter/exit splash events exist, but continuous swimming still lacks a distinct stroke/loop feel and dedicated splash assets.
+- **Desired:** swimming should have a soft Minecraft-like loop/stroke cadence separate from landing or water-entry splashes, routed through gameplay/audio events rather than render-window state.
+- **Architecture direction:** player movement or application presentation emits swim cadence events; audio adapter resolves resource-pack sound locations under `resource_packs/default/assets/<namespace>/sounds/...`.
+- **Candidate work:** add swim cadence state, default resource-pack stroke/splash sounds, event-to-audio routing tests, and a real water movement smoke check.
+
 ## Rendering And Resource Packs
 
 ### R-B001: Default Short Grass Renders Like Green Reinforcement Cubes

@@ -31,9 +31,12 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("benchmark-physics", help="Run the player physics benchmark")
     subparsers.add_parser("benchmark-lighting", help="Run the chunk lighting benchmark")
     subparsers.add_parser("benchmark-streaming", help="Run the chunk integration benchmark")
-    subparsers.add_parser(
+    frame_streaming = subparsers.add_parser(
         "benchmark-frame-streaming", help="Run the rendered chunk streaming benchmark"
     )
+    frame_streaming.add_argument("--render-distance", type=int, default=None)
+    frame_streaming.add_argument("--frames", type=int, default=240)
+    frame_streaming.add_argument("--warmup-frames", type=int, default=30)
     subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
     subparsers.add_parser("benchmark-server", help="Run the multiplayer server tick benchmark")
     subparsers.add_parser("benchmark-shadows", help="Run the medium shadow frame benchmark")

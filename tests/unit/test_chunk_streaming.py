@@ -70,6 +70,34 @@ def test_streamer_reconfigures_render_distance() -> None:
         streamer.close()
 
 
+def test_streamer_bounds_new_chunk_submissions_per_update() -> None:
+    generator = RecordingGenerator()
+    streamer = ChunkStreamer(generator, render_distance=2, workers=1)
+    center = ChunkCoord(0, 0)
+
+    try:
+        streamer.prime(center)
+
+        batch = streamer.update(center, max_completed=25, max_submitted=2)
+
+        assert batch.loaded == ()
+        assert streamer.loaded_count == 1
+        assert streamer.pending_count == 2
+
+        deadline = time.monotonic() + 3.0
+        while streamer.loaded_count < 3 and time.monotonic() < deadline:
+            streamer.update(center, max_completed=25, max_submitted=0)
+            time.sleep(0.005)
+
+        assert streamer.loaded_count == 3
+        assert streamer.pending_count == 0
+
+        streamer.update(center, max_completed=25, max_submitted=2)
+        assert streamer.pending_count == 2
+    finally:
+        streamer.close()
+
+
 def test_streamer_exposes_loaded_world_blocks_and_mutation() -> None:
     streamer = ChunkStreamer(
         TerrainGenerator(WorldSeed.parse("mutation-test")),
