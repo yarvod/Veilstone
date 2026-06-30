@@ -10,6 +10,7 @@ import pyglet
 from pyglet.window import key
 
 from voxel_sandbox.render.math3d import camera_matrix
+from voxel_sandbox.render.player_nameplate import build_remote_player_nameplate_render_data
 from voxel_sandbox.render.ui.menu import platform_font_name
 
 try:
@@ -347,7 +348,16 @@ class HudController:
             transform = win.entities.world.transforms.get(entity)
             if transform is None:
                 continue
-            pos = np.array([transform.x, transform.y + 2.1, transform.z, 1.0], dtype=np.float32)
+            name = win.network_players.get(player_id, {}).get("name", f"Player {player_id}")
+            render_data = build_remote_player_nameplate_render_data(
+                player_id=player_id,
+                name=str(name),
+                player_position=transform.position,
+                camera_position=win.camera.position,
+            )
+            if render_data is None:
+                continue
+            pos = np.array([*render_data.world_position, 1.0], dtype=np.float32)
             clip = matrix @ pos
             w = clip[3]
             if w > 0:
@@ -356,10 +366,15 @@ class HudController:
                 if -1 <= ndc_x <= 1 and -1 <= ndc_y <= 1:
                     screen_x = (ndc_x + 1) * frame.width / 2
                     screen_y = (ndc_y + 1) * frame.height / 2
-                    name = win.network_players.get(player_id, {}).get("name", f"Player {player_id}")
-                    self.player_name_label.text = str(name)
+                    self.player_name_label.text = render_data.text
                     self.player_name_label.x = screen_x
                     self.player_name_label.y = screen_y
+                    self.player_name_label.color = (
+                        255,
+                        255,
+                        255,
+                        int(255 * render_data.alpha),
+                    )
                     self.player_name_label.draw()
 
         self.crosshair.visible = not frame.inventory_open

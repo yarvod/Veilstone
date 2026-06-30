@@ -3,7 +3,10 @@ from __future__ import annotations
 import math
 
 from voxel_sandbox.application.player_nameplate import build_player_nameplate_snapshot
-from voxel_sandbox.render.player_nameplate import build_player_nameplate_render_data
+from voxel_sandbox.render.player_nameplate import (
+    build_player_nameplate_render_data,
+    build_remote_player_nameplate_render_data,
+)
 
 
 def test_nameplate_snapshot_places_label_above_player() -> None:
@@ -85,3 +88,28 @@ def test_render_data_maps_visible_nameplate() -> None:
     assert data.text == "Visible"
     assert data.world_position == visible.world_position
     assert data.alpha == visible.alpha
+
+
+def test_remote_player_nameplate_render_data_uses_distance_rules() -> None:
+    data = build_remote_player_nameplate_render_data(
+        player_id=4,
+        name="",
+        player_position=(0.0, 0.0, 0.0),
+        camera_position=(0.0, 0.0, 0.0),
+    )
+
+    assert data is not None
+    assert data.text == "Player 4"
+    assert data.world_position == (0.0, 2.15, 0.0)
+    assert data.alpha == 1.0
+
+
+def test_remote_player_nameplate_render_data_hides_far_players() -> None:
+    data = build_remote_player_nameplate_render_data(
+        player_id=4,
+        name="Alex",
+        player_position=(0.0, 0.0, 80.0),
+        camera_position=(0.0, 0.0, 0.0),
+    )
+
+    assert data is None

@@ -11,6 +11,9 @@
 - **Remote player interpolation coverage** - multiplayer remote player entities
   now have controller-level regression coverage proving delayed snapshots update
   rendered transforms through interpolation instead of snapping directly.
+- **Remote player nameplate render path** - HUD nameplates now consume the
+  player nameplate snapshot/render adapter, including distance visibility,
+  sanitized fallback names, and alpha fade in the live label draw path.
 - **Player entity render snapshot metadata** - player render snapshots now carry
   head pitch, display name, health, max health, and status flags so local and
   remote player presentation can converge without reading raw `GameWindow`
