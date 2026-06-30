@@ -42,6 +42,10 @@
   `NetworkView` to request and track remote chunks instead of reading and
   mutating the requested-chunk set directly.
 
+- **Narrower inventory drop ports** - `InventoryController` now routes hotbar
+  selection and dropped-item spawn placement through `InventoryView` commands
+  instead of depending directly on camera, player, and entity-world fields.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.

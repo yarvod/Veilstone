@@ -51,12 +51,15 @@ class InventoryView(Protocol):
     height: int
     mouse_x: int
     mouse_y: int
-    camera: Any
-    player: Any
-    entities: Any
     text_input: str
     _inv_state: InventoryState
     _inv: Any
+
+    def selected_hotbar_index(self) -> int: ...
+
+    def spawn_drop_from_camera(self, stack: ItemStack) -> None: ...
+
+    def spawn_drop_near_player(self, stack: ItemStack) -> None: ...
 
 
 class InventoryWindowAdapter:
@@ -68,6 +71,22 @@ class InventoryWindowAdapter:
 
     def __setattr__(self, name: str, value: Any) -> None:
         setattr(self._window, name, value)
+
+    def selected_hotbar_index(self) -> int:
+        return int(self._window.hotbar.selected_index)
+
+    def spawn_drop_from_camera(self, stack: ItemStack) -> None:
+        direction = self._window.camera.direction
+        position = (
+            self._window.camera.position[0] + direction[0] * 1.5,
+            self._window.camera.position[1] + direction[1] * 1.5,
+            self._window.camera.position[2] + direction[2] * 1.5,
+        )
+        self._window.entities.spawn_item(position, stack)
+
+    def spawn_drop_near_player(self, stack: ItemStack) -> None:
+        player = self._window.player
+        self._window.entities.spawn_item((player.x, player.y + 0.5, player.z), stack)
 
 
 @dataclass
@@ -745,26 +764,17 @@ class InventoryController:
 
     def drop_selected_item(self) -> None:
         win = self.win
-        stack = win.inventory.take_from_slot(win.hotbar.selected_index)
+        stack = win.inventory.take_from_slot(win.selected_hotbar_index())
         if stack is None:
             return
-        direction = win.camera.direction
-        position = (
-            win.camera.position[0] + direction[0] * 1.5,
-            win.camera.position[1] + direction[1] * 1.5,
-            win.camera.position[2] + direction[2] * 1.5,
-        )
-        win.entities.spawn_item(position, stack)
+        win.spawn_drop_from_camera(stack)
         win.inventory_status = f"Dropped {win.item_registry.by_id(stack.item_id).name}"
 
     def _return_or_drop_stack(self, stack: ItemStack) -> None:
         win = self.win
         remainder = win.inventory.add(stack, win.item_registry)
         if remainder is not None:
-            win.entities.spawn_item(
-                (win.player.x, win.player.y + 0.5, win.player.z),
-                remainder,
-            )
+            win.spawn_drop_near_player(remainder)
 
     # ── sync helpers ─────────────────────────────────────────────────────────
 

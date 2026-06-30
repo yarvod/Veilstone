@@ -48,6 +48,44 @@ def test_inventory_controller_sync_refreshes_world_inventory_reference() -> None
     assert state.inventory[0] is None
 
 
+def test_drop_selected_item_uses_view_drop_port() -> None:
+    registry = create_core_item_registry()
+    inventory = Inventory()
+    inventory.set(2, ItemStack(1, 3), registry)
+    dropped: list[ItemStack] = []
+    controller = object.__new__(InventoryController)
+    controller.win = SimpleNamespace(
+        inventory=inventory,
+        item_registry=registry,
+        inventory_status="",
+        selected_hotbar_index=lambda: 2,
+        spawn_drop_from_camera=dropped.append,
+    )
+
+    controller.drop_selected_item()
+
+    assert dropped == [ItemStack(1, 1)]
+    assert inventory[2] == ItemStack(1, 2)
+    assert "Dropped" in controller.win.inventory_status
+
+
+def test_return_or_drop_stack_uses_near_player_drop_port_when_inventory_full() -> None:
+    registry = create_core_item_registry()
+    inventory = Inventory(1, 1)
+    inventory.set(0, ItemStack(8, 1), registry)
+    dropped: list[ItemStack] = []
+    controller = object.__new__(InventoryController)
+    controller.win = SimpleNamespace(
+        inventory=inventory,
+        item_registry=registry,
+        spawn_drop_near_player=dropped.append,
+    )
+
+    controller._return_or_drop_stack(ItemStack(1, 1))
+
+    assert dropped == [ItemStack(1, 1)]
+
+
 class TestInventoryOpen:
     def test_open_sets_state(self):
         logic = _make_logic()
