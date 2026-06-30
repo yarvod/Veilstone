@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
-from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, ChunkSection
+from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, ChunkSection, DirtyFlag
 from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
 from voxel_sandbox.render.meshes import build_greedy_mesh, build_visible_face_mesh, build_water_mesh
 from voxel_sandbox.tools.benchmark_mesher import UVS
@@ -74,6 +74,16 @@ def _chunk_with_stone_floor(coord: ChunkCoord) -> Chunk:
     return chunk
 
 
+def _fluid_level(chunk: Chunk, x: int, y: int, z: int) -> int:
+    section, local_y = divmod(y, 16)
+    return int(chunk.sections[section].metadata[x, local_y, z])
+
+
+def _clear_dirty(chunk: Chunk) -> None:
+    for section in chunk.sections:
+        section.clear_dirty()
+
+
 def test_water_flows_across_chunk_boundary() -> None:
     """Water at the right edge of one chunk flows into the neighboring chunk."""
     left = _chunk_with_stone_floor(ChunkCoord(0, 0))
@@ -98,6 +108,57 @@ def test_cross_chunk_flow_reports_neighbor_change() -> None:
 
     result = simulate_water_step(left, {(1, 0): right})
     assert (1, 0) in result.neighbor_keys
+
+
+def test_cross_chunk_flow_marks_dirty_sections_and_preserves_levels() -> None:
+    left = _chunk_with_stone_floor(ChunkCoord(0, 0))
+    right = _chunk_with_stone_floor(ChunkCoord(1, 0))
+    left.set_block(15, 1, 8, WATER_BLOCK_ID)
+    left.set_metadata(15, 1, 8, FLUID_MAX_LEVEL)
+    _clear_dirty(left)
+    _clear_dirty(right)
+
+    result = simulate_water_step(left, {(1, 0): right})
+
+    assert result.changed
+    assert result.neighbor_keys == frozenset({(1, 0)})
+    assert _fluid_level(left, 15, 1, 8) == FLUID_MAX_LEVEL
+    assert _fluid_level(right, 0, 1, 8) == FLUID_MAX_LEVEL - 1
+    assert left.sections[0].dirty & DirtyFlag.MESH
+    assert left.sections[0].dirty & DirtyFlag.SAVE
+    assert right.sections[0].dirty & DirtyFlag.MESH
+    assert right.sections[0].dirty & DirtyFlag.LIGHTING
+    assert right.sections[0].dirty & DirtyFlag.SAVE
+
+
+def test_source_creation_level_update_marks_mesh_dirty() -> None:
+    chunk = _chunk_with_stone_floor(ChunkCoord(0, 0))
+    for x, z in (
+        (4, 8),
+        (5, 7),
+        (5, 9),
+        (6, 7),
+        (6, 9),
+        (7, 7),
+        (7, 9),
+        (8, 8),
+    ):
+        chunk.set_block(x, 1, z, 1)
+    chunk.set_block(5, 1, 8, WATER_BLOCK_ID)
+    chunk.set_metadata(5, 1, 8, FLUID_MAX_LEVEL)
+    chunk.set_block(7, 1, 8, WATER_BLOCK_ID)
+    chunk.set_metadata(7, 1, 8, FLUID_MAX_LEVEL)
+
+    simulate_water_step(chunk)
+    assert _fluid_level(chunk, 6, 1, 8) == FLUID_MAX_LEVEL - 1
+    _clear_dirty(chunk)
+
+    result = simulate_water_step(chunk)
+
+    assert result.changed_blocks == 1
+    assert _fluid_level(chunk, 6, 1, 8) == FLUID_MAX_LEVEL
+    assert chunk.sections[0].dirty & DirtyFlag.MESH
+    assert chunk.sections[0].dirty & DirtyFlag.SAVE
 
 
 def test_water_source_created_from_two_adjacent_sources() -> None:

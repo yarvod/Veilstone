@@ -154,7 +154,7 @@ F-клавиши должны быть player-facing управлением, а 
       levels, chunk boundaries.
 - [ ] Treat smooth continuous water, waves, ripples, splashes, and player
       surface disturbance as later renderer effects over voxel simulation.
-- [ ] Add debug visualization or tests for fluid levels/dirty propagation before
+- [x] Add debug visualization or tests for fluid levels/dirty propagation before
       adding expensive visual smoothing.
 
 ### Phase C5: Mobs locomotion pass

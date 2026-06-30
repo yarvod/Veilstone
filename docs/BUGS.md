@@ -30,9 +30,8 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Affected area:** fluid simulation / water rendering
 - **Observed:** flowing water after removing blocks can look visually broken or
   choppy instead of forming a smooth Minecraft-like continuous flow surface.
-- **Next action:** separate simulation correctness from render smoothing; first
-  verify fluid levels/dirty propagation, then add surface interpolation if state
-  is correct.
+- **Next action:** fluid level and dirty propagation coverage is in place; add
+  surface interpolation/render smoothing without changing voxel water rules.
 
 ### BUG-G003: Footstep audio and movement presentation are not unified
 

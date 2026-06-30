@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Water fluid correctness coverage** - water unit tests now lock down
+  cross-chunk level propagation and dirty mesh/save flags before render-side
+  flow smoothing work.
 - **Minecraft-style bundled content routing** - entity textures and gameplay
   sounds now live in `resource_packs/default/assets/<namespace>/...`, while
   configs reference them with resource locations instead of legacy
