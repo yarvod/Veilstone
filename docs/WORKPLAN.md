@@ -222,10 +222,10 @@ fallback routing использовали одну модель папок и ma
 
 - [x] Add Settings UI control for `[world].render_distance`.
 - [x] Persist render distance changes and rebuild/reconfigure chunk streaming safely.
-- [ ] Improve distant landscape readability and biome silhouettes.
+- [x] Improve distant landscape readability and biome silhouettes.
 - [x] Add more ground cover: grass, flowers, biome-specific small features.
-- [ ] Add landmarks/points of interest that are visible at distance.
-- [ ] Add tests for feature density ranges and generation determinism.
+- [x] Add landmarks/points of interest that are visible at distance.
+- [x] Add tests for feature density ranges and generation determinism.
 - [ ] Watch performance: higher render distance must not block render thread.
 - [ ] Profile render distance above two chunks and split generation/meshing/upload
       stalls into bounded streaming work.

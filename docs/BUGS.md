@@ -90,14 +90,15 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** generation / settings UI / streaming
-- **Observed:** terrain still lacks enough distant biome silhouettes and visible
-  landmarks.
+- **Observed:** terrain still needs profiling evidence that higher render
+  distance does not stall render-thread work.
 - **Fix notes:** Settings now exposes `[world].render_distance`, persists it,
   and applies changes to active chunk streaming without requiring a world reload.
-  Biome-aware tall grass and wildflower ground cover now add small features with
-  deterministic density coverage.
-- **Next action:** improve distant biome silhouettes and schedule landmark
-  feature passes with deterministic tests.
+  Biome-aware tall grass/wildflower ground cover, biome base-height silhouettes,
+  and deterministic landmark density coverage now make distant terrain more
+  readable.
+- **Next action:** profile render distance above two chunks and split
+  generation/meshing/upload stalls into bounded streaming work where needed.
 
 ### BUG-S001: Creating/deleting worlds reused stale save state
 
@@ -141,7 +142,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** typing / quality gate
-- **Observed:** `uv run pyright` reports 511 existing strict typing errors across engine, render, tests, and infrastructure.
+- **Observed:** `uv run pyright` reports 517 existing strict typing errors across engine, render, tests, and infrastructure.
 - **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
 - **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 

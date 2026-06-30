@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Distant world readability coverage** - terrain generation now uses registry
+  biome base heights for stronger highland/plain/swamp silhouettes, with
+  deterministic distant landmark density coverage for ruins, camps, and spires.
 - **Inventory presentation snapshots** - item count text, tooltips, cursor labels,
   and crafting result feedback now come from application-level presentation
   snapshots instead of render UI duplicating inventory/item rules. Real-game

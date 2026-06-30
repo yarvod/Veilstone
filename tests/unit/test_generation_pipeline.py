@@ -27,6 +27,7 @@ from voxel_sandbox.engine.generation import (
     SurfacePlacer,
     TerrainGenerator,
     WorldSeed,
+    structure_placements_for_chunk,
 )
 from voxel_sandbox.engine.generation.terrain import Biome
 
@@ -257,6 +258,53 @@ def test_ground_cover_density_stays_in_expected_range() -> None:
 
     assert 1500 <= tall_grass <= 2600
     assert 20 <= wildflowers <= 70
+
+
+def test_biome_silhouette_height_spread_stays_readable(block_registry, biome_registry) -> None:
+    generator = TerrainGenerator(
+        WorldSeed.parse("distant-silhouette"),
+        block_registry=block_registry,
+        biome_registry=biome_registry,
+    )
+    spreads: dict[str, int] = {}
+    averages: dict[str, float] = {}
+
+    for biome in Biome:
+        heights: list[int] = []
+        for x in range(-128, 129, 8):
+            for z in range(-128, 129, 8):
+                if generator.biome_key_at(x, z) == biome.value:
+                    heights.append(generator.height_at(x, z))
+        if heights:
+            spreads[biome.value] = max(heights) - min(heights)
+            averages[biome.value] = sum(heights) / len(heights)
+
+    assert spreads["dusk_highlands"] >= 18
+    assert averages["dusk_highlands"] > averages["twilight_plains"] + 14
+    assert averages["twilight_plains"] > averages["gloom_swamp"] + 2
+
+
+def test_structure_landmark_density_is_deterministic_across_distance_sample() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("structure-golden"))
+
+    placements = {
+        (placement.template.key, placement.origin)
+        for chunk_x in range(-32, 33)
+        for chunk_z in range(-32, 33)
+        for placement in structure_placements_for_chunk(
+            ChunkCoord(chunk_x, chunk_z),
+            generator.seed,
+            generator.structure_templates,
+            generator.height_at,
+        )
+    }
+
+    assert 45 <= len(placements) <= 80
+    assert {key for key, _origin in placements} == {
+        "dusk_spire",
+        "veilstone_ruin",
+        "veilwood_camp",
+    }
 
 
 # ---------------------------------------------------------------------------

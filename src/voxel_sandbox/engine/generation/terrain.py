@@ -558,10 +558,12 @@ class TerrainGenerator:
         self.structure_templates: tuple[StructureTemplate, ...] = load_structure_templates(
             Path(__file__).parent / "structure_templates"
         )
-        # Biome-specific hill amplitude: height_variation * 2 gives pronounced differences
+        # Biome-specific base and hill amplitude make distant silhouettes readable.
+        self._biome_base_height: dict[str, int] = {}
         self._biome_hill_scale: dict[str, float] = {}
         if biome_registry is not None:
             for biome in biome_registry:
+                self._biome_base_height[biome.key] = biome.base_height
                 self._biome_hill_scale[biome.key] = biome.height_variation * 2.0
 
         surface_placer: _DefaultSurfacePlacer | BiomeSurfacePlacer
@@ -590,8 +592,9 @@ class TerrainGenerator:
         detail = _value_noise(self.seed.value, world_x / 32.0, world_z / 32.0, 1)
         hill_factor = broad * broad * broad
         biome_key = self.biome_key_at(world_x, world_z)
+        base_height = self._biome_base_height.get(biome_key, TERRAIN_BASE_HEIGHT)
         hill_scale = self._biome_hill_scale.get(biome_key, TERRAIN_HILL_SCALE)
-        return TERRAIN_BASE_HEIGHT + int(hill_factor * hill_scale + detail * TERRAIN_DETAIL_SCALE)
+        return base_height + int(hill_factor * hill_scale + detail * TERRAIN_DETAIL_SCALE)
 
     def biome_key_at(self, world_x: int, world_z: int) -> str:
         temperature = _value_noise(self.seed.value, world_x / 96.0, world_z / 96.0, 2)
