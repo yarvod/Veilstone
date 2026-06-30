@@ -1,11 +1,12 @@
 """Inventory and crafting controller extracted from GameWindow."""
+# pyright: reportPrivateUsage=false
 
 from __future__ import annotations
 
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import pyglet
 
@@ -15,7 +16,7 @@ from voxel_sandbox.application.inventory_presentation import (
 )
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
-from voxel_sandbox.domain.inventory import Inventory
+from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
 from voxel_sandbox.render.input_state import mouse
 from voxel_sandbox.render.ui.item_icons import (
@@ -29,6 +30,41 @@ from voxel_sandbox.render.ui.menu import platform_font_name
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
+
+
+class InventoryView(Protocol):
+    world_runtime: Any
+    item_registry: ItemRegistry
+    hud_batch: Any
+    hud_fg_group: Any
+    hud_bg_group: Any
+    hud_text_group: Any
+    inventory: Inventory
+    hotbar: Hotbar
+    crafting_grid: CraftingGrid
+    crafting_grid_size: int
+    cursor_stack: ItemStack | None
+    inventory_open: bool
+    inventory_status: str
+    player_health: float
+    width: int
+    height: int
+    mouse_x: int
+    mouse_y: int
+    camera: Any
+    player: Any
+    entities: Any
+    text_input: str
+    _inv_state: InventoryState
+    _inv: Any
+
+
+class InventoryWindowAdapter:
+    def __init__(self, window: GameWindow) -> None:
+        self._window = window
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._window, name)
 
 
 @dataclass
@@ -196,7 +232,7 @@ _FONT = platform_font_name(sys.platform)
 class InventoryController:
     """Owns all inventory sprites and rendering; delegates logic to InventoryLogic."""
 
-    def __init__(self, win: GameWindow) -> None:
+    def __init__(self, win: InventoryView) -> None:
         self.win = win
 
         block_registry = cast(BlockRegistry, win.world_runtime.block_registry)
@@ -437,7 +473,7 @@ class InventoryController:
             self.hud_status_label.visible = True
             self.hud_status_label.text = win.inventory_status
             self.hud_status_label.x = 20
-            self.hud_status_label.y = 112 if win.text_input is not None else 82
+            self.hud_status_label.y = 112
         else:
             self.hud_status_label.visible = False
 

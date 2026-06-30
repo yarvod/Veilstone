@@ -39,8 +39,10 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
 - [x] Map remaining controllers/use cases that still receive full `GameWindow` (`GameplayController`, `InventoryController`, `NetworkController`; HUD already uses an adapter).
 - [x] Route `GameplayController` through `GameplayView`/`GameplayWindowAdapter`
       instead of passing the full `GameWindow` object.
-- [ ] Shrink `GameplayView` toward narrower command ports/use cases, then
-      migrate `InventoryController` and `NetworkController` off full `GameWindow`.
+- [x] Route `InventoryController` through `InventoryView`/`InventoryWindowAdapter`
+      instead of passing the full `GameWindow` object.
+- [ ] Shrink `GameplayView`/`InventoryView` toward narrower command and UI ports,
+      then migrate `NetworkController` off full `GameWindow`.
 - [ ] Extract HUD/debug snapshot reads so HUD code does not depend on broad
       window state.
 - [ ] Keep `/resourcepack`, F-key controls, inventory, and debug overlay smoke

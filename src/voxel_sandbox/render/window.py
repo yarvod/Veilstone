@@ -85,7 +85,13 @@ from voxel_sandbox.render.input_state import (
     KeyState,
     configure_layout_independent_game_keys,
 )
-from voxel_sandbox.render.inventory_ui import InventoryController, InventoryLogic, InventoryState
+from voxel_sandbox.render.inventory_ui import (
+    InventoryController,
+    InventoryLogic,
+    InventoryState,
+    InventoryView,
+    InventoryWindowAdapter,
+)
 from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.network_controller import NetworkController
 from voxel_sandbox.render.player_avatar import build_player_avatar_world
@@ -239,7 +245,7 @@ class GameWindow(pyglet.window.Window):
         self.hud_fg_group = pyglet.graphics.Group(order=1)
         self.hud_text_group = pyglet.graphics.Group(order=2)
         self._hud = HudController(HudWindowAdapter(self))
-        self._inv_ctrl = InventoryController(self)
+        self._inv_ctrl = InventoryController(cast(InventoryView, InventoryWindowAdapter(self)))
         self._net = NetworkController(self)
         self.menu_ui = MenuUI(self)
         self._net.start_local_authority()
