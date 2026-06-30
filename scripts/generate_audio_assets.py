@@ -111,27 +111,25 @@ def _creature_voice(frequency: float, drop: float, rasp_seed: int) -> Sample:
 
 
 def main() -> None:
-    root = Path(__file__).parents[1] / "assets/audio"
-    _write(root / "ui_click.wav", 0.055, _tone(920.0, 8.0), peak=0.28)
-    _write(root / "block_stone.wav", 0.14, _noise(11, 9200.0, 2.4), peak=0.54)
-    _write(root / "block_earth.wav", 0.17, _noise(23, 2600.0, 1.7), peak=0.46)
+    root = Path(__file__).parents[1] / "resource_packs/default/assets/minecraft/sounds"
+    _write(root / "ui/click.wav", 0.055, _tone(920.0, 8.0), peak=0.28)
+    _write(root / "block/stone.wav", 0.14, _noise(11, 9200.0, 2.4), peak=0.54)
+    _write(root / "block/earth.wav", 0.17, _noise(23, 2600.0, 1.7), peak=0.46)
     _write(
-        root / "block_wood.wav",
+        root / "block/wood.wav",
         0.14,
         _mix((_tone(235.0, 7.0), 0.65), (_noise(31, 5200.0, 2.8), 0.35)),
         peak=0.48,
     )
-    _write(root / "footstep.wav", 0.095, _noise(37, 3200.0, 2.2), peak=0.34)
+    _write(root / "step/footstep.wav", 0.095, _noise(37, 3200.0, 2.2), peak=0.34)
     _write(
-        root / "player_hurt.wav",
+        root / "player/hurt.wav",
         0.18,
         _mix((_tone(118.0, 8.5), 0.58), (_noise(41, 5400.0, 3.2), 0.42)),
         peak=0.42,
     )
-    _write(root / "cow_hurt.wav", 0.34, _creature_voice(145.0, -35.0, 43), peak=0.42)
-    _write(root / "cow_death.wav", 0.52, _creature_voice(125.0, -70.0, 47), peak=0.45)
-    _write(root / "zombie_hurt.wav", 0.25, _creature_voice(185.0, -80.0, 53), peak=0.48)
-    _write(root / "zombie_death.wav", 0.48, _creature_voice(150.0, -110.0, 59), peak=0.50)
+    _write(root / "player/land.wav", 0.13, _noise(71, 1600.0, 2.6), peak=0.32)
+    _write(root / "player/splash.wav", 0.30, _noise(79, 2400.0, 1.8), peak=0.36)
     for path, duration, voice, peak in (
         ("cow/hurt_1.wav", 0.34, _creature_voice(145.0, -35.0, 43), 0.42),
         ("cow/hurt_2.wav", 0.38, _creature_voice(132.0, -28.0, 44), 0.40),
@@ -142,21 +140,21 @@ def main() -> None:
         ("zombie/death_1.wav", 0.48, _creature_voice(150.0, -110.0, 59), 0.50),
         ("zombie/death_2.wav", 0.55, _creature_voice(137.0, -96.0, 60), 0.48),
     ):
-        _write(root / path, duration, voice, peak=peak)
+        _write(root / "entity" / path, duration, voice, peak=peak)
     _write(
-        root / "ambience_surface.wav",
+        root / "ambient/surface.wav",
         12.0,
         _ambient_score((82.41, 123.47, 164.81), (329.63, 392.0, 493.88, 392.0), beat_seconds=3.0),
         peak=0.14,
     )
     _write(
-        root / "ambience_cave.wav",
+        root / "ambient/cave.wav",
         12.0,
         _ambient_score((55.0, 82.41, 110.0), (220.0, 246.94, 196.0, 164.81), beat_seconds=3.0),
         peak=0.11,
     )
     _write(
-        root / "music_menu.wav",
+        root / "music/menu.wav",
         16.0,
         _ambient_score(
             (73.42, 110.0, 146.83),
@@ -166,7 +164,7 @@ def main() -> None:
         peak=0.16,
     )
     _write(
-        root / "music_exploration.wav",
+        root / "music/exploration.wav",
         16.0,
         _ambient_score(
             (65.41, 98.0, 130.81),
@@ -176,7 +174,7 @@ def main() -> None:
         peak=0.14,
     )
     _write(
-        root / "music_night.wav",
+        root / "music/night.wav",
         16.0,
         _ambient_score(
             (55.0, 82.41, 123.47),

@@ -1,130 +1,130 @@
 [[audio]]
 key = "ui.click"
-path = "audio/ui_click.wav"
+path = "minecraft:ui/click"
 group = "effects"
 gain = 0.55
 
 [[audio]]
 key = "block.stone"
-path = "audio/block_stone.wav"
+path = "minecraft:block/stone"
 group = "effects"
 gain = 0.16
 
 [[audio]]
 key = "block.earth"
-path = "audio/block_earth.wav"
+path = "minecraft:block/earth"
 group = "effects"
 gain = 0.13
 
 [[audio]]
 key = "block.wood"
-path = "audio/block_wood.wav"
+path = "minecraft:block/wood"
 group = "effects"
 gain = 0.15
 
 [[audio]]
 key = "step.stone"
-path = "audio/block_stone.wav"
+path = "minecraft:block/stone"
 group = "effects"
 gain = 0.08
 
 [[audio]]
 key = "step.earth"
-path = "audio/block_earth.wav"
+path = "minecraft:block/earth"
 group = "effects"
 gain = 0.07
 
 [[audio]]
 key = "step.wood"
-path = "audio/block_wood.wav"
+path = "minecraft:block/wood"
 group = "effects"
 gain = 0.08
 
 [[audio]]
 key = "step.plant"
-path = "audio/footstep.wav"
+path = "minecraft:step/footstep"
 group = "effects"
 gain = 0.06
 
 [[audio]]
 key = "footstep"
-path = "audio/footstep.wav"
+path = "minecraft:step/footstep"
 group = "effects"
 gain = 0.10
 
 [[audio]]
 key = "player.hurt"
-path = "audio/player_hurt.wav"
+path = "minecraft:player/hurt"
 group = "effects"
 gain = 0.62
 
 [[audio]]
 key = "player.land"
-path = "audio/footstep.wav"
+path = "minecraft:player/land"
 group = "effects"
 gain = 0.14
 
 [[audio]]
 key = "player.splash"
-path = "audio/footstep.wav"
+path = "minecraft:player/splash"
 group = "effects"
 gain = 0.12
 
 [[audio]]
 key = "mob.passive_hurt"
-paths = ["audio/cow/hurt_1.wav", "audio/cow/hurt_2.wav"]
+paths = ["minecraft:entity/cow/hurt_1", "minecraft:entity/cow/hurt_2"]
 group = "effects"
 gain = 0.58
 
 [[audio]]
 key = "mob.passive_death"
-paths = ["audio/cow/death_1.wav", "audio/cow/death_2.wav"]
+paths = ["minecraft:entity/cow/death_1", "minecraft:entity/cow/death_2"]
 group = "effects"
 gain = 0.62
 
 [[audio]]
 key = "mob.hostile_hurt"
-paths = ["audio/zombie/hurt_1.wav", "audio/zombie/hurt_2.wav"]
+paths = ["minecraft:entity/zombie/hurt_1", "minecraft:entity/zombie/hurt_2"]
 group = "effects"
 gain = 0.66
 
 [[audio]]
 key = "mob.hostile_death"
-paths = ["audio/zombie/death_1.wav", "audio/zombie/death_2.wav"]
+paths = ["minecraft:entity/zombie/death_1", "minecraft:entity/zombie/death_2"]
 group = "effects"
 gain = 0.70
 
 [[audio]]
 key = "ambience.surface"
-path = "audio/ambience_surface.wav"
+path = "minecraft:ambient/surface"
 group = "ambience"
 loop = true
 gain = 0.32
 
 [[audio]]
 key = "ambience.cave"
-path = "audio/ambience_cave.wav"
+path = "minecraft:ambient/cave"
 group = "ambience"
 loop = true
 gain = 0.28
 
 [[audio]]
 key = "music.menu"
-path = "audio/music_menu.wav"
+path = "minecraft:music/menu"
 group = "music"
 loop = true
 gain = 0.34
 
 [[audio]]
 key = "music.exploration"
-path = "audio/music_exploration.wav"
+path = "minecraft:music/exploration"
 group = "music"
 loop = true
 gain = 0.30
 
 [[audio]]
 key = "music.night"
-path = "audio/music_night.wav"
+path = "minecraft:music/night"
 group = "music"
 loop = true
 gain = 0.28

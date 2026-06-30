@@ -6,7 +6,15 @@ from PIL import Image, ImageDraw
 
 SIZE = 256
 TILE = 64
-OUTPUT = Path(__file__).resolve().parents[1] / "assets" / "entities"
+OUTPUT = (
+    Path(__file__).resolve().parents[1]
+    / "resource_packs"
+    / "default"
+    / "assets"
+    / "minecraft"
+    / "textures"
+    / "entity"
+)
 
 
 def _tile(draw: ImageDraw.ImageDraw, column: int, row: int, color: tuple[int, int, int]) -> None:
@@ -199,10 +207,12 @@ def _player_skin() -> Image.Image:
 
 
 def main() -> None:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    _cow_skin().save(OUTPUT / "cow-skin.png")
-    _zombie_skin().save(OUTPUT / "zombie-skin.png")
-    _player_skin().save(OUTPUT / "player-skin.png")
+    (OUTPUT / "cow").mkdir(parents=True, exist_ok=True)
+    (OUTPUT / "zombie").mkdir(parents=True, exist_ok=True)
+    (OUTPUT / "player").mkdir(parents=True, exist_ok=True)
+    _cow_skin().save(OUTPUT / "cow" / "cow.png")
+    _zombie_skin().save(OUTPUT / "zombie" / "zombie.png")
+    _player_skin().save(OUTPUT / "player" / "player.png")
 
 
 if __name__ == "__main__":

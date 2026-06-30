@@ -212,6 +212,9 @@ fallback routing использовали одну модель папок и ma
 - [x] Package bundled resource packs in release builds and add regression tests
       for discovery/loading/cache behavior.
 - [x] Run real game visual smoke with default pack and screenshot output.
+- [x] Move bundled entity textures and gameplay sounds into Minecraft-style
+      `resource_packs/default/assets/<namespace>/textures|sounds/...` routing
+      and remove legacy `assets/audio` / `assets/entities` content paths.
 
 ### Phase C8: World generation and distance
 

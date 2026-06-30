@@ -73,7 +73,8 @@ class EntityRenderer:
             [(self.vertex_buffer, "3f 6x4", "in_position")],
         )
         self.models = EntityModelRegistry.from_toml(
-            resource_path("config/entity_models.toml"), resource_path("assets")
+            resource_path("config/entity_models.toml"),
+            resource_path("resource_packs/default"),
         )
         self.animation_graph = AnimationGraph(
             AnimationClipRegistry.from_toml(resource_path("config/entity_animations.toml"))

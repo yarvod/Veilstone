@@ -2,7 +2,7 @@ version = 1
 
 [[models]]
 key = "passive"
-texture = "entities/cow-skin.png"
+texture = "minecraft:entity/cow/cow"
 base_color = [1.0, 1.0, 1.0]
 
 [models.uv_regions]
@@ -123,7 +123,7 @@ uv_all = "tail"
 
 [[models]]
 key = "hostile"
-texture = "entities/zombie-skin.png"
+texture = "minecraft:entity/zombie/zombie"
 base_color = [1.0, 1.0, 1.0]
 
 [models.uv_regions]
@@ -219,7 +219,7 @@ uv_y = "leg_back"
 
 [[models]]
 key = "remote_player"
-texture = "entities/player-skin.png"
+texture = "minecraft:entity/player/player"
 base_color = [1.0, 1.0, 1.0]
 
 [models.uv_regions]

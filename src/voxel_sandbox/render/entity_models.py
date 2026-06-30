@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+from voxel_sandbox.render.texture_packs.minecraft_java import (
+    resource_location_to_texture_path,
+)
+
 type Vec3 = tuple[float, float, float]
 type Vec4 = tuple[float, float, float, float]
 type FaceUVs = tuple[Vec4, Vec4, Vec4, Vec4, Vec4, Vec4]
@@ -67,7 +71,7 @@ class EntityModelRegistry:
             models.append(
                 EntityModelDef(
                     key=str(model["key"]),
-                    texture=asset_root / str(model["texture"]),
+                    texture=_resolve_texture_path(str(model["texture"]), asset_root),
                     base_color=_vec3(model["base_color"]),
                     parts=parts,
                 )
@@ -120,6 +124,10 @@ def _resolve_uv(value: object, regions: dict[str, Vec4]) -> Vec4:
         except KeyError as error:
             raise ValueError(f"Unknown entity UV region: {value}") from error
     return _vec4(value)
+
+
+def _resolve_texture_path(value: str, asset_root: Path) -> Path:
+    return asset_root / resource_location_to_texture_path(value)
 
 
 def _vec3(value: object) -> Vec3:

@@ -53,6 +53,23 @@ def test_player_movement_sounds_are_registered() -> None:
     assert bus.registry.get("player.land").gain > bus.registry.get("footstep").gain
 
 
+def test_audio_registry_resolves_default_resource_pack_sounds() -> None:
+    bus = create_audio_bus(AudioSettings(), NullAudioBackend())
+
+    assert (
+        bus.registry.get("ui.click")
+        .paths[0]
+        .as_posix()
+        .endswith("resource_packs/default/assets/minecraft/sounds/ui/click.wav")
+    )
+    assert (
+        bus.registry.get("mob.passive_hurt")
+        .paths[0]
+        .as_posix()
+        .endswith("resource_packs/default/assets/minecraft/sounds/entity/cow/hurt_1.wav")
+    )
+
+
 def test_director_changes_music_and_biome_ambience_once() -> None:
     backend = NullAudioBackend()
     bus = create_audio_bus(AudioSettings(), backend)
@@ -83,23 +100,28 @@ def test_server_audio_uses_null_backend() -> None:
 
 def test_audio_registry_and_original_assets_exist() -> None:
     assert resource_path("config/audio.toml").is_file()
-    assert resource_path("assets/audio/ambience_surface.wav").is_file()
+    assert resource_path(
+        "resource_packs/default/assets/minecraft/sounds/ambient/surface.wav"
+    ).is_file()
 
 
 def test_gameplay_effects_are_normalized_without_clipping() -> None:
     names = (
-        "block_stone.wav",
-        "block_earth.wav",
-        "block_wood.wav",
-        "footstep.wav",
-        "player_hurt.wav",
-        "cow/hurt_1.wav",
-        "cow/death_1.wav",
-        "zombie/hurt_1.wav",
-        "zombie/death_1.wav",
+        "block/stone.wav",
+        "block/earth.wav",
+        "block/wood.wav",
+        "step/footstep.wav",
+        "player/hurt.wav",
+        "entity/cow/hurt_1.wav",
+        "entity/cow/death_1.wav",
+        "entity/zombie/hurt_1.wav",
+        "entity/zombie/death_1.wav",
     )
     for name in names:
-        with wave.open(str(resource_path(f"assets/audio/{name}")), "rb") as source:
+        with wave.open(
+            str(resource_path(f"resource_packs/default/assets/minecraft/sounds/{name}")),
+            "rb",
+        ) as source:
             samples = array("h", source.readframes(source.getnframes()))
         peak = max(abs(sample) for sample in samples) / 32767.0
         rms = math.sqrt(sum(sample * sample for sample in samples) / len(samples)) / 32767.0

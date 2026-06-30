@@ -45,12 +45,15 @@ class AudioRegistry:
         for entry in entries:
             raw_path = entry.get("path")
             if raw_path is not None:
-                paths = (asset_root / str(raw_path),)
+                paths = (_resolve_audio_path(str(raw_path), asset_root),)
             elif "paths" in entry:
                 raw_paths = entry["paths"]
                 if not isinstance(raw_paths, list):
                     raise ValueError("Audio resource paths must be an array")
-                paths = tuple(asset_root / str(item) for item in cast("list[object]", raw_paths))
+                paths = tuple(
+                    _resolve_audio_path(str(item), asset_root)
+                    for item in cast("list[object]", raw_paths)
+                )
             else:
                 raise ValueError("Audio resource must specify path or paths")
             resources.append(
@@ -79,3 +82,18 @@ def _gain(entry: dict[str, object]) -> float:
     if not isinstance(value, int | float):
         raise ValueError("Audio resource gain must be numeric")
     return float(value)
+
+
+def _resolve_audio_path(value: str, asset_root: Path) -> Path:
+    if ":" not in value:
+        raise ValueError(
+            f"Invalid audio resource location {value!r}: "
+            "missing namespace (expected 'namespace:path')"
+        )
+    namespace, sound_path = value.split(":", 1)
+    if not namespace or "/" not in sound_path:
+        raise ValueError(
+            f"Invalid audio resource location {value!r}: expected 'namespace:category/name'"
+        )
+    suffix = "" if Path(sound_path).suffix else ".wav"
+    return asset_root / "assets" / namespace / "sounds" / f"{sound_path}{suffix}"

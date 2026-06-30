@@ -43,8 +43,6 @@ packages = ["src/voxel_sandbox"]
 "config" = "voxel_sandbox/resources/config"
 "data" = "voxel_sandbox/resources/data"
 "resource_packs" = "voxel_sandbox/resources/resource_packs"
-"assets/audio" = "voxel_sandbox/resources/assets/audio"
-"assets/entities" = "voxel_sandbox/resources/assets/entities"
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

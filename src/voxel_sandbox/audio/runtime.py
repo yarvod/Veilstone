@@ -23,7 +23,7 @@ def create_audio_bus(
 ) -> AudioBus:
     registry = AudioRegistry.from_toml(
         resource_path("config/audio.toml"),
-        resource_path("assets"),
+        resource_path("resource_packs/default"),
     )
     return AudioBus(backend or PygletAudioBackend(), registry, volume_map(settings))
 

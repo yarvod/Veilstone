@@ -116,6 +116,15 @@ Rules:
   dependencies or protocol ports.
 - Do not introduce Dishka during Phase A. Start with manual composition root.
 
+## Content Assets
+
+New game textures and sounds must be added as Minecraft-style resource-pack
+content under `resource_packs/default/assets/<namespace>/textures|sounds/...`
+and referenced with resource locations such as `minecraft:block/stone`,
+`minecraft:entity/cow/cow`, or `minecraft:player/hurt`. Do not add gameplay
+art/audio to ad-hoc `assets/audio` or `assets/entities`; reserve `assets/` for
+launcher/app branding and other non-resource-pack files.
+
 ## Docs Workflow
 
 The `docs/` directory is the source of truth for current project state and useful

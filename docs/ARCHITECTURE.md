@@ -172,6 +172,11 @@ Examples:
 - Mob spawning: test spawn rules using a `WorldQuery` fake and `EntityWorld`.
 - 3D player: render adapter consumes player snapshot; movement remains a simulation test.
 - Resource packs: UI and commands both call `ApplyResourcePackUseCase`.
+- Textures/sounds: add gameplay content to `resource_packs/default/assets/<namespace>/textures|sounds/...`
+  and reference it with resource locations (`minecraft:entity/cow/cow`,
+  `minecraft:player/hurt`) instead of direct `assets/audio` or `assets/entities`
+  paths. Keep root `assets/` for launcher/app branding and other files that are
+  not part of the resource-pack model.
 
 ## Dishka
 

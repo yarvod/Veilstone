@@ -1,6 +1,6 @@
 # Resource Pack Support
 
-Veilstone supports a focused Minecraft Java-style block texture subset.
+Veilstone supports a focused Minecraft Java-style resource-pack subset.
 
 ## Supported
 
@@ -8,6 +8,14 @@ Veilstone supports a focused Minecraft Java-style block texture subset.
 - Bundled `resource_packs/default` folder uses the same Java-style layout as
   user packs and is the fallback source for missing supported block textures.
 - Block texture resource locations such as `minecraft:block/stone`.
+- Entity texture resource locations such as `minecraft:entity/cow/cow`,
+  `minecraft:entity/zombie/zombie`, and `minecraft:entity/player/player`.
+- Sound resource locations such as `minecraft:ui/click`,
+  `minecraft:player/hurt`, `minecraft:entity/cow/hurt_1`, and
+  `minecraft:music/exploration`.
+- New gameplay textures and sounds belong under
+  `resource_packs/default/assets/<namespace>/textures|sounds/...`; root
+  `assets/` is reserved for non-resource-pack files such as app branding.
 - Runtime apply through `/resourcepack <path>` and the Settings texture-pack UI.
 - Atlas cache reuse under the save cache root for user packs.
 - Alpha-tested cutout blocks for leaf-style textures. Blocks marked with

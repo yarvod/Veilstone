@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Minecraft-style bundled content routing** - entity textures and gameplay
+  sounds now live in `resource_packs/default/assets/<namespace>/...`, while
+  configs reference them with resource locations instead of legacy
+  `assets/audio` / `assets/entities` paths.
 - **Player landing and splash audio events** - player landing and water
   enter/exit transitions now publish gameplay events that the audio bridge maps
   to tuned movement sounds.
