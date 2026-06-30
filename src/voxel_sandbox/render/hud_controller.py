@@ -36,6 +36,11 @@ class DebugSlowTelemetry:
     device: str = "unknown"
 
 
+@dataclass(frozen=True, slots=True)
+class HudDebugTextSnapshot:
+    text: str
+
+
 class InventoryHudPort(Protocol):
     def draw_hotbar(self) -> None: ...
 
@@ -78,6 +83,15 @@ class HudView(Protocol):
     runtime_perf_snapshot: RuntimePerfSnapshot
 
     def frame_snapshot(self) -> HudFrameSnapshot: ...
+
+    def debug_overlay_snapshot(
+        self,
+        *,
+        entity_draws: int,
+        slow_telemetry: DebugSlowTelemetry,
+        animation_summary: str,
+        selected_item_name: str,
+    ) -> HudDebugTextSnapshot: ...
 
 
 @dataclass(slots=True)
@@ -196,6 +210,63 @@ class HudWindowAdapter:
             inventory_open=self._window.inventory_open,
         )
 
+    def debug_overlay_snapshot(
+        self,
+        *,
+        entity_draws: int,
+        slow_telemetry: DebugSlowTelemetry,
+        animation_summary: str,
+        selected_item_name: str,
+    ) -> HudDebugTextSnapshot:
+        win = self._window
+        perf = win.runtime_perf_snapshot
+        x, y, z = win.camera.position
+        block_x, block_y, block_z = int(x), int(y), int(z)
+        chunk_x, chunk_z = block_x // 16, block_z // 16
+        facing = _facing_from_yaw(win.camera.yaw_degrees)
+        biome = _biome_key_at(self, block_x, block_z)
+        text = (
+            f"FPS {perf.fps:5.1f} Frame {perf.frame_ms:5.1f} ms "
+            f"Update {perf.update_ms:5.1f} Render {perf.render_ms:5.1f}\n"
+            f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
+            f"Grounded {win.player.on_ground} VelocityY {win.player.velocity_y:5.2f}\n"
+            f"Yaw {win.camera.yaw_degrees:6.1f} Pitch {win.camera.pitch_degrees:5.1f} "
+            f"Facing {facing}\n"
+            f"Biome {biome} Memory {slow_telemetry.memory} "
+            f"Render distance {win.settings.world.render_distance} "
+            f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame}"
+            f"\nChunks {perf.queues.loaded_chunks} "
+            f"Pending {perf.queues.pending_chunks} "
+            f"Mesh queue {perf.queues.pending_meshes} "
+            f"Stream remesh {perf.queues.pending_stream_remeshes} "
+            f"Visible sections {perf.queues.visible_sections}\n"
+            f"Faces {win.world_renderer.face_count} "
+            f"Triangles {win.world_renderer.triangle_count} "
+            f"Draws {win.world_renderer.draw_calls}\n"
+            f"Daylight {win.world_renderer.daylight:4.2f} "
+            f"Smooth {win.world_renderer.smooth_lighting} "
+            f"AO {win.world_renderer.ambient_occlusion} "
+            f"Fog {win.world_renderer.fog_enabled} "
+            f"Mesher {'greedy' if win.world_renderer.greedy_meshing else 'visible'}\n"
+            f"Health {win.player_health:4.1f} "
+            f"Entities {len(win.entities.world.alive)} "
+            f"Mobs {len(win.entities.world.mob_ai)} "
+            f"Drops {len(win.entities.world.items)} Entity draws {entity_draws}\n"
+            f"Block {block_x:d} {block_y:d} {block_z:d} "
+            f"Chunk {chunk_x:d} {chunk_z:d} "
+            f"Remote players {len(win.remote_player_entities)}\n"
+            f"Network {'client' if win.network_session is not None else 'singleplayer'} "
+            f"Known players {len(win.network_players)}\n"
+            f"Runtime {slow_telemetry.runtime} Frame {win.width}x{win.height}\n"
+            f"Device {slow_telemetry.device}\n"
+            f"Animation states {animation_summary}\n"
+            f"Selected {selected_item_name} "
+            "[1-9 hotbar, E inventory, C craft, Q drop]"
+        )
+        if win.world_renderer.selection is not None:
+            text += f"\nTarget {win.world_renderer.selection.block}"
+        return HudDebugTextSnapshot(text=text)
+
 
 class HudController:
     """Owns HUD labels and draws the in-game overlay."""
@@ -274,10 +345,6 @@ class HudController:
             not self.debug_label.text or now - self._last_update_time >= 0.2
         ):
             self._last_update_time = now
-            block_x, block_y, block_z = int(x), int(y), int(z)
-            chunk_x, chunk_z = block_x // 16, block_z // 16
-            facing = _facing_from_yaw(win.camera.yaw_degrees)
-            biome = _biome_key_at(win, block_x, block_z)
             if now - self._last_slow_telemetry_time >= 1.0 or not self._slow_telemetry.runtime:
                 self._last_slow_telemetry_time = now
                 self._slow_telemetry = DebugSlowTelemetry(
@@ -287,46 +354,13 @@ class HudController:
                     ),
                     device=win.debug_device_label,
                 )
-            new_debug_text = (
-                f"FPS {perf.fps:5.1f} Frame {perf.frame_ms:5.1f} ms "
-                f"Update {perf.update_ms:5.1f} Render {perf.render_ms:5.1f}\n"
-                f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
-                f"Grounded {win.player.on_ground}  VelocityY {win.player.velocity_y:5.2f}\n"
-                f"Yaw {win.camera.yaw_degrees:6.1f}  Pitch {win.camera.pitch_degrees:5.1f} "
-                f"Facing {facing}\n"
-                f"Biome {biome} Memory {self._slow_telemetry.memory} "
-                f"Render distance {win.settings.world.render_distance} "
-                f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame}"
-                f"\nChunks {perf.queues.loaded_chunks}  "
-                f"Pending {perf.queues.pending_chunks}  "
-                f"Mesh queue {perf.queues.pending_meshes}  "
-                f"Stream remesh {perf.queues.pending_stream_remeshes}  "
-                f"Visible sections {perf.queues.visible_sections}\n"
-                f"Faces {win.world_renderer.face_count}  "
-                f"Triangles {win.world_renderer.triangle_count}  "
-                f"Draws {win.world_renderer.draw_calls}\n"
-                f"Daylight {win.world_renderer.daylight:4.2f}  "
-                f"Smooth {win.world_renderer.smooth_lighting}  "
-                f"AO {win.world_renderer.ambient_occlusion}  "
-                f"Fog {win.world_renderer.fog_enabled}  "
-                f"Mesher {'greedy' if win.world_renderer.greedy_meshing else 'visible'}\n"
-                f"Health {win.player_health:4.1f}  "
-                f"Entities {len(win.entities.world.alive)}  "
-                f"Mobs {len(win.entities.world.mob_ai)}  "
-                f"Drops {len(win.entities.world.items)}  Entity draws {entity_draws}\n"
-                f"Block {block_x:d} {block_y:d} {block_z:d} "
-                f"Chunk {chunk_x:d} {chunk_z:d} "
-                f"Remote players {len(win.remote_player_entities)}\n"
-                f"Network {'client' if win.network_session is not None else 'singleplayer'} "
-                f"Known players {len(win.network_players)}\n"
-                f"Runtime {self._slow_telemetry.runtime} Frame {frame.width}x{frame.height}\n"
-                f"Device {self._slow_telemetry.device}\n"
-                f"Animation states {self._animation_debug_summary()}\n"
-                f"Selected {self._selected_item_name()}  "
-                "[1-9 hotbar, E inventory, C craft, Q drop]"
+            debug_snapshot = win.debug_overlay_snapshot(
+                entity_draws=entity_draws,
+                slow_telemetry=self._slow_telemetry,
+                animation_summary=self._animation_debug_summary(),
+                selected_item_name=self._selected_item_name(),
             )
-            if win.world_renderer.selection is not None:
-                new_debug_text += f"\nTarget {win.world_renderer.selection.block}"
+            new_debug_text = debug_snapshot.text
             if self.debug_label.text != new_debug_text:
                 self.debug_label.text = new_debug_text
         new_hud_text = f"FPS: {perf.fps:5.1f} | XYZ: {x:7.2f} / {y:7.2f} / {z:7.2f}"
@@ -435,7 +469,7 @@ def _facing_from_yaw(yaw_degrees: float) -> str:
     return "south"
 
 
-def _biome_key_at(win: HudView, block_x: int, block_z: int) -> str:
+def _biome_key_at(win: Any, block_x: int, block_z: int) -> str:
     try:
         return str(win.world_runtime.generation.biome_key_at(block_x, block_z))
     except (AttributeError, LookupError, ValueError):
