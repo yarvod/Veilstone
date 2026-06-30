@@ -17,6 +17,11 @@
   routes through `HudView` snapshots instead of direct HUD reads from network
   players and ECS transforms; focused HUD tests and real client smoke passed.
 
+- **HUD debug selected/animation snapshot fields** - F3 selected-item and mob
+  animation summaries now resolve inside the `HudView` debug snapshot instead of
+  `HudController` reading hotbar, item registry, and ECS AI state directly;
+  focused HUD tests and Pyright passed.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.

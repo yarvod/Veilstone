@@ -77,15 +77,12 @@ class HudView(Protocol):
     player: Any
     camera: Any
     settings: Any
-    game_state: Any
     network_session: Any
     network_players: Any
     remote_player_entities: Any
     entities: Any
     debug_overlay_visible: bool
     inventory_open: bool
-    hotbar: Any
-    item_registry: Any
     key_state: Any
     menu_ui: Any
     player_health: float
@@ -101,8 +98,6 @@ class HudView(Protocol):
         *,
         entity_draws: int,
         slow_telemetry: DebugSlowTelemetry,
-        animation_summary: str,
-        selected_item_name: str,
     ) -> HudDebugTextSnapshot: ...
 
     def player_list_snapshot(self) -> HudPlayerListSnapshot: ...
@@ -153,10 +148,6 @@ class HudWindowAdapter:
         return self._window.settings
 
     @property
-    def game_state(self) -> Any:
-        return self._window.game_state
-
-    @property
     def network_session(self) -> Any:
         return self._window.network_session
 
@@ -179,14 +170,6 @@ class HudWindowAdapter:
     @property
     def inventory_open(self) -> bool:
         return self._window.inventory_open
-
-    @property
-    def hotbar(self) -> Any:
-        return self._window.hotbar
-
-    @property
-    def item_registry(self) -> Any:
-        return self._window.item_registry
 
     @property
     def key_state(self) -> Any:
@@ -231,8 +214,6 @@ class HudWindowAdapter:
         *,
         entity_draws: int,
         slow_telemetry: DebugSlowTelemetry,
-        animation_summary: str,
-        selected_item_name: str,
     ) -> HudDebugTextSnapshot:
         win = self._window
         perf = win.runtime_perf_snapshot
@@ -275,8 +256,8 @@ class HudWindowAdapter:
             f"Known players {len(win.network_players)}\n"
             f"Runtime {slow_telemetry.runtime} Frame {win.width}x{win.height}\n"
             f"Device {slow_telemetry.device}\n"
-            f"Animation states {animation_summary}\n"
-            f"Selected {selected_item_name} "
+            f"Animation states {_animation_debug_summary(win.entities.world.mob_ai)}\n"
+            f"Selected {_selected_item_name(win.hotbar, win.item_registry)} "
             "[1-9 hotbar, E inventory, C craft, Q drop]"
         )
         if win.world_renderer.selection is not None:
@@ -405,8 +386,6 @@ class HudController:
             debug_snapshot = win.debug_overlay_snapshot(
                 entity_draws=entity_draws,
                 slow_telemetry=self._slow_telemetry,
-                animation_summary=self._animation_debug_summary(),
-                selected_item_name=self._selected_item_name(),
             )
             new_debug_text = debug_snapshot.text
             if self.debug_label.text != new_debug_text:
@@ -469,19 +448,20 @@ class HudController:
             win.menu_ui._draw_text_input()
         win.hud_batch.draw()
 
-    def _animation_debug_summary(self) -> str:
-        counts: dict[str, int] = {}
-        for _entity, ai in self.win.entities.world.mob_ai.items():
-            counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
-        return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
 
-    def _selected_item_name(self) -> str:
-        win = self.win
-        selected = win.hotbar.selected
-        if selected is None:
-            return "empty"
-        definition = win.item_registry.by_id(selected.item_id)
-        return f"{definition.name} x{selected.count}"
+def _animation_debug_summary(mob_ai: Any) -> str:
+    counts: dict[str, int] = {}
+    for _entity, ai in mob_ai.items():
+        counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
+    return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
+
+
+def _selected_item_name(hotbar: Any, item_registry: Any) -> str:
+    selected = hotbar.selected
+    if selected is None:
+        return "empty"
+    definition = item_registry.by_id(selected.item_id)
+    return f"{definition.name} x{selected.count}"
 
 
 def _facing_from_yaw(yaw_degrees: float) -> str:

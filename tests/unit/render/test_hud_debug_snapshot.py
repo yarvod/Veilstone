@@ -2,13 +2,25 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from voxel_sandbox.render.hud_controller import DebugSlowTelemetry, HudWindowAdapter
-from voxel_sandbox.render.perf import RenderQueueSnapshot, RuntimePerfSnapshot
+import pyglet
+
+pyglet.options["shadow_window"] = False
+
+from voxel_sandbox.render.hud_controller import (  # noqa: E402
+    DebugSlowTelemetry,
+    HudWindowAdapter,
+)
+from voxel_sandbox.render.perf import RenderQueueSnapshot, RuntimePerfSnapshot  # noqa: E402
 
 
 class _Generation:
     def biome_key_at(self, _x: int, _z: int) -> str:
         return "plains"
+
+
+class _ItemRegistry:
+    def by_id(self, _item_id: int) -> SimpleNamespace:
+        return SimpleNamespace(name="Stone")
 
 
 def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> None:
@@ -21,8 +33,6 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
             runtime="Python test",
             device="Unit GPU",
         ),
-        animation_summary="idle:1",
-        selected_item_name="Stone x2",
     )
 
     assert "FPS  60.0 Frame  16.7 ms" in snapshot.text
@@ -32,7 +42,7 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
     assert "Network singleplayer Known players 1" in snapshot.text
     assert "Runtime Python test Frame 1280x720" in snapshot.text
     assert "Device Unit GPU" in snapshot.text
-    assert "Animation states idle:1" in snapshot.text
+    assert "Animation states graze:1 wander:1" in snapshot.text
     assert "Selected Stone x2" in snapshot.text
     assert "Target (1, 2, 3)" in snapshot.text
 
@@ -123,10 +133,15 @@ def _fake_window() -> SimpleNamespace:
         entities=SimpleNamespace(
             world=SimpleNamespace(
                 alive={1, 2, 3, 4, 5},
-                mob_ai={2: object(), 3: object()},
+                mob_ai={
+                    2: SimpleNamespace(state=SimpleNamespace(value="graze")),
+                    3: SimpleNamespace(state=SimpleNamespace(value="wander")),
+                },
                 items={4: object()},
             )
         ),
+        hotbar=SimpleNamespace(selected=SimpleNamespace(item_id=1, count=2)),
+        item_registry=_ItemRegistry(),
         remote_player_entities={},
         network_session=None,
         network_players={1: {"name": "You"}},
