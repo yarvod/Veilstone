@@ -95,7 +95,7 @@ F-клавиши должны быть player-facing управлением, а 
       and cancellation behavior.
 - [x] Add block breaking feedback hook so hand animation, sound, particles later
       can share the same interaction event.
-- [ ] Add local player shadow path where render quality allows it.
+- [x] Add local player shadow path where render quality allows it.
 - [x] Add tests for gait phase, interaction state transitions, and snapshot
       generation without Pyglet/OpenGL.
 
@@ -119,7 +119,7 @@ F-клавиши должны быть player-facing управлением, а 
 - [x] Render remote player nameplates above head with distance/readability rules.
 - [x] Add nameplate snapshot/render data with distance fade visibility rules.
 - [x] Render held item/block for remote players.
-- [ ] Render player shadow for local third-person and remote players.
+- [x] Render player shadow for local third-person and remote players.
 - [x] Keep networking payload compact: replicate entity/player state, not render
   objects.
 - [x] Add tests for player snapshot mapping and remote held-item payload without

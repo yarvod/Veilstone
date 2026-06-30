@@ -213,6 +213,58 @@ def test_shadow_quality_modes_render(quality: str) -> None:
             window.close()
 
 
+def test_third_person_local_player_participates_in_shadow_pass() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from voxel_sandbox.application.player_camera import PerspectiveMode
+    from voxel_sandbox.engine.ecs import EntityWorld
+    from voxel_sandbox.render.entity_renderer import EntityRenderer
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    class SpyEntityRenderer:
+        def __init__(self) -> None:
+            self.render_worlds: list[EntityWorld] = []
+            self.shadow_worlds: list[EntityWorld] = []
+
+        def render(self, world: EntityWorld, *args: object, **kwargs: object) -> int:
+            self.render_worlds.append(world)
+            return 0
+
+        def render_shadow(self, world: EntityWorld, *args: object, **kwargs: object) -> None:
+            self.shadow_worlds.append(world)
+
+        def release(self) -> None:
+            return None
+
+    settings = AppSettings()
+    settings = replace(
+        settings,
+        graphics=replace(settings.graphics, shadow_quality="low"),
+    )
+    with tempfile.TemporaryDirectory(prefix="veilstone-player-shadow-smoke-") as directory:
+        window = GameWindow(settings, visible=False, save_root=Path(directory))
+        original_renderer = window.entity_renderer
+        spy = SpyEntityRenderer()
+        window.entity_renderer = cast(EntityRenderer, spy)
+        try:
+            window.menu.screen = Screen.GAME
+            window.perspective_mode = PerspectiveMode.THIRD_PERSON_BACK
+            window.switch_to()
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert spy.shadow_worlds[0] is window.entities.world
+            assert len(spy.shadow_worlds) == 2
+            assert spy.shadow_worlds[1] is not window.entities.world
+            assert spy.render_worlds == spy.shadow_worlds
+        finally:
+            window.entity_renderer = original_renderer
+            window.close()
+
+
 def test_first_person_viewmodel_renders_hand_and_held_block() -> None:
     import pyglet
 

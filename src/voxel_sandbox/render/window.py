@@ -459,6 +459,22 @@ class GameWindow(pyglet.window.Window):
             self.world_renderer.animation_time,
         )
         entity_draws = 0
+        should_render_local_player = (
+            self.settings.development.render_local_player_model
+            or self.perspective_mode is not PerspectiveMode.FIRST_PERSON
+        )
+        local_player_world = None
+        if should_render_local_player:
+            player_snapshot = build_player_render_snapshot(
+                self.player,
+                yaw_degrees=self.camera.yaw_degrees,
+                head_pitch_degrees=self.camera.pitch_degrees,
+                name=self.player_name,
+                health=self.player_health,
+                animation=self._player_animation_snapshot,
+                held_stack=self.hotbar.selected,
+            )
+            local_player_world = build_player_avatar_world(player_snapshot)
 
         def render_entities(light_matrix: np.ndarray) -> None:
             nonlocal entity_draws
@@ -492,22 +508,9 @@ class GameWindow(pyglet.window.Window):
                 self.world_renderer.shadow_bias,
                 self.world_renderer.light_direction,
             )
-            if (
-                self.settings.development.render_local_player_model
-                or self.perspective_mode is not PerspectiveMode.FIRST_PERSON
-            ):
-                player_snapshot = build_player_render_snapshot(
-                    self.player,
-                    yaw_degrees=self.camera.yaw_degrees,
-                    head_pitch_degrees=self.camera.pitch_degrees,
-                    name=self.player_name,
-                    health=self.player_health,
-                    animation=self._player_animation_snapshot,
-                    held_stack=self.hotbar.selected,
-                )
-                player_world = build_player_avatar_world(player_snapshot)
+            if local_player_world is not None:
                 entity_draws += self.entity_renderer.render(
-                    player_world,
+                    local_player_world,
                     self.camera,
                     framebuffer_width,
                     framebuffer_height,
@@ -558,16 +561,25 @@ class GameWindow(pyglet.window.Window):
                 self.world_renderer.light_direction,
             )
 
+        def render_entity_shadows(light_matrix: np.ndarray) -> None:
+            self.entity_renderer.render_shadow(
+                self.entities.world,
+                light_matrix,
+                self.world_renderer.animation_time,
+            )
+            if local_player_world is not None:
+                self.entity_renderer.render_shadow(
+                    local_player_world,
+                    light_matrix,
+                    self.world_renderer.animation_time,
+                )
+
         self.world_renderer.render(
             self.camera,
             framebuffer_width,
             framebuffer_height,
             self.settings.camera.field_of_view,
-            shadow_caster=lambda light_matrix: self.entity_renderer.render_shadow(
-                self.entities.world,
-                light_matrix,
-                self.world_renderer.animation_time,
-            ),
+            shadow_caster=render_entity_shadows,
             transparent_underlay=render_entities,
         )
         if not self.inventory_open and self.perspective_mode is PerspectiveMode.FIRST_PERSON:
