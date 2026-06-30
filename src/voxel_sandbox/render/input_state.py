@@ -3,15 +3,33 @@ from __future__ import annotations
 import logging
 import sys
 from dataclasses import replace
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
+from voxel_sandbox.app.settings import save_user_settings
 from voxel_sandbox.application.player_animation import PlayerInteraction
+from voxel_sandbox.domain.blocks import BlockRegistry
+from voxel_sandbox.engine.events import (
+    BlockBroken,
+    BlockInteractionStarted,
+    BlockPlaced,
+    EntityDamaged,
+    EntityDied,
+)
+from voxel_sandbox.render.ui.menu import Screen
+from voxel_sandbox.render.ui.text_input import TextPurpose
+
+key: Any
+mouse: Any
 
 try:
-    from pyglet.window import key, mouse
+    from pyglet.window import key as _pyglet_key
+    from pyglet.window import mouse as _pyglet_mouse
+
+    key = cast(Any, _pyglet_key)
+    mouse = cast(Any, _pyglet_mouse)
 except (ImportError, IndexError):
 
-    class key:
+    class _FallbackKey:
         BACKSPACE = 8
         C = ord("C")
         DOWN = 1002
@@ -37,22 +55,16 @@ except (ImportError, IndexError):
         UP = 1001
         W = ord("W")
 
-    class mouse:
+        @staticmethod
+        def symbol_string(symbol: int) -> str:
+            return str(symbol)
+
+    class _FallbackMouse:
         LEFT = 1
         RIGHT = 4
 
-
-from voxel_sandbox.app.settings import save_user_settings
-from voxel_sandbox.domain.blocks import BlockRegistry
-from voxel_sandbox.engine.events import (
-    BlockBroken,
-    BlockInteractionStarted,
-    BlockPlaced,
-    EntityDamaged,
-    EntityDied,
-)
-from voxel_sandbox.render.ui.menu import Screen
-from voxel_sandbox.render.ui.text_input import TextPurpose
+    key = _FallbackKey
+    mouse = _FallbackMouse
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -96,10 +108,129 @@ class KeyState:
         return symbol in self._pressed
 
 
+class InventoryInputPort(Protocol):
+    def open(self, grid_size: int) -> None: ...
+
+    def close(self) -> None: ...
+
+    def handle_crafting_click(self, index: int, button: int) -> None: ...
+
+    def take_crafting_result(self) -> None: ...
+
+    def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None: ...
+
+    def drop_selected_item(self) -> None: ...
+
+    def crafting_slot_at(self, x: int, y: int) -> int | None: ...
+
+    def crafting_result_at(self, x: int, y: int) -> bool: ...
+
+    def slot_at(self, x: int, y: int) -> int | None: ...
+
+
+class NetworkInputPort(Protocol):
+    def toggle_structure(self, structure: object) -> None: ...
+
+    def send_block_action(self, position: object, block_id: int) -> None: ...
+
+
+class InputView(Protocol):
+    rebinding_action: str | None
+    text_input: Any | None
+    menu: Any
+    menu_ui: Any
+    key_state: KeyState
+    inventory_open: bool
+    hotbar: Any
+    debug_shader: Any
+    debug_overlay_visible: bool
+    hud_hidden: bool
+    settings: Any
+    mouse_captured: bool
+    ui_renderer: Any
+    cursor_stack: Any
+    entities: Any
+    camera: Any
+    world_renderer: Any
+    structure_world: Any
+    world_runtime: Any
+    block_registry: BlockRegistry
+    control_bindings: Any
+    events: Any
+    event_bus: Any
+    inventory: Any
+    inventory_status: str
+    item_registry: Any
+    player: Any
+    mouse_x: int
+    mouse_y: int
+    inventory_input: InventoryInputPort
+    network_input: NetworkInputPort
+
+    def submit_text_input(self) -> None: ...
+
+    def sync_mouse_capture(self) -> None: ...
+
+    def play_ui_sound(self) -> None: ...
+
+    def load_world(self, name: str) -> None: ...
+
+    def handle_menu_command(self, command: object) -> None: ...
+
+    def sync_game_state(self) -> None: ...
+
+    def save_screenshot(self) -> object: ...
+
+    def cycle_perspective(self) -> None: ...
+
+    def start_player_interaction(self, interaction: PlayerInteraction) -> None: ...
+
+    def end_player_interaction(self) -> None: ...
+
+    def set_exclusive_mouse(self, exclusive: bool) -> None: ...
+
+
+class InputWindowAdapter:
+    def __init__(self, window: GameWindow) -> None:
+        object.__setattr__(self, "_window", window)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._window, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        setattr(self._window, name, value)
+
+    @property
+    def inventory_input(self) -> InventoryInputPort:
+        return cast(InventoryInputPort, object.__getattribute__(self._window, "_inv_ctrl"))
+
+    @property
+    def network_input(self) -> NetworkInputPort:
+        return cast(NetworkInputPort, object.__getattribute__(self._window, "_net"))
+
+    def submit_text_input(self) -> None:
+        self._window.menu_ui._submit_text_input()
+
+    def sync_mouse_capture(self) -> None:
+        self._window._sync_mouse_capture()
+
+    def play_ui_sound(self) -> None:
+        self._window.menu_ui._play_ui_sound()
+
+    def load_world(self, name: str) -> None:
+        self._window._worlds.load_world(name)
+
+    def handle_menu_command(self, command: object) -> None:
+        self._window.menu_ui._handle_menu_command(command)
+
+    def sync_game_state(self) -> None:
+        self._window._sync_game_state()
+
+
 class InputHandler:
     """Contains all input event logic, keeping GameWindow a thin coordinator."""
 
-    def __init__(self, win: GameWindow) -> None:
+    def __init__(self, win: InputView) -> None:
         self.win = win
         self._inventory_drag_button: int | None = None
         self._inventory_drag_start: tuple[int, int] | None = None
@@ -115,12 +246,12 @@ class InputHandler:
             return
         if win.text_input is not None:
             if symbol in {key.ENTER, key.RETURN}:
-                win.menu_ui._submit_text_input()
+                win.submit_text_input()
             elif symbol == key.ESCAPE:
                 win.text_input = None
             elif symbol == key.BACKSPACE:
                 win.text_input.backspace()
-            win._sync_mouse_capture()
+            win.sync_mouse_capture()
             return
         if not win.menu.in_game:
             if symbol in {key.UP, key.W}:
@@ -128,7 +259,7 @@ class InputHandler:
                     win.menu_ui.world_list_index = max(0, win.menu_ui.world_list_index - 1)
                 else:
                     win.menu.move_selection(-1)
-                win.menu_ui._play_ui_sound()
+                win.play_ui_sound()
             elif symbol in {key.DOWN, key.S}:
                 if win.menu.screen is Screen.SINGLEPLAYER and win.menu_ui.world_list_items:
                     win.menu_ui.world_list_index = min(
@@ -136,45 +267,45 @@ class InputHandler:
                     )
                 else:
                     win.menu.move_selection(1)
-                win.menu_ui._play_ui_sound()
+                win.play_ui_sound()
             elif symbol in {key.ENTER, key.RETURN, key.SPACE}:
-                win.menu_ui._play_ui_sound()
+                win.play_ui_sound()
                 if (
                     win.menu.screen is Screen.SINGLEPLAYER
                     and win.menu_ui.world_list_items
                     and 0 <= win.menu_ui.world_list_index < len(win.menu_ui.world_list_items)
                 ):
                     name, _ = win.menu_ui.world_list_items[win.menu_ui.world_list_index]
-                    win._worlds.load_world(name)
+                    win.load_world(name)
                 else:
-                    win.menu_ui._handle_menu_command(win.menu.activate())
+                    win.handle_menu_command(win.menu.activate())
             elif symbol == key.ESCAPE:
-                win.menu_ui._play_ui_sound()
+                win.play_ui_sound()
                 win.menu.back()
-                win._sync_game_state()
-            win._sync_mouse_capture()
+                win.sync_game_state()
+            win.sync_mouse_capture()
             return
         if symbol == key.E:
             if win.inventory_open:
-                win._inv_ctrl.close()
+                win.inventory_input.close()
             else:
-                win._inv_ctrl.open(2)
+                win.inventory_input.open(2)
             win.key_state.clear()
-            win._sync_mouse_capture()
+            win.sync_mouse_capture()
             return
         if win.inventory_open:
             if symbol == key.ESCAPE:
-                win._inv_ctrl.close()
-                win._sync_mouse_capture()
+                win.inventory_input.close()
+                win.sync_mouse_capture()
             elif symbol == key.C:
-                win._inv_ctrl.take_crafting_result()
+                win.inventory_input.take_crafting_result()
             elif ord("1") <= symbol <= ord("9"):
                 win.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.ESCAPE:
             win.menu.back()
-            win._sync_game_state()
-            win._sync_mouse_capture()
+            win.sync_game_state()
+            win.sync_mouse_capture()
             return
         if symbol == key.F5 and modifiers & key.MOD_CTRL:
             win.debug_shader.reload(force=True)
@@ -195,7 +326,7 @@ class InputHandler:
             win.hotbar.select(symbol - ord("1"))
             return
         if symbol == key.Q:
-            win._inv_ctrl.drop_selected_item()
+            win.inventory_input.drop_selected_item()
             return
         if symbol == key.T:
             win.menu_ui._begin_text_input(TextPurpose.CHAT, "Chat message", maximum_length=256)
@@ -233,7 +364,7 @@ class InputHandler:
             win.set_exclusive_mouse(False)
 
     def on_activate(self) -> None:
-        self.win._sync_mouse_capture()
+        self.win.sync_mouse_capture()
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         win = self.win
@@ -245,20 +376,20 @@ class InputHandler:
                 and win.ui_renderer
                 and win.ui_renderer.on_mouse_press(x, y, button, modifiers)
             ):
-                win.menu_ui._play_ui_sound()
+                win.play_ui_sound()
             return
         if win.menu.in_game and win.inventory_open:
             self._inventory_drag_button = None
             self._inventory_drag_start = None
             self._inventory_drag_moved = False
             can_start_drag = button == mouse.LEFT and not bool(modifiers & key.MOD_SHIFT)
-            crafting_slot = win._inv_ctrl.crafting_slot_at(x, y)
+            crafting_slot = win.inventory_input.crafting_slot_at(x, y)
             if crafting_slot is not None:
-                win._inv_ctrl.handle_crafting_click(crafting_slot, button)
-            elif win._inv_ctrl.crafting_result_at(x, y):
-                win._inv_ctrl.take_crafting_result()
-            elif (slot := win._inv_ctrl.slot_at(x, y)) is not None:
-                win._inv_ctrl.handle_inventory_click(
+                win.inventory_input.handle_crafting_click(crafting_slot, button)
+            elif win.inventory_input.crafting_result_at(x, y):
+                win.inventory_input.take_crafting_result()
+            elif (slot := win.inventory_input.slot_at(x, y)) is not None:
+                win.inventory_input.handle_inventory_click(
                     slot,
                     button,
                     quick_move=bool(modifiers & key.MOD_SHIFT),
@@ -292,7 +423,7 @@ class InputHandler:
             and structure_hit is not None
             and (hit is None or structure_hit[1] < hit.distance)
         ):
-            win._net.toggle_structure(structure_hit[0])
+            win.network_input.toggle_structure(structure_hit[0])
             return
         if hit is None:
             return
@@ -313,7 +444,7 @@ class InputHandler:
                     )
                 )
                 win.events.publish(BlockBroken(block_id, hit.block))
-                win._net.send_block_action(hit.block, 0)
+                win.network_input.send_block_action(hit.block, 0)
                 drop = win.item_registry.drop_for_block(block_id)
                 if drop is not None:
                     win.entities.spawn_item(
@@ -326,8 +457,8 @@ class InputHandler:
                     )
         elif button == mouse.RIGHT:
             if win.world_renderer.get_block(*hit.block) == 10:
-                win._inv_ctrl.open(3)
-                win._sync_mouse_capture()
+                win.inventory_input.open(3)
+                win.sync_mouse_capture()
                 return
             selected = win.hotbar.selected
             if selected is None or win.player.intersects_block(hit.previous):
@@ -346,7 +477,7 @@ class InputHandler:
                     )
                 )
                 win.events.publish(BlockPlaced(definition.block_id, hit.previous))
-                win._net.send_block_action(hit.previous, definition.block_id)
+                win.network_input.send_block_action(hit.previous, definition.block_id)
                 win.inventory.take_from_slot(win.hotbar.selected_index)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
@@ -374,11 +505,11 @@ class InputHandler:
             and self._inventory_drag_moved
             and win.cursor_stack is not None
         ):
-            crafting_slot = win._inv_ctrl.crafting_slot_at(x, y)
+            crafting_slot = win.inventory_input.crafting_slot_at(x, y)
             if crafting_slot is not None:
-                win._inv_ctrl.handle_crafting_click(crafting_slot, button)
-            elif (slot := win._inv_ctrl.slot_at(x, y)) is not None:
-                win._inv_ctrl.handle_inventory_click(slot, button, quick_move=False)
+                win.inventory_input.handle_crafting_click(crafting_slot, button)
+            elif (slot := win.inventory_input.slot_at(x, y)) is not None:
+                win.inventory_input.handle_inventory_click(slot, button, quick_move=False)
         self._inventory_drag_button = None
         self._inventory_drag_start = None
         self._inventory_drag_moved = False

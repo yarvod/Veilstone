@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Input handler window adapter** - `InputHandler` now receives an `InputView` adapter with inventory/network input ports instead of reading `GameWindow` private controllers directly; F3/F5/F2 hidden-window smoke passed with screenshot `saves/screenshots/veilstone_20260630_204701.png`.
+
 - **HUD inventory draw port** - `HudController` now renders hotbar, health, held item, and inventory UI through `InventoryHudPort` instead reading `GameWindow._inv_ctrl`; focused HUD Pyright is clean and F3 debug-overlay screenshot smoke passed at `saves/screenshots/veilstone_20260630_203815.png`.
 
 - **Network controller window adapter** - `NetworkController` now receives a `NetworkView` adapter instead of the full `GameWindow`; Open-to-LAN and remote-render integration smoke tests pass after forwarding adapter writes.

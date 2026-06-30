@@ -30,6 +30,14 @@ def _make_win(*, in_game: bool = True, screen: Screen = Screen.SINGLEPLAYER) -> 
     win.menu_ui.world_list_items = []
     win.menu_ui.world_list_index = 0
     win.key_state = KeyState()
+    win.submit_text_input = win.menu_ui._submit_text_input
+    win.sync_mouse_capture = win._sync_mouse_capture
+    win.play_ui_sound = win.menu_ui._play_ui_sound
+    win.load_world = win._worlds.load_world
+    win.handle_menu_command = win.menu_ui._handle_menu_command
+    win.sync_game_state = win._sync_game_state
+    win.inventory_input = win._inv_ctrl
+    win.network_input = win._net
     return win
 
 

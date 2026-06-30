@@ -144,7 +144,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** typing / quality gate
-- **Observed:** `uv run pyright` reports 462 existing strict typing errors across engine, render, tests, and infrastructure.
+- **Observed:** `uv run pyright` reports 412 existing strict typing errors across engine, render, tests, and infrastructure.
 - **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
 - **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 
@@ -159,7 +159,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 ### WATCH-A002: Controller window adapters are still too broad
 
 - **Status:** investigating
-- **Affected area:** `render/gameplay_controller.py`, `render/inventory_ui.py`, `render/network_controller.py` now use window adapters instead of full `GameWindow`, but those adapters still expose broad window-like surfaces.
+- **Affected area:** `render/gameplay_controller.py`, `render/inventory_ui.py`, `render/network_controller.py`, and `render/input_state.py` now use window adapters instead of full `GameWindow`, but those adapters still expose broad window-like surfaces.
 - **Notes:** Tracked by Phase D1 adapter narrowing and use-case extraction.
 
 ### WATCH-A003: DemoWorldRenderer owns world and rendering concerns

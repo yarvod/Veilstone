@@ -82,6 +82,8 @@ from voxel_sandbox.render.gameplay_controller import (
 from voxel_sandbox.render.hud_controller import HudController, HudWindowAdapter
 from voxel_sandbox.render.input_state import (
     InputHandler,
+    InputView,
+    InputWindowAdapter,
     KeyState,
     configure_layout_independent_game_keys,
 )
@@ -262,7 +264,7 @@ class GameWindow(pyglet.window.Window):
         if settings.development.shader_hot_reload:
             pyglet.clock.schedule_interval(self.reload_shaders, 0.5)
         LOGGER.info("ModernGL context: %s", self.mgl_context.info.get("GL_VERSION", "unknown"))
-        self._input = InputHandler(self)
+        self._input = InputHandler(cast(InputView, InputWindowAdapter(self)))
 
     def close(self) -> None:
         pyglet.clock.unschedule(self.fixed_update)
