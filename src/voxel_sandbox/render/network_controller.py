@@ -1,10 +1,11 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
 from __future__ import annotations
 
 import logging
 import math
 import queue
 import time
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from voxel_sandbox.application.player_render import (
     PlayerHeldItemSnapshot,
@@ -26,6 +27,45 @@ from voxel_sandbox.render.ui.menu import Screen
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
+
+
+class NetworkView(Protocol):
+    authority: Any
+    entities: Any
+    inventory_status: str
+    lan_block_actions: Any
+    lan_discovery: Any | None
+    lan_server: LanServer | None
+    last_snapshot_sequence: int
+    last_structure_revision: int
+    menu: Any
+    network_players: dict[int, dict[str, object]]
+    network_session: ClientSession | None
+    player: Any
+    player_name: str
+    remote_chunks_received: int
+    remote_player_entities: dict[int, Any]
+    remote_player_interpolation: dict[int, SnapshotInterpolator]
+    requested_remote_chunks: set[ChunkCoord]
+    structure_world: Any
+    world_renderer: Any
+    world_runtime: Any
+
+    def _sync_game_state(self) -> None: ...
+
+    def _sync_mouse_capture(self) -> None: ...
+
+
+class NetworkWindowAdapter:
+    def __init__(self, window: GameWindow) -> None:
+        object.__setattr__(self, "_window", window)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._window, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        setattr(self._window, name, value)
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,7 +94,7 @@ def _held_item_from_player(player: dict[str, object]) -> PlayerHeldItemSnapshot 
 class NetworkController:
     """Manages all network session logic, keeping GameWindow a thin coordinator."""
 
-    def __init__(self, win: GameWindow) -> None:
+    def __init__(self, win: NetworkView) -> None:
         self.win = win
 
     def connect_remote(self, target: str, player_name: str) -> None:

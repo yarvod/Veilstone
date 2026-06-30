@@ -93,7 +93,11 @@ from voxel_sandbox.render.inventory_ui import (
     InventoryWindowAdapter,
 )
 from voxel_sandbox.render.menu_ui import MenuUI
-from voxel_sandbox.render.network_controller import NetworkController
+from voxel_sandbox.render.network_controller import (
+    NetworkController,
+    NetworkView,
+    NetworkWindowAdapter,
+)
 from voxel_sandbox.render.player_avatar import build_player_avatar_world
 from voxel_sandbox.render.player_viewmodel import build_player_viewmodel_render_data
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
@@ -246,7 +250,7 @@ class GameWindow(pyglet.window.Window):
         self.hud_text_group = pyglet.graphics.Group(order=2)
         self._hud = HudController(HudWindowAdapter(self))
         self._inv_ctrl = InventoryController(cast(InventoryView, InventoryWindowAdapter(self)))
-        self._net = NetworkController(self)
+        self._net = NetworkController(cast(NetworkView, NetworkWindowAdapter(self)))
         self.menu_ui = MenuUI(self)
         self._net.start_local_authority()
         if connect is not None:

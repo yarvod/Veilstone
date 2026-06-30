@@ -61,10 +61,13 @@ class InventoryView(Protocol):
 
 class InventoryWindowAdapter:
     def __init__(self, window: GameWindow) -> None:
-        self._window = window
+        object.__setattr__(self, "_window", window)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._window, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        setattr(self._window, name, value)
 
 
 @dataclass

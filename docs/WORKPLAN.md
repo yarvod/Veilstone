@@ -41,8 +41,10 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
       instead of passing the full `GameWindow` object.
 - [x] Route `InventoryController` through `InventoryView`/`InventoryWindowAdapter`
       instead of passing the full `GameWindow` object.
-- [ ] Shrink `GameplayView`/`InventoryView` toward narrower command and UI ports,
-      then migrate `NetworkController` off full `GameWindow`.
+- [x] Route `NetworkController` through `NetworkView`/`NetworkWindowAdapter`
+      instead of passing the full `GameWindow` object.
+- [ ] Shrink `GameplayView`/`InventoryView`/`NetworkView` toward narrower command,
+      UI, and session ports instead of broad window-adapter surfaces.
 - [ ] Extract HUD/debug snapshot reads so HUD code does not depend on broad
       window state.
 - [ ] Keep `/resourcepack`, F-key controls, inventory, and debug overlay smoke
