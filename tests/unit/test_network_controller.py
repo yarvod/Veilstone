@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import queue
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.ecs import EntityWorld
@@ -362,6 +362,27 @@ def test_sync_remote_players_uses_player_avatar_adapter() -> None:
     assert model.color == (0.45, 0.68, 1.0)
     assert model.scale == (0.65, 1.8, 0.65)
     assert math.isclose(transform.yaw, math.pi)
+
+
+def test_update_remote_players_samples_interpolated_position() -> None:
+    win = _make_win()
+    win.entities.world = EntityWorld()
+    win.network_session = MagicMock(player_id=99)
+    nc = NetworkController(win)
+
+    with patch(
+        "voxel_sandbox.render.network_controller.time.monotonic",
+        side_effect=[1.0, 1.2, 1.2],
+    ):
+        nc.sync_remote_players({1: {"position": [0.0, 64.0, 0.0]}})
+        nc.sync_remote_players({1: {"position": [2.0, 64.0, 0.0]}})
+        nc.update_remote_players()
+
+    entity = win.remote_player_entities[1]
+    transform = win.entities.world.transforms[entity]
+    assert math.isclose(transform.x, 1.0)
+    assert math.isclose(transform.y, 64.0)
+    assert math.isclose(transform.z, 0.0)
 
 
 def test_sync_remote_players_removes_stale_held_item_component():

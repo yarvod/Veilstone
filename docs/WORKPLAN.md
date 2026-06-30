@@ -115,7 +115,7 @@ F-клавиши должны быть player-facing управлением, а 
       third-person front.
 - [x] Add Minecraft-like perspective cycle binding after resolving current F-key
       conflicts.
-- [ ] Add remote player interpolation so multiplayer movement does not jitter.
+- [x] Add remote player interpolation so multiplayer movement does not jitter.
 - [ ] Render remote player nameplates above head with distance/readability rules.
 - [x] Add nameplate snapshot/render data with distance fade visibility rules.
 - [x] Render held item/block for remote players.
