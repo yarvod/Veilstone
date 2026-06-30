@@ -22,6 +22,10 @@
   `HudController` reading hotbar, item registry, and ECS AI state directly;
   focused HUD tests and Pyright passed.
 
+- **Narrower HUD view port** - `HudView` no longer exposes broad world,
+  renderer, network, entity, hotbar, item-registry, or game-state objects to
+  `HudController`; remaining HUD diagnostics route through snapshots.
+
 - **Input HUD/debug command ports** - F1 HUD visibility and F3 debug overlay
   toggles now route through `InputView` commands instead of direct window field
   mutation, with focused input tests and Pyright clean.

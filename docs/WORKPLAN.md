@@ -48,7 +48,7 @@ Promoted backlog: `ARCH-B001`, `PERF-B002`, `PERF-B003`, `R-B006`,
 - [ ] Shrink `GameplayView`/`InventoryView`/`NetworkView`/`InputView` toward
       narrower command, UI, and session ports instead of broad window-adapter
       surfaces.
-- [ ] Extract remaining HUD/debug snapshot reads so HUD code does not depend on
+- [x] Extract remaining HUD/debug snapshot reads so HUD code does not depend on
       broad window state; inventory draw now goes through `InventoryHudPort`.
 - [x] Keep `/resourcepack`, F-key controls, inventory, and debug overlay smoke
       tested through real app paths after each controller slice.

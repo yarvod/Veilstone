@@ -72,15 +72,8 @@ class HudView(Protocol):
     height: int
     hud_batch: Any
     hud_text_group: Any
-    world_renderer: Any
-    world_runtime: Any
-    player: Any
     camera: Any
     settings: Any
-    network_session: Any
-    network_players: Any
-    remote_player_entities: Any
-    entities: Any
     debug_overlay_visible: bool
     inventory_open: bool
     key_state: Any
@@ -128,40 +121,12 @@ class HudWindowAdapter:
         return self._window.hud_text_group
 
     @property
-    def world_renderer(self) -> Any:
-        return self._window.world_renderer
-
-    @property
-    def world_runtime(self) -> Any:
-        return self._window.world_runtime
-
-    @property
-    def player(self) -> Any:
-        return self._window.player
-
-    @property
     def camera(self) -> Any:
         return self._window.camera
 
     @property
     def settings(self) -> Any:
         return self._window.settings
-
-    @property
-    def network_session(self) -> Any:
-        return self._window.network_session
-
-    @property
-    def network_players(self) -> Any:
-        return self._window.network_players
-
-    @property
-    def remote_player_entities(self) -> Any:
-        return self._window.remote_player_entities
-
-    @property
-    def entities(self) -> Any:
-        return self._window.entities
 
     @property
     def debug_overlay_visible(self) -> bool:
@@ -221,7 +186,7 @@ class HudWindowAdapter:
         block_x, block_y, block_z = int(x), int(y), int(z)
         chunk_x, chunk_z = block_x // 16, block_z // 16
         facing = _facing_from_yaw(win.camera.yaw_degrees)
-        biome = _biome_key_at(self, block_x, block_z)
+        biome = _biome_key_at(win, block_x, block_z)
         text = (
             f"FPS {perf.fps:5.1f} Frame {perf.frame_ms:5.1f} ms "
             f"Update {perf.update_ms:5.1f} Render {perf.render_ms:5.1f}\n"
