@@ -285,6 +285,9 @@
 
 ### Fixed
 
+- **Windows entity animation unit test** - remote-player texture path assertions now
+  normalize paths with POSIX separators, matching cow and zombie checks on
+  Windows CI.
 - **Short grass lighting** - crossed plant meshes now sample light from their
   own cell and the air above, preventing grass and flowers from turning nearly
   black because of shifted halo light samples.

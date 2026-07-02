@@ -54,8 +54,10 @@ def test_original_mob_models_are_textured_and_articulated() -> None:
     assert hostile.parts[2].face_uvs is not None
     assert hostile.parts[2].face_uvs[2] != hostile.parts[2].face_uvs[3]
     assert len(models.get("remote_player").parts) == 6
-    assert str(models.get("remote_player").texture).endswith(
-        "assets/minecraft/textures/entity/player/player.png"
+    assert (
+        models.get("remote_player")
+        .texture.as_posix()
+        .endswith("assets/minecraft/textures/entity/player/player.png")
     )
 
 
