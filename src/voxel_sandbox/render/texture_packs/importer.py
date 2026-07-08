@@ -8,8 +8,11 @@ from PIL import Image
 
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.domain.blocks import BlockRegistry
+from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.texture_atlas.generated import (
     GeneratedAtlas,
+    GeneratedMaterialAtlasBundle,
+    build_material_atlas_bundle,
     build_texture_atlas,
     create_default_block_tiles,
 )
@@ -17,10 +20,18 @@ from voxel_sandbox.render.texture_packs.cache import load_cached_atlas, save_cac
 from voxel_sandbox.render.texture_packs.minecraft_java import (
     discover_material_manifest,
     load_block_textures,
+    load_material_tiles,
 )
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
 LOGGER = logging.getLogger(__name__)
+
+_DEFAULT_MATERIAL_COLORS: dict[MaterialMapRole, tuple[int, int, int, int]] = {
+    MaterialMapRole.NORMAL: (128, 128, 255, 255),
+    MaterialMapRole.SPECULAR: (0, 0, 0, 255),
+    MaterialMapRole.EMISSIVE: (0, 0, 0, 255),
+    MaterialMapRole.MER: (0, 0, 0, 255),
+}
 
 
 def _collect_texture_ids(registry: BlockRegistry) -> dict[str, None]:
@@ -88,6 +99,22 @@ def load_active_block_atlas(
                 error,
             )
     return atlas
+
+
+def load_material_atlas_bundle(
+    resource_pack_path: Path,
+    color_atlas: GeneratedAtlas,
+) -> GeneratedMaterialAtlasBundle:
+    """Build optional CPU-side material atlases for an already loaded color atlas."""
+    material_tiles = load_material_tiles(
+        resource_pack_path,
+        color_atlas.material_manifest,
+    )
+    return build_material_atlas_bundle(
+        color_atlas,
+        material_tiles=material_tiles,
+        defaults=_DEFAULT_MATERIAL_COLORS,
+    )
 
 
 def _load_default_pack_tiles(

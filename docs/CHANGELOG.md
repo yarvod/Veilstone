@@ -29,6 +29,11 @@
   preserving aligned dimensions and UVs for present roles without binding extra
   shader textures by default. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_013212.png`.
+- **Resource-pack material bundle assembly** - texture-pack importer now exposes
+  a CPU-only helper that builds material atlas bundles from an already loaded
+  color atlas and matching Java-style sidecar tiles, keeping the normal runtime
+  color atlas path unchanged. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_013449.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

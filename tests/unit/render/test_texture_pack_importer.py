@@ -22,7 +22,10 @@ from voxel_sandbox.render.texture_atlas import (
     build_parallel_material_atlas,
     build_texture_atlas,
 )
-from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
+from voxel_sandbox.render.texture_packs.importer import (
+    load_active_block_atlas,
+    load_material_atlas_bundle,
+)
 from voxel_sandbox.render.texture_packs.minecraft_java import (
     discover_material_manifest,
     is_minecraft_java_pack,
@@ -379,6 +382,36 @@ def test_active_block_atlas_carries_material_manifest(tmp_path: Path) -> None:
 
     metadata = atlas.material_manifest.by_resource_id()["minecraft:block/stone"]
     assert metadata.cache_key().maps == (("normal", "assets/minecraft/textures/block/stone_n.png"),)
+
+
+def test_material_bundle_assembles_from_active_block_atlas(tmp_path: Path) -> None:
+    pack = _make_folder_pack(tmp_path, {"stone": (16, 16)})
+    block_dir = pack / "assets" / "minecraft" / "textures" / "block"
+    (block_dir / "stone_n.png").write_bytes(_png_bytes(16, 16, (128, 128, 255, 255)))
+    (block_dir / "stone_mer.png").write_bytes(_png_bytes(16, 16, (10, 20, 30, 255)))
+    registry = create_core_block_registry()
+
+    color_atlas = load_active_block_atlas(pack, registry=registry)
+    bundle = load_material_atlas_bundle(pack, color_atlas)
+
+    assert bundle.color is color_atlas
+    assert set(bundle.materials) == {MaterialMapRole.NORMAL, MaterialMapRole.MER}
+    for material_atlas in bundle.materials.values():
+        assert material_atlas.width == color_atlas.width
+        assert material_atlas.height == color_atlas.height
+        assert material_atlas.uvs == color_atlas.uvs
+
+
+def test_material_bundle_omits_roles_without_matching_sidecars(tmp_path: Path) -> None:
+    pack = _make_folder_pack(tmp_path, {"stone": (16, 16)})
+    block_dir = pack / "assets" / "minecraft" / "textures" / "block"
+    (block_dir / "stone_n.png").write_bytes(_png_bytes(16, 16, (128, 128, 255, 255)))
+    registry = create_core_block_registry()
+
+    color_atlas = load_active_block_atlas(pack, registry=registry)
+    bundle = load_material_atlas_bundle(pack, color_atlas)
+
+    assert set(bundle.materials) == {MaterialMapRole.NORMAL}
 
 
 def test_zip_import_missing_uses_fallback(tmp_path: Path) -> None:

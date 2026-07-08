@@ -37,12 +37,12 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G6: Resource-Pack Material Bundle Assembly
+### Phase G7: Material Quality Profile Gate
 
-- [ ] Add importer-level helper that assembles a CPU material atlas bundle from
-  a loaded color atlas and Java-style sidecar tile maps.
-- [ ] Build deterministic fixture coverage proving fixture packs produce bundle
-  roles only when matching sidecars exist.
+- [ ] Add a render-facing quality/profile decision helper that keeps material
+  atlas bundles disabled by default and names the future opt-in path.
+- [ ] Build deterministic fixture coverage proving default/low-tier profile does
+  not request material atlas bundle assembly.
 - [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
   required unless a later quality tier enables them.
 - [ ] Run real-game smoke to confirm unchanged-color rendering path.
