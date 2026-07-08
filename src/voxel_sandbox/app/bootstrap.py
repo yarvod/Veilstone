@@ -101,6 +101,18 @@ def run_command(args: argparse.Namespace) -> int:
             render_distance=int(getattr(args, "render_distance", 3)),
             settings_profile=str(getattr(args, "settings_profile", "dev-reference")),
         )
+    if command == "gameplay-smoke-screenshot":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.gameplay_smoke_screenshot import run_smoke
+
+        metadata = getattr(args, "metadata", None)
+        return run_smoke(
+            settings,
+            frames=int(getattr(args, "frames", 90)),
+            render_distance=getattr(args, "render_distance", None),
+            metadata_path=Path(str(metadata)) if metadata else None,
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 

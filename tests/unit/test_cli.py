@@ -52,6 +52,24 @@ def test_structure_preview_accepts_template_key() -> None:
     assert args.template == "veilstone_ruin"
 
 
+def test_gameplay_smoke_screenshot_command_accepts_runtime_options() -> None:
+    args = build_parser().parse_args(
+        [
+            "gameplay-smoke-screenshot",
+            "--frames",
+            "12",
+            "--render-distance",
+            "4",
+            "--metadata",
+            "saves/screenshots/smoke.json",
+        ]
+    )
+    assert args.command == "gameplay-smoke-screenshot"
+    assert args.frames == 12
+    assert args.render_distance == 4
+    assert args.metadata == "saves/screenshots/smoke.json"
+
+
 def test_update_commands_are_registered() -> None:
     parser = build_parser()
     assert parser.parse_args(["check-update"]).command == "check-update"

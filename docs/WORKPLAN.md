@@ -2,13 +2,13 @@
 
 ## Overview
 
-Активная цель: после закрытия Phase D architecture cleanup перейти к
-Minecraft-like visual/resource-pack polish, начиная с травы, terrain material
-coherence и F3 diagnostics, не возвращая логику в `GameWindow` или
-`DemoWorldRenderer`.
+Активная цель: после закрытия Phase D architecture cleanup продолжать
+Minecraft-like visual/resource-pack polish, начиная с grass/terrain material
+coherence и render-only vegetation motion, не возвращая логику в `GameWindow`
+или `DemoWorldRenderer`.
 
-Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist —
-в `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
+Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
+`docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
 
 ## Product Direction
 
@@ -20,58 +20,43 @@ coherence и F3 diagnostics, не возвращая логику в `GameWindow
   расползаться по render-классам;
 - visual/resource-pack work uses Minecraft-style content paths under
   `resource_packs/default/assets/<namespace>/textures|sounds/...`;
-- new texture/audio assets must be added through the default resource pack
-  folder routing, not hard-coded legacy fallbacks;
+- new texture/audio assets added through default resource pack folder routing,
+  not hard-coded legacy fallbacks;
 - real-game smoke checks обязательны для UI/render/audio/controls changes:
-  launch the real app, interact with the feature, capture screenshots when the
-  display is available, and record blocker details when Cocoa/OpenGL display is
-  unavailable;
+  launch real app, interact feature, capture screenshots display available,
+  record blocker details Cocoa/OpenGL display unavailable;
 - focused Pyright обязателен для затронутых typed boundaries; full Pyright пока
   tracked как known-red `BUG-Q001`.
 
 ## Current Phase
 
-### Phase E: Minecraft-Like Terrain Visual Polish And Diagnostics
+### Phase E: Minecraft-Like Terrain Visual Polish
 
-Promoted backlog: `R-B004`, `DX-B001`, `R-B005`, `DX-B002`, `WORLD-B004`.
+Promoted backlog: `R-B004`, `R-B005`.
 
-Цель: сделать траву и terrain surfaces визуально ближе к Minecraft-like style,
-дать F3 enough diagnostics для проверки FPS/координат/чанков/биомов/очередей и
+Цель: сделать траву и terrain surfaces визуально ближе к Minecraft-like style и
 подготовить render-only vegetation motion без накопления нового долга в
 `GameWindow`.
 
 ### Phase E1: Grass/Terrain Material Coherence
 
-- Findings: Faithful-style `grass_block_top`, `short_grass`, and `oak_leaves`
-  are grayscale/tint-driven assets; current chunk mesh path has no tint channel,
+- Findings: Faithful-style `grass_block_top`, `short_grass`, `oak_leaves`
+  grayscale/tint-driven assets; current chunk mesh path has no tint channel,
   so renderer work must carry tint metadata beyond model snapshots.
-- [ ] Audit default and Faithful-style grass block texture routing, atlas rects,
-  tint, mip/filter settings, and terrain sampling paths.
+- [ ] Audit default Faithful-style grass block texture routing, atlas rects,
+  tint, mip/filter settings, terrain sampling paths.
 - [ ] Add focused tests/fixtures proving grass material lookup, tint, atlas
-  gutter/mipmap metadata, and inventory/held-item texture paths stay separate.
-- [ ] Implement Minecraft-like grass field smoothing or distance-safe sampling
-  through render/material snapshots or renderer helpers, not window/controller
+  gutter/mipmap metadata, inventory/held-item texture paths stay separate.
+- [ ] Implement Minecraft-like grass field smoothing distance-safe sampling
+  through render/material snapshots renderer helpers, not window/controller
   state.
-- [ ] Verify default and Faithful-style packs in the real app: walk on grass,
-  inspect shallow camera angles, tree shadows, grass color continuity, and
-  capture screenshots when display is available.
-
-### Phase E2: Minecraft-Like F3 Diagnostics - completed 2026-07-08
-
-- [x] Extend cached HUD debug snapshots with practical diagnostics: FPS/frame
-  timing, precise player coordinates, block/chunk coordinates, facing, biome or
-  terrain profile, render distance, chunk/mesh queues, visible chunks, and
-  active resource pack.
-- [x] Keep diagnostics low-frequency/cached so F3 does not perform expensive
-  per-frame reads.
-- [x] Add unit coverage for debug snapshot content without constructing Pyglet
-  or ModernGL.
-- [x] Real-game smoke F3 overlay: toggle F3, walk, inspect FPS/coords/chunk
-  values updating, and save screenshot evidence when display is available.
+- [ ] Verify default Faithful-style packs in real app: walk on grass, inspect
+  shallow camera angles, tree shadows, grass color continuity, capture
+  screenshots when display is available.
 
 ### Phase E3: Render-Only Vegetation Motion
 
-- [ ] Define render-facing vegetation wind data for grass/leaves/plants that
+- [ ] Define render-facing vegetation wind data grass/leaves/plants that
   preserves deterministic gameplay/collision state.
 - [ ] Add subtle quality-gated grass/leaf sway in renderer/material code without
   changing domain block definitions or resource-pack folder routing.
@@ -79,17 +64,6 @@ Promoted backlog: `R-B004`, `DX-B001`, `R-B005`, `DX-B002`, `WORLD-B004`.
   fallback behavior without OpenGL.
 - [ ] Real-game smoke: inspect grass/leaves near spawn, verify shadows remain
   readable and FPS/debug overlay stays sane.
-
-### Phase E4: Reusable Gameplay Smoke Screenshot Route
-
-- [ ] Add a dev-only gameplay smoke command or tool for deterministic walking
-  camera path screenshots with F3 enabled, without relying on stdin scripts.
-- [ ] Record metadata beside screenshots: seed, render distance, resource pack,
-  player start/end position, frame count, and queue/visible-section summary.
-- [ ] Keep the smoke path display-aware: use a real OpenGL window when
-  available, otherwise skip clearly and leave deterministic unit coverage.
-- [ ] Use the route for future E1/E3 visual checks so gameplay slices include
-  repeatable run/walk/screenshot evidence.
 
 ## Check Gate
 

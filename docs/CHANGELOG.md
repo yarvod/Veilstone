@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Reusable gameplay smoke screenshot route** - added
+  `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
+  screenshots with JSON metadata. Real smoke passed with
+  `saves/screenshots/veilstone_20260708_235956.png` and matching `.json`
+  metadata.
 - **F3 active resource-pack diagnostic** - debug overlay snapshots now include
   the active resource pack label and cover it in unit plus real `GameWindow`
   smoke checks. Runtime walking/F3 screenshot evidence:
