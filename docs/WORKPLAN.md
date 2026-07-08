@@ -34,24 +34,19 @@ render-only vegetation motion, не возвращая логику в `GameWind
 
 Promoted backlog: `R-B007`.
 
-Цель: начать shader/material pipeline foundation для future Iris/PBR-like
+Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G1: Material Metadata Audit
+### Phase G2: Material Atlas Manifest Groundwork
 
-- Findings: color atlas generation still owns only RGBA tile pixels, UVs, tile
-  size, and edge inset metadata; texture-pack cache v4 has no material metadata
-  keys. Minecraft Java importer is the safest first discovery point for PBR
-  sidecars because it already maps resource locations to pack asset paths.
-- [x] Audit current texture-pack importer/cache/atlas paths for places where
-  normal, specular, emissive, or material maps could be discovered without
-  changing color-atlas behavior.
-- [ ] Define the smallest render-facing material metadata shape and cache key
-  inputs needed before adding shader work.
-- [x] Add focused tests proving unsupported PBR-sidecar assets are ignored or
-  reported deterministically rather than breaking existing packs.
-- [ ] Real-game smoke remains unchanged-color render path unless a later slice
-  touches shader output.
+- [ ] Add a render-facing material manifest shape that can sit next to the
+  existing color atlas output without changing shader bindings.
+- [ ] Add deterministic fixture coverage proving PBR sidecar map roles can
+  produce stable material metadata while color-only packs keep empty metadata.
+- [ ] Keep texture-pack cache compatibility explicit: either no cache schema
+  change yet, or a versioned metadata field with old-cache invalidation tests.
+- [ ] Real-game smoke remains unchanged-color render path unless slice touches
+  shader output.
 
 ## Check Gate
 

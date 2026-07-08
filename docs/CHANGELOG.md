@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Render material metadata cache keys** - render layer now has pure material
+  map role metadata and stable cache key inputs for future color/normal/specular
+  material atlas work; Minecraft Java PBR sidecar discovery reuses the same
+  sidecar role definitions. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_011413.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

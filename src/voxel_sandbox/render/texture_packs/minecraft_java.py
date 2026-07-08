@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from voxel_sandbox.render.material_metadata import material_sidecar_refs
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
 _PLAINS_GRASS_TINT = (145, 189, 89)
@@ -19,7 +20,6 @@ _BIOME_TINTS: dict[str, tuple[int, int, int]] = {
     "minecraft:block/tall_grass_bottom": _PLAINS_GRASS_TINT,
     "minecraft:block/oak_leaves": _PLAINS_FOLIAGE_TINT,
 }
-_UNSUPPORTED_MATERIAL_SUFFIXES = ("_n", "_s", "_e", "_mer")
 
 
 def resource_location_to_texture_path(resource: str) -> str:
@@ -144,10 +144,7 @@ def load_block_textures(
 
 
 def _material_sidecar_paths(asset_path: str) -> tuple[str, ...]:
-    if not asset_path.endswith(".png"):
-        return ()
-    stem = asset_path[:-4]
-    return tuple(f"{stem}{suffix}.png" for suffix in _UNSUPPORTED_MATERIAL_SUFFIXES)
+    return tuple(ref.asset_path for ref in material_sidecar_refs(asset_path))
 
 
 def _apply_resource_overlays(
