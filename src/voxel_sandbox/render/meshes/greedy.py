@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkSection
+from voxel_sandbox.render.meshes.block_visuals import build_block_mesh_visual_lookups
 from voxel_sandbox.render.meshes.data import MeshData
 from voxel_sandbox.render.meshes.neighborhood import (
     HALO_RADIUS,
@@ -19,7 +20,6 @@ from voxel_sandbox.render.meshes.visible_faces import (
     build_quad_indices,
     sample_vertex_lighting,
 )
-from voxel_sandbox.render.vegetation_wind import wind_motion_value_for_block
 
 
 def build_greedy_mesh(
@@ -35,21 +35,10 @@ def build_greedy_mesh(
     max_block_id = max((definition.id for definition in registry), default=0)
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
-    cross_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
-    wind_lookup = np.zeros(max_block_id + 1, dtype=np.float32)
-    texture_lookups = {
-        face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
-        for face in ("top", "side", "bottom")
-    }
     for definition in registry:
         opaque_lookup[definition.id] = definition.is_opaque
         fluid_lookup[definition.id] = definition.is_fluid
-        cross_lookup[definition.id] = definition.render_shape == "cross"
-        wind_lookup[definition.id] = wind_motion_value_for_block(definition)
-        for face in texture_lookups:
-            texture = getattr(definition, f"texture_{face}")
-            if texture in texture_uvs:
-                texture_lookups[face][definition.id] = texture_uvs[texture]
+    visuals = build_block_mesh_visual_lookups(registry, texture_uvs)
 
     padded_opaque = opaque_lookup[neighborhood.blocks]
     padded_sky = neighborhood.sky_light.astype(np.float32) / 15.0
@@ -66,7 +55,7 @@ def build_greedy_mesh(
             HALO_RADIUS + dz : HALO_RADIUS + dz + SECTION_SIZE,
         ]
         coordinates = np.argwhere(
-            (blocks != 0) & ~fluid_lookup[blocks] & ~cross_lookup[blocks] & ~neighbor
+            (blocks != 0) & ~fluid_lookup[blocks] & ~visuals.cross_lookup[blocks] & ~neighbor
         )
         if coordinates.size == 0:
             continue
@@ -81,7 +70,7 @@ def build_greedy_mesh(
             ambient_occlusion=ambient_occlusion,
         )
         block_ids = blocks[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
-        rectangles = texture_lookups[texture_face][block_ids]
+        rectangles = visuals.texture_rects[texture_face][block_ids]
         normal_axis = next(axis for axis, value in enumerate(direction) if value != 0)
         u_axis = next(axis for axis in range(3) if corners[3][axis] != corners[0][axis])
         v_axis = next(axis for axis in range(3) if corners[1][axis] != corners[0][axis])
@@ -128,7 +117,7 @@ def build_greedy_mesh(
                 vertices[:, 9] = face_block[0]
                 vertices[:, 10] = face_ao[0]
                 vertices[:, 11:15] = rectangles[face_index]
-                vertices[:, 15] = wind_lookup[block_ids[face_index]]
+                vertices[:, 15] = visuals.wind_lookup[block_ids[face_index]]
                 vertex_batches.append(vertices)
                 index_batches.append(
                     build_quad_indices(face_sky, face_block, face_ao, vertex_offset)
@@ -137,9 +126,9 @@ def build_greedy_mesh(
 
     vertex_offset = append_cross_quads(
         blocks,
-        cross_lookup,
-        texture_lookups["side"],
-        wind_lookup,
+        visuals.cross_lookup,
+        visuals.texture_rects["side"],
+        visuals.wind_lookup,
         padded_sky,
         padded_block,
         vertex_batches,

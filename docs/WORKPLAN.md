@@ -43,18 +43,31 @@ meshing, held items, inventory icons, drops и remote held items не расхо
 - Findings: `item_block_texture_name()` already feeds inventory icons,
   `item_block_atlas_rect()` feeds dropped/entity/player held items, and
   first-person viewmodel uses `BlockModelSnapshot` face texture slots. Chunk
-  meshing still reads raw `BlockDef` texture slots/material shape directly,
-  making it the next consolidation target.
-- Missing shared fields to evaluate next: atlas rects per face, render layer,
-  render shape, wind motion, tint kind, and icon/default face policy.
+  meshing now receives atlas rect, render-shape, and wind-motion lookups built
+  from `BlockModelSnapshot`, while opacity/fluid flags remain domain visibility
+  data.
+- Remaining shared fields to evaluate next: tint kind, icon/default face policy,
+  and whether first-person viewmodel can consume the same atlas rect helper as
+  entity/player held items.
 - [x] Audit current block/item visual consumers: chunk meshing, first-person
   viewmodel, inventory icons, dropped items, entity held items.
-- [ ] Define the smallest shared render-facing snapshot fields missing from
+- [x] Define the smallest shared render-facing snapshot fields missing from
   existing `BlockModelSnapshot` / `ItemModelSnapshot`.
-- [ ] Move one duplicated consumer path onto shared snapshot data with focused
+- [x] Move one duplicated consumer path onto shared snapshot data with focused
   regression coverage.
-- [ ] Real-game smoke for touched visual path: inventory/held/drop/remote path
-  depending on selected slice, with screenshot or OpenGL draw check.
+- [x] Real-game smoke for touched visual path: chunk meshing screenshot
+  `saves/screenshots/veilstone_20260709_004550.png`.
+
+### Phase F2: Viewmodel/Held Item Snapshot Alignment
+
+- [ ] Audit first-person viewmodel, player held-item, and entity held-item atlas
+  rect handling for remaining duplicated face/default texture policy.
+- [ ] Move one held/viewmodel path onto shared item/block snapshot helpers
+  without changing domain item data.
+- [ ] Focused tests for grass-block top/side/bottom texture consistency across
+  first-person, third-person/entity held item, and inventory icon paths.
+- [ ] Real-game smoke for touched held-item path with screenshot or OpenGL draw
+  check.
 
 ## Check Gate
 

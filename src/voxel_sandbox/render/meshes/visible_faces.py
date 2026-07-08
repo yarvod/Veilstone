@@ -7,13 +7,13 @@ from numpy.typing import NDArray
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkSection
+from voxel_sandbox.render.meshes.block_visuals import build_block_mesh_visual_lookups
 from voxel_sandbox.render.meshes.data import MeshData
 from voxel_sandbox.render.meshes.neighborhood import (
     HALO_RADIUS,
     MeshingNeighborhood,
     as_neighborhood,
 )
-from voxel_sandbox.render.vegetation_wind import wind_motion_value_for_block
 
 Face = tuple[
     tuple[int, int, int],
@@ -73,21 +73,10 @@ def build_visible_face_mesh(
     max_block_id = max((definition.id for definition in registry), default=0)
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
-    cross_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
-    wind_lookup = np.zeros(max_block_id + 1, dtype=np.float32)
-    texture_lookups = {
-        face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
-        for face in ("top", "side", "bottom")
-    }
     for definition in registry:
         opaque_lookup[definition.id] = definition.is_opaque
         fluid_lookup[definition.id] = definition.is_fluid
-        cross_lookup[definition.id] = definition.render_shape == "cross"
-        wind_lookup[definition.id] = wind_motion_value_for_block(definition)
-        for face in texture_lookups:
-            texture = getattr(definition, f"texture_{face}")
-            if texture in texture_uvs:
-                texture_lookups[face][definition.id] = texture_uvs[texture]
+    visuals = build_block_mesh_visual_lookups(registry, texture_uvs)
 
     padded_opaque = opaque_lookup[neighborhood.blocks]
     padded_sky_light = neighborhood.sky_light.astype(np.float32) / 15.0
@@ -103,7 +92,7 @@ def build_visible_face_mesh(
             HALO_RADIUS + dz : HALO_RADIUS + dz + SECTION_SIZE,
         ]
         coordinates = np.argwhere(
-            (blocks != 0) & ~fluid_lookup[blocks] & ~cross_lookup[blocks] & ~neighbor
+            (blocks != 0) & ~fluid_lookup[blocks] & ~visuals.cross_lookup[blocks] & ~neighbor
         )
         face_count = coordinates.shape[0]
         if face_count == 0:
@@ -112,7 +101,7 @@ def build_visible_face_mesh(
         corners_array = np.asarray(corners, dtype=np.float32)
         positions = coordinates[:, None, :].astype(np.float32) + corners_array[None, :, :]
         block_ids = blocks[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
-        rectangles = texture_lookups[texture_face][block_ids]
+        rectangles = visuals.texture_rects[texture_face][block_ids]
         sky_lights, block_lights, ao = sample_vertex_lighting(
             coordinates,
             (dx, dy, dz),
@@ -131,7 +120,7 @@ def build_visible_face_mesh(
         vertices[:, :, 9] = block_lights
         vertices[:, :, 10] = ao
         vertices[:, :, 11:15] = rectangles[:, None, :]
-        vertices[:, :, 15] = wind_lookup[block_ids][:, None]
+        vertices[:, :, 15] = visuals.wind_lookup[block_ids][:, None]
         vertex_batches.append(vertices.reshape((-1, VERTEX_COMPONENTS)))
 
         index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
@@ -139,9 +128,9 @@ def build_visible_face_mesh(
 
     vertex_offset = append_cross_quads(
         blocks,
-        cross_lookup,
-        texture_lookups["side"],
-        wind_lookup,
+        visuals.cross_lookup,
+        visuals.texture_rects["side"],
+        visuals.wind_lookup,
         padded_sky_light,
         padded_block_light,
         vertex_batches,

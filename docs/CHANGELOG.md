@@ -23,6 +23,11 @@
   render-owned wind attributes and uniforms. Real checks: foliage OpenGL draw
   smoke and gameplay screenshot
   `saves/screenshots/veilstone_20260709_003639.png`.
+- **Chunk meshing visual snapshots** - visible and greedy chunk mesh builders
+  now consume atlas rect, render shape, and wind-motion lookups derived from
+  `BlockModelSnapshot` instead of reinterpreting block visual texture fields
+  directly. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_004550.png`.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with
