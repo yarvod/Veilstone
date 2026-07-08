@@ -71,6 +71,9 @@
   `MaterialShaderSetup` planning hook and only loads CPU material atlas bundles
   when the material pipeline requests them, keeping default profiles on the
   existing color-only shader path.
+- **Material shader runtime wiring plan** - render code now names future
+  material-preview shader files and planned material bindings without replacing
+  the default `chunk_opaque` `ShaderProgram` startup path.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
