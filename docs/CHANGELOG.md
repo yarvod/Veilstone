@@ -60,6 +60,10 @@
   resolve explicit chunk shader variants so `color-only` and `low` stay on
   `chunk_opaque`, while `material-preview` names a future opt-in material shader
   path that requires material atlases.
+- **Material atlas binding plans** - render code now has a pure material atlas
+  binding plan helper that returns no bindings for `color-only` and `low`, while
+  `material-preview` deterministically names sampler uniforms and texture units
+  only for available material atlas roles.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

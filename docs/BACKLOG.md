@@ -286,9 +286,10 @@ class RenderModelSnapshot:
   identity and gameplay data only. Renderer owns quality tiers and extra GPU
   textures; application/settings select tiers.
 - **Candidate work:** continue from material metadata, parallel material atlases,
-  `MaterialVisualSnapshot`, material visual lookup consumers, and explicit shader
-  variant selection into opt-in material atlas binding; add emissive
-  conventions/LabPBR-style metadata, and keep low-tier chunks color-only.
+  `MaterialVisualSnapshot`, material visual lookup consumers, shader variant
+  selection, and material atlas binding plans into opt-in shader wiring; add
+  emissive conventions/LabPBR-style metadata, and keep low-tier chunks
+  color-only.
 - **Acceptance idea:** a deterministic PBR fixture pack produces color, normal,
   and material atlases with matching UV rects; low-tier renders the same chunks
   without binding those atlases; high-tier screenshot/manual smoke scene shows

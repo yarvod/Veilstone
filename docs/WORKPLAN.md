@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G14: Opt-In Material Atlas Binding Boundary
+### Phase G15: Opt-In Material Shader Wiring Fixture
 
-- [ ] Define the render-side binding plan for material atlas textures behind
-  `material-preview` without touching `color-only` or `low` shader inputs.
-- [ ] Keep missing material maps optional and deterministic; absent roles should
-  not allocate or bind placeholder GPU textures in low-tier profiles.
-- [ ] Add tests proving the binding plan is empty for default profiles and names
-  only opt-in material roles when material atlases exist.
+- [ ] Add the first material-preview shader wiring fixture without switching the
+  default `chunk_opaque` runtime path.
+- [ ] Keep missing material atlas roles optional; opt-in shader setup should use
+  only the roles present in the material atlas bundle.
+- [ ] Add tests proving default profile setup skips material shader/binding work
+  while material-preview setup consumes the binding plan.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 
