@@ -45,8 +45,10 @@ Promoted backlog: `R-B004`, `R-B005`.
   so renderer work must carry tint metadata beyond model snapshots.
 - [ ] Audit default Faithful-style grass block texture routing, atlas rects,
   tint, mip/filter settings, terrain sampling paths.
-- [ ] Add focused tests/fixtures proving grass material lookup, tint, atlas
-  gutter/mipmap metadata, inventory/held-item texture paths stay separate.
+- [x] Add focused tests proving grass terrain face texture/tint roles stay
+  separate: tinted top, untinted side base, dirt bottom.
+- [ ] Add focused tests/fixtures proving atlas gutter/mipmap metadata and
+  inventory/held-item texture paths stay separate.
 - [ ] Implement Minecraft-like grass field smoothing distance-safe sampling
   through render/material snapshots renderer helpers, not window/controller
   state.

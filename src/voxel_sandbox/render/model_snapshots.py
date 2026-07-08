@@ -9,6 +9,13 @@ type TextureRect = tuple[float, float, float, float]
 
 
 @dataclass(frozen=True, slots=True)
+class BlockFaceMaterial:
+    face: str
+    texture: str
+    tint: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class BlockModelSnapshot:
     block_id: int
     key: str
@@ -35,6 +42,13 @@ class BlockModelSnapshot:
         if face == "bottom":
             return self.tint_bottom
         return self.tint_top
+
+    def face_materials(self) -> tuple[BlockFaceMaterial, ...]:
+        return (
+            BlockFaceMaterial("top", self.texture_top, self.tint_top),
+            BlockFaceMaterial("side", self.texture_side, self.tint_side),
+            BlockFaceMaterial("bottom", self.texture_bottom, self.tint_bottom),
+        )
 
 
 @dataclass(frozen=True, slots=True)

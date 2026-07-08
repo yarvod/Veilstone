@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Grass terrain material face contract** - block model snapshots now expose
+  render-facing face material roles so tests lock grass top tint, untinted side
+  base, and dirt bottom separation before terrain smoothing work.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with

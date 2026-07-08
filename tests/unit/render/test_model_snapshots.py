@@ -38,6 +38,17 @@ def test_block_model_snapshot_marks_tinted_vegetation_textures() -> None:
     assert leaves.tint_for_face("top") == "foliage"
 
 
+def test_grass_terrain_material_faces_keep_distinct_texture_roles() -> None:
+    blocks = create_core_block_registry()
+    grass = build_block_model_snapshot(blocks.by_key("grass_block").id, blocks)
+
+    assert tuple((face.face, face.texture, face.tint) for face in grass.face_materials()) == (
+        ("top", "minecraft:block/grass_block_top", "grass"),
+        ("side", "minecraft:block/grass_block_side", None),
+        ("bottom", "minecraft:block/dirt", None),
+    )
+
+
 def test_item_model_snapshot_resolves_block_item_model() -> None:
     blocks = create_core_block_registry()
     items = create_core_item_registry()
