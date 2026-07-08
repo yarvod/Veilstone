@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from voxel_sandbox.render.material_metadata import MaterialMapRole
+from voxel_sandbox.render.material_quality import resolve_material_pipeline
+from voxel_sandbox.render.material_shader_runtime import build_material_shader_runtime_wiring
+from voxel_sandbox.render.material_shader_setup import build_material_shader_setup
 from voxel_sandbox.render.shaders.loader import ShaderFiles
 
 
@@ -16,6 +20,27 @@ def test_shader_files_read_sources_and_signature(tmp_path: Path) -> None:
     vertex_time, fragment_time = files.signature()
     assert vertex_time > 0
     assert fragment_time > 0
+
+
+def test_material_preview_shader_fixture_matches_runtime_wiring_names() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    setup = build_material_shader_setup(
+        resolve_material_pipeline("material-preview"),
+        (MaterialMapRole.NORMAL, MaterialMapRole.SPECULAR),
+    )
+    wiring = build_material_shader_runtime_wiring(setup, shader_root)
+
+    assert wiring.material_shader_files is not None
+    assert wiring.material_shader_files.vertex == shader_root / "chunk_material_preview.vert"
+    assert wiring.material_shader_files.fragment == shader_root / "chunk_material_preview.frag"
+    vertex_source, fragment_source = wiring.material_shader_files.read()
+    assert "in vec3 in_position;" in vertex_source
+    assert "in vec4 in_atlas_rect;" in vertex_source
+    for binding in wiring.material_bindings:
+        assert f"uniform sampler2D {binding.sampler_name};" in fragment_source
+
+    chunk_opaque_fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
+    assert "u_material_normal_atlas" not in chunk_opaque_fragment
 
 
 def test_entity_and_shadow_shaders_rotate_local_front_toward_positive_yaw() -> None:

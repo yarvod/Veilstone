@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G18: Opt-In Material Shader Fixture
+### Phase G19: Opt-In Material Shader Activation
 
-- [ ] Add the first material-preview shader fixture files without switching the
-  default `chunk_opaque` startup path.
-- [ ] Keep the shader fixture compatible with the existing mesh attribute
-  contract and planned material atlas samplers.
-- [ ] Add tests proving default shader validation still targets current shaders
-  while material-preview fixture files exist and match the runtime wiring names.
+- [ ] Add the first guarded material-preview shader activation path without
+  changing default `chunk_opaque` startup or low-tier mesh attributes.
+- [ ] Bind only material atlas roles present in `MaterialShaderRuntimeWiring`;
+  missing roles remain absent, not placeholder GL textures.
+- [ ] Add tests proving default startup skips material shader activation while
+  material-preview can activate the compiled fixture and planned bindings.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 
