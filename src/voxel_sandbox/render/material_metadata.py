@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -25,7 +26,7 @@ class MaterialTextureRef:
     asset_path: str
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, order=True)
 class MaterialCacheKey:
     resource_id: str
     color_asset_path: str
@@ -47,6 +48,23 @@ class RenderMaterialMetadata:
             shader_profile=self.shader_profile,
             maps=tuple((ref.role.value, ref.asset_path) for ref in sorted(self.maps)),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class MaterialAtlasManifest:
+    entries: tuple[RenderMaterialMetadata, ...] = ()
+
+    def cache_keys(self) -> tuple[MaterialCacheKey, ...]:
+        return tuple(entry.cache_key() for entry in self.entries)
+
+    def by_resource_id(self) -> dict[str, RenderMaterialMetadata]:
+        return {entry.resource_id: entry for entry in self.entries}
+
+
+def build_material_manifest(
+    entries: Iterable[RenderMaterialMetadata],
+) -> MaterialAtlasManifest:
+    return MaterialAtlasManifest(tuple(sorted(entries, key=lambda entry: entry.cache_key())))
 
 
 def material_sidecar_refs(color_asset_path: str) -> tuple[MaterialTextureRef, ...]:

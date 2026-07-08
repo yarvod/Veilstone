@@ -14,7 +14,10 @@ from voxel_sandbox.render.texture_atlas.generated import (
     create_default_block_tiles,
 )
 from voxel_sandbox.render.texture_packs.cache import load_cached_atlas, save_cached_atlas
-from voxel_sandbox.render.texture_packs.minecraft_java import load_block_textures
+from voxel_sandbox.render.texture_packs.minecraft_java import (
+    discover_material_manifest,
+    load_block_textures,
+)
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
 LOGGER = logging.getLogger(__name__)
@@ -62,6 +65,7 @@ def load_active_block_atlas(
             return cached
 
     imported_tiles, report = load_block_textures(resource_pack_path, texture_ids, fallback_tiles)
+    material_manifest = discover_material_manifest(resource_pack_path, texture_ids)
 
     _log_report(report, resource_pack_path)
     if report_callback is not None:
@@ -69,7 +73,11 @@ def load_active_block_atlas(
 
     merged = {**fallback_tiles, **imported_tiles}
     tile_size = _detect_tile_size(imported_tiles, fallback_tile_size)
-    atlas = build_texture_atlas(merged, tile_size=tile_size)
+    atlas = build_texture_atlas(
+        merged,
+        tile_size=tile_size,
+        material_manifest=material_manifest,
+    )
     if cache_root is not None:
         try:
             save_cached_atlas(cache_root, resource_pack_path, atlas)

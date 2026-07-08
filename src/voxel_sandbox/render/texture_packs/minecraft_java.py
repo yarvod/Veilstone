@@ -6,7 +6,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from voxel_sandbox.render.material_metadata import material_sidecar_refs
+from voxel_sandbox.render.material_metadata import (
+    MaterialAtlasManifest,
+    RenderMaterialMetadata,
+    build_material_manifest,
+    material_sidecar_refs,
+)
 from voxel_sandbox.render.texture_packs.models import ImportReport
 
 _PLAINS_GRASS_TINT = (145, 189, 89)
@@ -141,6 +146,40 @@ def load_block_textures(
 
     report.unsupported_material_maps.sort()
     return result, report
+
+
+def discover_material_manifest(
+    source: Path, resource_ids: Mapping[str, None]
+) -> MaterialAtlasManifest:
+    """Discover render material sidecars without loading shader textures yet."""
+    use_zip = source.is_file() and source.suffix.lower() == ".zip"
+    zip_names: set[str] = set()
+    if use_zip:
+        with zipfile.ZipFile(source) as zf:
+            zip_names = set(zf.namelist())
+
+    def _exists(asset_path: str) -> bool:
+        if use_zip:
+            return asset_path in zip_names
+        return (source / asset_path).exists()
+
+    entries: list[RenderMaterialMetadata] = []
+    for resource_id in resource_ids:
+        try:
+            asset_path = resource_location_to_texture_path(resource_id)
+        except ValueError:
+            continue
+        maps = tuple(ref for ref in material_sidecar_refs(asset_path) if _exists(ref.asset_path))
+        if maps:
+            entries.append(
+                RenderMaterialMetadata(
+                    resource_id=resource_id,
+                    color_asset_path=asset_path,
+                    maps=maps,
+                    shader_profile="pbr",
+                )
+            )
+    return build_material_manifest(entries)
 
 
 def _material_sidecar_paths(asset_path: str) -> tuple[str, ...]:

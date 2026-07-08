@@ -8,9 +8,16 @@ from typing import Any, cast
 
 from PIL import Image
 
+from voxel_sandbox.render.material_metadata import (
+    MaterialAtlasManifest,
+    MaterialMapRole,
+    MaterialTextureRef,
+    RenderMaterialMetadata,
+    build_material_manifest,
+)
 from voxel_sandbox.render.texture_atlas.generated import GeneratedAtlas
 
-CACHE_VERSION = 4
+CACHE_VERSION = 5
 
 
 def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | None:
@@ -34,6 +41,10 @@ def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | Non
         return None
 
     uvs = {str(key): _uv_rect(rect) for key, rect in metadata["uvs"].items()}
+    try:
+        material_manifest = _material_manifest_from_json(metadata.get("materials", []))
+    except ValueError:
+        return None
     pixels = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
     return GeneratedAtlas(
         width,
@@ -42,6 +53,7 @@ def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | Non
         uvs,
         tile_size=int(metadata.get("tile_size", 0)),
         edge_inset_pixels=float(metadata.get("edge_inset_pixels", 0.0)),
+        material_manifest=material_manifest,
     )
 
 
@@ -71,6 +83,7 @@ def save_cached_atlas(cache_root: Path, pack_path: Path, atlas: GeneratedAtlas) 
         "height": atlas.height,
         "tile_size": atlas.tile_size,
         "edge_inset_pixels": atlas.edge_inset_pixels,
+        "materials": _material_manifest_to_json(atlas.material_manifest),
         "uvs": atlas.uvs,
     }
     (cache_dir / "atlas.json").write_text(
@@ -100,3 +113,58 @@ def _hash_stat(hasher: Any, path: Path, relative_name: str) -> None:
     hasher.update(relative_name.encode("utf-8"))
     hasher.update(str(stat.st_size).encode("ascii"))
     hasher.update(str(stat.st_mtime_ns).encode("ascii"))
+
+
+def _material_manifest_to_json(manifest: MaterialAtlasManifest) -> list[dict[str, object]]:
+    return [
+        {
+            "resource_id": entry.resource_id,
+            "color_asset_path": entry.color_asset_path,
+            "shader_profile": entry.shader_profile,
+            "maps": [
+                {"role": ref.role.value, "asset_path": ref.asset_path} for ref in sorted(entry.maps)
+            ],
+        }
+        for entry in manifest.entries
+    ]
+
+
+def _material_manifest_from_json(value: object) -> MaterialAtlasManifest:
+    if not isinstance(value, list):
+        raise ValueError("Cached material manifest must be a list")
+    entries: list[RenderMaterialMetadata] = []
+    for raw_entry in cast("list[object]", value):
+        if not isinstance(raw_entry, dict):
+            raise ValueError("Cached material manifest entry must be an object")
+        entry = cast("dict[str, object]", raw_entry)
+        maps = entry.get("maps", [])
+        if not isinstance(maps, list):
+            raise ValueError("Cached material manifest maps must be a list")
+        refs: list[MaterialTextureRef] = []
+        for raw_ref in cast("list[object]", maps):
+            if not isinstance(raw_ref, dict):
+                raise ValueError("Cached material map entry must be an object")
+            ref = cast("dict[str, object]", raw_ref)
+            role = ref.get("role")
+            asset_path = ref.get("asset_path")
+            if not isinstance(role, str) or not isinstance(asset_path, str):
+                raise ValueError("Cached material map entry has invalid fields")
+            refs.append(MaterialTextureRef(MaterialMapRole(role), asset_path))
+        resource_id = entry.get("resource_id")
+        color_asset_path = entry.get("color_asset_path")
+        shader_profile = entry.get("shader_profile", "color")
+        if (
+            not isinstance(resource_id, str)
+            or not isinstance(color_asset_path, str)
+            or not isinstance(shader_profile, str)
+        ):
+            raise ValueError("Cached material manifest entry has invalid fields")
+        entries.append(
+            RenderMaterialMetadata(
+                resource_id=resource_id,
+                color_asset_path=color_asset_path,
+                maps=tuple(refs),
+                shader_profile=shader_profile,
+            )
+        )
+    return build_material_manifest(entries)

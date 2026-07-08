@@ -19,6 +19,7 @@ from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 from voxel_sandbox.render.texture_packs.minecraft_java import (
+    discover_material_manifest,
     is_minecraft_java_pack,
     load_block_textures,
     resource_location_to_texture_path,
@@ -260,6 +261,43 @@ def test_zip_import_reports_unsupported_material_sidecars(tmp_path: Path) -> Non
 
     assert "minecraft:block/stone" in tiles
     assert report.unsupported_material_maps == ["assets/minecraft/textures/block/stone_mer.png"]
+
+
+def test_zip_material_manifest_discovers_pbr_sidecars(tmp_path: Path) -> None:
+    pack = tmp_path / "pbr.zip"
+    with zipfile.ZipFile(pack, "w") as zf:
+        zf.writestr("pack.mcmeta", json.dumps({"pack": {"pack_format": 18}}))
+        zf.writestr("assets/minecraft/textures/block/stone.png", _png_bytes(16, 16))
+        zf.writestr("assets/minecraft/textures/block/stone_n.png", _png_bytes(16, 16))
+        zf.writestr("assets/minecraft/textures/block/stone_s.png", _png_bytes(16, 16))
+
+    manifest = discover_material_manifest(pack, {"minecraft:block/stone": None})
+    metadata = manifest.by_resource_id()["minecraft:block/stone"]
+
+    assert metadata.cache_key().maps == (
+        ("normal", "assets/minecraft/textures/block/stone_n.png"),
+        ("specular", "assets/minecraft/textures/block/stone_s.png"),
+    )
+
+
+def test_zip_material_manifest_stays_empty_for_color_only_pack(tmp_path: Path) -> None:
+    pack = _make_zip_pack(tmp_path, {"stone": (16, 16)})
+
+    manifest = discover_material_manifest(pack, {"minecraft:block/stone": None})
+
+    assert manifest.entries == ()
+
+
+def test_active_block_atlas_carries_material_manifest(tmp_path: Path) -> None:
+    pack = _make_folder_pack(tmp_path, {"stone": (16, 16)})
+    block_dir = pack / "assets" / "minecraft" / "textures" / "block"
+    (block_dir / "stone_n.png").write_bytes(_png_bytes(16, 16))
+    registry = create_core_block_registry()
+
+    atlas = load_active_block_atlas(pack, registry=registry)
+
+    metadata = atlas.material_manifest.by_resource_id()["minecraft:block/stone"]
+    assert metadata.cache_key().maps == (("normal", "assets/minecraft/textures/block/stone_n.png"),)
 
 
 def test_zip_import_missing_uses_fallback(tmp_path: Path) -> None:

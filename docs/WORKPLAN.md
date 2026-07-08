@@ -37,16 +37,15 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G2: Material Atlas Manifest Groundwork
+### Phase G3: Parallel Material Atlas Builders
 
-- [ ] Add a render-facing material manifest shape that can sit next to the
-  existing color atlas output without changing shader bindings.
-- [ ] Add deterministic fixture coverage proving PBR sidecar map roles can
-  produce stable material metadata while color-only packs keep empty metadata.
-- [ ] Keep texture-pack cache compatibility explicit: either no cache schema
-  change yet, or a versioned metadata field with old-cache invalidation tests.
-- [ ] Real-game smoke remains unchanged-color render path unless slice touches
-  shader output.
+- [ ] Add CPU-side normal/material atlas builders that reuse the color atlas tile
+  ordering and UV rects, but do not bind extra GPU textures by default.
+- [ ] Add deterministic PBR fixture coverage proving color, normal, and material
+  atlas dimensions/UVs stay aligned for the same resource IDs.
+- [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
+  required unless a later quality tier enables them.
+- [ ] Run real-game smoke to confirm unchanged-color rendering path.
 
 ## Check Gate
 

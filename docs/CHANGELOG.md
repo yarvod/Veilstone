@@ -9,6 +9,11 @@
   material atlas work; Minecraft Java PBR sidecar discovery reuses the same
   sidecar role definitions. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_011413.png`.
+- **Material atlas manifests** - generated block atlases now carry render-only
+  material manifests discovered from Java-style PBR sidecars, cache schema v5
+  persists them and invalidates older material-less caches without changing
+  shader bindings. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_012024.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

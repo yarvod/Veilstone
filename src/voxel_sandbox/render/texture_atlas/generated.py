@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import ceil, sqrt
 
 from PIL import Image, ImageDraw
+
+from voxel_sandbox.render.material_metadata import MaterialAtlasManifest
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +16,7 @@ class GeneratedAtlas:
     uvs: dict[str, tuple[float, float, float, float]]
     tile_size: int = 0
     edge_inset_pixels: float = 0.0
+    material_manifest: MaterialAtlasManifest = field(default_factory=MaterialAtlasManifest)
 
 
 # Default procedural tiles keyed by Minecraft-style resource locations.
@@ -131,7 +134,12 @@ def _procedural_alpha(
     return default_alpha
 
 
-def build_texture_atlas(tiles: dict[str, Image.Image], *, tile_size: int) -> GeneratedAtlas:
+def build_texture_atlas(
+    tiles: dict[str, Image.Image],
+    *,
+    tile_size: int,
+    material_manifest: MaterialAtlasManifest | None = None,
+) -> GeneratedAtlas:
     """Pack PIL images into a square-ish atlas and return UV coordinates."""
     names = sorted(tiles)
     count = len(names)
@@ -163,6 +171,7 @@ def build_texture_atlas(tiles: dict[str, Image.Image], *, tile_size: int) -> Gen
         uvs,
         tile_size=tile_size,
         edge_inset_pixels=0.5,
+        material_manifest=material_manifest or MaterialAtlasManifest(),
     )
 
 
