@@ -44,6 +44,10 @@
   pipeline decision without assembling material bundles or binding extra shader
   textures by default. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_014247.png`.
+- **Material profile debug visibility** - F3 debug snapshot text now reports
+  the active material profile and whether material atlas bundles are enabled,
+  keeping the default runtime visible as `color-only bundle off`. Real gameplay
+  smoke screenshot: `saves/screenshots/veilstone_20260709_014603.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

@@ -37,15 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G9: Material Profile Debug Visibility
+### Phase G10: Material Pipeline Foundation Review
 
-- [ ] Surface active material quality/profile decision in debug/HUD snapshot text
-  without adding shader bindings or bundle assembly.
-- [ ] Add deterministic HUD/debug coverage proving default profile reports
-  color-only/material bundles disabled.
+- [ ] Review Phase G material metadata, manifest, bundle, settings, and debug
+  visibility slices against `R-B007` acceptance before starting shader binding.
+- [ ] Move any remaining non-active follow-up ideas into `docs/BACKLOG.md`.
 - [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
   required unless a later quality tier enables them.
-- [ ] Run real-game smoke to confirm unchanged-color rendering path.
+- [ ] Run focused docs/tests check and decide next active slice.
 
 ## Check Gate
 

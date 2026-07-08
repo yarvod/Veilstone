@@ -10,6 +10,7 @@ from voxel_sandbox.render.hud_controller import (  # noqa: E402
     DebugSlowTelemetry,
     HudWindowAdapter,
 )
+from voxel_sandbox.render.material_quality import resolve_material_pipeline  # noqa: E402
 from voxel_sandbox.render.perf import RenderQueueSnapshot, RuntimePerfSnapshot  # noqa: E402
 
 
@@ -43,6 +44,7 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
     assert "Network singleplayer Known players 1" in snapshot.text
     assert "Runtime Python test Frame 1280x720" in snapshot.text
     assert "Device Unit GPU" in snapshot.text
+    assert "Material profile color-only bundle off" in snapshot.text
     assert "Animation states graze:1 wander:1" in snapshot.text
     assert "Selected Stone x2" in snapshot.text
     assert "Target (1, 2, 3)" in snapshot.text
@@ -129,6 +131,7 @@ def _fake_window() -> SimpleNamespace:
             ambient_occlusion=True,
             fog_enabled=True,
             greedy_meshing=True,
+            material_pipeline=resolve_material_pipeline(),
             selection=SimpleNamespace(block=(1, 2, 3)),
         ),
         player_health=20.0,

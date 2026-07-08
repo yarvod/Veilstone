@@ -212,6 +212,7 @@ class HudWindowAdapter:
             f"AO {win.world_renderer.ambient_occlusion} "
             f"Fog {win.world_renderer.fog_enabled} "
             f"Mesher {'greedy' if win.world_renderer.greedy_meshing else 'visible'}\n"
+            f"Material profile {_material_profile_summary(win.world_renderer)}\n"
             f"Health {win.player_health:4.1f} "
             f"Entities {len(win.entities.world.alive)} "
             f"Mobs {len(win.entities.world.mob_ai)} "
@@ -421,6 +422,14 @@ def _animation_debug_summary(mob_ai: Any) -> str:
     for _entity, ai in mob_ai.items():
         counts[ai.state.value] = counts.get(ai.state.value, 0) + 1
     return " ".join(f"{state}:{count}" for state, count in sorted(counts.items())) or "none"
+
+
+def _material_profile_summary(world_renderer: Any) -> str:
+    pipeline = getattr(world_renderer, "material_pipeline", None)
+    if pipeline is None:
+        return "color-only bundle off"
+    bundle_state = "on" if pipeline.build_material_bundle else "off"
+    return f"{pipeline.profile.value} bundle {bundle_state}"
 
 
 def _selected_item_name(hotbar: Any, item_registry: Any) -> str:
