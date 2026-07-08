@@ -8,6 +8,7 @@ from PIL import Image
 from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.texture_atlas import (
     GeneratedAtlas,
+    build_material_atlas_bundle,
     build_parallel_material_atlas,
     build_texture_atlas,
     create_block_atlas,
@@ -170,6 +171,66 @@ def test_parallel_material_atlas_places_tiles_in_matching_color_slots() -> None:
 
     assert sample("minecraft:block/stone") == (20, 40, 80, 255)
     assert sample("minecraft:block/dirt") == (1, 2, 3, 255)
+
+
+def test_material_atlas_bundle_omits_missing_roles() -> None:
+    color_atlas = build_texture_atlas(
+        {
+            "minecraft:block/dirt": Image.new("RGBA", (4, 4), (10, 20, 30, 255)),
+            "minecraft:block/stone": Image.new("RGBA", (4, 4), (40, 50, 60, 255)),
+        },
+        tile_size=4,
+    )
+
+    bundle = build_material_atlas_bundle(
+        color_atlas,
+        material_tiles={
+            MaterialMapRole.NORMAL: {
+                "minecraft:block/stone": Image.new("RGBA", (4, 4), (128, 128, 255, 255))
+            },
+            MaterialMapRole.MER: {},
+        },
+        defaults={
+            MaterialMapRole.NORMAL: (128, 128, 128, 255),
+            MaterialMapRole.MER: (0, 0, 0, 255),
+        },
+    )
+
+    assert bundle.color is color_atlas
+    assert set(bundle.materials) == {MaterialMapRole.NORMAL}
+
+
+def test_material_atlas_bundle_keeps_present_roles_aligned_with_color() -> None:
+    color_atlas = build_texture_atlas(
+        {
+            "minecraft:block/dirt": Image.new("RGBA", (4, 4), (10, 20, 30, 255)),
+            "minecraft:block/stone": Image.new("RGBA", (4, 4), (40, 50, 60, 255)),
+        },
+        tile_size=4,
+    )
+
+    bundle = build_material_atlas_bundle(
+        color_atlas,
+        material_tiles={
+            MaterialMapRole.NORMAL: {
+                "minecraft:block/stone": Image.new("RGBA", (4, 4), (128, 128, 255, 255))
+            },
+            MaterialMapRole.MER: {
+                "minecraft:block/stone": Image.new("RGBA", (4, 4), (10, 20, 30, 255))
+            },
+        },
+        defaults={
+            MaterialMapRole.NORMAL: (128, 128, 128, 255),
+            MaterialMapRole.MER: (0, 0, 0, 255),
+        },
+    )
+
+    for atlas in bundle.materials.values():
+        assert atlas.width == color_atlas.width
+        assert atlas.height == color_atlas.height
+        assert atlas.uvs == color_atlas.uvs
+        assert atlas.tile_size == color_atlas.tile_size
+        assert atlas.edge_inset_pixels == color_atlas.edge_inset_pixels
 
 
 def test_grass_terrain_uvs_preserve_half_pixel_sampling_gutter() -> None:

@@ -37,12 +37,12 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G5: Material Atlas Bundle Assembly
+### Phase G6: Resource-Pack Material Bundle Assembly
 
-- [ ] Add a render-facing CPU material atlas bundle that groups optional
-  role-specific atlases next to the existing color atlas.
-- [ ] Build deterministic fixture coverage proving missing roles are omitted and
-  present roles keep color atlas dimensions and UVs.
+- [ ] Add importer-level helper that assembles a CPU material atlas bundle from
+  a loaded color atlas and Java-style sidecar tile maps.
+- [ ] Build deterministic fixture coverage proving fixture packs produce bundle
+  roles only when matching sidecars exist.
 - [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
   required unless a later quality tier enables them.
 - [ ] Run real-game smoke to confirm unchanged-color rendering path.

@@ -24,6 +24,11 @@
   and material pixels can feed parallel material atlas builders while color
   atlas fallback behavior stays unchanged. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_012931.png`.
+- **Material atlas bundles** - render texture atlas code now groups the existing
+  color atlas with optional CPU-side material atlases, omitting absent roles and
+  preserving aligned dimensions and UVs for present roles without binding extra
+  shader textures by default. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_013212.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

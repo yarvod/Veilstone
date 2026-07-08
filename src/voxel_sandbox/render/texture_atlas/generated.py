@@ -30,6 +30,12 @@ class GeneratedMaterialAtlas:
     edge_inset_pixels: float
 
 
+@dataclass(frozen=True, slots=True)
+class GeneratedMaterialAtlasBundle:
+    color: GeneratedAtlas
+    materials: dict[MaterialMapRole, GeneratedMaterialAtlas]
+
+
 # Default procedural tiles keyed by Minecraft-style resource locations.
 # Colors are approximate; real textures come from user-supplied resource packs.
 _DEFAULT_COLORS: dict[str, tuple[int, int, int, int]] = {
@@ -221,6 +227,27 @@ def build_parallel_material_atlas(
         tile_size=tile_size,
         edge_inset_pixels=color_atlas.edge_inset_pixels,
     )
+
+
+def build_material_atlas_bundle(
+    color_atlas: GeneratedAtlas,
+    *,
+    material_tiles: dict[MaterialMapRole, dict[str, Image.Image]],
+    defaults: dict[MaterialMapRole, tuple[int, int, int, int]],
+) -> GeneratedMaterialAtlasBundle:
+    materials: dict[MaterialMapRole, GeneratedMaterialAtlas] = {}
+    for role, role_tiles in sorted(material_tiles.items(), key=lambda item: item[0].value):
+        if not role_tiles:
+            continue
+        if role not in defaults:
+            raise ValueError(f"Missing default material color for role {role.value!r}")
+        materials[role] = build_parallel_material_atlas(
+            color_atlas,
+            role=role,
+            tiles=role_tiles,
+            default_color=defaults[role],
+        )
+    return GeneratedMaterialAtlasBundle(color=color_atlas, materials=materials)
 
 
 def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:
