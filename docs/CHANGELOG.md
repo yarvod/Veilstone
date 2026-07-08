@@ -8,6 +8,9 @@
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
   smoothing work.
+- **Atlas sampling metadata** - generated and cached texture atlases now expose
+  tile size plus half-pixel edge inset metadata, with grass terrain UV tests
+  locking sampling gutters before terrain smoothing work.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with

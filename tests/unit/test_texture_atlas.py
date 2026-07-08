@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from PIL import Image
 
 from voxel_sandbox.render.texture_atlas import (
@@ -102,6 +103,31 @@ def test_build_texture_atlas_half_pixel_inset() -> None:
         assert v0 > inset_v * 0.5
         assert u1 < 1.0 - inset_u * 0.5
         assert v1 < 1.0 - inset_v * 0.5
+
+
+def test_build_texture_atlas_records_sampling_metadata() -> None:
+    atlas = build_texture_atlas(create_default_block_tiles(tile_size=16), tile_size=16)
+
+    assert atlas.tile_size == 16
+    assert atlas.edge_inset_pixels == 0.5
+
+
+def test_grass_terrain_uvs_preserve_half_pixel_sampling_gutter() -> None:
+    tile_size = 16
+    atlas = build_texture_atlas(
+        create_default_block_tiles(tile_size=tile_size), tile_size=tile_size
+    )
+    expected_u_span = (tile_size - atlas.edge_inset_pixels * 2.0) / atlas.width
+    expected_v_span = (tile_size - atlas.edge_inset_pixels * 2.0) / atlas.height
+
+    for texture in (
+        "minecraft:block/grass_block_top",
+        "minecraft:block/grass_block_side",
+        "minecraft:block/dirt",
+    ):
+        u0, v0, u1, v1 = atlas.uvs[texture]
+        assert u1 - u0 == pytest.approx(expected_u_span)
+        assert v1 - v0 == pytest.approx(expected_v_span)
 
 
 def test_build_texture_atlas_dimensions_are_multiples_of_tile_size() -> None:

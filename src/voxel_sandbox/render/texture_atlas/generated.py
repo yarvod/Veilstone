@@ -12,6 +12,8 @@ class GeneratedAtlas:
     height: int
     pixels: bytes
     uvs: dict[str, tuple[float, float, float, float]]
+    tile_size: int = 0
+    edge_inset_pixels: float = 0.0
 
 
 # Default procedural tiles keyed by Minecraft-style resource locations.
@@ -154,7 +156,14 @@ def build_texture_atlas(tiles: dict[str, Image.Image], *, tile_size: int) -> Gen
         uvs[name] = (u0 + inset_u, v0 + inset_v, u1 - inset_u, v1 - inset_v)
 
     pixels = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
-    return GeneratedAtlas(image.width, image.height, pixels, uvs)
+    return GeneratedAtlas(
+        image.width,
+        image.height,
+        pixels,
+        uvs,
+        tile_size=tile_size,
+        edge_inset_pixels=0.5,
+    )
 
 
 def create_block_atlas(tile_size: int = 32) -> GeneratedAtlas:

@@ -49,7 +49,7 @@ Promoted backlog: `R-B004`, `R-B005`.
   separate: tinted top, untinted side base, dirt bottom.
 - [x] Add focused tests proving grass block inventory/held texture defaults to
   top without collapsing terrain side/bottom face paths.
-- [ ] Add focused tests/fixtures proving atlas gutter/mipmap metadata is safe
+- [x] Add focused tests/fixtures proving atlas gutter/mipmap metadata is safe
   for terrain sampling.
 - [ ] Implement Minecraft-like grass field smoothing distance-safe sampling
   through render/material snapshots renderer helpers, not window/controller

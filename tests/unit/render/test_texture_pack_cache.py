@@ -17,6 +17,8 @@ def test_texture_pack_cache_roundtrip(tmp_path: Path) -> None:
         1,
         b"\x10\x20\x30\xff",
         {"minecraft:block/stone": (0.1, 0.2, 0.3, 0.4)},
+        tile_size=16,
+        edge_inset_pixels=0.5,
     )
 
     save_cached_atlas(cache_root, pack, atlas)

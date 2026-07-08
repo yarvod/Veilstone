@@ -10,7 +10,7 @@ from PIL import Image
 
 from voxel_sandbox.render.texture_atlas.generated import GeneratedAtlas
 
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 
 
 def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | None:
@@ -35,7 +35,14 @@ def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | Non
 
     uvs = {str(key): _uv_rect(rect) for key, rect in metadata["uvs"].items()}
     pixels = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
-    return GeneratedAtlas(width, height, pixels, uvs)
+    return GeneratedAtlas(
+        width,
+        height,
+        pixels,
+        uvs,
+        tile_size=int(metadata.get("tile_size", 0)),
+        edge_inset_pixels=float(metadata.get("edge_inset_pixels", 0.0)),
+    )
 
 
 def _uv_rect(value: object) -> tuple[float, float, float, float]:
@@ -62,6 +69,8 @@ def save_cached_atlas(cache_root: Path, pack_path: Path, atlas: GeneratedAtlas) 
         "cache_version": CACHE_VERSION,
         "width": atlas.width,
         "height": atlas.height,
+        "tile_size": atlas.tile_size,
+        "edge_inset_pixels": atlas.edge_inset_pixels,
         "uvs": atlas.uvs,
     }
     (cache_dir / "atlas.json").write_text(
