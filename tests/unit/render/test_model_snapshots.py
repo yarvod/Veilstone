@@ -7,6 +7,7 @@ from voxel_sandbox.render.model_snapshots import (
     build_item_model_snapshot,
     item_block_atlas_rect,
     item_block_texture_name,
+    item_block_texture_slots,
 )
 
 
@@ -112,9 +113,14 @@ def test_grass_block_item_texture_defaults_to_top_without_collapsing_terrain_fac
     blocks = create_core_block_registry()
     items = create_core_item_registry()
     item = items.by_key("grass_block")
+    slots = item_block_texture_slots(item.id, items, blocks)
 
     assert item_block_texture_name(item.id, items, blocks) == "minecraft:block/grass_block_top"
     assert item_block_texture_name(item.id, items, blocks, face="side") == (
         "minecraft:block/grass_block_side"
     )
     assert item_block_texture_name(item.id, items, blocks, face="bottom") == "minecraft:block/dirt"
+    assert slots is not None
+    assert slots.default == "minecraft:block/grass_block_top"
+    assert slots.texture_for_face("side") == "minecraft:block/grass_block_side"
+    assert slots.texture_for_face("bottom") == "minecraft:block/dirt"

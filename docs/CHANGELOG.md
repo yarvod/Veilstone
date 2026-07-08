@@ -28,6 +28,10 @@
   `BlockModelSnapshot` instead of reinterpreting block visual texture fields
   directly. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_004550.png`.
+- **Held item texture slot snapshots** - block item default/top/side/bottom
+  texture policy now lives in shared texture-slot snapshots consumed by
+  first-person viewmodel and existing inventory/entity/player held-item helper
+  paths. Real OpenGL smoke: first-person viewmodel held-block draw.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with

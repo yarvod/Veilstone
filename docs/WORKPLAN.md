@@ -30,44 +30,24 @@ render-only vegetation motion, не возвращая логику в `GameWind
 
 ## Current Phase
 
-### Phase E: Minecraft-Like Terrain Visual Polish
+### Phase G: Iris/PBR-Like Material Pipeline Foundation
 
-Promoted backlog: `R-B006`.
+Promoted backlog: `R-B007`.
 
-Цель: продолжить snapshot consolidation так, чтобы block/item visuals для chunk
-meshing, held items, inventory icons, drops и remote held items не расходились
-между разными render paths.
+Цель: начать shader/material pipeline foundation для future Iris/PBR-like
+resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase F1: Block/Item Model Snapshot Consolidation
+### Phase G1: Material Metadata Audit
 
-- Findings: `item_block_texture_name()` already feeds inventory icons,
-  `item_block_atlas_rect()` feeds dropped/entity/player held items, and
-  first-person viewmodel uses `BlockModelSnapshot` face texture slots. Chunk
-  meshing now receives atlas rect, render-shape, and wind-motion lookups built
-  from `BlockModelSnapshot`, while opacity/fluid flags remain domain visibility
-  data.
-- Remaining shared fields to evaluate next: tint kind, icon/default face policy,
-  and whether first-person viewmodel can consume the same atlas rect helper as
-  entity/player held items.
-- [x] Audit current block/item visual consumers: chunk meshing, first-person
-  viewmodel, inventory icons, dropped items, entity held items.
-- [x] Define the smallest shared render-facing snapshot fields missing from
-  existing `BlockModelSnapshot` / `ItemModelSnapshot`.
-- [x] Move one duplicated consumer path onto shared snapshot data with focused
-  regression coverage.
-- [x] Real-game smoke for touched visual path: chunk meshing screenshot
-  `saves/screenshots/veilstone_20260709_004550.png`.
-
-### Phase F2: Viewmodel/Held Item Snapshot Alignment
-
-- [ ] Audit first-person viewmodel, player held-item, and entity held-item atlas
-  rect handling for remaining duplicated face/default texture policy.
-- [ ] Move one held/viewmodel path onto shared item/block snapshot helpers
-  without changing domain item data.
-- [ ] Focused tests for grass-block top/side/bottom texture consistency across
-  first-person, third-person/entity held item, and inventory icon paths.
-- [ ] Real-game smoke for touched held-item path with screenshot or OpenGL draw
-  check.
+- [ ] Audit current texture-pack importer/cache/atlas paths for places where
+  normal, specular, emissive, or material maps could be discovered without
+  changing color-atlas behavior.
+- [ ] Define the smallest render-facing material metadata shape and cache key
+  inputs needed before adding shader work.
+- [ ] Add focused tests proving unsupported PBR-sidecar assets are ignored or
+  reported deterministically rather than breaking existing packs.
+- [ ] Real-game smoke remains unchanged-color render path unless a later slice
+  touches shader output.
 
 ## Check Gate
 

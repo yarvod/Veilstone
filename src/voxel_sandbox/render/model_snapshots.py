@@ -17,6 +17,21 @@ class BlockFaceMaterial:
 
 
 @dataclass(frozen=True, slots=True)
+class BlockTextureSlots:
+    default: str
+    top: str
+    side: str
+    bottom: str
+
+    def texture_for_face(self, face: str = "top") -> str:
+        if face == "side":
+            return self.side
+        if face == "bottom":
+            return self.bottom
+        return self.top
+
+
+@dataclass(frozen=True, slots=True)
 class BlockModelSnapshot:
     block_id: int
     key: str
@@ -50,6 +65,14 @@ class BlockModelSnapshot:
             BlockFaceMaterial("top", self.texture_top, self.tint_top),
             BlockFaceMaterial("side", self.texture_side, self.tint_side),
             BlockFaceMaterial("bottom", self.texture_bottom, self.tint_bottom),
+        )
+
+    def texture_slots(self) -> BlockTextureSlots:
+        return BlockTextureSlots(
+            default=self.texture_top,
+            top=self.texture_top,
+            side=self.texture_side,
+            bottom=self.texture_bottom,
         )
 
 
@@ -133,10 +156,21 @@ def item_block_texture_name(
     *,
     face: str = "top",
 ) -> str | None:
+    slots = item_block_texture_slots(item_id, item_registry, block_registry)
+    if slots is None:
+        return None
+    return slots.texture_for_face(face)
+
+
+def item_block_texture_slots(
+    item_id: int,
+    item_registry: ItemRegistry,
+    block_registry: BlockRegistry,
+) -> BlockTextureSlots | None:
     block = build_item_block_model_snapshot(item_id, item_registry, block_registry)
     if block is None:
         return None
-    return block.texture_for_face(face)
+    return block.texture_slots()
 
 
 def item_block_atlas_rect(

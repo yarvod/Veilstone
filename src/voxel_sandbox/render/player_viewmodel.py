@@ -5,10 +5,7 @@ from dataclasses import dataclass
 from voxel_sandbox.application.player_viewmodel import PlayerViewmodelSnapshot
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemRegistry
-from voxel_sandbox.render.model_snapshots import (
-    BlockModelSnapshot,
-    build_item_block_model_snapshot,
-)
+from voxel_sandbox.render.model_snapshots import BlockTextureSlots, item_block_texture_slots
 
 type Vec3 = tuple[float, float, float]
 
@@ -65,7 +62,7 @@ def _held_item_parts(
 ) -> tuple[ViewmodelPart, ...]:
     assert snapshot.held_item is not None
     side = 1.0 if snapshot.hand == "right" else -1.0
-    block_model = _held_item_block_model(snapshot, item_registry, block_registry)
+    texture_slots = _held_item_texture_slots(snapshot, item_registry, block_registry)
     block = ViewmodelPart(
         name="held_item_block",
         position=_add(hand_position, (-side * 0.04, 0.12, -0.08)),
@@ -75,22 +72,22 @@ def _held_item_parts(
             snapshot.swing_rotation_degrees,
         ),
         color=(0.44, 0.70, 0.32),
-        texture_name=block_model.texture_top if block_model is not None else None,
-        texture_top=block_model.texture_top if block_model is not None else None,
-        texture_side=block_model.texture_side if block_model is not None else None,
-        texture_bottom=block_model.texture_bottom if block_model is not None else None,
+        texture_name=texture_slots.default if texture_slots is not None else None,
+        texture_top=texture_slots.top if texture_slots is not None else None,
+        texture_side=texture_slots.side if texture_slots is not None else None,
+        texture_bottom=texture_slots.bottom if texture_slots is not None else None,
     )
     return (block,)
 
 
-def _held_item_block_model(
+def _held_item_texture_slots(
     snapshot: PlayerViewmodelSnapshot,
     item_registry: ItemRegistry | None,
     block_registry: BlockRegistry | None,
-) -> BlockModelSnapshot | None:
+) -> BlockTextureSlots | None:
     if item_registry is None or block_registry is None or snapshot.held_item is None:
         return None
-    return build_item_block_model_snapshot(
+    return item_block_texture_slots(
         snapshot.held_item.item_id,
         item_registry,
         block_registry,
