@@ -64,6 +64,9 @@
   binding plan helper that returns no bindings for `color-only` and `low`, while
   `material-preview` deterministically names sampler uniforms and texture units
   only for available material atlas roles.
+- **Material shader setup fixture** - render code now assembles shader variant and
+  material atlas binding setup together, proving default/low profiles skip
+  material shader work while `material-preview` consumes the opt-in binding plan.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

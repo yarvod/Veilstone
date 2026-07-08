@@ -287,9 +287,9 @@ class RenderModelSnapshot:
   textures; application/settings select tiers.
 - **Candidate work:** continue from material metadata, parallel material atlases,
   `MaterialVisualSnapshot`, material visual lookup consumers, shader variant
-  selection, and material atlas binding plans into opt-in shader wiring; add
-  emissive conventions/LabPBR-style metadata, and keep low-tier chunks
-  color-only.
+  selection, material atlas binding plans, and material shader setup fixtures
+  into opt-in shader/runtime wiring; add emissive conventions/LabPBR-style
+  metadata, and keep low-tier chunks color-only.
 - **Acceptance idea:** a deterministic PBR fixture pack produces color, normal,
   and material atlases with matching UV rects; low-tier renders the same chunks
   without binding those atlases; high-tier screenshot/manual smoke scene shows
