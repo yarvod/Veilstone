@@ -37,12 +37,12 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G7: Material Quality Profile Gate
+### Phase G8: Material Quality Settings Plumbing
 
-- [ ] Add a render-facing quality/profile decision helper that keeps material
-  atlas bundles disabled by default and names the future opt-in path.
-- [ ] Build deterministic fixture coverage proving default/low-tier profile does
-  not request material atlas bundle assembly.
+- [ ] Add a persisted graphics setting for material quality profile with
+  `color-only` default.
+- [ ] Route the setting through the render-facing material pipeline decision
+  helper without assembling material bundles by default.
 - [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
   required unless a later quality tier enables them.
 - [ ] Run real-game smoke to confirm unchanged-color rendering path.

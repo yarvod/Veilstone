@@ -34,6 +34,11 @@
   color atlas and matching Java-style sidecar tiles, keeping the normal runtime
   color atlas path unchanged. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_013449.png`.
+- **Material quality profile gate** - render layer now has a pure material
+  pipeline decision helper that keeps default and low profiles color-only while
+  naming an explicit `material-preview` opt-in path for future material atlas
+  bundles. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_013727.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
