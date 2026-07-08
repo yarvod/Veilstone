@@ -17,6 +17,15 @@ class BlockFaceMaterial:
 
 
 @dataclass(frozen=True, slots=True)
+class MaterialVisualSnapshot:
+    face: str
+    texture: str
+    color_rect: TextureRect
+    tint: str | None
+    material_rects: dict[str, TextureRect]
+
+
+@dataclass(frozen=True, slots=True)
 class BlockTextureSlots:
     default: str
     top: str
@@ -66,6 +75,32 @@ class BlockModelSnapshot:
             BlockFaceMaterial("side", self.texture_side, self.tint_side),
             BlockFaceMaterial("bottom", self.texture_bottom, self.tint_bottom),
         )
+
+    def material_visuals(
+        self,
+        color_atlas_uvs: dict[str, TextureRect],
+        material_atlas_uvs: dict[str, dict[str, TextureRect]] | None = None,
+    ) -> tuple[MaterialVisualSnapshot, ...]:
+        material_atlas_uvs = material_atlas_uvs or {}
+        visuals: list[MaterialVisualSnapshot] = []
+        for face_material in self.face_materials():
+            color_rect = color_atlas_uvs.get(face_material.texture)
+            if color_rect is None:
+                continue
+            visuals.append(
+                MaterialVisualSnapshot(
+                    face=face_material.face,
+                    texture=face_material.texture,
+                    color_rect=color_rect,
+                    tint=face_material.tint,
+                    material_rects={
+                        role: role_uvs[face_material.texture]
+                        for role, role_uvs in sorted(material_atlas_uvs.items())
+                        if face_material.texture in role_uvs
+                    },
+                )
+            )
+        return tuple(visuals)
 
     def texture_slots(self) -> BlockTextureSlots:
         return BlockTextureSlots(

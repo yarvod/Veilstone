@@ -66,6 +66,38 @@ def test_grass_terrain_material_faces_keep_distinct_texture_roles() -> None:
     )
 
 
+def test_block_model_snapshot_builds_material_visual_snapshots() -> None:
+    blocks = create_core_block_registry()
+    grass = build_block_model_snapshot(blocks.by_key("grass_block").id, blocks)
+    color_uvs = {
+        "minecraft:block/grass_block_top": (0.0, 0.0, 0.25, 0.25),
+        "minecraft:block/grass_block_side": (0.25, 0.0, 0.25, 0.25),
+        "minecraft:block/dirt": (0.5, 0.0, 0.25, 0.25),
+    }
+    material_uvs = {
+        "normal": {
+            "minecraft:block/grass_block_top": (0.0, 0.25, 0.25, 0.25),
+            "minecraft:block/grass_block_side": (0.25, 0.25, 0.25, 0.25),
+        },
+        "specular": {
+            "minecraft:block/grass_block_top": (0.0, 0.5, 0.25, 0.25),
+        },
+    }
+
+    visuals = grass.material_visuals(color_uvs, material_uvs)
+
+    assert tuple(visual.face for visual in visuals) == ("top", "side", "bottom")
+    assert visuals[0].texture == "minecraft:block/grass_block_top"
+    assert visuals[0].color_rect == (0.0, 0.0, 0.25, 0.25)
+    assert visuals[0].tint == "grass"
+    assert visuals[0].material_rects == {
+        "normal": (0.0, 0.25, 0.25, 0.25),
+        "specular": (0.0, 0.5, 0.25, 0.25),
+    }
+    assert visuals[1].material_rects == {"normal": (0.25, 0.25, 0.25, 0.25)}
+    assert visuals[2].material_rects == {}
+
+
 def test_item_model_snapshot_resolves_block_item_model() -> None:
     blocks = create_core_block_registry()
     items = create_core_item_registry()

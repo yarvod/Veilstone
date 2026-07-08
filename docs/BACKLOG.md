@@ -285,11 +285,10 @@ class RenderModelSnapshot:
   snapshots and atlas build outputs. Domain registries should name block/item
   identity and gameplay data only. Renderer owns quality tiers and extra GPU
   textures; application/settings select tiers.
-- **Candidate work:** extend texture-pack import to discover common PBR maps
-  (`*_n`, `*_s`, emissive conventions, later LabPBR-style metadata); build
-  parallel material atlases; add `MaterialVisualSnapshot` carrying texture rects
-  plus material flags; split chunk shader into quality variants instead of
-  piling branches into one shader.
+- **Candidate work:** continue from material metadata, parallel material atlases,
+  and `MaterialVisualSnapshot` into quality-tier consumers: split chunk shader
+  variants, bind material atlases only for opt-in profiles, add emissive
+  conventions/LabPBR-style metadata, and keep low-tier chunks color-only.
 - **Acceptance idea:** a deterministic PBR fixture pack produces color, normal,
   and material atlases with matching UV rects; low-tier renders the same chunks
   without binding those atlases; high-tier screenshot/manual smoke scene shows

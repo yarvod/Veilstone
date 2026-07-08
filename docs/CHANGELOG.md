@@ -48,6 +48,10 @@
   the active material profile and whether material atlas bundles are enabled,
   keeping the default runtime visible as `color-only bundle off`. Real gameplay
   smoke screenshot: `saves/screenshots/veilstone_20260709_014603.png`.
+- **Material visual snapshots** - block model snapshots now expose render-facing
+  material visuals with color atlas rects, tint, and optional normal/specular
+  rects, preparing shader quality variants without binding extra textures in
+  the default color-only runtime.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

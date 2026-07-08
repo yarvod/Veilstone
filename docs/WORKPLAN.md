@@ -2,10 +2,10 @@
 
 ## Overview
 
-Активная цель: после закрытия Phase D architecture cleanup и grass/terrain
-material coherence продолжать Minecraft-like visual/resource-pack polish через
-render-only vegetation motion, не возвращая логику в `GameWindow` или
-`DemoWorldRenderer`.
+Активная цель: после закрытия Phase G material metadata/atlas/snapshot foundation
+продолжать Minecraft-like visual/resource-pack polish через opt-in
+Iris/PBR-like material consumers, не включая дорогие эффекты по умолчанию и не
+возвращая логику в `GameWindow` или `DemoWorldRenderer`.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -37,14 +37,16 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G10: Material Pipeline Foundation Review
+### Phase G12: Opt-In Material Shader Consumer Prep
 
-- [ ] Review Phase G material metadata, manifest, bundle, settings, and debug
-  visibility slices against `R-B007` acceptance before starting shader binding.
-- [ ] Move any remaining non-active follow-up ideas into `docs/BACKLOG.md`.
-- [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
-  required unless a later quality tier enables them.
-- [ ] Run focused docs/tests check and decide next active slice.
+- [ ] Build the first render-facing consumer for `MaterialVisualSnapshot` data
+  without binding material atlases in `color-only` or `low` profiles.
+- [ ] Keep chunk shader quality variants explicit; avoid adding permanent
+  branches/uniform requirements to the default shader path.
+- [ ] Add deterministic fixture coverage proving material rects stay aligned with
+  color atlas UVs when the opt-in material profile is selected.
+- [ ] Run focused render tests, focused Pyright, unit gate, and a real gameplay
+  smoke screenshot before committing the slice.
 
 ## Check Gate
 
