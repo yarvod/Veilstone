@@ -141,6 +141,7 @@ resource_packs/*
 !resource_packs/README.md
 !resource_packs/default/
 !resource_packs/default/**
+resource_packs/**/.DS_Store
 
 # Texture atlas cache — generated locally, never committed
 texture_cache/
