@@ -90,3 +90,15 @@ def test_item_block_atlas_rect_uses_resolved_texture_key() -> None:
         0.3,
         0.4,
     )
+
+
+def test_grass_block_item_texture_defaults_to_top_without_collapsing_terrain_faces() -> None:
+    blocks = create_core_block_registry()
+    items = create_core_item_registry()
+    item = items.by_key("grass_block")
+
+    assert item_block_texture_name(item.id, items, blocks) == "minecraft:block/grass_block_top"
+    assert item_block_texture_name(item.id, items, blocks, face="side") == (
+        "minecraft:block/grass_block_side"
+    )
+    assert item_block_texture_name(item.id, items, blocks, face="bottom") == "minecraft:block/dirt"

@@ -47,8 +47,10 @@ Promoted backlog: `R-B004`, `R-B005`.
   tint, mip/filter settings, terrain sampling paths.
 - [x] Add focused tests proving grass terrain face texture/tint roles stay
   separate: tinted top, untinted side base, dirt bottom.
-- [ ] Add focused tests/fixtures proving atlas gutter/mipmap metadata and
-  inventory/held-item texture paths stay separate.
+- [x] Add focused tests proving grass block inventory/held texture defaults to
+  top without collapsing terrain side/bottom face paths.
+- [ ] Add focused tests/fixtures proving atlas gutter/mipmap metadata is safe
+  for terrain sampling.
 - [ ] Implement Minecraft-like grass field smoothing distance-safe sampling
   through render/material snapshots renderer helpers, not window/controller
   state.
