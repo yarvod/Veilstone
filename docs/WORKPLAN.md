@@ -37,16 +37,16 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G12: Opt-In Material Shader Consumer Prep
+### Phase G13: Opt-In Material Shader Variant Scaffold
 
-- [ ] Build the first render-facing consumer for `MaterialVisualSnapshot` data
-  without binding material atlases in `color-only` or `low` profiles.
-- [ ] Keep chunk shader quality variants explicit; avoid adding permanent
-  branches/uniform requirements to the default shader path.
-- [ ] Add deterministic fixture coverage proving material rects stay aligned with
-  color atlas UVs when the opt-in material profile is selected.
-- [ ] Run focused render tests, focused Pyright, unit gate, and a real gameplay
-  smoke screenshot before committing the slice.
+- [ ] Introduce explicit chunk shader variant selection for material profiles
+  without changing `color-only` or `low` shader inputs.
+- [ ] Keep material atlas texture binding behind the `material-preview` profile;
+  default runtime must keep the same uniforms/textures as today.
+- [ ] Add tests proving low-tier variant selection stays color-only while
+  material-preview selects the future material shader path.
+- [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
+  gameplay smoke screenshot before committing the slice.
 
 ## Check Gate
 

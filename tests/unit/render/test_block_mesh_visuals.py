@@ -33,3 +33,42 @@ def test_block_mesh_visual_lookups_use_block_model_snapshots() -> None:
     assert lookups.wind_lookup[short_grass.id] == WIND_CROSS_PLANT
     assert lookups.wind_lookup[leaves.id] == WIND_FOLIAGE
     assert lookups.wind_lookup[lantern.id] == WIND_STATIC
+    assert lookups.material_rects == {}
+
+
+def test_block_mesh_visual_lookups_align_optional_material_rects() -> None:
+    blocks = create_core_block_registry()
+    texture_uvs = {
+        "minecraft:block/grass_block_top": (0.1, 0.2, 0.3, 0.4),
+        "minecraft:block/grass_block_side": (0.2, 0.3, 0.4, 0.5),
+        "minecraft:block/dirt": (0.3, 0.4, 0.5, 0.6),
+    }
+    material_uvs = {
+        "normal": {
+            "minecraft:block/grass_block_top": (0.4, 0.5, 0.6, 0.7),
+            "minecraft:block/grass_block_side": (0.5, 0.6, 0.7, 0.8),
+        },
+        "specular": {
+            "minecraft:block/grass_block_top": (0.6, 0.7, 0.8, 0.9),
+        },
+    }
+
+    lookups = build_block_mesh_visual_lookups(blocks, texture_uvs, material_uvs)
+
+    grass = blocks.by_key("grass_block")
+    np.testing.assert_allclose(
+        lookups.material_rects["normal"]["top"][grass.id],
+        (0.4, 0.5, 0.6, 0.7),
+    )
+    np.testing.assert_allclose(
+        lookups.material_rects["normal"]["side"][grass.id],
+        (0.5, 0.6, 0.7, 0.8),
+    )
+    np.testing.assert_allclose(
+        lookups.material_rects["specular"]["top"][grass.id],
+        (0.6, 0.7, 0.8, 0.9),
+    )
+    np.testing.assert_allclose(
+        lookups.material_rects["specular"]["side"][grass.id],
+        (0.0, 0.0, 0.0, 0.0),
+    )

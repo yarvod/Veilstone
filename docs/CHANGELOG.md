@@ -52,6 +52,10 @@
   material visuals with color atlas rects, tint, and optional normal/specular
   rects, preparing shader quality variants without binding extra textures in
   the default color-only runtime.
+- **Material visual lookup consumer** - chunk mesh visual lookups now consume
+  `MaterialVisualSnapshot` data and can build optional normal/specular rect
+  arrays for opt-in material profiles while existing color-only mesh paths keep
+  their unchanged call sites.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
