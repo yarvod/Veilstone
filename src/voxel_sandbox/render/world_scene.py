@@ -140,6 +140,7 @@ class DemoWorldRenderer:
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
         self.time_of_day = 0.18
         self.animation_time = 0.0
+        self.vegetation_wind_enabled = True
         self._fluid_accumulator = 0.0
         self.remote_mode = False
         self._stream_relight_queue: dict[ChunkCoord, None] = {}
@@ -478,6 +479,12 @@ class DemoWorldRenderer:
         cast(
             "moderngl.Uniform", self.shader.program["tile_uv_margin"]
         ).value = self.atlas_tile_margin
+        cast(
+            "moderngl.Uniform", self.shader.program["vegetation_wind_time"]
+        ).value = self.animation_time
+        cast("moderngl.Uniform", self.shader.program["vegetation_wind_enabled"]).value = int(
+            self.vegetation_wind_enabled
+        )
         cast("moderngl.Uniform", self.shader.program["shadow_map"]).value = 1
         camera_uniform.write(matrix.T.astype("f4").tobytes())
         self.texture.use(0)
@@ -825,6 +832,10 @@ class DemoWorldRenderer:
         self.texture.use(0)
         cast("moderngl.Uniform", program["texture_atlas"]).value = 0
         cast("moderngl.Uniform", program["tile_uv_margin"]).value = self.atlas_tile_margin
+        cast("moderngl.Uniform", program["vegetation_wind_time"]).value = self.animation_time
+        cast("moderngl.Uniform", program["vegetation_wind_enabled"]).value = int(
+            self.vegetation_wind_enabled
+        )
         cast("moderngl.Uniform", program["light_matrix"]).write(
             light_matrix.T.astype("f4").tobytes()
         )

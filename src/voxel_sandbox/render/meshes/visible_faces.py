@@ -13,6 +13,7 @@ from voxel_sandbox.render.meshes.neighborhood import (
     MeshingNeighborhood,
     as_neighborhood,
 )
+from voxel_sandbox.render.vegetation_wind import wind_motion_value_for_block
 
 Face = tuple[
     tuple[int, int, int],
@@ -30,6 +31,7 @@ FACES: Final[tuple[Face, ...]] = (
     ((0, 0, -1), ((0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 0, 0)), (0.0, 0.0, -1.0), "side"),
 )
 UVS: Final = ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0))
+VERTEX_COMPONENTS: Final = 16
 
 CrossQuad = tuple[
     tuple[tuple[float, float, float], ...],
@@ -72,6 +74,7 @@ def build_visible_face_mesh(
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     cross_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
+    wind_lookup = np.zeros(max_block_id + 1, dtype=np.float32)
     texture_lookups = {
         face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
         for face in ("top", "side", "bottom")
@@ -80,6 +83,7 @@ def build_visible_face_mesh(
         opaque_lookup[definition.id] = definition.is_opaque
         fluid_lookup[definition.id] = definition.is_fluid
         cross_lookup[definition.id] = definition.render_shape == "cross"
+        wind_lookup[definition.id] = wind_motion_value_for_block(definition)
         for face in texture_lookups:
             texture = getattr(definition, f"texture_{face}")
             if texture in texture_uvs:
@@ -119,7 +123,7 @@ def build_visible_face_mesh(
             smooth_lighting=smooth_lighting,
             ambient_occlusion=ambient_occlusion,
         )
-        vertices = np.empty((face_count, 4, 15), dtype=np.float32)
+        vertices = np.empty((face_count, 4, VERTEX_COMPONENTS), dtype=np.float32)
         vertices[:, :, :3] = positions
         vertices[:, :, 3:5] = np.asarray(UVS, dtype=np.float32)
         vertices[:, :, 5:8] = np.asarray(normal, dtype=np.float32)
@@ -127,7 +131,8 @@ def build_visible_face_mesh(
         vertices[:, :, 9] = block_lights
         vertices[:, :, 10] = ao
         vertices[:, :, 11:15] = rectangles[:, None, :]
-        vertex_batches.append(vertices.reshape((-1, 15)))
+        vertices[:, :, 15] = wind_lookup[block_ids][:, None]
+        vertex_batches.append(vertices.reshape((-1, VERTEX_COMPONENTS)))
 
         index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
         vertex_offset += face_count * 4
@@ -136,6 +141,7 @@ def build_visible_face_mesh(
         blocks,
         cross_lookup,
         texture_lookups["side"],
+        wind_lookup,
         padded_sky_light,
         padded_block_light,
         vertex_batches,
@@ -145,7 +151,7 @@ def build_visible_face_mesh(
 
     if not vertex_batches:
         return MeshData(
-            np.empty((0, 15), dtype=np.float32),
+            np.empty((0, VERTEX_COMPONENTS), dtype=np.float32),
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
@@ -155,6 +161,7 @@ def append_cross_quads(
     blocks: NDArray[np.uint16],
     cross_lookup: NDArray[np.bool_],
     side_texture_lookup: NDArray[np.float32],
+    wind_lookup: NDArray[np.float32],
     padded_sky_light: NDArray[np.float32],
     padded_block_light: NDArray[np.float32],
     vertex_batches: list[NDArray[np.float32]],
@@ -167,18 +174,20 @@ def append_cross_quads(
         return vertex_offset
 
     quad_count = block_count * len(CROSS_QUADS)
-    vertices = np.empty((quad_count, 4, 15), dtype=np.float32)
+    vertices = np.empty((quad_count, 4, VERTEX_COMPONENTS), dtype=np.float32)
     sky_lights = np.empty((quad_count, 4), dtype=np.float32)
     block_lights = np.empty((quad_count, 4), dtype=np.float32)
     ao = np.ones((quad_count, 4), dtype=np.float32)
     uv = np.asarray(UVS, dtype=np.float32)
     block_ids = blocks[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
     rectangles = side_texture_lookup[block_ids]
+    wind_motions = wind_lookup[block_ids]
 
     quad_index = 0
     for block_index, coordinate in enumerate(coordinates):
         base = coordinate.astype(np.float32)
         sample = coordinate + HALO_RADIUS
+        wind_motion = wind_motions[block_index]
         above = sample + np.asarray((0, 1, 0), dtype=np.int64)
         sky = max(
             padded_sky_light[sample[0], sample[1], sample[2]],
@@ -196,11 +205,12 @@ def append_cross_quads(
             vertices[quad_index, :, 9] = block_light
             vertices[quad_index, :, 10] = 1.0
             vertices[quad_index, :, 11:15] = rectangles[block_index]
+            vertices[quad_index, :, 15] = wind_motion
             sky_lights[quad_index, :] = sky
             block_lights[quad_index, :] = block_light
             quad_index += 1
 
-    vertex_batches.append(vertices.reshape((-1, 15)))
+    vertex_batches.append(vertices.reshape((-1, VERTEX_COMPONENTS)))
     index_batches.append(build_quad_indices(sky_lights, block_lights, ao, vertex_offset))
     return vertex_offset + quad_count * 4
 

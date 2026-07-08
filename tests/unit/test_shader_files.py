@@ -51,6 +51,20 @@ def test_chunk_and_shadow_shaders_clamp_atlas_tile_uvs() -> None:
         assert "vec2(1.0 - tile_uv_margin)" in source
 
 
+def test_chunk_and_shadow_vertex_shaders_apply_vegetation_wind() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    chunk_vertex = (shader_root / "chunk_opaque.vert").read_text(encoding="utf-8")
+    shadow_vertex = (shader_root / "shadow_depth.vert").read_text(encoding="utf-8")
+
+    for source in (chunk_vertex, shadow_vertex):
+        assert "uniform float vegetation_wind_time;" in source
+        assert "uniform int vegetation_wind_enabled;" in source
+        assert "in float in_wind_motion;" in source
+        assert "apply_vegetation_wind" in source
+        assert "vegetation_wind_enabled == 0" in source
+        assert "in_wind_motion > 1.5" in source
+
+
 def test_chunk_shader_preserves_thin_cutout_shadow_samples() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")

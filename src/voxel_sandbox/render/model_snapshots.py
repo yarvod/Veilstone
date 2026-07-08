@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from voxel_sandbox.domain.blocks import BlockDef, BlockRegistry, Material
+from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemRegistry
+from voxel_sandbox.render.vegetation_wind import wind_motion_kind
 
 type TextureRect = tuple[float, float, float, float]
 
@@ -82,7 +83,7 @@ def build_block_model_snapshot(
         tint_bottom=_texture_tint_kind(block.texture_bottom),
         render_layer=block.render_layer,
         render_shape=block.render_shape,
-        wind_motion=_wind_motion_kind(block),
+        wind_motion=wind_motion_kind(block),
     )
 
 
@@ -95,16 +96,6 @@ def _texture_tint_kind(texture: str) -> str | None:
     if texture in {"minecraft:block/oak_leaves"}:
         return "foliage"
     return None
-
-
-def _wind_motion_kind(block: BlockDef) -> str:
-    if block.material is not Material.PLANT:
-        return "none"
-    if block.render_shape == "cross":
-        return "cross_plant"
-    if block.render_layer == "cutout":
-        return "foliage"
-    return "none"
 
 
 def build_item_model_snapshot(

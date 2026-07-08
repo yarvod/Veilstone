@@ -18,6 +18,11 @@
 - **Vegetation wind render metadata** - block model snapshots now classify
   visual-only wind motion for cross plants and cutout foliage while keeping
   solid grass blocks and non-plant cutouts static.
+- **Render-only vegetation wind** - chunk mesh data and visible/shadow vertex
+  shaders now apply subtle visual-only sway to cross plants and foliage through
+  render-owned wind attributes and uniforms. Real checks: foliage OpenGL draw
+  smoke and gameplay screenshot
+  `saves/screenshots/veilstone_20260709_003639.png`.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with

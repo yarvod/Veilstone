@@ -14,10 +14,12 @@ from voxel_sandbox.render.meshes.neighborhood import (
 from voxel_sandbox.render.meshes.visible_faces import (
     FACES,
     UVS,
+    VERTEX_COMPONENTS,
     append_cross_quads,
     build_quad_indices,
     sample_vertex_lighting,
 )
+from voxel_sandbox.render.vegetation_wind import wind_motion_value_for_block
 
 
 def build_greedy_mesh(
@@ -34,6 +36,7 @@ def build_greedy_mesh(
     opaque_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     fluid_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
     cross_lookup = np.zeros(max_block_id + 1, dtype=np.bool_)
+    wind_lookup = np.zeros(max_block_id + 1, dtype=np.float32)
     texture_lookups = {
         face: np.zeros((max_block_id + 1, 4), dtype=np.float32)
         for face in ("top", "side", "bottom")
@@ -42,6 +45,7 @@ def build_greedy_mesh(
         opaque_lookup[definition.id] = definition.is_opaque
         fluid_lookup[definition.id] = definition.is_fluid
         cross_lookup[definition.id] = definition.render_shape == "cross"
+        wind_lookup[definition.id] = wind_motion_value_for_block(definition)
         for face in texture_lookups:
             texture = getattr(definition, f"texture_{face}")
             if texture in texture_uvs:
@@ -110,7 +114,7 @@ def build_greedy_mesh(
                 scaled_corners = np.asarray(corners, dtype=np.float32)
                 scaled_corners[:, u_axis] *= width
                 scaled_corners[:, v_axis] *= height
-                vertices = np.empty((4, 15), dtype=np.float32)
+                vertices = np.empty((4, VERTEX_COMPONENTS), dtype=np.float32)
                 vertices[:, :3] = coordinate[None, :] + scaled_corners
                 tile_uvs = np.asarray(UVS, dtype=np.float32)
                 tile_uvs[:, 0] *= width
@@ -124,6 +128,7 @@ def build_greedy_mesh(
                 vertices[:, 9] = face_block[0]
                 vertices[:, 10] = face_ao[0]
                 vertices[:, 11:15] = rectangles[face_index]
+                vertices[:, 15] = wind_lookup[block_ids[face_index]]
                 vertex_batches.append(vertices)
                 index_batches.append(
                     build_quad_indices(face_sky, face_block, face_ao, vertex_offset)
@@ -134,6 +139,7 @@ def build_greedy_mesh(
         blocks,
         cross_lookup,
         texture_lookups["side"],
+        wind_lookup,
         padded_sky,
         padded_block,
         vertex_batches,
@@ -143,7 +149,7 @@ def build_greedy_mesh(
 
     if not vertex_batches:
         return MeshData(
-            np.empty((0, 15), dtype=np.float32),
+            np.empty((0, VERTEX_COMPONENTS), dtype=np.float32),
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))

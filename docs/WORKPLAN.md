@@ -32,21 +32,22 @@ render-only vegetation motion, не возвращая логику в `GameWind
 
 ### Phase E: Minecraft-Like Terrain Visual Polish
 
-Promoted backlog: `R-B005`.
+Promoted backlog: `R-B006`.
 
-Цель: продолжить terrain visual polish через render-only vegetation motion без
-накопления нового долга в `GameWindow`.
+Цель: продолжить snapshot consolidation так, чтобы block/item visuals для chunk
+meshing, held items, inventory icons, drops и remote held items не расходились
+между разными render paths.
 
-### Phase E3: Render-Only Vegetation Motion
+### Phase F1: Block/Item Model Snapshot Consolidation
 
-- [x] Define render-facing vegetation wind data grass/leaves/plants that
-  preserves deterministic gameplay/collision state.
-- [ ] Add subtle quality-gated grass/leaf sway in renderer/material code without
-  changing domain block definitions or resource-pack folder routing.
-- [ ] Add tests for animation parameter plumbing and disabled/low-quality
-  fallback behavior without OpenGL.
-- [ ] Real-game smoke: inspect grass/leaves near spawn, verify shadows remain
-  readable and FPS/debug overlay stays sane.
+- [ ] Audit current block/item visual consumers: chunk meshing, first-person
+  viewmodel, inventory icons, dropped items, entity held items.
+- [ ] Define the smallest shared render-facing snapshot fields missing from
+  existing `BlockModelSnapshot` / `ItemModelSnapshot`.
+- [ ] Move one duplicated consumer path onto shared snapshot data with focused
+  regression coverage.
+- [ ] Real-game smoke for touched visual path: inventory/held/drop/remote path
+  depending on selected slice, with screenshot or OpenGL draw check.
 
 ## Check Gate
 

@@ -10,7 +10,7 @@ from voxel_sandbox.render.meshes import (
     build_visible_face_mesh,
 )
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
-from voxel_sandbox.render.meshes.visible_faces import build_quad_indices
+from voxel_sandbox.render.meshes.visible_faces import VERTEX_COMPONENTS, build_quad_indices
 from voxel_sandbox.tools.benchmark_mesher import UVS
 
 
@@ -26,7 +26,7 @@ def test_single_block_has_six_visible_faces() -> None:
 
     mesh = build_visible_face_mesh(section, create_core_block_registry(), UVS)
 
-    assert mesh.vertices.shape == (24, 15)
+    assert mesh.vertices.shape == (24, VERTEX_COMPONENTS)
     assert mesh.face_count == 6
     assert mesh.triangle_count == 12
 
@@ -95,8 +95,26 @@ def test_short_grass_samples_light_from_air_above() -> None:
 def test_empty_section_produces_empty_arrays() -> None:
     mesh = build_visible_face_mesh(lit_section(), create_core_block_registry(), UVS)
 
-    assert mesh.vertices.shape == (0, 15)
+    assert mesh.vertices.shape == (0, VERTEX_COMPONENTS)
     assert mesh.indices.size == 0
+
+
+def test_vegetation_wind_motion_is_render_mesh_data_only() -> None:
+    section = lit_section()
+    section.set_block(1, 1, 1, 13)  # short_grass
+    section.set_block(3, 1, 1, 5)  # oak_leaves
+    section.set_block(5, 1, 1, 7)  # lantern
+    registry = create_core_block_registry()
+
+    visible = build_visible_face_mesh(section, registry, UVS)
+    greedy = build_greedy_mesh(section, registry, UVS)
+
+    assert 2.0 in visible.vertices[:, 15]
+    assert 1.0 in visible.vertices[:, 15]
+    assert 0.0 in visible.vertices[:, 15]
+    assert 2.0 in greedy.vertices[:, 15]
+    assert 1.0 in greedy.vertices[:, 15]
+    assert 0.0 in greedy.vertices[:, 15]
 
 
 def test_vertex_light_and_ao_can_be_toggled() -> None:

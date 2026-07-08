@@ -19,9 +19,10 @@ def test_shadow_depth_mesh_receives_atlas_cutout_attributes() -> None:
         encoding="utf-8"
     )
 
-    assert '"3f 2f 24x 4f"' in source
+    assert '"3f 2f 24x 4f 1f"' in source
     assert '"in_uv"' in source
     assert '"in_atlas_rect"' in source
+    assert '"in_wind_motion"' in source
 
 
 def test_shadow_depth_pass_renders_cutout_and_entity_faces_without_culling() -> None:

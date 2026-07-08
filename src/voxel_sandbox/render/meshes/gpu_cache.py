@@ -48,7 +48,7 @@ class SectionMeshCache:
             [
                 (
                     vertex_buffer,
-                    "3f 2f 3f 1f 1f 1f 4f",
+                    "3f 2f 3f 1f 1f 1f 4f 1f",
                     "in_position",
                     "in_uv",
                     "in_normal",
@@ -56,6 +56,7 @@ class SectionMeshCache:
                     "in_block_light",
                     "in_ao",
                     "in_atlas_rect",
+                    "in_wind_motion",
                 )
             ],
             index_buffer,
@@ -65,7 +66,16 @@ class SectionMeshCache:
         if self.depth_program is not None:
             depth_vertex_array = self.context.vertex_array(
                 self.depth_program,
-                [(vertex_buffer, "3f 2f 24x 4f", "in_position", "in_uv", "in_atlas_rect")],
+                [
+                    (
+                        vertex_buffer,
+                        "3f 2f 24x 4f 1f",
+                        "in_position",
+                        "in_uv",
+                        "in_atlas_rect",
+                        "in_wind_motion",
+                    )
+                ],
                 index_buffer,
                 index_element_size=4,
             )
