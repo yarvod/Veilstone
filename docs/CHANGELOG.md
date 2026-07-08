@@ -15,6 +15,9 @@
   repeated tile UVs by atlas edge inset metadata, reducing grass/terrain tile
   edge bleed without changing mesh layout. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_001923.png`.
+- **Vegetation wind render metadata** - block model snapshots now classify
+  visual-only wind motion for cross plants and cutout foliage while keeping
+  solid grass blocks and non-plant cutouts static.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with

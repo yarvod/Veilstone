@@ -39,7 +39,7 @@ Promoted backlog: `R-B005`.
 
 ### Phase E3: Render-Only Vegetation Motion
 
-- [ ] Define render-facing vegetation wind data grass/leaves/plants that
+- [x] Define render-facing vegetation wind data grass/leaves/plants that
   preserves deterministic gameplay/collision state.
 - [ ] Add subtle quality-gated grass/leaf sway in renderer/material code without
   changing domain block definitions or resource-pack folder routing.

@@ -38,6 +38,22 @@ def test_block_model_snapshot_marks_tinted_vegetation_textures() -> None:
     assert leaves.tint_for_face("top") == "foliage"
 
 
+def test_block_model_snapshot_marks_visual_only_wind_motion() -> None:
+    blocks = create_core_block_registry()
+
+    grass_block = build_block_model_snapshot(blocks.by_key("grass_block").id, blocks)
+    short_grass = build_block_model_snapshot(blocks.by_key("short_grass").id, blocks)
+    wildflower = build_block_model_snapshot(blocks.by_key("wildflower").id, blocks)
+    leaves = build_block_model_snapshot(blocks.by_key("oak_leaves").id, blocks)
+    lantern = build_block_model_snapshot(blocks.by_key("lantern").id, blocks)
+
+    assert grass_block.wind_motion == "none"
+    assert short_grass.wind_motion == "cross_plant"
+    assert wildflower.wind_motion == "cross_plant"
+    assert leaves.wind_motion == "foliage"
+    assert lantern.wind_motion == "none"
+
+
 def test_grass_terrain_material_faces_keep_distinct_texture_roles() -> None:
     blocks = create_core_block_registry()
     grass = build_block_model_snapshot(blocks.by_key("grass_block").id, blocks)
