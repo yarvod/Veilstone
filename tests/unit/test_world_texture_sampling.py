@@ -35,6 +35,7 @@ def test_water_mesh_cache_skips_wind_motion_attribute_binding() -> None:
 
     assert "wind_motion: bool = True" in cache_source
     assert '"3f 2f 3f 1f 1f 1f 4f"' in cache_source
+    assert '"3f 2f 24x 4f"' in cache_source
     assert "wind_motion=False" in scene_source
 
 

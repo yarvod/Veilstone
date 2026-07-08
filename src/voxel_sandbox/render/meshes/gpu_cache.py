@@ -79,18 +79,26 @@ class SectionMeshCache:
         )
         depth_vertex_array = None
         if self.depth_program is not None:
+            if self.wind_motion:
+                depth_content = (
+                    vertex_buffer,
+                    "3f 2f 24x 4f 1f",
+                    "in_position",
+                    "in_uv",
+                    "in_atlas_rect",
+                    "in_wind_motion",
+                )
+            else:
+                depth_content = (
+                    vertex_buffer,
+                    "3f 2f 24x 4f",
+                    "in_position",
+                    "in_uv",
+                    "in_atlas_rect",
+                )
             depth_vertex_array = self.context.vertex_array(
                 self.depth_program,
-                [
-                    (
-                        vertex_buffer,
-                        "3f 2f 24x 4f 1f",
-                        "in_position",
-                        "in_uv",
-                        "in_atlas_rect",
-                        "in_wind_motion",
-                    )
-                ],
+                [depth_content],
                 index_buffer,
                 index_element_size=4,
             )
