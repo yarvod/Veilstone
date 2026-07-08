@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G21: Opt-In Material Sampler Binding Application
+### Phase G22: Opt-In Material Atlas GL Textures
 
-- [ ] Add a guarded helper that applies planned material sampler uniforms only to
-  an activated material shader.
-- [ ] Keep default and low profiles with no material shader activation and no
-  material sampler writes.
-- [ ] Add tests proving missing roles remain absent while present roles write only
-  their planned sampler texture units.
+- [ ] Add a render-side helper that creates GL textures only for material atlas
+  roles requested by an active material shader binding plan.
+- [ ] Keep default and low profiles with no material atlas GL textures and no
+  placeholder textures for missing roles.
+- [ ] Add tests proving present roles create configured textures while missing
+  roles remain absent from the binding map.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 

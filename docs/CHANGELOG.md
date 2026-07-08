@@ -83,6 +83,9 @@
 - **Opt-in material shader WorldScene hook** - `WorldScene` now stores and
   releases a guarded material shader activation only when the material-preview
   setup requests it, leaving default profiles on the existing chunk shader path.
+- **Opt-in material sampler binding application** - material shader runtime code
+  can now apply planned sampler texture units only to an activated material
+  shader, leaving default/low profiles with no sampler writes.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

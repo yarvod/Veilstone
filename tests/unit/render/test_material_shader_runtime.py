@@ -6,17 +6,27 @@ from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.material_quality import resolve_material_pipeline
 from voxel_sandbox.render.material_shader_runtime import (
     activate_material_shader,
+    apply_material_sampler_bindings,
     build_material_shader_runtime_wiring,
 )
 from voxel_sandbox.render.material_shader_setup import build_material_shader_setup
 
 
+class _FakeUniform:
+    def __init__(self) -> None:
+        self.value: int | None = None
+
+
 class _FakeProgram:
     def __init__(self) -> None:
         self.released = False
+        self.uniforms: dict[str, _FakeUniform] = {}
 
     def release(self) -> None:
         self.released = True
+
+    def __getitem__(self, name: str) -> _FakeUniform:
+        return self.uniforms.setdefault(name, _FakeUniform())
 
 
 class _FakeContext:
@@ -49,6 +59,7 @@ def test_default_runtime_activation_is_skipped() -> None:
     wiring = build_material_shader_runtime_wiring(setup, Path("shaders/glsl"))
 
     assert activate_material_shader(_FakeContext(), wiring) is None
+    assert apply_material_sampler_bindings(None) == ()
 
 
 def test_material_preview_runtime_wiring_names_shader_files_and_bindings() -> None:
@@ -105,3 +116,34 @@ def test_material_preview_runtime_activation_uses_shader_files_and_bindings(
         MaterialMapRole.NORMAL,
     )
     assert tuple(binding.texture_unit for binding in activation.material_bindings) == (7,)
+
+
+def test_material_preview_sampler_bindings_write_planned_units(tmp_path: Path) -> None:
+    shader_root = tmp_path / "shaders"
+    shader_root.mkdir()
+    (shader_root / "chunk_material_preview.vert").write_text(
+        "#version 330 core\nvoid main() { gl_Position = vec4(0.0); }\n",
+        encoding="utf-8",
+    )
+    (shader_root / "chunk_material_preview.frag").write_text(
+        "#version 330 core\nout vec4 frag_color; void main() { frag_color = vec4(1.0); }\n",
+        encoding="utf-8",
+    )
+    setup = build_material_shader_setup(
+        resolve_material_pipeline("material-preview"),
+        (MaterialMapRole.NORMAL, MaterialMapRole.SPECULAR),
+        first_texture_unit=4,
+    )
+    wiring = build_material_shader_runtime_wiring(setup, shader_root)
+    context = _FakeContext()
+    activation = activate_material_shader(context, wiring)
+
+    applied = apply_material_sampler_bindings(activation)
+
+    assert activation is not None
+    assert applied == activation.material_bindings
+    program = activation.shader.program
+    assert isinstance(program, _FakeProgram)
+    assert program.uniforms["u_material_normal_atlas"].value == 4
+    assert program.uniforms["u_material_specular_atlas"].value == 5
+    assert "u_material_emissive_atlas" not in program.uniforms

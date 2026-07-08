@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 from voxel_sandbox.render.material_binding import MaterialAtlasBinding
 from voxel_sandbox.render.material_shader_setup import MaterialShaderSetup
@@ -56,3 +57,14 @@ def activate_material_shader(
         shader=ShaderProgram(context, wiring.material_shader_files),  # type: ignore[arg-type]
         material_bindings=wiring.material_bindings,
     )
+
+
+def apply_material_sampler_bindings(
+    activation: MaterialShaderActivation | None,
+) -> tuple[MaterialAtlasBinding, ...]:
+    if activation is None or activation.shader.program is None:
+        return ()
+    program = cast(Any, activation.shader.program)
+    for binding in activation.material_bindings:
+        program[binding.sampler_name].value = binding.texture_unit
+    return activation.material_bindings
