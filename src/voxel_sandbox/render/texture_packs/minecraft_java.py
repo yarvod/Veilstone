@@ -19,6 +19,7 @@ _BIOME_TINTS: dict[str, tuple[int, int, int]] = {
     "minecraft:block/tall_grass_bottom": _PLAINS_GRASS_TINT,
     "minecraft:block/oak_leaves": _PLAINS_FOLIAGE_TINT,
 }
+_UNSUPPORTED_MATERIAL_SUFFIXES = ("_n", "_s", "_e", "_mer")
 
 
 def resource_location_to_texture_path(resource: str) -> str:
@@ -92,12 +93,21 @@ def load_block_textures(
     result: dict[str, Image.Image] = {}
 
     use_zip = source.is_file() and source.suffix.lower() == ".zip"
+    zip_names: set[str] = set()
+    if use_zip:
+        with zipfile.ZipFile(source) as zf:
+            zip_names = set(zf.namelist())
 
     def _load(asset_path: str) -> Image.Image | None:
         if use_zip:
             with zipfile.ZipFile(source) as zf:
                 return _load_png_from_zip(zf, asset_path)
         return _load_png_from_folder(source, asset_path)
+
+    def _exists(asset_path: str) -> bool:
+        if use_zip:
+            return asset_path in zip_names
+        return (source / asset_path).exists()
 
     for resource_id in resource_ids:
         try:
@@ -106,6 +116,11 @@ def load_block_textures(
             report.warnings.append(f"Skipped invalid resource ID: {resource_id!r}")
             continue
 
+        report.unsupported_material_maps.extend(
+            sidecar_path
+            for sidecar_path in _material_sidecar_paths(asset_path)
+            if _exists(sidecar_path)
+        )
         image = _load(asset_path)
 
         if image is None:
@@ -124,7 +139,15 @@ def load_block_textures(
         result[resource_id] = _apply_resource_tint(resource_id, image)
         report.imported.append(resource_id)
 
+    report.unsupported_material_maps.sort()
     return result, report
+
+
+def _material_sidecar_paths(asset_path: str) -> tuple[str, ...]:
+    if not asset_path.endswith(".png"):
+        return ()
+    stem = asset_path[:-4]
+    return tuple(f"{stem}{suffix}.png" for suffix in _UNSUPPORTED_MATERIAL_SUFFIXES)
 
 
 def _apply_resource_overlays(

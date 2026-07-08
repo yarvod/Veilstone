@@ -155,6 +155,23 @@ def test_folder_import_resolves_stone(tmp_path: Path) -> None:
     assert "minecraft:block/stone" in report.imported
 
 
+def test_folder_import_reports_unsupported_material_sidecars(tmp_path: Path) -> None:
+    pack = _make_folder_pack(tmp_path, {"stone": (16, 16), "dirt": (16, 16)})
+    block_dir = pack / "assets" / "minecraft" / "textures" / "block"
+    (block_dir / "stone_n.png").write_bytes(_png_bytes(16, 16, (128, 128, 255, 255)))
+    (block_dir / "stone_s.png").write_bytes(_png_bytes(16, 16, (64, 64, 64, 255)))
+    (block_dir / "stone_e.png").write_bytes(_png_bytes(16, 16, (255, 255, 255, 255)))
+
+    tiles, report = load_block_textures(pack, {"minecraft:block/stone": None}, _FALLBACK)
+
+    assert "minecraft:block/stone" in tiles
+    assert report.unsupported_material_maps == [
+        "assets/minecraft/textures/block/stone_e.png",
+        "assets/minecraft/textures/block/stone_n.png",
+        "assets/minecraft/textures/block/stone_s.png",
+    ]
+
+
 def test_folder_import_applies_minecraft_grass_tint(tmp_path: Path) -> None:
     pack = _make_folder_pack(tmp_path, {"grass_block_top": (16, 16), "stone": (16, 16)})
     fallback = {
@@ -230,6 +247,19 @@ def test_zip_import_resolves_correctly(tmp_path: Path) -> None:
     _tiles, report = load_block_textures(pack, _IDS, _FALLBACK)
     _expected = {"minecraft:block/stone", "minecraft:block/dirt", "minecraft:block/water_still"}
     assert set(report.imported) == _expected
+
+
+def test_zip_import_reports_unsupported_material_sidecars(tmp_path: Path) -> None:
+    pack = tmp_path / "pbr.zip"
+    with zipfile.ZipFile(pack, "w") as zf:
+        zf.writestr("pack.mcmeta", json.dumps({"pack": {"pack_format": 18}}))
+        zf.writestr("assets/minecraft/textures/block/stone.png", _png_bytes(16, 16))
+        zf.writestr("assets/minecraft/textures/block/stone_mer.png", _png_bytes(16, 16))
+
+    tiles, report = load_block_textures(pack, {"minecraft:block/stone": None}, _FALLBACK)
+
+    assert "minecraft:block/stone" in tiles
+    assert report.unsupported_material_maps == ["assets/minecraft/textures/block/stone_mer.png"]
 
 
 def test_zip_import_missing_uses_fallback(tmp_path: Path) -> None:

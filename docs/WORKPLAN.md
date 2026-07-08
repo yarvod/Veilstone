@@ -39,12 +39,16 @@ resource-pack support без включения дорогих эффектов 
 
 ### Phase G1: Material Metadata Audit
 
-- [ ] Audit current texture-pack importer/cache/atlas paths for places where
+- Findings: color atlas generation still owns only RGBA tile pixels, UVs, tile
+  size, and edge inset metadata; texture-pack cache v4 has no material metadata
+  keys. Minecraft Java importer is the safest first discovery point for PBR
+  sidecars because it already maps resource locations to pack asset paths.
+- [x] Audit current texture-pack importer/cache/atlas paths for places where
   normal, specular, emissive, or material maps could be discovered without
   changing color-atlas behavior.
 - [ ] Define the smallest render-facing material metadata shape and cache key
   inputs needed before adding shader work.
-- [ ] Add focused tests proving unsupported PBR-sidecar assets are ignored or
+- [x] Add focused tests proving unsupported PBR-sidecar assets are ignored or
   reported deterministically rather than breaking existing packs.
 - [ ] Real-game smoke remains unchanged-color render path unless a later slice
   touches shader output.

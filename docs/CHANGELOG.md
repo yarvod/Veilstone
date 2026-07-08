@@ -32,6 +32,9 @@
   texture policy now lives in shared texture-slot snapshots consumed by
   first-person viewmodel and existing inventory/entity/player held-item helper
   paths. Real OpenGL smoke: first-person viewmodel held-block draw.
+- **PBR sidecar material reporting** - Minecraft Java resource-pack import now
+  reports unsupported normal/specular/emissive/material sidecar maps
+  deterministically while keeping the existing color atlas unchanged.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with

@@ -25,4 +25,5 @@ class ImportReport:
     missing: list[str] = field(default_factory=_str_list)
     fallback: list[str] = field(default_factory=_str_list)
     ignored_animations: list[str] = field(default_factory=_str_list)
+    unsupported_material_maps: list[str] = field(default_factory=_str_list)
     warnings: list[str] = field(default_factory=_str_list)
