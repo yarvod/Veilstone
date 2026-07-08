@@ -59,6 +59,12 @@ def _configure_block_texture(texture: moderngl.Texture) -> None:
     texture.repeat_y = False
 
 
+def _atlas_tile_margin(atlas: GeneratedAtlas) -> float:
+    if atlas.tile_size <= 0 or atlas.edge_inset_pixels <= 0.0:
+        return 0.0
+    return min(0.25, atlas.edge_inset_pixels / atlas.tile_size)
+
+
 class DemoWorldRenderer:
     def __init__(
         self,
@@ -118,6 +124,7 @@ class DemoWorldRenderer:
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         _configure_block_texture(self.texture)
         self.atlas_uvs = atlas.uvs
+        self.atlas_tile_margin = _atlas_tile_margin(atlas)
         self.uploads_per_frame = uploads_per_frame
         self.mesh_uploads_per_frame = mesh_uploads_per_frame
         self.greedy_meshing = greedy_meshing
@@ -468,6 +475,9 @@ class DemoWorldRenderer:
         cast("moderngl.Uniform", self.shader.program["shadow_texel_size"]).value = (
             1.0 / self.shadow_map.size if self.shadow_map is not None else 1.0
         )
+        cast(
+            "moderngl.Uniform", self.shader.program["tile_uv_margin"]
+        ).value = self.atlas_tile_margin
         cast("moderngl.Uniform", self.shader.program["shadow_map"]).value = 1
         camera_uniform.write(matrix.T.astype("f4").tobytes())
         self.texture.use(0)
@@ -538,6 +548,7 @@ class DemoWorldRenderer:
         old_texture.release()
 
         self.atlas_uvs = atlas.uvs
+        self.atlas_tile_margin = _atlas_tile_margin(atlas)
         if self._meshing_backend == "thread":
             self.mesh_worker.texture_uvs = atlas.uvs
         else:
@@ -813,6 +824,7 @@ class DemoWorldRenderer:
         self.context.disable(moderngl.CULL_FACE)
         self.texture.use(0)
         cast("moderngl.Uniform", program["texture_atlas"]).value = 0
+        cast("moderngl.Uniform", program["tile_uv_margin"]).value = self.atlas_tile_margin
         cast("moderngl.Uniform", program["light_matrix"]).write(
             light_matrix.T.astype("f4").tobytes()
         )

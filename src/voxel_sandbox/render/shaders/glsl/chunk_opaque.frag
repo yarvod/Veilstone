@@ -12,6 +12,7 @@ uniform sampler2DShadow shadow_map;
 uniform int shadows_enabled;
 uniform float shadow_bias;
 uniform float shadow_texel_size;
+uniform float tile_uv_margin;
 
 in vec2 vertex_uv;
 in float vertex_directional;
@@ -55,7 +56,11 @@ float sample_shadow() {
 }
 
 void main() {
-    vec2 tile_uv = fract(vertex_uv);
+    vec2 tile_uv = clamp(
+        fract(vertex_uv),
+        vec2(tile_uv_margin),
+        vec2(1.0 - tile_uv_margin)
+    );
     vec2 atlas_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, tile_uv);
     vec4 base_color = texture(texture_atlas, atlas_uv);
     if (base_color.a < 0.5) {

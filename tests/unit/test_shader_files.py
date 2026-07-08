@@ -39,6 +39,18 @@ def test_chunk_shader_discards_cutout_alpha() -> None:
     assert "discard;" in fragment
 
 
+def test_chunk_and_shadow_shaders_clamp_atlas_tile_uvs() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    chunk_fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
+    shadow_fragment = (shader_root / "shadow_depth.frag").read_text(encoding="utf-8")
+
+    for source in (chunk_fragment, shadow_fragment):
+        assert "uniform float tile_uv_margin;" in source
+        assert "clamp(" in source
+        assert "vec2(tile_uv_margin)" in source
+        assert "vec2(1.0 - tile_uv_margin)" in source
+
+
 def test_chunk_shader_preserves_thin_cutout_shadow_samples() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")

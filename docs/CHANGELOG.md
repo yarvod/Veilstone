@@ -11,6 +11,10 @@
 - **Atlas sampling metadata** - generated and cached texture atlases now expose
   tile size plus half-pixel edge inset metadata, with grass terrain UV tests
   locking sampling gutters before terrain smoothing work.
+- **Distance-safe terrain atlas sampling** - chunk and shadow shaders now clamp
+  repeated tile UVs by atlas edge inset metadata, reducing grass/terrain tile
+  edge bleed without changing mesh layout. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_001923.png`.
 - **Reusable gameplay smoke screenshot route** - added
   `gameplay-smoke-screenshot` CLI command for deterministic walking/F3 runtime
   screenshots with JSON metadata. Real smoke passed with
