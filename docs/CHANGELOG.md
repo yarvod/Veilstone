@@ -80,6 +80,9 @@
 - **Guarded material shader activation** - added a render-side activation helper
   that skips default profiles and compiles the material-preview shader fixture
   with only the planned material bindings when explicitly requested.
+- **Opt-in material shader WorldScene hook** - `WorldScene` now stores and
+  releases a guarded material shader activation only when the material-preview
+  setup requests it, leaving default profiles on the existing chunk shader path.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

@@ -40,7 +40,9 @@ from voxel_sandbox.render.material_quality import (
     resolve_material_pipeline_from_graphics,
 )
 from voxel_sandbox.render.material_shader_runtime import (
+    MaterialShaderActivation,
     MaterialShaderRuntimeWiring,
+    activate_material_shader,
     build_material_shader_runtime_wiring,
 )
 from voxel_sandbox.render.material_shader_setup import (
@@ -171,6 +173,9 @@ class DemoWorldRenderer:
                 self.material_shader_setup,
                 shader_root,
             )
+        )
+        self.material_shader_activation: MaterialShaderActivation | None = activate_material_shader(
+            context, self.material_shader_wiring
         )
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
@@ -627,6 +632,8 @@ class DemoWorldRenderer:
         self.mesh_cache.release()
         self.texture.release()
         self.shader.release()
+        if self.material_shader_activation is not None:
+            self.material_shader_activation.shader.release()
         self.water_shader.release()
         self.shadow_shader.release()
         if self.shadow_map is not None:

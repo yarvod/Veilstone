@@ -72,7 +72,19 @@ def test_material_shader_wiring_does_not_replace_default_chunk_shader_load() -> 
     assert 'ShaderFiles.from_directory(shader_root, "chunk_opaque")' in scene_source
     assert "build_material_shader_runtime_wiring" in scene_source
     assert "self.material_shader_wiring" in scene_source
-    assert "ShaderProgram(context, self.material_shader_wiring" not in scene_source
+    assert "activate_material_shader(" in scene_source
+    assert "context," in scene_source
+    assert "self.material_shader_activation" in scene_source
+
+
+def test_material_shader_activation_releases_only_when_present() -> None:
+    scene_source = (
+        Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py"
+    ).read_text(encoding="utf-8")
+    release_source = scene_source[scene_source.index("def release") :]
+
+    assert "if self.material_shader_activation is not None:" in release_source
+    assert "self.material_shader_activation.shader.release()" in release_source
 
 
 def test_shadow_depth_pass_renders_cutout_and_entity_faces_without_culling() -> None:

@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G20: Opt-In Material Shader WorldScene Hook
+### Phase G21: Opt-In Material Sampler Binding Application
 
-- [ ] Hook guarded material shader activation into `WorldScene` only when
-  `material-preview` requests the material shader.
-- [ ] Keep default and low profiles on the existing `chunk_opaque` shader program
-  with no material shader object and no extra texture bindings.
-- [ ] Add tests proving default renderer setup skips activation while
-  material-preview exposes the activated shader and planned bindings.
+- [ ] Add a guarded helper that applies planned material sampler uniforms only to
+  an activated material shader.
+- [ ] Keep default and low profiles with no material shader activation and no
+  material sampler writes.
+- [ ] Add tests proving missing roles remain absent while present roles write only
+  their planned sampler texture units.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 
