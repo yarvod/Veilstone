@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G19: Opt-In Material Shader Activation
+### Phase G20: Opt-In Material Shader WorldScene Hook
 
-- [ ] Add the first guarded material-preview shader activation path without
-  changing default `chunk_opaque` startup or low-tier mesh attributes.
-- [ ] Bind only material atlas roles present in `MaterialShaderRuntimeWiring`;
-  missing roles remain absent, not placeholder GL textures.
-- [ ] Add tests proving default startup skips material shader activation while
-  material-preview can activate the compiled fixture and planned bindings.
+- [ ] Hook guarded material shader activation into `WorldScene` only when
+  `material-preview` requests the material shader.
+- [ ] Keep default and low profiles on the existing `chunk_opaque` shader program
+  with no material shader object and no extra texture bindings.
+- [ ] Add tests proving default renderer setup skips activation while
+  material-preview exposes the activated shader and planned bindings.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 

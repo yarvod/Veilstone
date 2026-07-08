@@ -77,6 +77,9 @@
 - **Material-preview shader fixture** - added opt-in `chunk_material_preview`
   shader fixture files matching the existing chunk mesh attribute contract and
   planned material sampler names while default startup still loads `chunk_opaque`.
+- **Guarded material shader activation** - added a render-side activation helper
+  that skips default profiles and compiles the material-preview shader fixture
+  with only the planned material bindings when explicitly requested.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
