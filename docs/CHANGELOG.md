@@ -325,6 +325,12 @@
 
 ### Fixed
 
+- **Water mesh startup crash** - water chunk meshes now bind the 15-float
+  transparent mesh layout without the vegetation-only `in_wind_motion`
+  attribute, fixing ModernGL VAO creation when water is rendered. Real checks:
+  water VAO hidden-window smoke `saves/screenshots/veilstone_20260709_010942.png`
+  and gameplay walking smoke `saves/screenshots/veilstone_20260709_011009.png`.
+
 - **Windows entity animation unit test** - remote-player texture path assertions now
   normalize paths with POSIX separators, matching cow and zombie checks on
   Windows CI.

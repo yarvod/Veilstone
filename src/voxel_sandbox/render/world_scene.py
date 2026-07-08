@@ -156,7 +156,9 @@ class DemoWorldRenderer:
             self.shader.program,
             self.shadow_shader.program if self.shadow_map is not None else None,
         )
-        self.water_mesh_cache = SectionMeshCache(context, self.water_shader.program)
+        self.water_mesh_cache = SectionMeshCache(
+            context, self.water_shader.program, wind_motion=False
+        )
         self._meshing_workers = meshing_workers
         self._meshing_backend = cast(Literal["thread", "process"], meshing_backend)
         self.mesh_worker = SectionMeshWorker(
@@ -576,7 +578,9 @@ class DemoWorldRenderer:
             self.shader.program,
             self.shadow_shader.program if self.shadow_map is not None else None,
         )
-        self.water_mesh_cache = SectionMeshCache(self.context, self.water_shader.program)
+        self.water_mesh_cache = SectionMeshCache(
+            self.context, self.water_shader.program, wind_motion=False
+        )
         self._remesh_all()
 
     def release(self) -> None:

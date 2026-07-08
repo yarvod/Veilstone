@@ -33,32 +33,47 @@ class SectionMeshCache:
         context: moderngl.Context,
         program: moderngl.Program,
         depth_program: moderngl.Program | None = None,
+        *,
+        wind_motion: bool = True,
     ) -> None:
         self.context = context
         self.program = program
         self.depth_program = depth_program
+        self.wind_motion = wind_motion
         self._meshes: dict[SectionCoord, GpuSectionMesh] = {}
 
     def upload(self, key: SectionCoord, mesh: MeshData) -> None:
         self.remove(key)
         vertex_buffer = self.context.buffer(mesh.vertices.tobytes())
         index_buffer = self.context.buffer(mesh.indices.tobytes())
+        if self.wind_motion:
+            vertex_content = (
+                vertex_buffer,
+                "3f 2f 3f 1f 1f 1f 4f 1f",
+                "in_position",
+                "in_uv",
+                "in_normal",
+                "in_sky_light",
+                "in_block_light",
+                "in_ao",
+                "in_atlas_rect",
+                "in_wind_motion",
+            )
+        else:
+            vertex_content = (
+                vertex_buffer,
+                "3f 2f 3f 1f 1f 1f 4f",
+                "in_position",
+                "in_uv",
+                "in_normal",
+                "in_sky_light",
+                "in_block_light",
+                "in_ao",
+                "in_atlas_rect",
+            )
         vertex_array = self.context.vertex_array(
             self.program,
-            [
-                (
-                    vertex_buffer,
-                    "3f 2f 3f 1f 1f 1f 4f 1f",
-                    "in_position",
-                    "in_uv",
-                    "in_normal",
-                    "in_sky_light",
-                    "in_block_light",
-                    "in_ao",
-                    "in_atlas_rect",
-                    "in_wind_motion",
-                )
-            ],
+            [vertex_content],
             index_buffer,
             index_element_size=4,
         )

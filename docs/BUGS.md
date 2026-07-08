@@ -4,6 +4,18 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ## Open
 
+### BUG-R002: Water mesh VAO required vegetation wind attribute
+
+- **Status:** fixed
+- **Affected area:** render / water mesh upload / shader attributes
+- **Observed:** real game startup/render could crash in ModernGL VAO creation with
+  `KeyError: 'in_wind_motion'` when water meshes were uploaded, because the
+  water shader does not declare the vegetation-only wind attribute.
+- **Fix notes:** water `SectionMeshCache` instances now bind the 15-float
+  transparent water mesh layout and skip `in_wind_motion`; focused unit coverage
+  locks the no-wind water cache path. Real hidden-window smoke uploaded water
+  meshes and captured `saves/screenshots/veilstone_20260709_010942.png`.
+
 ### BUG-R001: Packaged app missed data registries
 
 - **Status:** fixed

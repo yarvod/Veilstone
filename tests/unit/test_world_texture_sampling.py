@@ -25,6 +25,19 @@ def test_shadow_depth_mesh_receives_atlas_cutout_attributes() -> None:
     assert '"in_wind_motion"' in source
 
 
+def test_water_mesh_cache_skips_wind_motion_attribute_binding() -> None:
+    cache_source = (
+        Path(__file__).parents[2] / "src/voxel_sandbox/render/meshes/gpu_cache.py"
+    ).read_text(encoding="utf-8")
+    scene_source = (
+        Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py"
+    ).read_text(encoding="utf-8")
+
+    assert "wind_motion: bool = True" in cache_source
+    assert '"3f 2f 3f 1f 1f 1f 4f"' in cache_source
+    assert "wind_motion=False" in scene_source
+
+
 def test_shadow_depth_pass_renders_cutout_and_entity_faces_without_culling() -> None:
     source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py").read_text(
         encoding="utf-8"
