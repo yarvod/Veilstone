@@ -37,12 +37,12 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G8: Material Quality Settings Plumbing
+### Phase G9: Material Profile Debug Visibility
 
-- [ ] Add a persisted graphics setting for material quality profile with
-  `color-only` default.
-- [ ] Route the setting through the render-facing material pipeline decision
-  helper without assembling material bundles by default.
+- [ ] Surface active material quality/profile decision in debug/HUD snapshot text
+  without adding shader bindings or bundle assembly.
+- [ ] Add deterministic HUD/debug coverage proving default profile reports
+  color-only/material bundles disabled.
 - [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
   required unless a later quality tier enables them.
 - [ ] Run real-game smoke to confirm unchanged-color rendering path.

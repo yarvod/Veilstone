@@ -83,6 +83,7 @@ class GraphicsSettings:
     shadow_bias: float = 0.0015
     clouds: bool = True
     resource_pack_path: str = ""
+    material_quality: str = "color-only"
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +159,7 @@ def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
         f'shadow_quality = "{settings.graphics.shadow_quality}"\n'
         f"clouds = {str(settings.graphics.clouds).lower()}\n"
         f"fog = {str(settings.graphics.fog).lower()}\n"
+        f'material_quality = "{settings.graphics.material_quality}"\n'
         "\n[world]\n"
         f'seed = "{settings.world.seed}"\n'
         f"render_distance = {settings.world.render_distance}\n"

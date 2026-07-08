@@ -38,6 +38,19 @@ def test_water_mesh_cache_skips_wind_motion_attribute_binding() -> None:
     assert "wind_motion=False" in scene_source
 
 
+def test_material_quality_setting_reaches_world_renderer_decision() -> None:
+    scene_source = (
+        Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py"
+    ).read_text(encoding="utf-8")
+    window_source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/window.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "resolve_material_pipeline_from_graphics" in scene_source
+    assert "self.material_pipeline" in scene_source
+    assert "material_quality=settings.graphics.material_quality" in window_source
+
+
 def test_shadow_depth_pass_renders_cutout_and_entity_faces_without_culling() -> None:
     source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py").read_text(
         encoding="utf-8"

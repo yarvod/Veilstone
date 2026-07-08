@@ -39,6 +39,11 @@
   naming an explicit `material-preview` opt-in path for future material atlas
   bundles. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_013727.png`.
+- **Material quality settings plumbing** - graphics settings now persist
+  `material_quality = "color-only"` and route it into the render material
+  pipeline decision without assembling material bundles or binding extra shader
+  textures by default. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_014247.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

@@ -39,3 +39,7 @@ def resolve_material_pipeline(profile: str | None = None) -> MaterialPipelineDec
         if selected is MaterialQualityProfile.MATERIAL_PREVIEW
         else "color",
     )
+
+
+def resolve_material_pipeline_from_graphics(material_quality: str) -> MaterialPipelineDecision:
+    return resolve_material_pipeline(material_quality)

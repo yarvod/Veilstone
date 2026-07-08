@@ -10,17 +10,22 @@ def test_missing_settings_file_uses_defaults(tmp_path: Path) -> None:
     settings = load_settings(tmp_path / "missing.toml")
     assert settings == AppSettings()
     assert settings.development.render_local_player_model is False
+    assert settings.graphics.material_quality == "color-only"
 
 
 def test_settings_are_loaded_from_toml(tmp_path: Path) -> None:
     config_path = tmp_path / "settings.toml"
-    config_path.write_text('[window]\ntitle = "Test World"\nwidth = 800\n', encoding="utf-8")
+    config_path.write_text(
+        '[window]\ntitle = "Test World"\nwidth = 800\n[graphics]\nmaterial_quality = "low"\n',
+        encoding="utf-8",
+    )
 
     settings = load_settings(config_path)
 
     assert settings.window.title == "Test World"
     assert settings.window.width == 800
     assert settings.window.height == 720
+    assert settings.graphics.material_quality == "low"
 
 
 def test_user_settings_roundtrip(tmp_path: Path) -> None:
@@ -31,6 +36,7 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
             settings.graphics,
             shadow_quality="off",
             clouds=False,
+            material_quality="material-preview",
         ),
         window=replace(settings.window, vsync=False),
         world=replace(settings.world, seed="saved-seed", render_distance=5),
@@ -45,6 +51,7 @@ def test_user_settings_roundtrip(tmp_path: Path) -> None:
 
     assert loaded.graphics.shadow_quality == "off"
     assert not loaded.graphics.clouds
+    assert loaded.graphics.material_quality == "material-preview"
     assert not loaded.window.vsync
     assert loaded.world.seed == "saved-seed"
     assert loaded.world.render_distance == 5

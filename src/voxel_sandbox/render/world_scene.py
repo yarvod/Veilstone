@@ -34,6 +34,10 @@ from voxel_sandbox.render.atmosphere import (
 from voxel_sandbox.render.block_highlight import BlockHighlightRenderer
 from voxel_sandbox.render.camera import FirstPersonCamera
 from voxel_sandbox.render.frustum import Frustum
+from voxel_sandbox.render.material_quality import (
+    MaterialPipelineDecision,
+    resolve_material_pipeline_from_graphics,
+)
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.meshes import (
     MeshData,
@@ -89,6 +93,7 @@ class DemoWorldRenderer:
         shadow_bias: float,
         save_root: Path,
         resource_pack_path: str = "",
+        material_quality: str = "color-only",
         world_dependencies: WorldSceneDependencies | None = None,
     ) -> None:
         self.context = context
@@ -136,6 +141,9 @@ class DemoWorldRenderer:
         self.day_cycle_seconds = day_cycle_seconds
         self.shadow_quality = shadow_quality
         self.shadow_bias = shadow_bias
+        self.material_pipeline: MaterialPipelineDecision = resolve_material_pipeline_from_graphics(
+            material_quality
+        )
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
         self.time_of_day = 0.18
