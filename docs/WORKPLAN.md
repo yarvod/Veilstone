@@ -40,7 +40,14 @@ meshing, held items, inventory icons, drops и remote held items не расхо
 
 ### Phase F1: Block/Item Model Snapshot Consolidation
 
-- [ ] Audit current block/item visual consumers: chunk meshing, first-person
+- Findings: `item_block_texture_name()` already feeds inventory icons,
+  `item_block_atlas_rect()` feeds dropped/entity/player held items, and
+  first-person viewmodel uses `BlockModelSnapshot` face texture slots. Chunk
+  meshing still reads raw `BlockDef` texture slots/material shape directly,
+  making it the next consolidation target.
+- Missing shared fields to evaluate next: atlas rects per face, render layer,
+  render shape, wind motion, tint kind, and icon/default face policy.
+- [x] Audit current block/item visual consumers: chunk meshing, first-person
   viewmodel, inventory icons, dropped items, entity held items.
 - [ ] Define the smallest shared render-facing snapshot fields missing from
   existing `BlockModelSnapshot` / `ItemModelSnapshot`.
