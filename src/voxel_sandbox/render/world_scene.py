@@ -13,6 +13,7 @@ from voxel_sandbox.app.composition import (
     WorldSceneDependencies,
     build_world_scene_dependencies,
 )
+from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.engine.chunks import (
     CHUNK_HEIGHT,
     SECTION_SIZE,
@@ -38,6 +39,10 @@ from voxel_sandbox.render.material_quality import (
     MaterialPipelineDecision,
     resolve_material_pipeline_from_graphics,
 )
+from voxel_sandbox.render.material_shader_setup import (
+    MaterialShaderSetup,
+    build_material_shader_setup,
+)
 from voxel_sandbox.render.math3d import camera_matrix
 from voxel_sandbox.render.meshes import (
     MeshData,
@@ -53,8 +58,11 @@ from voxel_sandbox.render.perf import RenderQueueSnapshot
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
 from voxel_sandbox.render.streaming_schedule import drain_fifo_keys, frame_budget
-from voxel_sandbox.render.texture_atlas import GeneratedAtlas
-from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas, GeneratedMaterialAtlasBundle
+from voxel_sandbox.render.texture_packs.importer import (
+    load_active_block_atlas,
+    load_material_atlas_bundle,
+)
 
 
 def _configure_block_texture(texture: moderngl.Texture) -> None:
@@ -143,6 +151,16 @@ class DemoWorldRenderer:
         self.shadow_bias = shadow_bias
         self.material_pipeline: MaterialPipelineDecision = resolve_material_pipeline_from_graphics(
             material_quality
+        )
+        self.material_bundle: GeneratedMaterialAtlasBundle | None = None
+        material_roles = ()
+        if self.material_pipeline.build_material_bundle:
+            material_pack_path = pack_path or resource_path("resource_packs/default")
+            self.material_bundle = load_material_atlas_bundle(material_pack_path, atlas)
+            material_roles = self.material_bundle.materials.keys()
+        self.material_shader_setup: MaterialShaderSetup = build_material_shader_setup(
+            self.material_pipeline,
+            material_roles,
         )
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None

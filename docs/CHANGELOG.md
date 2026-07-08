@@ -67,6 +67,10 @@
 - **Material shader setup fixture** - render code now assembles shader variant and
   material atlas binding setup together, proving default/low profiles skip
   material shader work while `material-preview` consumes the opt-in binding plan.
+- **Opt-in material runtime hook** - `WorldScene` now builds a
+  `MaterialShaderSetup` planning hook and only loads CPU material atlas bundles
+  when the material pipeline requests them, keeping default profiles on the
+  existing color-only shader path.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

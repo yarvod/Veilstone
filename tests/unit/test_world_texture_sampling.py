@@ -52,6 +52,18 @@ def test_material_quality_setting_reaches_world_renderer_decision() -> None:
     assert "material_quality=settings.graphics.material_quality" in window_source
 
 
+def test_material_shader_setup_is_opt_in_world_renderer_hook() -> None:
+    scene_source = (
+        Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py"
+    ).read_text(encoding="utf-8")
+
+    assert "build_material_shader_setup" in scene_source
+    assert "self.material_shader_setup" in scene_source
+    assert "self.material_bundle: GeneratedMaterialAtlasBundle | None = None" in scene_source
+    assert "if self.material_pipeline.build_material_bundle:" in scene_source
+    assert "load_material_atlas_bundle(material_pack_path, atlas)" in scene_source
+
+
 def test_shadow_depth_pass_renders_cutout_and_entity_faces_without_culling() -> None:
     source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py").read_text(
         encoding="utf-8"

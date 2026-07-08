@@ -37,14 +37,15 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G16: Opt-In Material Runtime Hook
+### Phase G17: Opt-In Material Shader Runtime Wiring
 
-- [ ] Wire `MaterialShaderSetup` into the render composition path as an opt-in
-  planning hook without loading or binding material shaders for default profiles.
-- [ ] Keep missing material atlas roles optional; material-preview should use only
-  the roles present in the material atlas bundle.
-- [ ] Add tests proving default renderer setup stays on `chunk_opaque` with empty
-  bindings while material-preview setup exposes its planned shader/bindings.
+- [ ] Add the first opt-in material-preview runtime wiring path without changing
+  the default `chunk_opaque` shader load or mesh attribute contract.
+- [ ] Keep material atlas texture binding limited to roles exposed by
+  `MaterialShaderSetup`; missing roles must remain absent, not placeholder GL
+  textures.
+- [ ] Add tests proving default renderer startup still loads only current chunk
+  shaders while material-preview wiring names the planned shader/bindings.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 
