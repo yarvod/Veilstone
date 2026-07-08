@@ -56,6 +56,10 @@
   `MaterialVisualSnapshot` data and can build optional normal/specular rect
   arrays for opt-in material profiles while existing color-only mesh paths keep
   their unchanged call sites.
+- **Material shader variant scaffold** - render material quality decisions now
+  resolve explicit chunk shader variants so `color-only` and `low` stay on
+  `chunk_opaque`, while `material-preview` names a future opt-in material shader
+  path that requires material atlases.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

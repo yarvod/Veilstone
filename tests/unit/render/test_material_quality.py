@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from voxel_sandbox.render.material_quality import (
     MaterialQualityProfile,
+    resolve_chunk_shader_variant,
     resolve_material_pipeline,
     resolve_material_pipeline_from_graphics,
 )
@@ -29,6 +30,20 @@ def test_material_preview_names_future_opt_in_bundle_path() -> None:
     assert decision.profile is MaterialQualityProfile.MATERIAL_PREVIEW
     assert decision.shader_profile == "pbr-preview"
     assert decision.build_material_bundle is True
+
+
+def test_low_tier_chunk_shader_variant_stays_color_only() -> None:
+    variant = resolve_chunk_shader_variant(resolve_material_pipeline("low"))
+
+    assert variant.shader_name == "chunk_opaque"
+    assert variant.requires_material_atlases is False
+
+
+def test_material_preview_selects_future_chunk_shader_variant() -> None:
+    variant = resolve_chunk_shader_variant(resolve_material_pipeline("material-preview"))
+
+    assert variant.shader_name == "chunk_material_preview"
+    assert variant.requires_material_atlases is True
 
 
 def test_graphics_material_quality_routes_through_pipeline_decision() -> None:

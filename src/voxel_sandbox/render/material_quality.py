@@ -17,6 +17,12 @@ class MaterialPipelineDecision:
     shader_profile: str
 
 
+@dataclass(frozen=True, slots=True)
+class ChunkShaderVariant:
+    shader_name: str
+    requires_material_atlases: bool
+
+
 _PROFILE_ALIASES: dict[str, MaterialQualityProfile] = {
     "": MaterialQualityProfile.COLOR_ONLY,
     "default": MaterialQualityProfile.COLOR_ONLY,
@@ -26,6 +32,20 @@ _PROFILE_ALIASES: dict[str, MaterialQualityProfile] = {
     "material-preview": MaterialQualityProfile.MATERIAL_PREVIEW,
     "pbr-preview": MaterialQualityProfile.MATERIAL_PREVIEW,
 }
+
+
+def resolve_chunk_shader_variant(
+    decision: MaterialPipelineDecision,
+) -> ChunkShaderVariant:
+    if decision.profile is MaterialQualityProfile.MATERIAL_PREVIEW:
+        return ChunkShaderVariant(
+            shader_name="chunk_material_preview",
+            requires_material_atlases=True,
+        )
+    return ChunkShaderVariant(
+        shader_name="chunk_opaque",
+        requires_material_atlases=False,
+    )
 
 
 def resolve_material_pipeline(profile: str | None = None) -> MaterialPipelineDecision:

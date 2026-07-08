@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G13: Opt-In Material Shader Variant Scaffold
+### Phase G14: Opt-In Material Atlas Binding Boundary
 
-- [ ] Introduce explicit chunk shader variant selection for material profiles
-  without changing `color-only` or `low` shader inputs.
-- [ ] Keep material atlas texture binding behind the `material-preview` profile;
-  default runtime must keep the same uniforms/textures as today.
-- [ ] Add tests proving low-tier variant selection stays color-only while
-  material-preview selects the future material shader path.
+- [ ] Define the render-side binding plan for material atlas textures behind
+  `material-preview` without touching `color-only` or `low` shader inputs.
+- [ ] Keep missing material maps optional and deterministic; absent roles should
+  not allocate or bind placeholder GPU textures in low-tier profiles.
+- [ ] Add tests proving the binding plan is empty for default profiles and names
+  only opt-in material roles when material atlases exist.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 
