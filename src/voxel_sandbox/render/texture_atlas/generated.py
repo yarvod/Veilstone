@@ -5,7 +5,7 @@ from math import ceil, sqrt
 
 from PIL import Image, ImageDraw
 
-from voxel_sandbox.render.material_metadata import MaterialAtlasManifest
+from voxel_sandbox.render.material_metadata import MaterialAtlasManifest, MaterialMapRole
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +17,17 @@ class GeneratedAtlas:
     tile_size: int = 0
     edge_inset_pixels: float = 0.0
     material_manifest: MaterialAtlasManifest = field(default_factory=MaterialAtlasManifest)
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedMaterialAtlas:
+    role: MaterialMapRole
+    width: int
+    height: int
+    pixels: bytes
+    uvs: dict[str, tuple[float, float, float, float]]
+    tile_size: int
+    edge_inset_pixels: float
 
 
 # Default procedural tiles keyed by Minecraft-style resource locations.
@@ -172,6 +183,43 @@ def build_texture_atlas(
         tile_size=tile_size,
         edge_inset_pixels=0.5,
         material_manifest=material_manifest or MaterialAtlasManifest(),
+    )
+
+
+def build_parallel_material_atlas(
+    color_atlas: GeneratedAtlas,
+    *,
+    role: MaterialMapRole,
+    tiles: dict[str, Image.Image],
+    default_color: tuple[int, int, int, int],
+) -> GeneratedMaterialAtlas:
+    """Build a CPU-side material atlas aligned to an existing color atlas."""
+    if color_atlas.tile_size <= 0:
+        raise ValueError("Color atlas must include tile_size metadata")
+    tile_size = color_atlas.tile_size
+    image = Image.new("RGBA", (color_atlas.width, color_atlas.height))
+    fallback = Image.new("RGBA", (tile_size, tile_size), default_color)
+    inset_u = color_atlas.edge_inset_pixels / color_atlas.width
+    inset_v = color_atlas.edge_inset_pixels / color_atlas.height
+
+    for resource_id, uv in color_atlas.uvs.items():
+        tile = (
+            tiles.get(resource_id, fallback)
+            .convert("RGBA")
+            .resize((tile_size, tile_size), Image.Resampling.NEAREST)
+        )
+        x = round((uv[0] - inset_u) * color_atlas.width)
+        y = round((1.0 - uv[3] - inset_v) * color_atlas.height)
+        image.paste(tile, (x, y))
+
+    return GeneratedMaterialAtlas(
+        role=role,
+        width=color_atlas.width,
+        height=color_atlas.height,
+        pixels=image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes(),
+        uvs=dict(color_atlas.uvs),
+        tile_size=tile_size,
+        edge_inset_pixels=color_atlas.edge_inset_pixels,
     )
 
 

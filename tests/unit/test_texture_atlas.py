@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 from PIL import Image
 
+from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.texture_atlas import (
     GeneratedAtlas,
+    build_parallel_material_atlas,
     build_texture_atlas,
     create_block_atlas,
     create_default_block_tiles,
@@ -110,6 +114,62 @@ def test_build_texture_atlas_records_sampling_metadata() -> None:
 
     assert atlas.tile_size == 16
     assert atlas.edge_inset_pixels == 0.5
+
+
+def test_parallel_material_atlas_reuses_color_dimensions_and_uvs() -> None:
+    color_atlas = build_texture_atlas(
+        {
+            "minecraft:block/dirt": Image.new("RGBA", (4, 4), (10, 20, 30, 255)),
+            "minecraft:block/stone": Image.new("RGBA", (4, 4), (40, 50, 60, 255)),
+        },
+        tile_size=4,
+    )
+
+    material_atlas = build_parallel_material_atlas(
+        color_atlas,
+        role=MaterialMapRole.NORMAL,
+        tiles={"minecraft:block/stone": Image.new("RGBA", (4, 4), (128, 128, 255, 255))},
+        default_color=(128, 128, 128, 255),
+    )
+
+    assert material_atlas.role is MaterialMapRole.NORMAL
+    assert material_atlas.width == color_atlas.width
+    assert material_atlas.height == color_atlas.height
+    assert material_atlas.uvs == color_atlas.uvs
+    assert material_atlas.tile_size == color_atlas.tile_size
+    assert material_atlas.edge_inset_pixels == color_atlas.edge_inset_pixels
+
+
+def test_parallel_material_atlas_places_tiles_in_matching_color_slots() -> None:
+    color_atlas = build_texture_atlas(
+        {
+            "minecraft:block/dirt": Image.new("RGBA", (4, 4), (10, 20, 30, 255)),
+            "minecraft:block/stone": Image.new("RGBA", (4, 4), (40, 50, 60, 255)),
+        },
+        tile_size=4,
+    )
+
+    material_atlas = build_parallel_material_atlas(
+        color_atlas,
+        role=MaterialMapRole.MER,
+        tiles={"minecraft:block/stone": Image.new("RGBA", (4, 4), (20, 40, 80, 255))},
+        default_color=(1, 2, 3, 255),
+    )
+    image = Image.frombytes(
+        "RGBA", (material_atlas.width, material_atlas.height), material_atlas.pixels
+    ).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+
+    def sample(resource_id: str) -> tuple[int, int, int, int]:
+        uv = material_atlas.uvs[resource_id]
+        x = round((uv[0] - material_atlas.edge_inset_pixels / material_atlas.width) * image.width)
+        y = round(
+            (1.0 - uv[3] - material_atlas.edge_inset_pixels / material_atlas.height) * image.height
+        )
+        pixel = cast(tuple[int, int, int, int], image.getpixel((x, y)))
+        return (int(pixel[0]), int(pixel[1]), int(pixel[2]), int(pixel[3]))
+
+    assert sample("minecraft:block/stone") == (20, 40, 80, 255)
+    assert sample("minecraft:block/dirt") == (1, 2, 3, 255)
 
 
 def test_grass_terrain_uvs_preserve_half_pixel_sampling_gutter() -> None:

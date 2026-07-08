@@ -37,12 +37,12 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G3: Parallel Material Atlas Builders
+### Phase G4: Material Sidecar Image Loading
 
-- [ ] Add CPU-side normal/material atlas builders that reuse the color atlas tile
-  ordering and UV rects, but do not bind extra GPU textures by default.
-- [ ] Add deterministic PBR fixture coverage proving color, normal, and material
-  atlas dimensions/UVs stay aligned for the same resource IDs.
+- [ ] Load discovered Java-style PBR sidecar images into role-keyed material tile
+  maps without changing color atlas fallback behavior.
+- [ ] Build deterministic fixture coverage proving normal/material sidecar image
+  pixels feed the parallel material atlas builders for matching resource IDs.
 - [ ] Keep low-tier runtime unchanged: no additional shader uniforms/textures are
   required unless a later quality tier enables them.
 - [ ] Run real-game smoke to confirm unchanged-color rendering path.
