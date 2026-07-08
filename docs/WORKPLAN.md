@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G22: Opt-In Material Atlas GL Textures
+### Phase G23: Opt-In Material Atlas Texture WorldScene Hook
 
-- [ ] Add a render-side helper that creates GL textures only for material atlas
-  roles requested by an active material shader binding plan.
-- [ ] Keep default and low profiles with no material atlas GL textures and no
+- [ ] Hook material atlas GL texture creation into `WorldScene` only when
+  material-preview has an activation and material bundle.
+- [ ] Keep default and low profiles with no material atlas texture map and no
   placeholder textures for missing roles.
-- [ ] Add tests proving present roles create configured textures while missing
-  roles remain absent from the binding map.
+- [ ] Add tests proving default renderer setup skips texture creation while
+  material-preview exposes textures only for present material atlas roles.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 

@@ -289,7 +289,7 @@ class RenderModelSnapshot:
   `MaterialVisualSnapshot`, material visual lookup consumers, shader variant
   selection, material atlas binding plans, shader setup/runtime fixtures,
   `WorldScene` planning hook, runtime wiring plans, and material-preview shader
-  fixtures into opt-in material atlas GL texture binding; add emissive
+  fixtures into opt-in `WorldScene` material atlas texture binding; add emissive
   conventions/LabPBR-style metadata, and keep low-tier chunks color-only.
 - **Acceptance idea:** a deterministic PBR fixture pack produces color, normal,
   and material atlases with matching UV rects; low-tier renders the same chunks

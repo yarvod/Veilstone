@@ -86,6 +86,9 @@
 - **Opt-in material sampler binding application** - material shader runtime code
   can now apply planned sampler texture units only to an activated material
   shader, leaving default/low profiles with no sampler writes.
+- **Opt-in material atlas GL texture helper** - render code can now create
+  configured GL textures only for material atlas roles requested by active
+  bindings, omitting missing roles without placeholder textures.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
