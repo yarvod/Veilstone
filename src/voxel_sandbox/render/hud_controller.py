@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol, cast
 
 import numpy as np
@@ -196,7 +197,8 @@ class HudWindowAdapter:
             f"Facing {facing}\n"
             f"Biome {biome} Memory {slow_telemetry.memory} "
             f"Render distance {win.settings.world.render_distance} "
-            f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame}"
+            f"Mesh uploads/frame {win.settings.world.mesh_uploads_per_frame} "
+            f"Resource pack {_resource_pack_label(win.settings)}"
             f"\nChunks {perf.queues.loaded_chunks} "
             f"Pending {perf.queues.pending_chunks} "
             f"Mesh queue {perf.queues.pending_meshes} "
@@ -438,6 +440,14 @@ def _facing_from_yaw(yaw_degrees: float) -> str:
     if 225.0 <= yaw < 315.0:
         return "east"
     return "south"
+
+
+def _resource_pack_label(settings: Any) -> str:
+    path = str(getattr(settings.graphics, "resource_pack_path", "") or "")
+    if not path:
+        return "Default"
+    pack_path = Path(path)
+    return pack_path.stem if pack_path.suffix.lower() == ".zip" else pack_path.name
 
 
 def _biome_key_at(win: Any, block_x: int, block_z: int) -> str:

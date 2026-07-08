@@ -33,7 +33,7 @@ coherence и F3 diagnostics, не возвращая логику в `GameWindow
 
 ### Phase E: Minecraft-Like Terrain Visual Polish And Diagnostics
 
-Promoted backlog: `R-B004`, `DX-B001`, `R-B005`.
+Promoted backlog: `R-B004`, `DX-B001`, `R-B005`, `DX-B002`, `WORLD-B004`.
 
 Цель: сделать траву и terrain surfaces визуально ближе к Minecraft-like style,
 дать F3 enough diagnostics для проверки FPS/координат/чанков/биомов/очередей и
@@ -56,17 +56,17 @@ Promoted backlog: `R-B004`, `DX-B001`, `R-B005`.
   inspect shallow camera angles, tree shadows, grass color continuity, and
   capture screenshots when display is available.
 
-### Phase E2: Minecraft-Like F3 Diagnostics
+### Phase E2: Minecraft-Like F3 Diagnostics - completed 2026-07-08
 
-- [ ] Extend cached HUD debug snapshots with practical diagnostics: FPS/frame
+- [x] Extend cached HUD debug snapshots with practical diagnostics: FPS/frame
   timing, precise player coordinates, block/chunk coordinates, facing, biome or
   terrain profile, render distance, chunk/mesh queues, visible chunks, and
   active resource pack.
-- [ ] Keep diagnostics low-frequency/cached so F3 does not perform expensive
+- [x] Keep diagnostics low-frequency/cached so F3 does not perform expensive
   per-frame reads.
-- [ ] Add unit coverage for debug snapshot content without constructing Pyglet
+- [x] Add unit coverage for debug snapshot content without constructing Pyglet
   or ModernGL.
-- [ ] Real-game smoke F3 overlay: toggle F3, walk, inspect FPS/coords/chunk
+- [x] Real-game smoke F3 overlay: toggle F3, walk, inspect FPS/coords/chunk
   values updating, and save screenshot evidence when display is available.
 
 ### Phase E3: Render-Only Vegetation Motion
@@ -79,6 +79,17 @@ Promoted backlog: `R-B004`, `DX-B001`, `R-B005`.
   fallback behavior without OpenGL.
 - [ ] Real-game smoke: inspect grass/leaves near spawn, verify shadows remain
   readable and FPS/debug overlay stays sane.
+
+### Phase E4: Reusable Gameplay Smoke Screenshot Route
+
+- [ ] Add a dev-only gameplay smoke command or tool for deterministic walking
+  camera path screenshots with F3 enabled, without relying on stdin scripts.
+- [ ] Record metadata beside screenshots: seed, render distance, resource pack,
+  player start/end position, frame count, and queue/visible-section summary.
+- [ ] Keep the smoke path display-aware: use a real OpenGL window when
+  available, otherwise skip clearly and leave deterministic unit coverage.
+- [ ] Use the route for future E1/E3 visual checks so gameplay slices include
+  repeatable run/walk/screenshot evidence.
 
 ## Check Gate
 

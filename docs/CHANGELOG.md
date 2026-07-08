@@ -4,6 +4,10 @@
 
 ### Added
 
+- **F3 active resource-pack diagnostic** - debug overlay snapshots now include
+  the active resource pack label and cover it in unit plus real `GameWindow`
+  smoke checks. Runtime walking/F3 screenshot evidence:
+  `saves/screenshots/veilstone_20260708_234722.png`.
 - **Phase D architecture cleanup completed** - controller/HUD/runtime snapshot
   workplan is closed; active workplan now promotes Minecraft-like terrain
   visual polish and F3 diagnostics from `docs/BACKLOG.md`.

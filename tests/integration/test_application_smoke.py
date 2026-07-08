@@ -105,6 +105,7 @@ def test_debug_overlay_shows_minecraft_like_diagnostics(monkeypatch) -> None:
             assert "Memory " in text
             assert "Render distance " in text
             assert "Mesh uploads/frame " in text
+            assert "Resource pack Default" in text
             assert "Network singleplayer" in text
             assert "Remote players 0" in text
             assert "Runtime Python " in text
