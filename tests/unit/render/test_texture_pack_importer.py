@@ -16,12 +16,18 @@ from PIL import Image
 
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.domain.blocks import create_core_block_registry
-from voxel_sandbox.render.texture_atlas import GeneratedAtlas
+from voxel_sandbox.render.material_metadata import MaterialMapRole
+from voxel_sandbox.render.texture_atlas import (
+    GeneratedAtlas,
+    build_parallel_material_atlas,
+    build_texture_atlas,
+)
 from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
 from voxel_sandbox.render.texture_packs.minecraft_java import (
     discover_material_manifest,
     is_minecraft_java_pack,
     load_block_textures,
+    load_material_tiles,
     resource_location_to_texture_path,
 )
 
@@ -278,6 +284,81 @@ def test_zip_material_manifest_discovers_pbr_sidecars(tmp_path: Path) -> None:
         ("normal", "assets/minecraft/textures/block/stone_n.png"),
         ("specular", "assets/minecraft/textures/block/stone_s.png"),
     )
+
+
+def test_zip_material_tiles_load_by_role(tmp_path: Path) -> None:
+    pack = tmp_path / "pbr.zip"
+    with zipfile.ZipFile(pack, "w") as zf:
+        zf.writestr("pack.mcmeta", json.dumps({"pack": {"pack_format": 18}}))
+        zf.writestr("assets/minecraft/textures/block/stone.png", _png_bytes(16, 16))
+        zf.writestr(
+            "assets/minecraft/textures/block/stone_n.png",
+            _png_bytes(16, 16, (128, 128, 255, 255)),
+        )
+        zf.writestr(
+            "assets/minecraft/textures/block/stone_mer.png",
+            _png_bytes(16, 16, (10, 20, 30, 255)),
+        )
+
+    manifest = discover_material_manifest(pack, {"minecraft:block/stone": None})
+    tiles = load_material_tiles(pack, manifest)
+
+    normal_pixel = cast(
+        tuple[int, int, int, int],
+        tiles[MaterialMapRole.NORMAL]["minecraft:block/stone"].getpixel((0, 0)),
+    )
+    mer_pixel = cast(
+        tuple[int, int, int, int],
+        tiles[MaterialMapRole.MER]["minecraft:block/stone"].getpixel((0, 0)),
+    )
+
+    assert normal_pixel == (128, 128, 255, 255)
+    assert mer_pixel == (10, 20, 30, 255)
+
+
+def test_material_tiles_feed_parallel_material_atlas(tmp_path: Path) -> None:
+    pack = tmp_path / "pbr.zip"
+    with zipfile.ZipFile(pack, "w") as zf:
+        zf.writestr("pack.mcmeta", json.dumps({"pack": {"pack_format": 18}}))
+        zf.writestr("assets/minecraft/textures/block/stone.png", _png_bytes(16, 16))
+        zf.writestr(
+            "assets/minecraft/textures/block/stone_n.png",
+            _png_bytes(16, 16, (128, 128, 255, 255)),
+        )
+    resource_ids = {
+        "minecraft:block/dirt": None,
+        "minecraft:block/stone": None,
+    }
+    color_atlas = build_texture_atlas(
+        {
+            "minecraft:block/dirt": Image.new("RGBA", (16, 16), (30, 20, 10, 255)),
+            "minecraft:block/stone": Image.new("RGBA", (16, 16), (80, 80, 80, 255)),
+        },
+        tile_size=16,
+    )
+
+    manifest = discover_material_manifest(pack, resource_ids)
+    material_tiles = load_material_tiles(pack, manifest)
+    normal_atlas = build_parallel_material_atlas(
+        color_atlas,
+        role=MaterialMapRole.NORMAL,
+        tiles=material_tiles[MaterialMapRole.NORMAL],
+        default_color=(128, 128, 128, 255),
+    )
+    image = Image.frombytes(
+        "RGBA", (normal_atlas.width, normal_atlas.height), normal_atlas.pixels
+    ).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+
+    def sample(resource_id: str) -> tuple[int, int, int, int]:
+        uv = normal_atlas.uvs[resource_id]
+        x = round((uv[0] - normal_atlas.edge_inset_pixels / normal_atlas.width) * image.width)
+        y = round(
+            (1.0 - uv[3] - normal_atlas.edge_inset_pixels / normal_atlas.height) * image.height
+        )
+        return cast(tuple[int, int, int, int], image.getpixel((x, y)))
+
+    assert sample("minecraft:block/stone") == (128, 128, 255, 255)
+    assert sample("minecraft:block/dirt") == (128, 128, 128, 255)
 
 
 def test_zip_material_manifest_stays_empty_for_color_only_pack(tmp_path: Path) -> None:

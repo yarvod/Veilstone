@@ -19,6 +19,11 @@
   tile slots, UV rects, tile size, and edge inset metadata without binding extra
   shader textures by default. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_012541.png`.
+- **Material sidecar image loading** - Minecraft Java resource-pack support now
+  loads discovered PBR sidecar PNGs into role-keyed material tile maps so normal
+  and material pixels can feed parallel material atlas builders while color
+  atlas fallback behavior stays unchanged. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_012931.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

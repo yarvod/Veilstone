@@ -8,6 +8,7 @@ from PIL import Image
 
 from voxel_sandbox.render.material_metadata import (
     MaterialAtlasManifest,
+    MaterialMapRole,
     RenderMaterialMetadata,
     build_material_manifest,
     material_sidecar_refs,
@@ -180,6 +181,29 @@ def discover_material_manifest(
                 )
             )
     return build_material_manifest(entries)
+
+
+def load_material_tiles(
+    source: Path, manifest: MaterialAtlasManifest
+) -> dict[MaterialMapRole, dict[str, Image.Image]]:
+    """Load material sidecar images keyed by role and resource ID."""
+    use_zip = source.is_file() and source.suffix.lower() == ".zip"
+
+    def _load(asset_path: str) -> Image.Image | None:
+        if use_zip:
+            with zipfile.ZipFile(source) as zf:
+                return _load_png_from_zip(zf, asset_path)
+        return _load_png_from_folder(source, asset_path)
+
+    tiles: dict[MaterialMapRole, dict[str, Image.Image]] = {role: {} for role in MaterialMapRole}
+    for entry in manifest.entries:
+        for ref in entry.maps:
+            image = _load(ref.asset_path)
+            if image is None:
+                continue
+            image, _animated = _first_frame(image)
+            tiles[ref.role][entry.resource_id] = image.convert("RGBA")
+    return {role: role_tiles for role, role_tiles in tiles.items() if role_tiles}
 
 
 def _material_sidecar_paths(asset_path: str) -> tuple[str, ...]:
