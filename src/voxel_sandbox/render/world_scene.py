@@ -200,9 +200,17 @@ class DemoWorldRenderer:
             # Material-preview draws chunks with the activated shader; the
             # default chunk shader is released since nothing references it.
             self.shader.release()
-            self.shader = resolve_chunk_draw_shader(self.shader, self.material_shader_activation)
+        self.shader = resolve_chunk_draw_shader(self.shader, self.material_shader_activation)
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
+        self._neutral_shadow_texture = context.depth_texture((1, 1))
+        self._neutral_shadow_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._neutral_shadow_texture.compare_func = "<="
+        neutral_shadow_framebuffer = context.framebuffer(
+            depth_attachment=self._neutral_shadow_texture
+        )
+        neutral_shadow_framebuffer.clear(depth=1.0)
+        neutral_shadow_framebuffer.release()
         self.time_of_day = 0.18
         self.animation_time = 0.0
         self.vegetation_wind_enabled = True
@@ -540,8 +548,11 @@ class DemoWorldRenderer:
             self.shadow_map is not None
         )
         cast("moderngl.Uniform", self.shader.program["shadow_bias"]).value = self.shadow_bias
+        active_shadow_texture = (
+            self.shadow_map.texture if self.shadow_map is not None else self._neutral_shadow_texture
+        )
         cast("moderngl.Uniform", self.shader.program["shadow_texel_size"]).value = (
-            1.0 / self.shadow_map.size if self.shadow_map is not None else 1.0
+            1.0 / active_shadow_texture.width
         )
         cast(
             "moderngl.Uniform", self.shader.program["tile_uv_margin"]
@@ -555,8 +566,7 @@ class DemoWorldRenderer:
         cast("moderngl.Uniform", self.shader.program["shadow_map"]).value = 1
         camera_uniform.write(matrix.T.astype("f4").tobytes())
         self.texture.use(0)
-        if self.shadow_map is not None:
-            self.shadow_map.texture.use(1)
+        active_shadow_texture.use(1)
         bind_material_atlas_textures(self.material_atlas_textures)
         texture_uniform.value = 0
         camera_position_uniform.value = camera.position
@@ -712,6 +722,7 @@ class DemoWorldRenderer:
             self.material_shader_activation.shader.release()
         self.water_shader.release()
         self.shadow_shader.release()
+        self._neutral_shadow_texture.release()
         if self.shadow_map is not None:
             self.shadow_map.release()
 

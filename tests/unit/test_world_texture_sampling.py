@@ -39,6 +39,20 @@ def test_water_mesh_cache_skips_wind_motion_attribute_binding() -> None:
     assert "wind_motion=False" in scene_source
 
 
+def test_world_renderer_binds_neutral_shadow_texture_when_shadows_disabled() -> None:
+    source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "self._neutral_shadow_texture = context.depth_texture((1, 1))" in source
+    assert "neutral_shadow_framebuffer.clear(depth=1.0)" in source
+    assert (
+        "self.shadow_map.texture if self.shadow_map is not None else self._neutral_shadow_texture"
+        in source
+    )
+    assert "active_shadow_texture.use(1)" in source
+
+
 def test_material_quality_setting_reaches_world_renderer_decision() -> None:
     scene_source = (
         Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py"

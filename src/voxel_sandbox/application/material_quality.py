@@ -47,7 +47,11 @@ class ApplyMaterialQualityUseCase:
         )
         next_settings = replace(
             settings,
-            graphics=replace(settings.graphics, material_quality=normalized),
+            graphics=replace(
+                settings.graphics,
+                material_quality=normalized,
+                quality_preset="custom",
+            ),
         )
         self.settings_store.save(next_settings)
         return ApplyMaterialQualityResult(

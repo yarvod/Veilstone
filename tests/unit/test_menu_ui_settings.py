@@ -84,8 +84,10 @@ def test_materials_menu_label_and_cycle() -> None:
     menu_ui._handle_menu_command(MenuCommand.CYCLE_MATERIALS)
 
     assert win.settings.graphics.material_quality == "material-preview"
+    assert win.settings.graphics.quality_preset == "custom"
     assert world_renderer.applied == [("material-preview", "")]
     assert settings_store.saved[-1].graphics.material_quality == "material-preview"
+    assert settings_store.saved[-1].graphics.quality_preset == "custom"
     assert win.menu.status == "Material quality applied: material-preview"
 
     menu_ui._handle_menu_command(MenuCommand.CYCLE_MATERIALS)

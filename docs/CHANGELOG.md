@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Preset/material quality ownership** - explicit `/materials` or Settings material
+  toggles now return graphics quality to `custom`, so `high`/`cinematic` presets
+  do not silently reapply `material-preview` after a renderer rebuild or restart.
+- **No-shadow chunk sampler binding** - world chunks now bind a neutral 1x1 depth
+  texture on shadow texture unit when shadows are disabled, avoiding Metal/OpenGL
+  sampler warnings in `low_60` while keeping real shadow maps unchanged. Real
+  smokes: `low_60`
+  `saves/profile_smoke_low_60/screenshots/veilstone_20260709_144744.png`,
+  `high` material-preview
+  `saves/profile_smoke_high/screenshots/veilstone_20260709_144753.png`.
+
 ### Added
 
 - **Render material metadata cache keys** - render layer now has pure material

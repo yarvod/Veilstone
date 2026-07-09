@@ -30,6 +30,30 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   test locks default plan units, and the material-preview smoke restored the
   sun-lit patch to match the default profile.
 
+### BUG-R005: Material toggle could be overwritten by active quality preset
+
+- **Status:** fixed
+- **Affected area:** application settings / render quality presets
+- **Observed:** explicit `/materials` or Settings material quality changes were
+  saved to `graphics.material_quality`, but a non-custom `quality_preset` could
+  resolve back to its preset material quality on the next renderer rebuild or
+  restart.
+- **Fix notes:** `ApplyMaterialQualityUseCase` now sets `quality_preset =
+  "custom"` when applying an explicit material override, preserving the user's
+  direct material choice.
+
+### BUG-R004: No-shadow quality preset leaves shadow sampler unbound
+
+- **Status:** fixed
+- **Affected area:** render / quality presets / shadow sampling
+- **Observed:** `quality_preset = "low_60"` disabled shadow map creation but chunk
+  shaders still exposed `sampler2DShadow shadow_map` on texture unit 1; macOS
+  Metal warned about an unloadable/wrong sampler binding during real gameplay
+  smoke.
+- **Fix notes:** `WorldScene` now owns a neutral 1x1 cleared depth texture and
+  binds it whenever real shadows are disabled; `low_60` gameplay smoke now runs
+  without the sampler warning.
+
 ### BUG-R002: Water mesh VAO required vegetation wind attribute
 
 - **Status:** fixed

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.app.settings import AppSettings, GraphicsSettings
 from voxel_sandbox.application.material_quality import ApplyMaterialQualityUseCase
 
 
@@ -33,9 +33,26 @@ def test_apply_material_quality_updates_renderer_and_settings() -> None:
 
     assert result.applied is True
     assert result.settings.graphics.material_quality == "material-preview"
+    assert result.settings.graphics.quality_preset == "custom"
     assert renderer.applied == [("material-preview", settings.graphics.resource_pack_path)]
     assert store.saved is result.settings
     assert "material-preview" in result.status
+
+
+def test_apply_material_quality_returns_preset_to_custom() -> None:
+    renderer = FakeRenderer()
+    store = FakeSettingsStore()
+    settings = AppSettings(graphics=GraphicsSettings(quality_preset="high"))
+
+    result = ApplyMaterialQualityUseCase(settings_store=store).execute(
+        quality="color-only",
+        settings=settings,
+        renderer=renderer,
+    )
+
+    assert result.applied is True
+    assert result.settings.graphics.material_quality == "color-only"
+    assert result.settings.graphics.quality_preset == "custom"
 
 
 def test_apply_material_quality_rejects_unknown_profile() -> None:
@@ -67,3 +84,4 @@ def test_apply_material_quality_normalizes_input_case() -> None:
 
     assert result.applied is True
     assert result.settings.graphics.material_quality == "color-only"
+    assert result.settings.graphics.quality_preset == "custom"
