@@ -94,6 +94,12 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Material sidecar generator + terrain normal maps** - added
+  `scripts/generate_material_sidecars.py` producing deterministic height-based
+  `_n.png` normal sidecars, and shipped them for ten core terrain/wood blocks
+  in the default pack (stone, dirt, grass, oak, diamond ore, crafting table).
+  Real material-preview smoke with the full sidecar set:
+  `saves/screenshots/veilstone_20260709_042246.png`.
 - **/materials command for material quality** - new `/materials
   <color-only|low|material-preview>` command routes through
   `ApplyMaterialQualityUseCase` (settings persist + renderer hot-swap), and

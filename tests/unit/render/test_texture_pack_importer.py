@@ -477,6 +477,8 @@ def test_default_pack_material_bundle_exposes_stone_normal_role() -> None:
     assert MaterialMapRole.NORMAL in bundle.materials
     normal_atlas = bundle.materials[MaterialMapRole.NORMAL]
     assert "minecraft:block/stone" in normal_atlas.uvs
+    assert "minecraft:block/dirt" in normal_atlas.uvs
+    assert "minecraft:block/grass_block_top" in normal_atlas.uvs
     assert set(bundle.materials) <= set(MaterialMapRole)
 
 

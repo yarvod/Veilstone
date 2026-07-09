@@ -44,10 +44,12 @@ one when starting):
 
 - [ ] Settings UI (graphics screen) exposure for material quality alongside the
   `/materials` command.
-- [ ] More material sidecar content (dirt/grass normals, stone specular) so the
-  preview profile shows richer variety.
+- [x] More material sidecar content — done: generator script + normal sidecars
+  for ten terrain/wood blocks.
 - [ ] Material-preview tuning: balance normal-map lighting strength against
   default profile brightness before promoting the profile beyond preview.
+- [ ] Specular sidecar content (`_s.png`) for stone/ore so the preview shader's
+  specular path gets real data.
 
 ## Check Gate
 
