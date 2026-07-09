@@ -6,6 +6,7 @@ from voxel_sandbox.app.commands import (
     CommandError,
     HelpCommand,
     ListStructuresCommand,
+    MaterialQualityCommand,
     ResourcePackCommand,
     SetDifficultyCommand,
     SetTimeCommand,
@@ -48,6 +49,15 @@ def test_resource_pack_commands_parse() -> None:
     assert parse_command("/resourcepack default") == ResourcePackCommand(None)
     command = parse_command("/resourcepack resource_packs/Faithful-32x-1.21.11")
     assert command == ResourcePackCommand("resource_packs/Faithful-32x-1.21.11")
+
+
+def test_material_quality_commands_parse() -> None:
+    assert parse_command("/materials material-preview") == MaterialQualityCommand(
+        "material-preview"
+    )
+    assert parse_command("/materials color-only") == MaterialQualityCommand("color-only")
+    with pytest.raises(CommandError):
+        parse_command("/materials ultra")
 
 
 def test_structure_debug_commands_parse() -> None:

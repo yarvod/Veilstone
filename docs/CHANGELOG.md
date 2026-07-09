@@ -94,6 +94,15 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **/materials command for material quality** - new `/materials
+  <color-only|low|material-preview>` command routes through
+  `ApplyMaterialQualityUseCase` (settings persist + renderer hot-swap), and
+  `WorldScene.apply_material_quality` rebuilds the material pipeline, chunk
+  shader, and mesh cache in the running game. Real in-app toggle smoke:
+  default→preview→default screenshots
+  `saves/screenshots/veilstone_20260709_041858.png`,
+  `saves/screenshots/veilstone_20260709_041900.png` (preview shading + status
+  line), `saves/screenshots/veilstone_20260709_041902.png` (default restored).
 - **Material-preview chunk draw path** - when the material-preview activation
   exists, `WorldScene` now draws chunks with the activated
   `chunk_material_preview` shader (releasing the unused default program), while

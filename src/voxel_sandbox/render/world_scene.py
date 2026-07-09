@@ -151,6 +151,8 @@ class DemoWorldRenderer:
         )
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         _configure_block_texture(self.texture)
+        self._atlas = atlas
+        self._shader_root = shader_root
         self.atlas_uvs = atlas.uvs
         self.atlas_tile_margin = _atlas_tile_margin(atlas)
         self.uploads_per_frame = uploads_per_frame
@@ -618,6 +620,7 @@ class DemoWorldRenderer:
         old_texture = self.texture
         self.texture = self.context.texture((atlas.width, atlas.height), 4, atlas.pixels)
         _configure_block_texture(self.texture)
+        self._atlas = atlas
         old_texture.release()
 
         self.atlas_uvs = atlas.uvs
@@ -644,6 +647,52 @@ class DemoWorldRenderer:
         )
         self.water_mesh_cache = SectionMeshCache(
             self.context, self.water_shader.program, wind_motion=False
+        )
+        self._remesh_all()
+
+    def apply_material_quality(self, material_quality: str, resource_pack_path: str = "") -> None:
+        """Hot-swap the material quality profile and rebuild the chunk shader path."""
+        release_material_atlas_textures(self.material_atlas_textures)
+        old_shader = self.shader
+        self.material_pipeline = resolve_material_pipeline_from_graphics(material_quality)
+        self.material_bundle = None
+        material_roles: Iterable[MaterialMapRole] = ()
+        if self.material_pipeline.build_material_bundle:
+            pack_path = Path(resource_pack_path) if resource_pack_path else None
+            material_pack_path = pack_path or resource_path("resource_packs/default")
+            self.material_bundle = load_material_atlas_bundle(material_pack_path, self._atlas)
+            material_roles = self.material_bundle.materials.keys()
+        self.material_shader_setup = build_material_shader_setup(
+            self.material_pipeline,
+            material_roles,
+        )
+        self.material_shader_wiring = build_material_shader_runtime_wiring(
+            self.material_shader_setup,
+            self._shader_root,
+        )
+        self.material_shader_activation = activate_material_shader(
+            self.context, self.material_shader_wiring
+        )
+        self.material_atlas_textures = build_activated_material_atlas_textures(
+            self.context,
+            self.material_shader_activation,
+            self.material_bundle,
+        )
+        apply_material_sampler_bindings(self.material_shader_activation)
+        if self.material_shader_activation is not None:
+            self.shader = resolve_chunk_draw_shader(old_shader, self.material_shader_activation)
+        else:
+            self.shader = ShaderProgram(
+                self.context, ShaderFiles.from_directory(self._shader_root, "chunk_opaque")
+            )
+        old_shader.release()
+        if self.shader.program is None:
+            raise RuntimeError("Chunk shader failed to compile")
+        self.mesh_cache.release()
+        self.mesh_cache = SectionMeshCache(
+            self.context,
+            self.shader.program,
+            self.shadow_shader.program if self.shadow_map is not None else None,
         )
         self._remesh_all()
 

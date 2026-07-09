@@ -25,6 +25,11 @@ class ResourcePackCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class MaterialQualityCommand:
+    quality: str
+
+
+@dataclass(frozen=True, slots=True)
 class HelpCommand:
     pass
 
@@ -53,6 +58,7 @@ type GameCommand = (
     SetTimeCommand
     | SetDifficultyCommand
     | ResourcePackCommand
+    | MaterialQualityCommand
     | HelpCommand
     | SpawnStructureCommand
     | ToggleStructureCommand
@@ -95,6 +101,11 @@ def parse_command(source: str) -> GameCommand:
         if arguments[0] == "default":
             return ResourcePackCommand(None)
         return ResourcePackCommand(raw_arguments[0])
+    if command == "materials" and len(arguments) == 1:
+        quality = arguments[0]
+        if quality not in {"color-only", "low", "material-preview"}:
+            raise CommandError("Materials must be color-only, low or material-preview.")
+        return MaterialQualityCommand(quality)
     if command == "structure" and arguments[:1] == ["spawn"] and len(arguments) == 2:
         key = arguments[1]
         if key not in {"gate", "altar", "bridge"}:

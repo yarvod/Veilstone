@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 from voxel_sandbox.app.commands import (
     CommandError,
     ListStructuresCommand,
+    MaterialQualityCommand,
     ResourcePackCommand,
     SetDifficultyCommand,
     SetTimeCommand,
@@ -18,6 +19,7 @@ from voxel_sandbox.app.commands import (
     parse_command,
 )
 from voxel_sandbox.app.settings import AppSettings, save_user_settings
+from voxel_sandbox.application.material_quality import ApplyMaterialQualityUseCase
 from voxel_sandbox.application.resource_packs import (
     ApplyResourcePackUseCase,
     TexturePackServicePort,
@@ -47,6 +49,8 @@ class GameplayView(Protocol):
 
     def apply_resource_pack(self, path: str | None) -> str: ...
 
+    def apply_material_quality(self, quality: str) -> str: ...
+
 
 class GameplayWindowAdapter:
     def __init__(self, window: GameWindow) -> None:
@@ -71,6 +75,18 @@ class GameplayWindowAdapter:
             renderer=self._window.world_renderer,
             block_registry=cast(BlockRegistry, self._window.world_runtime.block_registry),
             cache_root=self._window.active_save_root.parent / "texture_cache",
+        )
+        if result.applied:
+            self._window.settings = result.settings
+        return result.status
+
+    def apply_material_quality(self, quality: str) -> str:
+        result = ApplyMaterialQualityUseCase(
+            settings_store=self._window.app_runtime.settings_store,
+        ).execute(
+            quality=quality,
+            settings=self._window.settings,
+            renderer=self._window.world_renderer,
         )
         if result.applied:
             self._window.settings = result.settings
@@ -107,6 +123,8 @@ class GameplayController:
                 self._handle_set_difficulty(command)
             case ResourcePackCommand():
                 self._handle_resource_pack(command)
+            case MaterialQualityCommand():
+                self._handle_material_quality(command)
             case TeleportCommand():
                 self._handle_teleport(command)
             case SpawnStructureCommand():
@@ -118,7 +136,8 @@ class GameplayController:
             case _:
                 win.inventory_status = (
                     "/time set <...>; /difficulty <...>; "
-                    "/resourcepack <path|default>; /structure <spawn|toggle|list>"
+                    "/resourcepack <path|default>; /materials <color-only|material-preview>; "
+                    "/structure <spawn|toggle|list>"
                 )
 
     def _handle_set_time(self, command: SetTimeCommand) -> None:
@@ -139,6 +158,10 @@ class GameplayController:
     def _handle_resource_pack(self, command: ResourcePackCommand) -> None:
         win = self.win
         win.inventory_status = win.apply_resource_pack(command.path)
+
+    def _handle_material_quality(self, command: MaterialQualityCommand) -> None:
+        win = self.win
+        win.inventory_status = win.apply_material_quality(command.quality)
 
     def _handle_teleport(self, command: TeleportCommand) -> None:
         win = self.win

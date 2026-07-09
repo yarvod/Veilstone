@@ -37,17 +37,17 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G28: Material-Preview Settings UI Exposure
+### Phase G29: Next Material/Visual Slice Selection
 
-- [ ] Expose the `material_quality` graphics setting (`color-only` /
-  `material-preview`) through the in-game settings UI or an explicit command so
-  players can toggle the opt-in preview without editing settings files.
-- [ ] Keep `color-only` as the default and make switching apply through the
-  existing renderer rebuild path, not ad-hoc `GameWindow` logic.
-- [ ] Add tests for the settings/use-case plumbing of the toggle.
-- [ ] Run real-game smoke: toggle to material-preview in the running app,
-  capture screenshots of both profiles, and verify the default profile after
-  toggling back.
+Phase G28 closed the `/materials` runtime toggle. Candidate next slices (pick
+one when starting):
+
+- [ ] Settings UI (graphics screen) exposure for material quality alongside the
+  `/materials` command.
+- [ ] More material sidecar content (dirt/grass normals, stone specular) so the
+  preview profile shows richer variety.
+- [ ] Material-preview tuning: balance normal-map lighting strength against
+  default profile brightness before promoting the profile beyond preview.
 
 ## Check Gate
 
