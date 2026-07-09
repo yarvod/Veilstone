@@ -272,7 +272,12 @@ class RenderModelSnapshot:
 
 ### R-B007: Iris/PBR-Like Shader Material Pipeline
 
-- **Status:** open
+- **Status:** done (Phase G, 2026-07-09) — opt-in `material-preview` profile
+  draws chunks with a material shader consuming NORMAL/SPECULAR atlases built
+  from default-pack `_n`/`_s` sidecars; default/low profiles stay color-only
+  without extra texture binds; toggle available via `/materials` and Settings
+  UI. Remaining ideas (emissive conventions, LabPBR metadata, reflections) can
+  be re-promoted as new items when needed.
 - **Observed:** Veilstone supports Minecraft Java-style color textures, cutout
   alpha, fog, smooth lighting, AO, water animation, and shadow maps, but not
   shaderpack-style material inputs such as normal/specular/emissive/parallax
@@ -298,7 +303,7 @@ class RenderModelSnapshot:
 
 ### R-B008: Scalable Visual Quality Tiers
 
-- **Status:** open
+- **Status:** promoted to `docs/WORKPLAN.md` Phase H (2026-07-09)
 - **Observed:** realistic graphics and weak-machine 60 FPS pull in opposite
   directions if every effect is always on.
 - **Desired:** settings expose clear presets such as `low_60`, `balanced`,
