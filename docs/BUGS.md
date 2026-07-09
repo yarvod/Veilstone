@@ -23,9 +23,16 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Observed:** user screenshots and F3 material-preview smoke
   `saves/f3_preset_smoke/screenshots/veilstone_20260709_151033.png` show hard
   triangular/blocky dark shadow artifacts across terrain and cave/stone surfaces.
-- **Next action:** reproduce in a controlled reference scene, inspect shadow
-  matrix snapping, bias/filtering, receiver normals/material-preview lighting,
-  and compare low/off/medium/high preset captures.
+- **Reproduction:** `uv run python -m voxel_sandbox shadow-preset-smoke --frames
+  40 --render-distance 2 --output-dir saves/shadow_preset_smoke` captures
+  preset metadata in `saves/shadow_preset_smoke/shadow_preset_smoke.json`.
+  `off` screenshot is clean, while `medium` and `high_material_preview`
+  reproduce the broad triangular dark receiver artifacts:
+  `saves/shadow_preset_smoke/medium/screenshots/veilstone_20260709_153138.png`,
+  `saves/shadow_preset_smoke/high_material_preview/screenshots/veilstone_20260709_153139.png`.
+- **Next action:** inspect receiver projected coordinates, depth compare,
+  bias/filtering, and shadow-matrix bounds before changing material-preview
+  lighting or later `R-B009` water work.
 
 ### BUG-G008: Dropped items jitter in water instead of floating
 

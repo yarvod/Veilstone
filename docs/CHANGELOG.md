@@ -24,6 +24,14 @@
 
 ### Added
 
+- **Shadow preset smoke captures** - `python -m voxel_sandbox
+  shadow-preset-smoke` now captures `off`/`low`/`medium`/`high_material_preview`
+  screenshots plus JSON metadata for comparing shadow artifacts across quality
+  settings. Real smoke evidence:
+  `saves/shadow_preset_smoke/shadow_preset_smoke.json`,
+  `saves/shadow_preset_smoke/off/screenshots/veilstone_20260709_153135.png`,
+  `saves/shadow_preset_smoke/medium/screenshots/veilstone_20260709_153138.png`,
+  `saves/shadow_preset_smoke/high_material_preview/screenshots/veilstone_20260709_153139.png`.
 - **Quality preset Settings UI** - Settings now has a `Quality Preset` item
   cycling `custom`/`low_60`/`balanced`/`high`/`cinematic`; selecting a preset
   live-applies material quality, fog, clouds, and vegetation wind while status

@@ -64,6 +64,13 @@ def build_parser() -> argparse.ArgumentParser:
     gameplay_smoke.add_argument("--frames", type=int, default=90)
     gameplay_smoke.add_argument("--render-distance", type=int, default=None)
     gameplay_smoke.add_argument("--metadata", default=None)
+    shadow_smoke = subparsers.add_parser(
+        "shadow-preset-smoke",
+        help="Capture shadow quality preset comparison screenshots",
+    )
+    shadow_smoke.add_argument("--frames", type=int, default=100)
+    shadow_smoke.add_argument("--render-distance", type=int, default=2)
+    shadow_smoke.add_argument("--output-dir", default=None)
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",

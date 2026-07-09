@@ -113,6 +113,18 @@ def run_command(args: argparse.Namespace) -> int:
             render_distance=getattr(args, "render_distance", None),
             metadata_path=Path(str(metadata)) if metadata else None,
         )
+    if command == "shadow-preset-smoke":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.shadow_preset_smoke import run_shadow_preset_smoke
+
+        output_dir = getattr(args, "output_dir", None)
+        return run_shadow_preset_smoke(
+            settings,
+            frames=int(getattr(args, "frames", 100)),
+            render_distance=int(getattr(args, "render_distance", 2)),
+            output_dir=Path(str(output_dir)) if output_dir else None,
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 
