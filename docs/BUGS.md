@@ -18,7 +18,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-R006: Shadow artifacts on terrain surfaces
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** render / shadows / material-preview lighting
 - **Observed:** user screenshots and F3 material-preview smoke
   `saves/f3_preset_smoke/screenshots/veilstone_20260709_151033.png` show hard
@@ -30,9 +30,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   reproduce the broad triangular dark receiver artifacts:
   `saves/shadow_preset_smoke/medium/screenshots/veilstone_20260709_153138.png`,
   `saves/shadow_preset_smoke/high_material_preview/screenshots/veilstone_20260709_153139.png`.
-- **Next action:** inspect receiver projected coordinates, depth compare,
-  bias/filtering, and shadow-matrix bounds before changing material-preview
-  lighting or later `R-B009` water work.
+- **Fix notes:** chunk shadow receivers now use a wider 5x5 PCF average and a
+  softer shadow floor (`0.48`) in both color-only and material-preview shaders,
+  removing the single-center-sample hard clamp that made projected terrain
+  edges read as black triangular artifacts. After-fix smoke:
+  `saves/shadow_preset_smoke_after_fix/medium/screenshots/veilstone_20260709_155439.png`,
+  `saves/shadow_preset_smoke_after_fix/high_material_preview/screenshots/veilstone_20260709_155441.png`.
 
 ### BUG-G008: Dropped items jitter in water instead of floating
 

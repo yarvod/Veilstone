@@ -2,10 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase I (shadow artifact cleanup after quality tiers) —
-medium/high shadow captures now reproduce the hard terrain artifacts from
-`BUG-R006`, while `off` stays clean. Следующий шаг — fix the receiver/shadow
-math without folding logic back into `GameWindow` or `DemoWorldRenderer`.
+Активная цель: Phase J (water surface visual quality, `R-B009`) — shadow
+artifact cleanup is fixed and documented; next work improves water readability
+without mixing simulation fixes back into render/UI classes.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -30,21 +29,21 @@ math without folding logic back into `GameWindow` or `DemoWorldRenderer`.
 
 ## Current Phase
 
-### Phase I3: Shadow Artifact Fix
+### Phase J: Water Surface Visual Quality
 
-Promoted bug: `BUG-R006`.
+Promoted backlog: `R-B009`.
 
-Цель: убрать hard triangular/blocky terrain shadow artifacts from the receiver
-path while keeping `off` preset clean and preserving material-preview lighting.
+Цель: make water read more like water at gameplay distance: clearer surface
+highlights/reflection cues, less flat movement, and no regression to the stable
+item buoyancy fixed in `BUG-G008`.
 
-- [ ] Inspect shadow receiver sampling in `chunk_opaque.frag` and
-  `chunk_material_preview.frag` against the `off`/`medium`/`high` captures.
-- [ ] Verify whether projected coordinates, depth compare, bias/filtering, or
-  shadow matrix bounds cause the broad dark triangles.
-- [ ] Add focused shader/math coverage where practical, or a deterministic
-  smoke assertion around shadow preset metadata if shader-level unit coverage is
-  not feasible.
-- [ ] Run `shadow-preset-smoke` again and compare screenshots before/after.
+- [ ] Inspect current water mesh/shader path and capture baseline water
+  screenshots with floating item drops visible.
+- [ ] Add low-cost surface animation/normal or highlight cues behind quality
+  settings where appropriate.
+- [ ] Verify item drops still rise to and settle at the water surface.
+- [ ] Run real gameplay water smoke with screenshot path and item stability
+  metrics before committing.
 
 ## Check Gate
 

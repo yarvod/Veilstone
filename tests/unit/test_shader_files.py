@@ -90,13 +90,15 @@ def test_chunk_and_shadow_vertex_shaders_apply_vegetation_wind() -> None:
         assert "in_wind_motion > 1.5" in source
 
 
-def test_chunk_shader_preserves_thin_cutout_shadow_samples() -> None:
+def test_chunk_shader_uses_soft_terrain_shadow_filter() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
 
-    assert "center_visibility" in fragment
     assert "filtered_visibility" in fragment
-    assert "return min(filtered_visibility, center_visibility + 0.18);" in fragment
+    assert "for (int x = -2; x <= 2; ++x)" in fragment
+    assert "for (int y = -2; y <= 2; ++y)" in fragment
+    assert "float filtered_visibility = visibility / 25.0;" in fragment
+    assert "return filtered_visibility;" in fragment
     assert "max(shadow_bias, 0.004)" not in fragment
 
 
@@ -125,6 +127,5 @@ def test_chunk_shader_keeps_world_shadows_readable() -> None:
     fragment = (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8")
 
     assert "max(shadow_bias, 0.0015)" in fragment
-    assert "center_visibility" in fragment
-    assert "float shadow = mix(0.34, 1.0, sample_shadow())" in fragment
+    assert "float shadow = mix(0.48, 1.0, sample_shadow())" in fragment
     assert "float ambient_sky = sky * 0.36" in fragment

@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- **Softer terrain shadow filtering** - chunk color-only and material-preview
+  receivers now use a 5x5 PCF average with a softer shadow floor, reducing hard
+  triangular/blocky terrain shadow artifacts while preserving actual occluder
+  shadows. Real after-fix smoke:
+  `saves/shadow_preset_smoke_after_fix/medium/screenshots/veilstone_20260709_155439.png`,
+  `saves/shadow_preset_smoke_after_fix/high_material_preview/screenshots/veilstone_20260709_155441.png`.
 - **Dropped item water buoyancy** - item drop physics now targets the water
   surface instead of repeatedly switching between upward water velocity and
   gravity, so drops rise to the surface and settle with minimal jitter. Unit

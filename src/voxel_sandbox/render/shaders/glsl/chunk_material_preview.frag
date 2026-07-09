@@ -45,13 +45,9 @@ float sample_shadow() {
         return 1.0;
     }
     float receiver_bias = max(shadow_bias, 0.0015);
-    float center_visibility = texture(
-        shadow_map,
-        vec3(projected.xy, projected.z - receiver_bias)
-    );
     float visibility = 0.0;
-    for (int x = -1; x <= 1; ++x) {
-        for (int y = -1; y <= 1; ++y) {
+    for (int x = -2; x <= 2; ++x) {
+        for (int y = -2; y <= 2; ++y) {
             vec2 offset = vec2(x, y) * shadow_texel_size;
             visibility += texture(
                 shadow_map,
@@ -59,8 +55,8 @@ float sample_shadow() {
             );
         }
     }
-    float filtered_visibility = visibility / 9.0;
-    return min(filtered_visibility, center_visibility + 0.18);
+    float filtered_visibility = visibility / 25.0;
+    return filtered_visibility;
 }
 
 void main() {
@@ -89,7 +85,7 @@ void main() {
         : vec3(0.0);
 
     float sky = vertex_sky_light * daylight;
-    float shadow = mix(0.34, 1.0, sample_shadow());
+    float shadow = mix(0.48, 1.0, sample_shadow());
     // Zero-mean tangent detail keeps overall brightness matched with
     // chunk_opaque; normals only modulate the sun-facing term.
     float normal_detail = clamp(
