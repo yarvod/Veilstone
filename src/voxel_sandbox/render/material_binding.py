@@ -33,6 +33,17 @@ _SAMPLER_NAMES: dict[MaterialMapRole, str] = {
     MaterialMapRole.MER: "u_material_mer_atlas",
 }
 
+_FLAG_UNIFORM_NAMES: dict[MaterialMapRole, str] = {
+    MaterialMapRole.NORMAL: "u_material_has_normal",
+    MaterialMapRole.SPECULAR: "u_material_has_specular",
+    MaterialMapRole.EMISSIVE: "u_material_has_emissive",
+    MaterialMapRole.MER: "u_material_has_mer",
+}
+
+
+def material_flag_uniform_name(role: MaterialMapRole) -> str:
+    return _FLAG_UNIFORM_NAMES[role]
+
 
 def build_material_atlas_binding_plan(
     decision: MaterialPipelineDecision,

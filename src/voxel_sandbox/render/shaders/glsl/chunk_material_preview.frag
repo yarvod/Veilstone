@@ -5,6 +5,10 @@ uniform sampler2D u_material_normal_atlas;
 uniform sampler2D u_material_specular_atlas;
 uniform sampler2D u_material_emissive_atlas;
 uniform sampler2D u_material_mer_atlas;
+uniform int u_material_has_normal;
+uniform int u_material_has_specular;
+uniform int u_material_has_emissive;
+uniform int u_material_has_mer;
 uniform vec3 camera_position;
 uniform vec3 day_tint;
 uniform vec3 fog_color;
@@ -71,15 +75,29 @@ void main() {
         discard;
     }
 
-    vec3 normal_sample = texture(u_material_normal_atlas, atlas_uv).rgb * 2.0 - 1.0;
-    float specular_strength = texture(u_material_specular_atlas, atlas_uv).r;
-    vec3 emissive_color = texture(u_material_emissive_atlas, atlas_uv).rgb;
-    vec3 mer_sample = texture(u_material_mer_atlas, atlas_uv).rgb;
+    vec3 normal_sample = u_material_has_normal == 1
+        ? texture(u_material_normal_atlas, atlas_uv).rgb * 2.0 - 1.0
+        : vec3(0.0, 0.0, 1.0);
+    float specular_strength = u_material_has_specular == 1
+        ? texture(u_material_specular_atlas, atlas_uv).r
+        : 0.0;
+    vec3 emissive_color = u_material_has_emissive == 1
+        ? texture(u_material_emissive_atlas, atlas_uv).rgb
+        : vec3(0.0);
+    vec3 mer_sample = u_material_has_mer == 1
+        ? texture(u_material_mer_atlas, atlas_uv).rgb
+        : vec3(0.0);
 
     float sky = vertex_sky_light * daylight;
     float shadow = mix(0.34, 1.0, sample_shadow());
-    float normal_boost = clamp(normal_sample.z * 0.08 + mer_sample.r * 0.04, 0.0, 0.12);
-    float sun_light = sky * (vertex_directional + normal_boost) * shadow;
+    // Zero-mean tangent detail keeps overall brightness matched with
+    // chunk_opaque; normals only modulate the sun-facing term.
+    float normal_detail = clamp(
+        (normal_sample.x + normal_sample.y) * 0.10 + mer_sample.r * 0.04,
+        -0.12,
+        0.12
+    );
+    float sun_light = sky * clamp(vertex_directional + normal_detail, 0.0, 1.0) * shadow;
     float ambient_sky = sky * 0.36;
     float light_level = max(max(sun_light, ambient_sky), max(vertex_block_light, 0.12));
     vec3 block_warmth = vec3(1.0, 0.66, 0.34) * vertex_block_light * 0.32;

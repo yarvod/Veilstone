@@ -48,8 +48,8 @@ one when starting):
   for ten terrain/wood blocks.
 - [x] Specular sidecar content — done: `_s.png` for stone/diamond ore via the
   generator script.
-- [ ] Material-preview tuning: balance normal-map lighting strength against
-  default profile brightness before promoting the profile beyond preview.
+- [x] Material-preview tuning — done: per-role `has` flags stop unbound sampler
+  aliasing; zero-mean normal detail keeps brightness matched with default.
 
 ## Check Gate
 

@@ -94,6 +94,14 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Material-preview lighting balance** - added `u_material_has_<role>` flag
+  uniforms so absent material roles no longer alias texture unit 0 (unbound
+  emissive/MER samplers were re-adding the color atlas as fake emissive light,
+  washing out the preview), and replaced the flat normal-z boost with a
+  zero-mean tangent detail term. Preview brightness now matches the default
+  profile with per-pixel normal detail only. Screenshots: preview
+  `saves/screenshots/veilstone_20260709_043947.png` vs default
+  `saves/screenshots/veilstone_20260709_043950.png`.
 - **Specular sidecar content** - the sidecar generator now also produces
   brightness-scaled `_s.png` specular maps for stone and diamond ore, so the
   material-preview profile binds both NORMAL and SPECULAR atlas roles. Real

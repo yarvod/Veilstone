@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from voxel_sandbox.render.material_binding import MaterialAtlasBinding
+from voxel_sandbox.render.material_binding import (
+    MaterialAtlasBinding,
+    material_flag_uniform_name,
+)
 from voxel_sandbox.render.material_shader_setup import MaterialShaderSetup
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 
@@ -76,4 +79,6 @@ def apply_material_sampler_bindings(
     program = cast(Any, activation.shader.program)
     for binding in activation.material_bindings:
         program[binding.sampler_name].value = binding.texture_unit
+        # Missing roles keep the GL default of 0, disabling their shader path.
+        program[material_flag_uniform_name(binding.role)].value = 1
     return activation.material_bindings

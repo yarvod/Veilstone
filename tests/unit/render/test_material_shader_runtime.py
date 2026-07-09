@@ -150,7 +150,11 @@ def test_material_preview_sampler_bindings_write_planned_units(tmp_path: Path) -
     assert isinstance(program, _FakeProgram)
     assert program.uniforms["u_material_normal_atlas"].value == 4
     assert program.uniforms["u_material_specular_atlas"].value == 5
+    assert program.uniforms["u_material_has_normal"].value == 1
+    assert program.uniforms["u_material_has_specular"].value == 1
     assert "u_material_emissive_atlas" not in program.uniforms
+    assert "u_material_has_emissive" not in program.uniforms
+    assert "u_material_has_mer" not in program.uniforms
 
 
 def test_chunk_draw_shader_defaults_without_activation() -> None:
