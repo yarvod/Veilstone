@@ -120,6 +120,19 @@ def test_pressed_state_survives_across_frames() -> None:
     assert len(fired) == 1, "Click callback should fire exactly once"
 
 
+def test_long_menu_keeps_first_button_below_title() -> None:
+    from voxel_sandbox.render.ui.menu import MenuController, Screen
+
+    r = _make_renderer(1024, 768)
+    menu = MenuController()
+    menu.screen = Screen.SETTINGS
+
+    r.update(menu, lambda index: menu.items[index].label)
+
+    first_button = r.buttons[0]
+    assert first_button.bounds.y + first_button.bounds.height <= r.title_label.bounds.y
+
+
 # ---------------------------------------------------------------------------
 # Texture pack screen adds content to root_panel
 # ---------------------------------------------------------------------------

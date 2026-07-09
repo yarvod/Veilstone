@@ -40,16 +40,14 @@ Promoted backlog: `R-B008`.
 резолвящиеся в один `RenderQualityProfile`, вместо рассыпанных независимых
 graphics-флагов.
 
-### Phase H3: Preset Settings UI + Live Apply
+### Phase H4: Preset Diagnostics Visibility
 
-- [ ] Add a `Quality Preset` item to the Settings screen cycling
-  custom/low_60/balanced/high/cinematic.
-- [ ] Live-apply what is hot-swappable today (material quality, fog, clouds,
-  vegetation wind); mark restart-bound knobs (shadows, smooth lighting, AO,
-  render distance) in the status line like the existing shadow item does.
-- [ ] Keep preset resolution in `render_quality.py`; no new logic in
-  `GameWindow`.
-- [ ] Unit tests for the menu cycle + real settings-screen smoke screenshots.
+- [ ] Add F3/debug snapshot text for active `graphics.quality_preset`.
+- [ ] Surface resolved expensive-effect state in diagnostics: shadows, smooth
+  lighting, AO, fog, clouds, vegetation wind, material quality.
+- [ ] Keep diagnostic assembly in existing HUD snapshot/view path; avoid new
+  renderer reads in `HudController`.
+- [ ] Unit tests for debug text plus real F3 gameplay smoke screenshot.
 
 ## Check Gate
 

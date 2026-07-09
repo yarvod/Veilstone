@@ -35,6 +35,11 @@ from voxel_sandbox.audio import AudioEvent, AudioEventKind
 from voxel_sandbox.audio.runtime import volume_map
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import discover_worlds
+from voxel_sandbox.render.render_quality import (
+    QUALITY_PRESETS,
+    build_custom_profile,
+    resolve_render_quality_profile,
+)
 from voxel_sandbox.render.texture_packs.models import ImportReport
 from voxel_sandbox.render.ui.menu import MenuCommand, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
@@ -217,6 +222,7 @@ class MenuUI:
             win.settings.graphics.greedy_meshing,
         )
         values = {
+            "cycle_quality_preset": win.settings.graphics.quality_preset,
             "cycle_shadows": win.settings.graphics.shadow_quality,
             "cycle_materials": win.settings.graphics.material_quality,
             "toggle_clouds": "on" if win.settings.graphics.clouds else "off",
@@ -803,6 +809,8 @@ class MenuUI:
             )
         elif command is MenuCommand.OPEN_LAN:
             win._net.open_to_lan()
+        elif command is MenuCommand.CYCLE_QUALITY_PRESET:
+            self._cycle_quality_preset()
         elif command is MenuCommand.CYCLE_SHADOWS:
             qualities = ("off", "low", "medium")
             current = win.settings.graphics.shadow_quality
@@ -887,6 +895,49 @@ class MenuUI:
                 MenuCommand.REBIND_JUMP: "jump",
             }[command]
             win.menu.status = f"Press a key for {win.rebinding_action}."
+
+    def _cycle_quality_preset(self) -> None:
+        win = self.win
+        current = win.settings.graphics.quality_preset
+        current_index = QUALITY_PRESETS.index(current) if current in QUALITY_PRESETS else 0
+        next_preset = QUALITY_PRESETS[(current_index + 1) % len(QUALITY_PRESETS)]
+        profile = resolve_render_quality_profile(
+            next_preset,
+            custom=build_custom_profile(
+                shadow_quality=win.settings.graphics.shadow_quality,
+                smooth_lighting=win.settings.graphics.smooth_lighting,
+                ambient_occlusion=win.settings.graphics.ambient_occlusion,
+                fog=win.settings.graphics.fog,
+                clouds=win.settings.graphics.clouds,
+                material_quality=win.settings.graphics.material_quality,
+            ),
+        )
+
+        win.settings = replace(
+            win.settings,
+            graphics=replace(
+                win.settings.graphics,
+                quality_preset=next_preset,
+                shadow_quality=profile.shadow_quality,
+                smooth_lighting=profile.smooth_lighting,
+                ambient_occlusion=profile.ambient_occlusion,
+                fog=profile.fog,
+                clouds=profile.clouds,
+                material_quality=profile.material_quality,
+            ),
+        )
+        win.world_renderer.apply_material_quality(
+            profile.material_quality,
+            win.settings.graphics.resource_pack_path,
+        )
+        win.world_renderer.fog_enabled = profile.fog
+        win.world_renderer.vegetation_wind_enabled = profile.vegetation_wind
+        win.sky_renderer.clouds = profile.clouds
+        save_user_settings(win.settings)
+        win.menu.status = (
+            f"Quality preset {next_preset} saved; live material/fog/clouds/wind "
+            "applied; shadows/smooth/AO/render distance apply restart."
+        )
 
     def _cycle_render_distance(self) -> None:
         win = self.win

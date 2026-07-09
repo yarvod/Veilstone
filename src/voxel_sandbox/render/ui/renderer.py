@@ -198,7 +198,11 @@ class UiRenderer:
         self._layout()
 
     def _layout(self) -> None:
-        title_y = self.height * 3 // 4
+        title_y = (
+            self.height * 5 // 6
+            if self._current_screen not in _LIST_SCREENS and len(self.buttons) > 10
+            else self.height * 3 // 4
+        )
         self.title_label.layout(0, title_y - 20, self.width, 40)
         self.status_label.layout(0, self.height // 4 - 20, self.width, 40)
 
@@ -208,7 +212,26 @@ class UiRenderer:
             self.world_list_vbox.layout(0, list_y, self.width, list_height)
             self.world_actions_hbox1.layout(0, 60, self.width, 50)
             self.world_actions_hbox2.layout(0, 10, self.width, 50)
+        elif len(self.buttons) > 10:
+            menu_top = self.title_label.bounds.y - 12
+            menu_bottom = self.status_label.bounds.y + self.status_label.bounds.height + 16
+            menu_height = max(120, menu_top - menu_bottom)
+            compact_spacing = 5
+            compact_button_height = max(
+                22,
+                min(
+                    VEILSTONE_THEME.button_height,
+                    (menu_height - compact_spacing * (len(self.buttons) - 1)) // len(self.buttons),
+                ),
+            )
+            self.vbox.spacing = compact_spacing
+            for button in self.buttons:
+                button.bounds.height = compact_button_height
+            self.vbox.layout(0, menu_bottom, self.width, menu_height)
         else:
+            self.vbox.spacing = 16
+            for button in self.buttons:
+                button.bounds.height = VEILSTONE_THEME.button_height
             self.vbox.layout(0, 0, self.width, self.height)
 
     def draw(self) -> None:

@@ -29,6 +29,7 @@ class MenuCommand(Enum):
     DIRECT_CONNECT = auto()
     EDIT_NICKNAME = auto()
     OPEN_LAN = auto()
+    CYCLE_QUALITY_PRESET = auto()
     CYCLE_SHADOWS = auto()
     CYCLE_MATERIALS = auto()
     TOGGLE_CLOUDS = auto()
@@ -76,6 +77,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
         MenuItem("Back", target=Screen.MAIN),
     ),
     Screen.SETTINGS: (
+        MenuItem("Quality Preset", action="cycle_quality_preset"),
         MenuItem("Shadow Quality", action="cycle_shadows"),
         MenuItem("Materials", action="cycle_materials"),
         MenuItem("Clouds", action="toggle_clouds"),
@@ -206,6 +208,8 @@ class MenuController:
             return MenuCommand.EDIT_NICKNAME
         elif action == "open_lan":
             return MenuCommand.OPEN_LAN
+        elif action == "cycle_quality_preset":
+            return MenuCommand.CYCLE_QUALITY_PRESET
         elif action == "cycle_shadows":
             return MenuCommand.CYCLE_SHADOWS
         elif action == "cycle_materials":

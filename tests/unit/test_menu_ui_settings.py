@@ -16,7 +16,7 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
 
     menu = MenuController()
     menu.screen = Screen.SETTINGS
-    menu.select(4)
+    menu.select(5)
 
     class FakeWorldRenderer:
         def __init__(self) -> None:
@@ -36,7 +36,7 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
     menu_ui.win = win
 
     assert menu.activate() is MenuCommand.CYCLE_RENDER_DISTANCE
-    assert menu_ui._menu_item_label(4) == "Render Distance: 4 chunks"
+    assert menu_ui._menu_item_label(5) == "Render Distance: 4 chunks"
 
     menu_ui._handle_menu_command(MenuCommand.CYCLE_RENDER_DISTANCE)
 
@@ -44,6 +44,55 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
     assert world_renderer.render_distance == 6
     assert saved[-1].world.render_distance == 6
     assert win.menu.status == "Render distance saved 6 chunks; applied."
+
+
+def test_quality_preset_menu_label_and_cycle(monkeypatch) -> None:
+    saved: list[AppSettings] = []
+    monkeypatch.setattr("voxel_sandbox.render.menu_ui.save_user_settings", saved.append)
+    menu = MenuController()
+    menu.screen = Screen.SETTINGS
+
+    class FakeWorldRenderer:
+        def __init__(self) -> None:
+            self.applied: list[tuple[str, str]] = []
+            self.fog_enabled = False
+            self.vegetation_wind_enabled = True
+
+        def apply_material_quality(
+            self, material_quality: str, resource_pack_path: str = ""
+        ) -> None:
+            self.applied.append((material_quality, resource_pack_path))
+
+    world_renderer = FakeWorldRenderer()
+    sky_renderer = SimpleNamespace(clouds=True)
+    win = SimpleNamespace(
+        settings=AppSettings(),
+        menu=menu,
+        world_renderer=world_renderer,
+        sky_renderer=sky_renderer,
+    )
+    menu_ui = MenuUI.__new__(MenuUI)
+    menu_ui.win = win
+
+    assert menu.activate() is MenuCommand.CYCLE_QUALITY_PRESET
+    assert menu_ui._menu_item_label(0) == "Quality Preset: custom"
+
+    menu_ui._handle_menu_command(MenuCommand.CYCLE_QUALITY_PRESET)
+
+    assert win.settings.graphics.quality_preset == "low_60"
+    assert win.settings.graphics.shadow_quality == "off"
+    assert win.settings.graphics.smooth_lighting is False
+    assert win.settings.graphics.ambient_occlusion is False
+    assert win.settings.graphics.material_quality == "color-only"
+    assert world_renderer.applied == [("color-only", "")]
+    assert world_renderer.fog_enabled is True
+    assert world_renderer.vegetation_wind_enabled is False
+    assert sky_renderer.clouds is False
+    assert saved[-1].graphics.quality_preset == "low_60"
+    assert win.menu.status == (
+        "Quality preset low_60 saved; live material/fog/clouds/wind applied; "
+        "shadows/smooth/AO/render distance apply restart."
+    )
 
 
 def test_materials_menu_label_and_cycle() -> None:
@@ -78,8 +127,10 @@ def test_materials_menu_label_and_cycle() -> None:
     menu_ui = MenuUI.__new__(MenuUI)
     menu_ui.win = win
 
+    menu.select(2)
+
     assert menu.activate() is MenuCommand.CYCLE_MATERIALS
-    assert menu_ui._menu_item_label(1) == "Materials: color-only"
+    assert menu_ui._menu_item_label(2) == "Materials: color-only"
 
     menu_ui._handle_menu_command(MenuCommand.CYCLE_MATERIALS)
 
@@ -93,7 +144,7 @@ def test_materials_menu_label_and_cycle() -> None:
     menu_ui._handle_menu_command(MenuCommand.CYCLE_MATERIALS)
 
     assert win.settings.graphics.material_quality == "color-only"
-    assert menu_ui._menu_item_label(1) == "Materials: color-only"
+    assert menu_ui._menu_item_label(2) == "Materials: color-only"
 
 
 def test_development_graphics_menu_labels_and_toggles(monkeypatch) -> None:
