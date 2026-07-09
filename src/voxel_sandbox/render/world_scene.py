@@ -44,6 +44,7 @@ from voxel_sandbox.render.material_shader_runtime import (
     MaterialShaderActivation,
     MaterialShaderRuntimeWiring,
     activate_material_shader,
+    apply_material_sampler_bindings,
     build_material_shader_runtime_wiring,
 )
 from voxel_sandbox.render.material_shader_setup import (
@@ -52,6 +53,7 @@ from voxel_sandbox.render.material_shader_setup import (
 )
 from voxel_sandbox.render.material_textures import (
     MaterialAtlasTexture,
+    bind_material_atlas_textures,
     build_activated_material_atlas_textures,
     release_material_atlas_textures,
 )
@@ -190,6 +192,7 @@ class DemoWorldRenderer:
                 self.material_bundle,
             )
         )
+        apply_material_sampler_bindings(self.material_shader_activation)
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
         self.time_of_day = 0.18
@@ -546,6 +549,7 @@ class DemoWorldRenderer:
         self.texture.use(0)
         if self.shadow_map is not None:
             self.shadow_map.texture.use(1)
+        bind_material_atlas_textures(self.material_atlas_textures)
         texture_uniform.value = 0
         camera_position_uniform.value = camera.position
         daylight_uniform.value = self.daylight

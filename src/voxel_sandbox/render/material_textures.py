@@ -52,6 +52,16 @@ def build_activated_material_atlas_textures(
     return build_material_atlas_textures(context, bundle, activation.material_bindings)
 
 
+def bind_material_atlas_textures(
+    textures: dict[MaterialMapRole, MaterialAtlasTexture],
+) -> tuple[int, ...]:
+    bound_units: list[int] = []
+    for material_texture in textures.values():
+        material_texture.texture.use(material_texture.texture_unit)
+        bound_units.append(material_texture.texture_unit)
+    return tuple(bound_units)
+
+
 def release_material_atlas_textures(
     textures: dict[MaterialMapRole, MaterialAtlasTexture],
 ) -> None:

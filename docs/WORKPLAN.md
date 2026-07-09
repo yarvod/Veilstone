@@ -37,16 +37,17 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G24: Opt-In Material Sampler Binding WorldScene Hook
+### Phase G25: Material-Preview End-To-End Real-Scene Verification
 
-- [ ] Apply planned material sampler texture units to the activated material
-  shader inside `WorldScene` setup, only when an activation exists.
-- [ ] Bind created material atlas textures to their planned texture units in
-  the material-preview draw path without touching default/low draw calls.
-- [ ] Add tests proving default renderer setup performs no sampler writes and
-  no material texture binds while material-preview binds only present roles.
-- [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
-  gameplay smoke screenshot before committing the slice.
+- [ ] Run a hidden-window real scene with `material_quality = "material-preview"`
+  to prove opt-in activation, atlas textures, and sampler binds work end-to-end
+  against a real GL context without crashing or changing default rendering.
+- [ ] Capture a material-preview screenshot plus the default-profile gameplay
+  smoke screenshot and compare that default output is unchanged.
+- [ ] Record any discovered material-preview defects in `docs/BUGS.md` and fix
+  in-slice if small, otherwise file follow-up.
+- [ ] Run focused shader/render tests, focused Pyright, unit gate before
+  committing the slice.
 
 ## Check Gate
 

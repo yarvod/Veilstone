@@ -94,6 +94,11 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Opt-in material sampler/texture bind WorldScene hook** - `WorldScene` now
+  applies planned material sampler texture units once at setup and binds created
+  material atlas textures each frame in the chunk draw path, staying a no-op for
+  default/low profiles with an empty material texture map. Real gameplay smoke
+  screenshot: `saves/screenshots/veilstone_20260709_035011.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain

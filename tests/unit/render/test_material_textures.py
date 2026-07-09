@@ -6,6 +6,7 @@ from voxel_sandbox.render.material_binding import MaterialAtlasBinding
 from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.material_shader_runtime import MaterialShaderActivation
 from voxel_sandbox.render.material_textures import (
+    bind_material_atlas_textures,
     build_activated_material_atlas_textures,
     build_material_atlas_textures,
     release_material_atlas_textures,
@@ -27,9 +28,13 @@ class _FakeTexture:
         self.repeat_x = True
         self.repeat_y = True
         self.released = False
+        self.used_units: list[int] = []
 
     def release(self) -> None:
         self.released = True
+
+    def use(self, location: int) -> None:
+        self.used_units.append(location)
 
 
 class _FakeContext:
@@ -147,6 +152,22 @@ def test_activated_textures_create_only_present_roles() -> None:
     assert set(textures) == {MaterialMapRole.NORMAL}
     assert textures[MaterialMapRole.NORMAL].texture_unit == 4
     assert len(context.created) == 1
+
+
+def test_bind_material_atlas_textures_skips_empty_map() -> None:
+    assert bind_material_atlas_textures({}) == ()
+
+
+def test_bind_material_atlas_textures_binds_planned_units() -> None:
+    context = _FakeContext()
+    textures = build_activated_material_atlas_textures(
+        context, _activation((_normal_binding(),)), _bundle_with_normal_only()
+    )
+
+    bound_units = bind_material_atlas_textures(textures)
+
+    assert bound_units == (4,)
+    assert context.created[0].used_units == [4]
 
 
 def test_release_material_atlas_textures_releases_each_texture() -> None:
