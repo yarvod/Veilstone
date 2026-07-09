@@ -44,6 +44,7 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
     assert "Network singleplayer Known players 1" in snapshot.text
     assert "Runtime Python test Frame 1280x720" in snapshot.text
     assert "Device Unit GPU" in snapshot.text
+    assert "Preset high Shadows medium Clouds False Wind True" in snapshot.text
     assert "Material profile color-only bundle off" in snapshot.text
     assert "Animation states graze:1 wander:1" in snapshot.text
     assert "Selected Stone x2" in snapshot.text
@@ -120,17 +121,24 @@ def _fake_window() -> SimpleNamespace:
         player=SimpleNamespace(on_ground=True, velocity_y=0.0),
         settings=SimpleNamespace(
             world=SimpleNamespace(render_distance=3, mesh_uploads_per_frame=2),
-            graphics=SimpleNamespace(resource_pack_path="/packs/Faithful.zip"),
+            graphics=SimpleNamespace(
+                resource_pack_path="/packs/Faithful.zip",
+                quality_preset="high",
+                clouds=True,
+            ),
         ),
+        sky_renderer=SimpleNamespace(clouds=False),
         world_renderer=SimpleNamespace(
             face_count=120,
             triangle_count=240,
             draw_calls=8,
             daylight=0.95,
+            shadow_quality="medium",
             smooth_lighting=True,
             ambient_occlusion=True,
             fog_enabled=True,
             greedy_meshing=True,
+            vegetation_wind_enabled=True,
             material_pipeline=resolve_material_pipeline(),
             selection=SimpleNamespace(block=(1, 2, 3)),
         ),

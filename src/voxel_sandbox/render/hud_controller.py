@@ -211,7 +211,8 @@ class HudWindowAdapter:
             f"Smooth {win.world_renderer.smooth_lighting} "
             f"AO {win.world_renderer.ambient_occlusion} "
             f"Fog {win.world_renderer.fog_enabled} "
-            f"Mesher {'greedy' if win.world_renderer.greedy_meshing else 'visible'}\n"
+            f"Mesher {'greedy' if win.world_renderer.greedy_meshing else 'visible'} "
+            f"{_quality_effect_summary(win)}\n"
             f"Material profile {_material_profile_summary(win.world_renderer)}\n"
             f"Health {win.player_health:4.1f} "
             f"Entities {len(win.entities.world.alive)} "
@@ -430,6 +431,19 @@ def _material_profile_summary(world_renderer: Any) -> str:
         return "color-only bundle off"
     bundle_state = "on" if pipeline.build_material_bundle else "off"
     return f"{pipeline.profile.value} bundle {bundle_state}"
+
+
+def _quality_effect_summary(win: Any) -> str:
+    graphics = win.settings.graphics
+    preset = getattr(graphics, "quality_preset", "custom")
+    shadow_quality = getattr(win.world_renderer, "shadow_quality", "off")
+    clouds = getattr(
+        getattr(win, "sky_renderer", None),
+        "clouds",
+        getattr(graphics, "clouds", False),
+    )
+    wind = getattr(win.world_renderer, "vegetation_wind_enabled", False)
+    return f"Preset {preset} Shadows {shadow_quality} Clouds {clouds} Wind {wind}"
 
 
 def _selected_item_name(hotbar: Any, item_registry: Any) -> str:

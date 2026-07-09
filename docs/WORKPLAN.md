@@ -40,14 +40,16 @@ Promoted backlog: `R-B008`.
 резолвящиеся в один `RenderQualityProfile`, вместо рассыпанных независимых
 graphics-флагов.
 
-### Phase H4: Preset Diagnostics Visibility
+### Phase I1: Shadow/Water Visual Triage
 
-- [ ] Add F3/debug snapshot text for active `graphics.quality_preset`.
-- [ ] Surface resolved expensive-effect state in diagnostics: shadows, smooth
-  lighting, AO, fog, clouds, vegetation wind, material quality.
-- [ ] Keep diagnostic assembly in existing HUD snapshot/view path; avoid new
-  renderer reads in `HudController`.
-- [ ] Unit tests for debug text plus real F3 gameplay smoke screenshot.
+- [ ] Reproduce and isolate hard terrain shadow artifacts across shadow quality
+  presets, using `BUG-R006` screenshots and a controlled gameplay/reference scene.
+- [ ] Add deterministic coverage for dropped items in water and define buoyancy
+  expectations for `BUG-G008`.
+- [ ] Inspect current water render path against `R-B009`; split immediate bug fixes
+  from later water-quality tier work.
+- [ ] Run real gameplay smoke near shadows, water, and dropped items; record
+  screenshot paths and movement/physics observations.
 
 ## Check Gate
 

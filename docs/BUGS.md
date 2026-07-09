@@ -16,6 +16,26 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Reproduction:** `uv run pytest tests/unit/render` (fails) vs
   `uv run pytest tests/unit/render/test_ui_renderer.py` (passes).
 
+### BUG-R006: Shadow artifacts on terrain surfaces
+
+- **Status:** open
+- **Affected area:** render / shadows / material-preview lighting
+- **Observed:** user screenshots and F3 material-preview smoke
+  `saves/f3_preset_smoke/screenshots/veilstone_20260709_151033.png` show hard
+  triangular/blocky dark shadow artifacts across terrain and cave/stone surfaces.
+- **Next action:** reproduce in a controlled reference scene, inspect shadow
+  matrix snapping, bias/filtering, receiver normals/material-preview lighting,
+  and compare low/off/medium/high preset captures.
+
+### BUG-G008: Dropped items jitter in water instead of floating
+
+- **Status:** open
+- **Affected area:** gameplay physics / item drops / fluids
+- **Observed:** user reports item drops in water tremble/jitter; expected
+  behavior is buoyant rise toward the water surface and stable bobbing/float.
+- **Next action:** add deterministic item-in-water physics coverage and a real
+  water/item gameplay smoke before tuning buoyancy.
+
 ### BUG-R003: Material atlas bindings clobbered the shadow map texture unit
 
 - **Status:** fixed

@@ -25,6 +25,10 @@
   no longer overlaps the title. Real settings smoke screenshots:
   `saves/settings_preset_smoke_visible/screenshots/veilstone_20260709_150104.png`,
   `saves/settings_preset_smoke_visible/screenshots/veilstone_20260709_150106.png`.
+- **Quality preset F3 diagnostics** - F3 debug text now includes the active
+  quality preset plus resolved shadow/cloud/wind state next to existing
+  smooth/AO/fog/material diagnostics. Real F3 material-preview smoke screenshot:
+  `saves/f3_preset_smoke/screenshots/veilstone_20260709_151033.png`.
 - **Render material metadata cache keys** - render layer now has pure material
   map role metadata and stable cache key inputs for future color/normal/specular
   material atlas work; Minecraft Java PBR sidecar discovery reuses the same

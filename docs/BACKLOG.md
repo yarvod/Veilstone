@@ -320,6 +320,19 @@ class RenderModelSnapshot:
   without world reload; low preset disables high-cost shader paths and keeps
   visual fallback correct.
 
+### R-B009: Water Surface Visual Quality
+
+- **Status:** open
+- **Observed:** current water behaves functionally but does not yet read like a
+  polished water surface; user called out missing reflections/highlights, richer
+  surface movement, waves, and ripples.
+- **Desired:** water quality tiers should eventually cover subtle animated
+  surface normals, specular highlights, shoreline/ripple cues, and optional
+  reflection-like treatment without breaking low-end presets.
+- **Candidate work:** define low/balanced/high water quality knobs, add shader
+  and mesh smoke scenes near water, keep fluid simulation rules separate from
+  render-only wave presentation.
+
 ## Diagnostics
 
 ### DX-B001: F3 Overlay Lacks Minecraft-Like Diagnostics
