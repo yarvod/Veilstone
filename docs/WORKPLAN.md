@@ -37,17 +37,17 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G27: Material-Preview Draw Path Consuming Material Shader
+### Phase G28: Material-Preview Settings UI Exposure
 
-- [ ] Decide and implement how the material-preview profile actually draws
-  chunks with the activated `chunk_material_preview` shader (today activation
-  compiles and binds samplers, but chunk draws still use `chunk_opaque`).
-- [ ] Keep default/low profiles drawing through the existing chunk shader path
-  with zero behavior change.
-- [ ] Add tests locking which shader program the mesh cache/draw path uses per
-  material profile.
-- [ ] Run material-preview real-scene smoke showing normal-mapped stone shading
-  plus an unchanged default gameplay smoke screenshot before committing.
+- [ ] Expose the `material_quality` graphics setting (`color-only` /
+  `material-preview`) through the in-game settings UI or an explicit command so
+  players can toggle the opt-in preview without editing settings files.
+- [ ] Keep `color-only` as the default and make switching apply through the
+  existing renderer rebuild path, not ad-hoc `GameWindow` logic.
+- [ ] Add tests for the settings/use-case plumbing of the toggle.
+- [ ] Run real-game smoke: toggle to material-preview in the running app,
+  capture screenshots of both profiles, and verify the default profile after
+  toggling back.
 
 ## Check Gate
 

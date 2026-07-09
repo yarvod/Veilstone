@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.material_quality import resolve_material_pipeline
 from voxel_sandbox.render.material_shader_runtime import (
+    MaterialShaderActivation,
     activate_material_shader,
     apply_material_sampler_bindings,
     build_material_shader_runtime_wiring,
+    resolve_chunk_draw_shader,
 )
 from voxel_sandbox.render.material_shader_setup import build_material_shader_setup
+from voxel_sandbox.render.shaders.loader import ShaderProgram
 
 
 class _FakeUniform:
@@ -147,3 +151,20 @@ def test_material_preview_sampler_bindings_write_planned_units(tmp_path: Path) -
     assert program.uniforms["u_material_normal_atlas"].value == 4
     assert program.uniforms["u_material_specular_atlas"].value == 5
     assert "u_material_emissive_atlas" not in program.uniforms
+
+
+def test_chunk_draw_shader_defaults_without_activation() -> None:
+    default_shader = cast(ShaderProgram, object())
+
+    assert resolve_chunk_draw_shader(default_shader, None) is default_shader
+
+
+def test_chunk_draw_shader_uses_activated_material_shader() -> None:
+    default_shader = cast(ShaderProgram, object())
+    activation_shader = cast(ShaderProgram, object())
+    activation = MaterialShaderActivation(
+        shader=activation_shader,
+        material_bindings=(),
+    )
+
+    assert resolve_chunk_draw_shader(default_shader, activation) is activation_shader

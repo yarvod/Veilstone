@@ -59,6 +59,15 @@ def activate_material_shader(
     )
 
 
+def resolve_chunk_draw_shader(
+    default_shader: ShaderProgram,
+    activation: MaterialShaderActivation | None,
+) -> ShaderProgram:
+    if activation is None:
+        return default_shader
+    return activation.shader
+
+
 def apply_material_sampler_bindings(
     activation: MaterialShaderActivation | None,
 ) -> tuple[MaterialAtlasBinding, ...]:

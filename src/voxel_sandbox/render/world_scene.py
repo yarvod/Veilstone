@@ -46,6 +46,7 @@ from voxel_sandbox.render.material_shader_runtime import (
     activate_material_shader,
     apply_material_sampler_bindings,
     build_material_shader_runtime_wiring,
+    resolve_chunk_draw_shader,
 )
 from voxel_sandbox.render.material_shader_setup import (
     MaterialShaderSetup,
@@ -193,6 +194,11 @@ class DemoWorldRenderer:
             )
         )
         apply_material_sampler_bindings(self.material_shader_activation)
+        if self.material_shader_activation is not None:
+            # Material-preview draws chunks with the activated shader; the
+            # default chunk shader is released since nothing references it.
+            self.shader.release()
+            self.shader = resolve_chunk_draw_shader(self.shader, self.material_shader_activation)
         shadow_size = shadow_map_size(shadow_quality)
         self.shadow_map = ShadowMap.create(context, shadow_size) if shadow_size else None
         self.time_of_day = 0.18
@@ -650,7 +656,10 @@ class DemoWorldRenderer:
         self.texture.release()
         self.shader.release()
         release_material_atlas_textures(self.material_atlas_textures)
-        if self.material_shader_activation is not None:
+        if (
+            self.material_shader_activation is not None
+            and self.material_shader_activation.shader is not self.shader
+        ):
             self.material_shader_activation.shader.release()
         self.water_shader.release()
         self.shadow_shader.release()

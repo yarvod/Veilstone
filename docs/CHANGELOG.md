@@ -94,6 +94,13 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Material-preview chunk draw path** - when the material-preview activation
+  exists, `WorldScene` now draws chunks with the activated
+  `chunk_material_preview` shader (releasing the unused default program), while
+  default/low profiles keep the exact `chunk_opaque` path. Real checks:
+  material-preview smoke shows per-pixel normal-mapped stone shading
+  `saves/screenshots/veilstone_20260709_040826.png`, default gameplay smoke
+  unchanged `saves/screenshots/veilstone_20260709_040852.png`.
 - **Stone normal sidecar in default pack** - the bundled default resource pack
   now ships a deterministic `stone_n.png` normal-map sidecar, the bundled-pack
   atlas path discovers material manifests, and material binding plans start at

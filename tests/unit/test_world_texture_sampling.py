@@ -83,7 +83,8 @@ def test_material_shader_activation_releases_only_when_present() -> None:
     ).read_text(encoding="utf-8")
     release_source = scene_source[scene_source.index("def release") :]
 
-    assert "if self.material_shader_activation is not None:" in release_source
+    assert "self.material_shader_activation is not None" in release_source
+    assert "self.material_shader_activation.shader is not self.shader" in release_source
     assert "self.material_shader_activation.shader.release()" in release_source
 
 
