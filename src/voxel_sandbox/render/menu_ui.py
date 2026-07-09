@@ -26,6 +26,7 @@ from voxel_sandbox.app.updates import (
     fetch_releases,
     select_platform_asset,
 )
+from voxel_sandbox.application.material_quality import ApplyMaterialQualityUseCase
 from voxel_sandbox.application.resource_packs import (
     ApplyResourcePackUseCase,
     TexturePackServicePort,
@@ -217,6 +218,7 @@ class MenuUI:
         )
         values = {
             "cycle_shadows": win.settings.graphics.shadow_quality,
+            "cycle_materials": win.settings.graphics.material_quality,
             "toggle_clouds": "on" if win.settings.graphics.clouds else "off",
             "toggle_vsync": "on" if win.settings.window.vsync else "off",
             "cycle_render_distance": f"{win.settings.world.render_distance} chunks",
@@ -812,6 +814,21 @@ class MenuUI:
             )
             win.menu.status = f"Shadow quality saved as {next_quality}; applies after restart."
             save_user_settings(win.settings)
+        elif command is MenuCommand.CYCLE_MATERIALS:
+            qualities = ("color-only", "material-preview")
+            current = win.settings.graphics.material_quality
+            current_index = qualities.index(current) if current in qualities else 0
+            next_quality = qualities[(current_index + 1) % len(qualities)]
+            result = ApplyMaterialQualityUseCase(
+                settings_store=win.app_runtime.settings_store,
+            ).execute(
+                quality=next_quality,
+                settings=win.settings,
+                renderer=win.world_renderer,
+            )
+            if result.applied:
+                win.settings = result.settings
+            win.menu.status = result.status
         elif command is MenuCommand.TOGGLE_CLOUDS:
             enabled = not win.settings.graphics.clouds
             win.settings = replace(

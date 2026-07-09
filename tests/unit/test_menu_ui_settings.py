@@ -16,7 +16,7 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
 
     menu = MenuController()
     menu.screen = Screen.SETTINGS
-    menu.select(3)
+    menu.select(4)
 
     class FakeWorldRenderer:
         def __init__(self) -> None:
@@ -36,7 +36,7 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
     menu_ui.win = win
 
     assert menu.activate() is MenuCommand.CYCLE_RENDER_DISTANCE
-    assert menu_ui._menu_item_label(3) == "Render Distance: 4 chunks"
+    assert menu_ui._menu_item_label(4) == "Render Distance: 4 chunks"
 
     menu_ui._handle_menu_command(MenuCommand.CYCLE_RENDER_DISTANCE)
 
@@ -44,6 +44,54 @@ def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
     assert world_renderer.render_distance == 6
     assert saved[-1].world.render_distance == 6
     assert win.menu.status == "Render distance saved 6 chunks; applied."
+
+
+def test_materials_menu_label_and_cycle() -> None:
+    menu = MenuController()
+    menu.screen = Screen.SETTINGS
+    menu.select(1)
+
+    class FakeWorldRenderer:
+        def __init__(self) -> None:
+            self.applied: list[tuple[str, str]] = []
+
+        def apply_material_quality(
+            self, material_quality: str, resource_pack_path: str = ""
+        ) -> None:
+            self.applied.append((material_quality, resource_pack_path))
+
+    class FakeSettingsStore:
+        def __init__(self) -> None:
+            self.saved: list[AppSettings] = []
+
+        def save(self, settings: AppSettings) -> None:
+            self.saved.append(settings)
+
+    world_renderer = FakeWorldRenderer()
+    settings_store = FakeSettingsStore()
+    win = SimpleNamespace(
+        settings=AppSettings(),
+        menu=menu,
+        world_renderer=world_renderer,
+        app_runtime=SimpleNamespace(settings_store=settings_store),
+    )
+    menu_ui = MenuUI.__new__(MenuUI)
+    menu_ui.win = win
+
+    assert menu.activate() is MenuCommand.CYCLE_MATERIALS
+    assert menu_ui._menu_item_label(1) == "Materials: color-only"
+
+    menu_ui._handle_menu_command(MenuCommand.CYCLE_MATERIALS)
+
+    assert win.settings.graphics.material_quality == "material-preview"
+    assert world_renderer.applied == [("material-preview", "")]
+    assert settings_store.saved[-1].graphics.material_quality == "material-preview"
+    assert win.menu.status == "Material quality applied: material-preview"
+
+    menu_ui._handle_menu_command(MenuCommand.CYCLE_MATERIALS)
+
+    assert win.settings.graphics.material_quality == "color-only"
+    assert menu_ui._menu_item_label(1) == "Materials: color-only"
 
 
 def test_development_graphics_menu_labels_and_toggles(monkeypatch) -> None:

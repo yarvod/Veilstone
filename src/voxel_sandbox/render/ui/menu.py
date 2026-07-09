@@ -30,6 +30,7 @@ class MenuCommand(Enum):
     EDIT_NICKNAME = auto()
     OPEN_LAN = auto()
     CYCLE_SHADOWS = auto()
+    CYCLE_MATERIALS = auto()
     TOGGLE_CLOUDS = auto()
     TOGGLE_VSYNC = auto()
     CYCLE_RENDER_DISTANCE = auto()
@@ -76,6 +77,7 @@ MENUS: dict[Screen, tuple[MenuItem, ...]] = {
     ),
     Screen.SETTINGS: (
         MenuItem("Shadow Quality", action="cycle_shadows"),
+        MenuItem("Materials", action="cycle_materials"),
         MenuItem("Clouds", action="toggle_clouds"),
         MenuItem("VSync", action="toggle_vsync"),
         MenuItem("Render Distance", action="cycle_render_distance"),
@@ -206,6 +208,8 @@ class MenuController:
             return MenuCommand.OPEN_LAN
         elif action == "cycle_shadows":
             return MenuCommand.CYCLE_SHADOWS
+        elif action == "cycle_materials":
+            return MenuCommand.CYCLE_MATERIALS
         elif action == "toggle_clouds":
             return MenuCommand.TOGGLE_CLOUDS
         elif action == "toggle_vsync":

@@ -94,6 +94,13 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Settings UI materials toggle** - the Settings screen now has a
+  `Materials: <quality>` item cycling color-only/material-preview through
+  `ApplyMaterialQualityUseCase` with live renderer hot-swap and persisted
+  settings. Real in-app menu smoke: settings screen with applied status
+  `saves/screenshots/veilstone_20260709_043059.png`, gameplay after toggle
+  `saves/screenshots/veilstone_20260709_043100.png` (`material-preview bundle
+  on`).
 - **Material sidecar generator + terrain normal maps** - added
   `scripts/generate_material_sidecars.py` producing deterministic height-based
   `_n.png` normal sidecars, and shipped them for ten core terrain/wood blocks

@@ -24,6 +24,7 @@ def test_player_facing_menu_tree() -> None:
     ]
     assert labels(Screen.SETTINGS) == [
         "Shadow Quality",
+        "Materials",
         "Clouds",
         "VSync",
         "Render Distance",
@@ -72,7 +73,7 @@ def test_audio_back_does_not_replace_settings_return_screen() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(7)
+    menu.select(8)
     menu.activate()
     assert menu.screen is Screen.AUDIO
     menu.select(len(menu.items) - 1)
@@ -90,7 +91,7 @@ def test_texture_pack_back_returns_to_settings() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(5)
+    menu.select(6)
     menu.activate()
     assert menu.screen is Screen.TEXTURE_PACKS
 
@@ -104,7 +105,7 @@ def test_updates_back_returns_to_settings() -> None:
     menu.activate()
     assert menu.screen is Screen.SETTINGS
 
-    menu.select(6)
+    menu.select(7)
     menu.activate()
     assert menu.screen is Screen.UPDATES
 
@@ -115,6 +116,7 @@ def test_updates_back_returns_to_settings() -> None:
 def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     assert labels(Screen.SETTINGS) == [
         "Shadow Quality",
+        "Materials",
         "Clouds",
         "VSync",
         "Render Distance",
@@ -130,10 +132,12 @@ def test_settings_menu_exposes_runtime_graphics_actions() -> None:
     menu.screen = Screen.SETTINGS
     assert menu.activate() is MenuCommand.CYCLE_SHADOWS
     menu.select(1)
+    assert menu.activate() is MenuCommand.CYCLE_MATERIALS
+    menu.select(2)
     assert menu.activate() is MenuCommand.TOGGLE_CLOUDS
-    menu.select(3)
-    assert menu.activate() is MenuCommand.CYCLE_RENDER_DISTANCE
     menu.select(4)
+    assert menu.activate() is MenuCommand.CYCLE_RENDER_DISTANCE
+    menu.select(5)
     assert menu.activate() is MenuCommand.CYCLE_DIFFICULTY
 
 

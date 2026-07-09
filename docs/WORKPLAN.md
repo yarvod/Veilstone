@@ -42,8 +42,8 @@ resource-pack support без включения дорогих эффектов 
 Phase G28 closed the `/materials` runtime toggle. Candidate next slices (pick
 one when starting):
 
-- [ ] Settings UI (graphics screen) exposure for material quality alongside the
-  `/materials` command.
+- [x] Settings UI exposure — done: `Materials` item on the Settings screen with
+  live apply.
 - [x] More material sidecar content — done: generator script + normal sidecars
   for ten terrain/wood blocks.
 - [ ] Material-preview tuning: balance normal-map lighting strength against
