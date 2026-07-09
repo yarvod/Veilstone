@@ -94,6 +94,13 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Material-preview end-to-end real-scene verification** - ran the hidden-window
+  gameplay smoke with `material_quality = "material-preview"` against a real GL
+  context: activation, atlas texture creation, and sampler binds work without
+  crashes and default output stays unchanged. Screenshots: material-preview
+  `saves/screenshots/veilstone_20260709_035136.png` (overlay
+  `material-preview bundle on`), default baseline
+  `saves/screenshots/veilstone_20260709_035011.png`.
 - **Opt-in material sampler/texture bind WorldScene hook** - `WorldScene` now
   applies planned material sampler texture units once at setup and binds created
   material atlas textures each frame in the chunk draw path, staying a no-op for

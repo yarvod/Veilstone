@@ -37,16 +37,16 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G25: Material-Preview End-To-End Real-Scene Verification
+### Phase G26: Sample Normal Sidecar Content For Material Preview
 
-- [ ] Run a hidden-window real scene with `material_quality = "material-preview"`
-  to prove opt-in activation, atlas textures, and sampler binds work end-to-end
-  against a real GL context without crashing or changing default rendering.
-- [ ] Capture a material-preview screenshot plus the default-profile gameplay
-  smoke screenshot and compare that default output is unchanged.
-- [ ] Record any discovered material-preview defects in `docs/BUGS.md` and fix
-  in-slice if small, otherwise file follow-up.
-- [ ] Run focused shader/render tests, focused Pyright, unit gate before
+- [ ] Add a deterministic `stone_n.png` normal-map sidecar to the default
+  resource pack so material-preview bundles a real NORMAL atlas role.
+- [ ] Keep default/low profiles unaffected: sidecars load only through the
+  material bundle path, never the color atlas path.
+- [ ] Add tests proving the default pack material manifest picks up the stone
+  normal sidecar and the bundle exposes only present roles.
+- [ ] Run material-preview real-scene smoke (activation + NORMAL texture +
+  sampler bind against real GL) plus default gameplay smoke screenshot before
   committing the slice.
 
 ## Check Gate
