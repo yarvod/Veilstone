@@ -2,9 +2,10 @@
 
 ## Overview
 
-Активная цель: Phase J (water surface visual quality, `R-B009`) — shadow
-artifact cleanup is fixed and documented; next work improves water readability
-without mixing simulation fixes back into render/UI classes.
+Активная цель: Phase J (water surface visual quality, `R-B009`) — first crest
+highlight slice is implemented and smoke-tested; next work should deepen water
+motion/reflection cues without mixing simulation fixes back into render/UI
+classes.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,19 +30,19 @@ without mixing simulation fixes back into render/UI classes.
 
 ## Current Phase
 
-### Phase J: Water Surface Visual Quality
+### Phase J2: Water Motion And Reflection Cues
 
 Promoted backlog: `R-B009`.
 
-Цель: make water read more like water at gameplay distance: clearer surface
-highlights/reflection cues, less flat movement, and no regression to the stable
-item buoyancy fixed in `BUG-G008`.
+Цель: build on the new crest highlights with richer gameplay-readable water
+motion/reflection cues while preserving stable item buoyancy from `BUG-G008`.
 
-- [ ] Inspect current water mesh/shader path and capture baseline water
-  screenshots with floating item drops visible.
-- [ ] Add low-cost surface animation/normal or highlight cues behind quality
-  settings where appropriate.
-- [ ] Verify item drops still rise to and settle at the water surface.
+- [ ] Evaluate whether water needs quality-profile gating for extra ripple/glint
+  cost on `low_60` versus `high`/`cinematic`.
+- [ ] Add a stronger near-surface ripple/reflection cue that remains readable
+  from shallow camera angles.
+- [ ] Keep water simulation untouched unless a fresh `BUG-G008` regression is
+  observed.
 - [ ] Run real gameplay water smoke with screenshot path and item stability
   metrics before committing.
 

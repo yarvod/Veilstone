@@ -29,10 +29,15 @@ void main() {
     vec3 deep_tint = vec3(0.045, 0.20, 0.28);
     vec3 lit_color = mix(deep_tint, water_color, 0.58 + surface * 0.18) * vertex_light;
     lit_color = mix(lit_color, sky_color, fresnel * surface * 0.68);
+    float crest_wave = sin(vertex_world_position.x * 3.7 + animation_time * 1.25)
+        + sin(vertex_world_position.z * 4.1 - animation_time * 1.55);
+    float crest = smoothstep(0.42, 0.95, crest_wave * 0.5 + 0.5) * surface;
+    vec3 highlight_color = mix(vec3(0.16, 0.42, 0.56), sky_color, 0.72);
+    lit_color += highlight_color * crest * (0.05 + fresnel * 0.22) * vertex_light;
     float distance_to_camera = length(vertex_world_position - camera_position);
     float fog_factor = fog_enabled == 1
         ? smoothstep(fog_start, max(fog_start + 0.1, fog_end), distance_to_camera)
         : 0.0;
-    float alpha = mix(0.62, 0.38 + fresnel * 0.20, surface);
+    float alpha = mix(0.62, 0.44 + fresnel * 0.24 + crest * 0.05, surface);
     frag_color = vec4(mix(lit_color, fog_color, fog_factor), alpha);
 }

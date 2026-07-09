@@ -129,3 +129,13 @@ def test_chunk_shader_keeps_world_shadows_readable() -> None:
     assert "max(shadow_bias, 0.0015)" in fragment
     assert "float shadow = mix(0.48, 1.0, sample_shadow())" in fragment
     assert "float ambient_sky = sky * 0.36" in fragment
+
+
+def test_water_shader_adds_surface_crest_highlights() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragment = (shader_root / "water.frag").read_text(encoding="utf-8")
+
+    assert "crest_wave" in fragment
+    assert "highlight_color" in fragment
+    assert "lit_color += highlight_color * crest" in fragment
+    assert "0.44 + fresnel * 0.24 + crest * 0.05" in fragment

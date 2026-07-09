@@ -30,6 +30,12 @@
 
 ### Added
 
+- **Water surface crest highlights** - water shader now layers low-cost moving
+  crest/glint highlights over the existing animated water texture/fresnel path,
+  making pools read more like water while leaving fluid simulation untouched.
+  Real water smoke:
+  `saves/water_surface_smoke_visible/screenshots/veilstone_20260709_160354.png`
+  (`item_y=88.8599`, `item_vy=0.0002`, `last_jitter=0.0003`).
 - **Shadow preset smoke captures** - `python -m voxel_sandbox
   shadow-preset-smoke` now captures `off`/`low`/`medium`/`high_material_preview`
   screenshots plus JSON metadata for comparing shadow artifacts across quality
