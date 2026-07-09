@@ -479,6 +479,10 @@ def test_default_pack_material_bundle_exposes_stone_normal_role() -> None:
     assert "minecraft:block/stone" in normal_atlas.uvs
     assert "minecraft:block/dirt" in normal_atlas.uvs
     assert "minecraft:block/grass_block_top" in normal_atlas.uvs
+    assert MaterialMapRole.SPECULAR in bundle.materials
+    specular_atlas = bundle.materials[MaterialMapRole.SPECULAR]
+    assert "minecraft:block/stone" in specular_atlas.uvs
+    assert "minecraft:block/diamond_ore" in specular_atlas.uvs
     assert set(bundle.materials) <= set(MaterialMapRole)
 
 

@@ -46,10 +46,10 @@ one when starting):
   live apply.
 - [x] More material sidecar content — done: generator script + normal sidecars
   for ten terrain/wood blocks.
+- [x] Specular sidecar content — done: `_s.png` for stone/diamond ore via the
+  generator script.
 - [ ] Material-preview tuning: balance normal-map lighting strength against
   default profile brightness before promoting the profile beyond preview.
-- [ ] Specular sidecar content (`_s.png`) for stone/ore so the preview shader's
-  specular path gets real data.
 
 ## Check Gate
 

@@ -29,6 +29,13 @@ SIDECAR_SOURCES = (
     "crafting_table_side",
 )
 
+# Hard, shiny-ish surfaces that get `_s.png` specular sidecars; soft organic
+# surfaces are left without one so the preview shader keeps them matte.
+SPECULAR_SOURCES = {
+    "stone": 0.35,
+    "diamond_ore": 0.8,
+}
+
 NORMAL_STRENGTH = 2.0
 
 
@@ -58,11 +65,34 @@ def generate_normal_map(color_path: Path) -> Image.Image:
     return normal
 
 
+def generate_specular_map(color_path: Path, strength: float) -> Image.Image:
+    """Red channel carries specular strength scaled by per-pixel brightness."""
+    height_map = Image.open(color_path).convert("L")
+    width, height = height_map.size
+    pixels = height_map.load()
+    assert pixels is not None
+
+    specular = Image.new("RGBA", (width, height))
+    output = specular.load()
+    assert output is not None
+    for y in range(height):
+        for x in range(width):
+            brightness = pixels[x, y] / 255.0
+            value = round(strength * brightness * 255)
+            output[x, y] = (value, 0, 0, 255)
+    return specular
+
+
 def main() -> None:
     for name in SIDECAR_SOURCES:
         color_path = BLOCK_DIR / f"{name}.png"
         target = BLOCK_DIR / f"{name}_n.png"
         generate_normal_map(color_path).save(target)
+        print(f"wrote {target}")
+    for name, strength in SPECULAR_SOURCES.items():
+        color_path = BLOCK_DIR / f"{name}.png"
+        target = BLOCK_DIR / f"{name}_s.png"
+        generate_specular_map(color_path, strength).save(target)
         print(f"wrote {target}")
 
 

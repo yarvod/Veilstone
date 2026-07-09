@@ -94,6 +94,10 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Specular sidecar content** - the sidecar generator now also produces
+  brightness-scaled `_s.png` specular maps for stone and diamond ore, so the
+  material-preview profile binds both NORMAL and SPECULAR atlas roles. Real
+  material-preview smoke: `saves/screenshots/veilstone_20260709_043336.png`.
 - **Settings UI materials toggle** - the Settings screen now has a
   `Materials: <quality>` item cycling color-only/material-preview through
   `ApplyMaterialQualityUseCase` with live renderer hot-swap and persisted
