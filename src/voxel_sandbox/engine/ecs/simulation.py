@@ -477,12 +477,10 @@ def _update_vertical(
     is_solid: Callable[[int, int, int], bool],
     is_fluid: Callable[[int, int, int], bool],
 ) -> None:
-    block_x = math.floor(transform.x)
-    block_z = math.floor(transform.z)
-    in_water = is_fluid(block_x, math.floor(transform.y + 0.35), block_z)
-    if in_water:
-        target_float_speed = 1.5
-        velocity.y += (target_float_speed - velocity.y) * min(1.0, 5.0 * delta_time)
+    float_target = _fluid_float_target_y(transform, collider, is_fluid)
+    if float_target is not None:
+        target_float_speed = max(-0.6, min(1.5, (float_target - transform.y) * 5.0))
+        velocity.y += (target_float_speed - velocity.y) * min(1.0, 6.0 * delta_time)
     else:
         velocity.y = max(-24.0, velocity.y - 20.0 * delta_time)
     displacement = velocity.y * delta_time
@@ -496,3 +494,18 @@ def _update_vertical(
             velocity.y = 0.0
             return
         transform.y = max(0.0, next_y)
+
+
+def _fluid_float_target_y(
+    transform: Transform,
+    collider: Collider,
+    is_fluid: Callable[[int, int, int], bool],
+) -> float | None:
+    block_x = math.floor(transform.x)
+    block_z = math.floor(transform.z)
+    bottom_y = math.floor(transform.y) - 1
+    top_y = math.floor(transform.y + collider.height) + 1
+    for block_y in range(top_y, bottom_y - 1, -1):
+        if is_fluid(block_x, block_y, block_z):
+            return block_y + 1.0 - collider.height * 0.5
+    return None

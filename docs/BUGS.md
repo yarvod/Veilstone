@@ -29,12 +29,16 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-G008: Dropped items jitter in water instead of floating
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** gameplay physics / item drops / fluids
 - **Observed:** user reports item drops in water tremble/jitter; expected
   behavior is buoyant rise toward the water surface and stable bobbing/float.
-- **Next action:** add deterministic item-in-water physics coverage and a real
-  water/item gameplay smoke before tuning buoyancy.
+- **Fix notes:** item/mob vertical physics now targets the detected nearby fluid
+  surface and damps toward it instead of applying constant upward velocity until
+  leaving water. Unit coverage locks stable item-in-water buoyancy; real smoke
+  `saves/item_water_smoke/screenshots/veilstone_20260709_152329.png` measured
+  `item_vy=-0.002` and `last_jitter=0.0007`.
+
 
 ### BUG-R003: Material atlas bindings clobbered the shadow map texture unit
 

@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- **Dropped item water buoyancy** - item drop physics now targets the water
+  surface instead of repeatedly switching between upward water velocity and
+  gravity, so drops rise to the surface and settle with minimal jitter. Unit
+  coverage locks stable item-in-water buoyancy; real item-water smoke:
+  `saves/item_water_smoke/screenshots/veilstone_20260709_152329.png`
+  (`item_y=89.860`, `item_vy=-0.002`, `last_jitter=0.0007`).
+
 - **Preset/material quality ownership** - explicit `/materials` or Settings material
   toggles now return graphics quality to `custom`, so `high`/`cinematic` presets
   do not silently reapply `material-preview` after a renderer rebuild or restart.

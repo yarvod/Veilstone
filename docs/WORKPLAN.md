@@ -40,16 +40,16 @@ Promoted backlog: `R-B008`.
 резолвящиеся в один `RenderQualityProfile`, вместо рассыпанных независимых
 graphics-флагов.
 
-### Phase I1: Shadow/Water Visual Triage
+### Phase I2: Shadow Artifact Reproduction
 
-- [ ] Reproduce and isolate hard terrain shadow artifacts across shadow quality
-  presets, using `BUG-R006` screenshots and a controlled gameplay/reference scene.
-- [ ] Add deterministic coverage for dropped items in water and define buoyancy
-  expectations for `BUG-G008`.
-- [ ] Inspect current water render path against `R-B009`; split immediate bug fixes
-  from later water-quality tier work.
-- [ ] Run real gameplay smoke near shadows, water, and dropped items; record
-  screenshot paths and movement/physics observations.
+- [ ] Reproduce and isolate hard terrain shadow artifacts across `off`, `low`,
+  `medium`, and material-preview/high quality captures using `BUG-R006`.
+- [ ] Add a deterministic shadow/reference scene or smoke helper that records
+  preset, shadow quality, material quality, and screenshot paths.
+- [ ] Inspect shadow matrix snapping, bias/filtering, receiver normals, and
+  material-preview lighting separately from later `R-B009` water-surface work.
+- [ ] Run real gameplay smoke screenshots for the chosen shadow scene before
+  changing shader math.
 
 ## Check Gate
 
