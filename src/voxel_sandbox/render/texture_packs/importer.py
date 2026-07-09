@@ -8,7 +8,7 @@ from PIL import Image
 
 from voxel_sandbox.app.paths import resource_path
 from voxel_sandbox.domain.blocks import BlockRegistry
-from voxel_sandbox.render.material_metadata import MaterialMapRole
+from voxel_sandbox.render.material_metadata import MaterialAtlasManifest, MaterialMapRole
 from voxel_sandbox.render.texture_atlas.generated import (
     GeneratedAtlas,
     GeneratedMaterialAtlasBundle,
@@ -64,7 +64,17 @@ def load_active_block_atlas(
 
     if resource_pack_path is None:
         tile_size = _detect_tile_size(fallback_tiles, fallback_tile_size)
-        return build_texture_atlas(fallback_tiles, tile_size=tile_size)
+        default_pack = resource_path("resource_packs/default")
+        default_manifest = (
+            discover_material_manifest(default_pack, texture_ids)
+            if default_pack.exists()
+            else MaterialAtlasManifest(entries=())
+        )
+        return build_texture_atlas(
+            fallback_tiles,
+            tile_size=tile_size,
+            material_manifest=default_manifest,
+        )
 
     if cache_root is not None:
         try:

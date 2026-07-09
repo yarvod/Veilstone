@@ -4,6 +4,32 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ## Open
 
+### BUG-T001: test_ui_renderer fails when run after other render tests
+
+- **Status:** open
+- **Affected area:** tests / pyglet UI renderer test isolation
+- **Observed:** `uv run pytest tests/unit/render` fails 8 `test_ui_renderer.py`
+  tests (widget layout/callback assertions), while the same file passes in
+  isolation and the `-m unit` gate stays green. Reproduced on a clean `main`
+  checkout, so it is a pre-existing test-order interaction, likely shared
+  pyglet/GL global state from earlier render tests.
+- **Reproduction:** `uv run pytest tests/unit/render` (fails) vs
+  `uv run pytest tests/unit/render/test_ui_renderer.py` (passes).
+
+### BUG-R003: Material atlas bindings clobbered the shadow map texture unit
+
+- **Status:** fixed
+- **Affected area:** render / material binding plan / shadow map sampling
+- **Observed:** with `material_quality = "material-preview"` and a real material
+  atlas role present (stone normal sidecar), sun-lit areas disappeared: the
+  material NORMAL atlas was bound to texture unit 1, clobbering the shadow map
+  each frame. Deterministically reproduced via material-preview hidden-window
+  smoke (`saves/screenshots/veilstone_20260709_035727.png`).
+- **Fix notes:** material binding plans now start at texture unit 2, reserving
+  unit 0 (color atlas) and unit 1 (shadow map) for the chunk pipeline; unit
+  test locks default plan units, and the material-preview smoke restored the
+  sun-lit patch to match the default profile.
+
 ### BUG-R002: Water mesh VAO required vegetation wind attribute
 
 - **Status:** fixed

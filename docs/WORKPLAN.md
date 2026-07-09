@@ -37,17 +37,17 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G26: Sample Normal Sidecar Content For Material Preview
+### Phase G27: Material-Preview Draw Path Consuming Material Shader
 
-- [ ] Add a deterministic `stone_n.png` normal-map sidecar to the default
-  resource pack so material-preview bundles a real NORMAL atlas role.
-- [ ] Keep default/low profiles unaffected: sidecars load only through the
-  material bundle path, never the color atlas path.
-- [ ] Add tests proving the default pack material manifest picks up the stone
-  normal sidecar and the bundle exposes only present roles.
-- [ ] Run material-preview real-scene smoke (activation + NORMAL texture +
-  sampler bind against real GL) plus default gameplay smoke screenshot before
-  committing the slice.
+- [ ] Decide and implement how the material-preview profile actually draws
+  chunks with the activated `chunk_material_preview` shader (today activation
+  compiles and binds samplers, but chunk draws still use `chunk_opaque`).
+- [ ] Keep default/low profiles drawing through the existing chunk shader path
+  with zero behavior change.
+- [ ] Add tests locking which shader program the mesh cache/draw path uses per
+  material profile.
+- [ ] Run material-preview real-scene smoke showing normal-mapped stone shading
+  plus an unchanged default gameplay smoke screenshot before committing.
 
 ## Check Gate
 

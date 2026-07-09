@@ -29,7 +29,8 @@ def build_material_shader_setup(
     decision: MaterialPipelineDecision,
     available_roles: Iterable[MaterialMapRole] = (),
     *,
-    first_texture_unit: int = 1,
+    # Units 0 (color atlas) and 1 (shadow map) are reserved by the chunk pipeline.
+    first_texture_unit: int = 2,
 ) -> MaterialShaderSetup:
     shader = resolve_chunk_shader_variant(decision)
     binding_plan = build_material_atlas_binding_plan(

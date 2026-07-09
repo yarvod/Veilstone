@@ -468,6 +468,18 @@ def test_default_atlas_loads_bundled_resource_pack() -> None:
     assert "minecraft:block/grass_block_top" in atlas.uvs
 
 
+def test_default_pack_material_bundle_exposes_stone_normal_role() -> None:
+    atlas = load_active_block_atlas(None, registry=create_core_block_registry())
+    default_pack = resource_path("resource_packs/default")
+
+    bundle = load_material_atlas_bundle(default_pack, atlas)
+
+    assert MaterialMapRole.NORMAL in bundle.materials
+    normal_atlas = bundle.materials[MaterialMapRole.NORMAL]
+    assert "minecraft:block/stone" in normal_atlas.uvs
+    assert set(bundle.materials) <= set(MaterialMapRole)
+
+
 def test_user_pack_missing_textures_fallback_to_bundled_default(tmp_path: Path) -> None:
     pack = _make_folder_pack(tmp_path, {"stone": (16, 16)})
     atlas = load_active_block_atlas(pack, registry=create_core_block_registry())

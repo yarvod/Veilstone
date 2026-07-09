@@ -94,6 +94,14 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Stone normal sidecar in default pack** - the bundled default resource pack
+  now ships a deterministic `stone_n.png` normal-map sidecar, the bundled-pack
+  atlas path discovers material manifests, and material binding plans start at
+  texture unit 2 so material atlases never clobber the shadow map (fixes
+  `BUG-R003`). Real checks: material-preview smoke with NORMAL role
+  `saves/screenshots/veilstone_20260709_040210.png` (sun-lit shading matches
+  default), default gameplay smoke unchanged
+  `saves/screenshots/veilstone_20260709_035810.png`.
 - **Material-preview end-to-end real-scene verification** - ran the hidden-window
   gameplay smoke with `material_quality = "material-preview"` against a real GL
   context: activation, atlas texture creation, and sampler binds work without

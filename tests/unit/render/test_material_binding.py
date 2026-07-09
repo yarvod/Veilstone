@@ -25,6 +25,16 @@ def test_low_material_binding_plan_is_empty_even_when_roles_exist() -> None:
     assert plan.bindings == ()
 
 
+def test_material_preview_binding_plan_default_units_avoid_reserved_slots() -> None:
+    plan = build_material_atlas_binding_plan(
+        resolve_material_pipeline("material-preview"),
+        (MaterialMapRole.NORMAL, MaterialMapRole.SPECULAR),
+    )
+
+    # Units 0 (color atlas) and 1 (shadow map) are reserved by the chunk pipeline.
+    assert tuple(binding.texture_unit for binding in plan.bindings) == (2, 3)
+
+
 def test_material_preview_binding_plan_names_available_roles() -> None:
     plan = build_material_atlas_binding_plan(
         resolve_material_pipeline("material-preview"),
