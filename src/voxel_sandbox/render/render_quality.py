@@ -72,6 +72,29 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
 }
 
 
+def build_custom_profile(
+    *,
+    shadow_quality: str,
+    smooth_lighting: bool,
+    ambient_occlusion: bool,
+    fog: bool,
+    clouds: bool,
+    material_quality: str,
+) -> RenderQualityProfile:
+    """Wrap the user's individual graphics flags as the custom profile."""
+    return RenderQualityProfile(
+        preset="custom",
+        render_distance=None,
+        shadow_quality=shadow_quality,
+        smooth_lighting=smooth_lighting,
+        ambient_occlusion=ambient_occlusion,
+        fog=fog,
+        clouds=clouds,
+        vegetation_wind=True,
+        material_quality=material_quality,
+    )
+
+
 def resolve_render_quality_profile(
     preset: str,
     *,

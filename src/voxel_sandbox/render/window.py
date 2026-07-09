@@ -104,6 +104,10 @@ from voxel_sandbox.render.network_controller import (
 from voxel_sandbox.render.perf import RuntimePerfSnapshot, RuntimePerfTracker
 from voxel_sandbox.render.player_avatar import build_player_avatar_world
 from voxel_sandbox.render.player_viewmodel import build_player_viewmodel_render_data
+from voxel_sandbox.render.render_quality import (
+    build_custom_profile,
+    resolve_render_quality_profile,
+)
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.sky_renderer import SkyRenderer
 from voxel_sandbox.render.structure_renderer import StructureRenderer
@@ -839,18 +843,34 @@ class GameWindow(pyglet.window.Window):
 
     def _create_world_renderer(self, save_root: Path) -> DemoWorldRenderer:
         settings = self.settings
+        quality = resolve_render_quality_profile(
+            settings.graphics.quality_preset,
+            custom=build_custom_profile(
+                shadow_quality=settings.graphics.shadow_quality,
+                smooth_lighting=settings.graphics.smooth_lighting,
+                ambient_occlusion=settings.graphics.ambient_occlusion,
+                fog=settings.graphics.fog,
+                clouds=settings.graphics.clouds,
+                material_quality=settings.graphics.material_quality,
+            ),
+        )
+        render_distance = (
+            quality.render_distance
+            if quality.render_distance is not None
+            else settings.world.render_distance
+        )
         world_dependencies = build_world_scene_dependencies(
             seed=settings.world.seed,
             save_root=save_root,
-            render_distance=settings.world.render_distance,
+            render_distance=render_distance,
             generation_workers=settings.world.generation_workers,
             generation_backend=settings.world.generation_backend,
         )
         self._world_scene_dependencies: WorldSceneDependencies = world_dependencies
-        return DemoWorldRenderer(
+        renderer = DemoWorldRenderer(
             self.mgl_context,
             seed=settings.world.seed,
-            render_distance=settings.world.render_distance,
+            render_distance=render_distance,
             generation_workers=settings.world.generation_workers,
             generation_backend=settings.world.generation_backend,
             uploads_per_frame=settings.world.chunk_uploads_per_frame,
@@ -858,19 +878,21 @@ class GameWindow(pyglet.window.Window):
             meshing_backend=settings.world.meshing_backend,
             mesh_uploads_per_frame=settings.world.mesh_uploads_per_frame,
             greedy_meshing=settings.graphics.greedy_meshing,
-            smooth_lighting=settings.graphics.smooth_lighting,
-            ambient_occlusion=settings.graphics.ambient_occlusion,
-            fog=settings.graphics.fog,
+            smooth_lighting=quality.smooth_lighting,
+            ambient_occlusion=quality.ambient_occlusion,
+            fog=quality.fog,
             fog_start=settings.graphics.fog_start,
             fog_end=settings.graphics.fog_end,
             day_cycle_seconds=settings.graphics.day_cycle_seconds,
-            shadow_quality=settings.graphics.shadow_quality,
+            shadow_quality=quality.shadow_quality,
             shadow_bias=settings.graphics.shadow_bias,
             save_root=save_root,
             resource_pack_path=settings.graphics.resource_pack_path,
-            material_quality=settings.graphics.material_quality,
+            material_quality=quality.material_quality,
             world_dependencies=world_dependencies,
         )
+        renderer.vegetation_wind_enabled = quality.vegetation_wind
+        return renderer
 
 
 def run_window(

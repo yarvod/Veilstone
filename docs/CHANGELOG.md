@@ -94,6 +94,15 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Quality preset renderer wiring** - `GameWindow` now resolves
+  `graphics.quality_preset` into a `RenderQualityProfile` and constructs the
+  world renderer from its knobs (shadows, smooth lighting, AO, fog, material
+  quality, vegetation wind, optional render-distance override); `custom` keeps
+  the existing per-flag path unchanged. Real preset smokes: `low_60`
+  `saves/screenshots/veilstone_20260709_045009.png` (Smooth False, AO False,
+  no shadows, color-only), `high`
+  `saves/screenshots/veilstone_20260709_045011.png` (shadows + smooth +
+  `material-preview bundle on`).
 - **Render quality preset resolution** - added render-facing
   `RenderQualityProfile` with `low_60`/`balanced`/`high`/`cinematic` presets and
   a persisted `graphics.quality_preset` setting (default `custom` keeps

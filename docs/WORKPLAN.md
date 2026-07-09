@@ -40,16 +40,16 @@ Promoted backlog: `R-B008`.
 резолвящиеся в один `RenderQualityProfile`, вместо рассыпанных независимых
 graphics-флагов.
 
-### Phase H2: Apply Resolved Preset At Renderer Construction
+### Phase H3: Preset Settings UI + Live Apply
 
-- [ ] When `graphics.quality_preset != "custom"`, resolve the profile and use
-  its knobs when constructing `DemoWorldRenderer` (shadow quality, AO, smooth
-  lighting, fog, clouds, vegetation wind, material quality, optional render
-  distance override).
-- [ ] Keep `custom` on the existing per-flag path with zero behavior change.
-- [ ] Unit tests for the settings→renderer knob mapping.
-- [ ] Real smoke: launch with `low_60` and `high` presets, capture screenshots,
-  verify F3 reflects the profile; default smoke unchanged.
+- [ ] Add a `Quality Preset` item to the Settings screen cycling
+  custom/low_60/balanced/high/cinematic.
+- [ ] Live-apply what is hot-swappable today (material quality, fog, clouds,
+  vegetation wind); mark restart-bound knobs (shadows, smooth lighting, AO,
+  render distance) in the status line like the existing shadow item does.
+- [ ] Keep preset resolution in `render_quality.py`; no new logic in
+  `GameWindow`.
+- [ ] Unit tests for the menu cycle + real settings-screen smoke screenshots.
 
 ## Check Gate
 

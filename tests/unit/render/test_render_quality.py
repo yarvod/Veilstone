@@ -5,6 +5,7 @@ import pytest
 from voxel_sandbox.render.render_quality import (
     QUALITY_PRESETS,
     RenderQualityProfile,
+    build_custom_profile,
     resolve_render_quality_profile,
 )
 
@@ -21,6 +22,25 @@ def _custom_profile() -> RenderQualityProfile:
         vegetation_wind=True,
         material_quality="color-only",
     )
+
+
+def test_build_custom_profile_wraps_user_flags() -> None:
+    profile = build_custom_profile(
+        shadow_quality="off",
+        smooth_lighting=False,
+        ambient_occlusion=True,
+        fog=True,
+        clouds=False,
+        material_quality="material-preview",
+    )
+
+    assert profile.preset == "custom"
+    assert profile.render_distance is None
+    assert profile.shadow_quality == "off"
+    assert profile.smooth_lighting is False
+    assert profile.ambient_occlusion is True
+    assert profile.clouds is False
+    assert profile.material_quality == "material-preview"
 
 
 def test_custom_preset_keeps_user_flags() -> None:
