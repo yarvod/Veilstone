@@ -84,6 +84,7 @@ class GraphicsSettings:
     clouds: bool = True
     resource_pack_path: str = ""
     material_quality: str = "color-only"
+    quality_preset: str = "custom"
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,6 +161,7 @@ def save_user_settings(settings: AppSettings, path: Path | None = None) -> None:
         f"clouds = {str(settings.graphics.clouds).lower()}\n"
         f"fog = {str(settings.graphics.fog).lower()}\n"
         f'material_quality = "{settings.graphics.material_quality}"\n'
+        f'quality_preset = "{settings.graphics.quality_preset}"\n'
         "\n[world]\n"
         f'seed = "{settings.world.seed}"\n'
         f"render_distance = {settings.world.render_distance}\n"

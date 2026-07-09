@@ -94,6 +94,11 @@
   and material bundle exist, keeping default/low profiles with an empty material
   texture map and no placeholder textures. Real gameplay smoke screenshot:
   `saves/screenshots/veilstone_20260709_034632.png`.
+- **Render quality preset resolution** - added render-facing
+  `RenderQualityProfile` with `low_60`/`balanced`/`high`/`cinematic` presets and
+  a persisted `graphics.quality_preset` setting (default `custom` keeps
+  existing individual flags, zero behavior change). Default gameplay smoke
+  unchanged: `saves/screenshots/veilstone_20260709_044535.png`.
 - **Material-preview lighting balance** - added `u_material_has_<role>` flag
   uniforms so absent material roles no longer alias texture unit 0 (unbound
   emissive/MER samplers were re-adding the color atlas as fake emissive light,

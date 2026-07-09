@@ -40,18 +40,16 @@ Promoted backlog: `R-B008`.
 резолвящиеся в один `RenderQualityProfile`, вместо рассыпанных независимых
 graphics-флагов.
 
-### Phase H1: RenderQualityProfile Resolution
+### Phase H2: Apply Resolved Preset At Renderer Construction
 
-- [ ] Add a render-facing `RenderQualityProfile` dataclass resolving a preset
-  name into concrete knobs (render distance, shadow quality, AO, smooth
-  lighting, fog, clouds, vegetation wind, material quality).
-- [ ] Add `graphics.quality_preset` setting (default `custom`) that, when not
-  `custom`, resolves the profile; `custom` keeps current individual flags.
-- [ ] Keep behavior change zero for existing settings files (they resolve to
-  `custom`).
-- [ ] Unit tests for preset resolution and custom passthrough.
-- [ ] Focused Pyright + unit gate + default gameplay smoke screenshot before
-  committing.
+- [ ] When `graphics.quality_preset != "custom"`, resolve the profile and use
+  its knobs when constructing `DemoWorldRenderer` (shadow quality, AO, smooth
+  lighting, fog, clouds, vegetation wind, material quality, optional render
+  distance override).
+- [ ] Keep `custom` on the existing per-flag path with zero behavior change.
+- [ ] Unit tests for the settings→renderer knob mapping.
+- [ ] Real smoke: launch with `low_60` and `high` presets, capture screenshots,
+  verify F3 reflects the profile; default smoke unchanged.
 
 ## Check Gate
 
