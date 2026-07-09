@@ -7,6 +7,7 @@ import moderngl
 
 from voxel_sandbox.render.material_binding import MaterialAtlasBinding
 from voxel_sandbox.render.material_metadata import MaterialMapRole
+from voxel_sandbox.render.material_shader_runtime import MaterialShaderActivation
 from voxel_sandbox.render.texture_atlas import GeneratedMaterialAtlasBundle
 
 
@@ -39,3 +40,20 @@ def build_material_atlas_textures(
             texture=texture,
         )
     return textures
+
+
+def build_activated_material_atlas_textures(
+    context: Any,
+    activation: MaterialShaderActivation | None,
+    bundle: GeneratedMaterialAtlasBundle | None,
+) -> dict[MaterialMapRole, MaterialAtlasTexture]:
+    if activation is None:
+        return {}
+    return build_material_atlas_textures(context, bundle, activation.material_bindings)
+
+
+def release_material_atlas_textures(
+    textures: dict[MaterialMapRole, MaterialAtlasTexture],
+) -> None:
+    for material_texture in textures.values():
+        material_texture.texture.release()

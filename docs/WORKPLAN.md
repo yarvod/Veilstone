@@ -37,14 +37,14 @@ Promoted backlog: `R-B007`.
 Цель: продолжить shader/material pipeline foundation для future Iris/PBR-like
 resource-pack support без включения дорогих эффектов по умолчанию.
 
-### Phase G23: Opt-In Material Atlas Texture WorldScene Hook
+### Phase G24: Opt-In Material Sampler Binding WorldScene Hook
 
-- [ ] Hook material atlas GL texture creation into `WorldScene` only when
-  material-preview has an activation and material bundle.
-- [ ] Keep default and low profiles with no material atlas texture map and no
-  placeholder textures for missing roles.
-- [ ] Add tests proving default renderer setup skips texture creation while
-  material-preview exposes textures only for present material atlas roles.
+- [ ] Apply planned material sampler texture units to the activated material
+  shader inside `WorldScene` setup, only when an activation exists.
+- [ ] Bind created material atlas textures to their planned texture units in
+  the material-preview draw path without touching default/low draw calls.
+- [ ] Add tests proving default renderer setup performs no sampler writes and
+  no material texture binds while material-preview binds only present roles.
 - [ ] Run focused shader/render tests, focused Pyright, unit gate, and a real
   gameplay smoke screenshot before committing the slice.
 

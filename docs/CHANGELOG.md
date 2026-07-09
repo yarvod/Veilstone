@@ -89,6 +89,11 @@
 - **Opt-in material atlas GL texture helper** - render code can now create
   configured GL textures only for material atlas roles requested by active
   bindings, omitting missing roles without placeholder textures.
+- **Opt-in material atlas texture WorldScene hook** - `WorldScene` now creates
+  and releases material atlas GL textures only when a material shader activation
+  and material bundle exist, keeping default/low profiles with an empty material
+  texture map and no placeholder textures. Real gameplay smoke screenshot:
+  `saves/screenshots/veilstone_20260709_034632.png`.
 - **Grass terrain material face contract** - block model snapshots now expose
   render-facing face material roles so tests lock grass top tint, untinted side
   base, dirt bottom, and grass-block item texture path separation before terrain
