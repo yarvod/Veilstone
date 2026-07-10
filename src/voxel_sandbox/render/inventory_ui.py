@@ -173,7 +173,10 @@ class InventoryLogic:
         remaining = self.s.cursor_stack.count - 1
         self.s.cursor_stack = self.s.cursor_stack.with_count(remaining) if remaining else None
 
-    def take_crafting_result(self) -> None:
+    def take_crafting_result(self, *, quick_move: bool = False) -> None:
+        if quick_move:
+            self._quick_move_crafting_result()
+            return
         result = self.crafting_result()
         if result is None:
             self.s.status = "The current pattern has no recipe."
@@ -195,6 +198,28 @@ class InventoryLogic:
         )
         definition = self.s.item_registry.by_id(crafted.item_id)
         self.s.status = f"Crafted {definition.name} x{crafted.count}."
+
+    def _quick_move_crafting_result(self) -> None:
+        if self.crafting_result() is None:
+            self.s.status = "The current pattern has no recipe."
+            return
+        crafted_count = 0
+        crafted_item_id: int | None = None
+        while (result := self.crafting_result()) is not None:
+            candidate = self.s.inventory.clone()
+            if candidate.add(result, self.s.item_registry) is not None:
+                break
+            crafted = self.s.recipe_book.craft(self.s.crafting_grid)
+            if crafted is None:
+                break
+            self.s.inventory.replace_from(candidate)
+            crafted_item_id = crafted.item_id
+            crafted_count += crafted.count
+        if crafted_item_id is None:
+            self.s.status = "Inventory has no room for the crafting result."
+            return
+        definition = self.s.item_registry.by_id(crafted_item_id)
+        self.s.status = f"Crafted {definition.name} x{crafted_count} into inventory."
 
     def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
         inv = self.s.inventory
@@ -785,9 +810,9 @@ class InventoryController:
         self.win._inv.handle_crafting_click(index, button)
         self._sync_from_inv()
 
-    def take_crafting_result(self) -> None:
+    def take_crafting_result(self, *, quick_move: bool = False) -> None:
         self._sync_to_inv()
-        self.win._inv.take_crafting_result()
+        self.win._inv.take_crafting_result(quick_move=quick_move)
         self._sync_from_inv()
 
     def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:

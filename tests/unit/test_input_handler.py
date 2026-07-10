@@ -428,6 +428,17 @@ class TestOnMouseScroll:
 
 
 class TestInventoryDrag:
+    def test_shift_click_result_requests_crafting_quick_move(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = True
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, key.MOD_SHIFT)
+
+        win._inv_ctrl.take_crafting_result.assert_called_once_with(quick_move=True)
+
     def test_click_pickup_without_drag_does_not_place_on_release(self):
         win = _make_win(in_game=True)
         win.inventory_open = True

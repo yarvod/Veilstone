@@ -30,6 +30,14 @@
 
 ### Added
 
+- **Transactional crafting-result quick-move** - Shift-clicking a valid result
+  now repeatedly crafts directly into inventory while capacity remains. Each
+  result is tested against a cloned inventory before ingredients are consumed,
+  so full inventory and stack limits cannot lose inputs; ordinary result clicks
+  still place one craft on the cursor. Real GL smoke:
+  `saves/crafting_quick_move_smoke_k3/screenshots/shift_click_result.png`, with
+  metadata `saves/crafting_quick_move_smoke_k3/crafting_quick_move_smoke.json`
+  (3 logs -> 12 planks, input empty, cursor empty, state identity preserved).
 - **Resource-pack-aware inventory icons** - the icon factory now consumes the
   active renderer atlas instead of creating a procedural default, and a narrow
   presentation adapter applies live pack switches to both world rendering and

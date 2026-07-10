@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from voxel_sandbox.domain.crafting import RecipeBook
+from voxel_sandbox.domain.crafting import Recipe, RecipeBook
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.render.input_state import mouse
@@ -17,6 +17,22 @@ def _make_logic() -> InventoryLogic:
         inventory=Inventory(),
         item_registry=registry,
         recipe_book=RecipeBook(()),
+    )
+    return InventoryLogic(state)
+
+
+def _make_plank_crafting_logic(*, inventory: Inventory | None = None) -> InventoryLogic:
+    registry = create_core_item_registry()
+    recipe = Recipe(
+        "planks",
+        ((registry.by_key("oak_log").id,),),
+        ItemStack(registry.by_key("oak_planks").id, 4),
+        shaped=False,
+    )
+    state = InventoryState(
+        inventory=inventory or Inventory(),
+        item_registry=registry,
+        recipe_book=RecipeBook((recipe,)),
     )
     return InventoryLogic(state)
 
@@ -137,6 +153,60 @@ class TestCraftingClick:
         logic.handle_crafting_click(0, mouse.RIGHT)
         assert logic.s.cursor_stack.count == 4
         assert logic.s.crafting_grid[0].count == 1
+
+
+class TestCraftingResult:
+    def test_quick_move_without_recipe_keeps_existing_feedback(self):
+        logic = _make_plank_crafting_logic()
+
+        logic.take_crafting_result(quick_move=True)
+
+        assert logic.s.status == "The current pattern has no recipe."
+
+    def test_ordinary_click_still_moves_one_result_to_cursor(self):
+        logic = _make_plank_crafting_logic()
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 2))
+
+        logic.take_crafting_result()
+
+        assert logic.s.cursor_stack == ItemStack(9, 4)
+        assert logic.s.crafting_grid[0] == ItemStack(4, 1)
+        assert logic.s.inventory.count(9) == 0
+
+    def test_quick_move_repeats_recipe_into_inventory(self):
+        logic = _make_plank_crafting_logic()
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 3))
+
+        logic.take_crafting_result(quick_move=True)
+
+        assert logic.s.cursor_stack is None
+        assert logic.s.crafting_grid[0] is None
+        assert logic.s.inventory.count(9) == 12
+        assert logic.s.status == "Crafted Oak Planks x12 into inventory."
+
+    def test_quick_move_does_not_consume_inputs_when_inventory_is_full(self):
+        inventory = Inventory(1, 1)
+        logic = _make_plank_crafting_logic(inventory=inventory)
+        logic.s.inventory.set(0, ItemStack(1, 64), logic.s.item_registry)
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 2))
+
+        logic.take_crafting_result(quick_move=True)
+
+        assert logic.s.inventory[0] == ItemStack(1, 64)
+        assert logic.s.crafting_grid[0] == ItemStack(4, 2)
+        assert logic.s.status == "Inventory has no room for the crafting result."
+
+    def test_quick_move_stops_at_stack_limit_without_losing_inputs(self):
+        inventory = Inventory(1, 1)
+        logic = _make_plank_crafting_logic(inventory=inventory)
+        logic.s.inventory.set(0, ItemStack(9, 60), logic.s.item_registry)
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 2))
+
+        logic.take_crafting_result(quick_move=True)
+
+        assert logic.s.inventory[0] == ItemStack(9, 64)
+        assert logic.s.crafting_grid[0] == ItemStack(4, 1)
+        assert logic.s.status == "Crafted Oak Planks x4 into inventory."
 
 
 class TestInventoryClick:

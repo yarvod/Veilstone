@@ -197,8 +197,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   preserved. Real A/B screenshots:
   `saves/inventory_icon_smoke_k2/screenshots/default_inventory.png`,
   `saves/inventory_icon_smoke_k2/screenshots/contrast_pack_inventory.png`.
-- **Next action:** add transactional Shift-click quick-move for crafting results
-  through `InventoryLogic`, without moving recipe rules into input/render code.
+- **Fix notes:** Shift-clicking a crafting result now transactionally repeats the
+  recipe into inventory until inputs or capacity run out; rejected output never
+  consumes ingredients. Real GL screenshot:
+  `saves/crafting_quick_move_smoke_k3/screenshots/shift_click_result.png`.
+- **Next action:** add Shift-click return of crafting input stacks to inventory,
+  preserving unaccepted remainder and cursor state inside `InventoryLogic`.
 
 ### BUG-G007: World generation lacks distant richness
 

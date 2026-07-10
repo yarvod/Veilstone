@@ -627,3 +627,39 @@ def test_active_resource_pack_refreshes_existing_inventory_icon_sprites() -> Non
             window.mgl_context.finish()
         finally:
             window.close()
+
+
+def test_shift_click_crafting_result_quick_moves_all_valid_outputs() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key, mouse
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-crafting-quick-move-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.crafting_grid.set_index(0, ItemStack(4, 3))
+            controller = vars(window)["_inv_ctrl"]
+            result_x, result_y = controller._crafting_result_position()
+
+            window.on_mouse_press(
+                result_x + 28,
+                result_y + 28,
+                mouse.LEFT,
+                key.MOD_SHIFT,
+            )
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.crafting_grid[0] is None
+            assert window.inventory.count(9) == 12
+            assert window.cursor_stack is None
+            assert window.inventory_status == "Crafted Oak Planks x12 into inventory."
+        finally:
+            window.close()

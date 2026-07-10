@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — block icons are
-isometric and follow live resource-pack switches; next work is one narrow
-Minecraft-like crafting-result interaction without widening render ownership.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — resource-pack
+icons and transactional result quick-move are complete; next work is one narrow
+crafting-input quick-move interaction owned by `InventoryLogic`.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,20 +29,20 @@ Minecraft-like crafting-result interaction without widening render ownership.
 
 ## Current Phase
 
-### Phase K3: Crafting Result Quick-Move
+### Phase K4: Crafting Input Quick-Move
 
 Tracked issue: `BUG-G006`.
 
-Цель: make Shift-click on a valid crafting result transfer crafted output into
-inventory through `InventoryLogic`, while keeping input handling and rendering
-free of recipe/inventory mutation rules.
+Цель: make Shift-click on a crafting input return that stack to inventory
+without routing it through the cursor, while keeping capacity/remainder rules in
+`InventoryLogic`.
 
-- [ ] Carry the Shift modifier from result-slot input into a narrow crafting
-  quick-move operation.
-- [ ] Craft repeatedly only while the recipe still matches and the full result
-  stack can be accepted; never consume ingredients for rejected output.
-- [ ] Add pure logic coverage for normal transfer, repeated transfer, full
-  inventory, stack limits, and unchanged ordinary result clicks.
+- [ ] Carry the Shift modifier from crafting-slot input into a narrow quick-move
+  operation without changing ordinary left/right click behavior.
+- [ ] Merge into existing inventory stacks first, preserve any unaccepted
+  remainder in the crafting slot, and leave the cursor unchanged.
+- [ ] Add pure logic/input coverage for full transfer, partial/full inventory,
+  and unchanged ordinary crafting clicks.
 - [ ] Run real crafting/inventory GL smoke before committing.
 
 ## Check Gate
