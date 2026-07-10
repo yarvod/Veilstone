@@ -8,6 +8,7 @@ uniform float fog_end;
 uniform int fog_enabled;
 uniform vec3 sky_color;
 uniform float animation_time;
+uniform int water_detail_enabled;
 
 in vec2 vertex_uv;
 in float vertex_light;
@@ -32,6 +33,7 @@ void main() {
     float crest_wave = sin(vertex_world_position.x * 3.7 + animation_time * 1.25)
         + sin(vertex_world_position.z * 4.1 - animation_time * 1.55);
     float crest = smoothstep(0.42, 0.95, crest_wave * 0.5 + 0.5) * surface;
+    crest *= float(water_detail_enabled);
     vec3 highlight_color = mix(vec3(0.16, 0.42, 0.56), sky_color, 0.72);
     lit_color += highlight_color * crest * (0.05 + fresnel * 0.22) * vertex_light;
     float distance_to_camera = length(vertex_world_position - camera_position);

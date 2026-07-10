@@ -57,6 +57,7 @@ def test_quality_preset_menu_label_and_cycle(monkeypatch) -> None:
             self.applied: list[tuple[str, str]] = []
             self.fog_enabled = False
             self.vegetation_wind_enabled = True
+            self.water_detail_enabled = True
 
         def apply_material_quality(
             self, material_quality: str, resource_pack_path: str = ""
@@ -87,10 +88,11 @@ def test_quality_preset_menu_label_and_cycle(monkeypatch) -> None:
     assert world_renderer.applied == [("color-only", "")]
     assert world_renderer.fog_enabled is True
     assert world_renderer.vegetation_wind_enabled is False
+    assert world_renderer.water_detail_enabled is False
     assert sky_renderer.clouds is False
     assert saved[-1].graphics.quality_preset == "low_60"
     assert win.menu.status == (
-        "Quality preset low_60 saved; live material/fog/clouds/wind applied; "
+        "Quality preset low_60 saved; live material/fog/clouds/wind/water applied; "
         "shadows/smooth/AO/render distance apply restart."
     )
 

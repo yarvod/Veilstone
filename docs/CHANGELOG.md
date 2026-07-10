@@ -30,6 +30,14 @@
 
 ### Added
 
+- **Water detail quality gating** - render quality profiles now gate extra water
+  crest/glint detail: `low_60` keeps the cheaper base water path, while higher
+  profiles keep detailed highlights. F3 diagnostics and Settings live preset
+  application now show/apply the water detail state. Real quality smoke:
+  `saves/water_detail_quality_smoke/low_60/screenshots/veilstone_20260709_161959.png`,
+  `saves/water_detail_quality_smoke/high/screenshots/veilstone_20260709_162004.png`
+  (`low_60 water_detail=false`, `high water_detail=true`, both
+  `last_jitter=0.0003`).
 - **Water surface crest highlights** - water shader now layers low-cost moving
   crest/glint highlights over the existing animated water texture/fresnel path,
   making pools read more like water while leaving fluid simulation untouched.

@@ -21,6 +21,7 @@ class RenderQualityProfile:
     fog: bool
     clouds: bool
     vegetation_wind: bool
+    water_detail: bool
     material_quality: str
 
 
@@ -34,6 +35,7 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         fog=True,
         clouds=False,
         vegetation_wind=False,
+        water_detail=False,
         material_quality="color-only",
     ),
     "balanced": RenderQualityProfile(
@@ -45,6 +47,7 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         fog=True,
         clouds=True,
         vegetation_wind=True,
+        water_detail=True,
         material_quality="color-only",
     ),
     "high": RenderQualityProfile(
@@ -56,6 +59,7 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         fog=True,
         clouds=True,
         vegetation_wind=True,
+        water_detail=True,
         material_quality="material-preview",
     ),
     "cinematic": RenderQualityProfile(
@@ -67,6 +71,7 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         fog=True,
         clouds=True,
         vegetation_wind=True,
+        water_detail=True,
         material_quality="material-preview",
     ),
 }
@@ -80,6 +85,7 @@ def build_custom_profile(
     fog: bool,
     clouds: bool,
     material_quality: str,
+    water_detail: bool = True,
 ) -> RenderQualityProfile:
     """Wrap the user's individual graphics flags as the custom profile."""
     return RenderQualityProfile(
@@ -91,6 +97,7 @@ def build_custom_profile(
         fog=fog,
         clouds=clouds,
         vegetation_wind=True,
+        water_detail=water_detail,
         material_quality=material_quality,
     )
 

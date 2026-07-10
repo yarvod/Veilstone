@@ -136,6 +136,8 @@ def test_water_shader_adds_surface_crest_highlights() -> None:
     fragment = (shader_root / "water.frag").read_text(encoding="utf-8")
 
     assert "crest_wave" in fragment
+    assert "uniform int water_detail_enabled;" in fragment
+    assert "crest *= float(water_detail_enabled);" in fragment
     assert "highlight_color" in fragment
     assert "lit_color += highlight_color * crest" in fragment
     assert "0.44 + fresnel * 0.24 + crest * 0.05" in fragment

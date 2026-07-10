@@ -117,6 +117,7 @@ class DemoWorldRenderer:
         save_root: Path,
         resource_pack_path: str = "",
         material_quality: str = "color-only",
+        water_detail: bool = True,
         world_dependencies: WorldSceneDependencies | None = None,
     ) -> None:
         self.context = context
@@ -166,6 +167,7 @@ class DemoWorldRenderer:
         self.day_cycle_seconds = day_cycle_seconds
         self.shadow_quality = shadow_quality
         self.shadow_bias = shadow_bias
+        self.water_detail_enabled = water_detail
         self.material_pipeline: MaterialPipelineDecision = resolve_material_pipeline_from_graphics(
             material_quality
         )
@@ -911,6 +913,9 @@ class DemoWorldRenderer:
         cast("moderngl.Uniform", program["fog_end"]).value = fog_end
         cast("moderngl.Uniform", program["fog_enabled"]).value = int(self.fog_enabled)
         cast("moderngl.Uniform", program["sky_color"]).value = self.clear_color[:3]
+        cast("moderngl.Uniform", program["water_detail_enabled"]).value = int(
+            self.water_detail_enabled
+        )
         origin_uniform = cast("moderngl.Uniform", program["section_origin"])
         visible: list[tuple[float, SectionCoord, GpuSectionMesh]] = []
         frustum = Frustum(matrix)

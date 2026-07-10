@@ -443,7 +443,8 @@ def _quality_effect_summary(win: Any) -> str:
         getattr(graphics, "clouds", False),
     )
     wind = getattr(win.world_renderer, "vegetation_wind_enabled", False)
-    return f"Preset {preset} Shadows {shadow_quality} Clouds {clouds} Wind {wind}"
+    water = getattr(win.world_renderer, "water_detail_enabled", True)
+    return f"Preset {preset} Shadows {shadow_quality} Clouds {clouds} Wind {wind} Water {water}"
 
 
 def _selected_item_name(hotbar: Any, item_registry: Any) -> str:

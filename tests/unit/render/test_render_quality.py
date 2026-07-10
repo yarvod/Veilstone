@@ -20,6 +20,7 @@ def _custom_profile() -> RenderQualityProfile:
         fog=False,
         clouds=True,
         vegetation_wind=True,
+        water_detail=True,
         material_quality="color-only",
     )
 
@@ -40,6 +41,7 @@ def test_build_custom_profile_wraps_user_flags() -> None:
     assert profile.smooth_lighting is False
     assert profile.ambient_occlusion is True
     assert profile.clouds is False
+    assert profile.water_detail is True
     assert profile.material_quality == "material-preview"
 
 
@@ -70,6 +72,7 @@ def test_low_60_preset_disables_expensive_effects() -> None:
     assert resolved.ambient_occlusion is False
     assert resolved.clouds is False
     assert resolved.vegetation_wind is False
+    assert resolved.water_detail is False
     assert resolved.material_quality == "color-only"
 
 
