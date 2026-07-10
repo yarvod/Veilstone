@@ -186,9 +186,13 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   and drag slot states are present; inventory UI logic now refreshes the active
   world inventory reference after creating or switching worlds so stale saved
   items cannot leak into the new-world UI state.
-- **Next action:** reuse the existing `ItemModelSnapshot` face slots for
-  isometric block icons, then improve slot interaction incrementally without
-  moving inventory rules into render code.
+- **Fix notes:** block items now use isometric top/side projections from the
+  shared `ItemModelSnapshot`; resource/fluid-container fallbacks are unchanged.
+  Real GL screenshot:
+  `saves/inventory_icon_smoke_k1/screenshots/veilstone_20260710_050110.png`.
+- **Next action:** source the same composer from the active resource-pack atlas,
+  then improve crafting/slot interaction incrementally without moving inventory
+  rules into render code.
 
 ### BUG-G007: World generation lacks distant richness
 

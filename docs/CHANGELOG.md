@@ -30,6 +30,14 @@
 
 ### Added
 
+- **Isometric block inventory icons** - block items now reuse
+  `ItemModelSnapshot` top/side texture slots in a pure nearest-neighbor PIL
+  composer, producing a compact three-face Minecraft-like silhouette across
+  inventory, hotbar, crafting, and cursor sprites. Transparent/cutout pixels and
+  source pixel colors are preserved; resource and fluid-container fallback
+  icons are unchanged. Real inventory GL smoke:
+  `saves/inventory_icon_smoke_k1/screenshots/veilstone_20260710_050110.png`
+  with metadata `saves/inventory_icon_smoke_k1/inventory_icon_smoke.json`.
 - **Detail-gated shoreline water cue** - water meshing now emits a render-only
   shoreline factor for top vertices touching opaque terrain, and the detailed
   water shader turns it into a subtle animated edge tint while `low_60` keeps

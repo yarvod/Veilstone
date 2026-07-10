@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory icon depth, `BUG-G006`) — the shared
-block/item snapshot layer already exists; next work should make block items read
-as compact isometric objects without moving inventory rules into render code.
+Активная цель: Phase K (inventory icon polish, `BUG-G006`) — block items now
+render as compact isometric icons; next work should source those faces from the
+active resource-pack atlas without widening inventory/controller ownership.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,21 @@ as compact isometric objects without moving inventory rules into render code.
 
 ## Current Phase
 
-### Phase K1: Isometric Block Inventory Icons
+### Phase K2: Resource-Pack-Aware Inventory Icons
 
-Tracked issue: `BUG-G006`; follows completed snapshot backlog `R-B006`.
+Tracked issue: `BUG-G006`; related resource-pack gap: `R-B002`.
 
-Цель: reuse `ItemModelSnapshot` face texture slots to give block items a
-Minecraft-like isometric silhouette in inventory/hotbar/crafting UI while
-keeping non-block item icons and inventory behavior unchanged.
+Цель: make inventory/hotbar/crafting block icons consume the active block atlas
+and refresh after a resource-pack switch while preserving the pure isometric
+composer and existing non-block fallbacks.
 
-- [ ] Build an isometric block-icon composer from the existing top/side texture
-  slots; preserve alpha and pixel-art sampling.
-- [ ] Keep resource/fluid-container fallback icons unchanged and avoid adding
-  inventory/domain rules to the renderer.
-- [ ] Add focused image/snapshot tests for face selection, silhouette, and
-  transparent background.
-- [ ] Run the real inventory GL smoke and capture an inventory/hotbar screenshot
-  before committing.
+- [ ] Replace the procedural-default atlas lookup in `create_item_icons()` with
+  a narrow active-atlas image/UV input owned by render composition.
+- [ ] Refresh existing hotbar/inventory/crafting/cursor icon images after
+  resource-pack apply without reconstructing inventory gameplay state.
+- [ ] Add focused fake-atlas tests for top/side changes and fallback stability.
+- [ ] Run real default/alternate-pack inventory GL smoke and capture exact
+  screenshot paths before committing.
 
 ## Check Gate
 

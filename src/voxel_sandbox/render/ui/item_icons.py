@@ -5,8 +5,9 @@ from PIL import Image, ImageDraw
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemDef, ItemRegistry, ItemType
-from voxel_sandbox.render.model_snapshots import item_block_texture_name
+from voxel_sandbox.render.model_snapshots import build_item_model_snapshot
 from voxel_sandbox.render.texture_atlas import create_block_atlas
+from voxel_sandbox.render.ui.item_icon_composer import compose_item_model_icon
 
 ICON_SIZE = 32
 HEART_SIZE = 18
@@ -23,10 +24,9 @@ def create_item_icons(
     )
     icons: dict[int, pyglet.image.AbstractImage] = {}
     for item in items:
-        texture = item_block_texture_name(item.id, items, blocks)
-        if texture is not None:
-            image = _crop_atlas_tile(atlas_image, atlas.uvs[texture])
-        else:
+        model = build_item_model_snapshot(item.id, items, blocks)
+        image = compose_item_model_icon(model, atlas_image, atlas.uvs, size=ICON_SIZE)
+        if image is None:
             image = _draw_non_block_icon(item)
         icons[item.id] = pyglet.image.ImageData(
             ICON_SIZE,
@@ -97,19 +97,6 @@ def _heart_image(fill: float) -> pyglet.image.AbstractImage:
         "RGBA",
         image.tobytes(),
         pitch=-HEART_SIZE * 4,
-    )
-
-
-def _crop_atlas_tile(
-    atlas: Image.Image,
-    uv: tuple[float, float, float, float],
-) -> Image.Image:
-    left = round(uv[0] * atlas.width)
-    right = round(uv[2] * atlas.width)
-    top = round((1.0 - uv[3]) * atlas.height)
-    bottom = round((1.0 - uv[1]) * atlas.height)
-    return atlas.crop((left, top, right, bottom)).resize(
-        (ICON_SIZE, ICON_SIZE), Image.Resampling.NEAREST
     )
 
 
