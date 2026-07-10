@@ -70,6 +70,7 @@ class WaterSmokeCapture:
     water_surface_y: float
     water_mesh_sections: int
     water_mesh_triangles: int
+    water_shore_vertices: int
     visible_sections: int
     pending_meshes: int
 
@@ -238,8 +239,14 @@ def run_water_surface_smoke(
                 )
                 scene_chunks = _scene_chunk_coordinates(scene)
                 rebuilt_chunks = renderer.rebuild_loaded_chunk_meshes_sync(scene_chunks)
-                if rebuilt_chunks != len(scene_chunks) or renderer.water_mesh_triangles <= 0:
-                    raise RuntimeError("Water smoke scene did not produce a visible water mesh")
+                if (
+                    rebuilt_chunks != len(scene_chunks)
+                    or renderer.water_mesh_triangles <= 0
+                    or renderer.water_shore_vertices <= 0
+                ):
+                    raise RuntimeError(
+                        "Water smoke scene did not produce visible shoreline water geometry"
+                    )
 
                 player.x = scene.camera_position[0]
                 player.y = scene.camera_position[1] - player.eye_height
@@ -294,6 +301,7 @@ def run_water_surface_smoke(
                         water_surface_y=scene.water_surface_y,
                         water_mesh_sections=renderer.water_mesh_sections,
                         water_mesh_triangles=renderer.water_mesh_triangles,
+                        water_shore_vertices=renderer.water_shore_vertices,
                         visible_sections=queues.visible_sections,
                         pending_meshes=queues.pending_meshes,
                     )
@@ -313,6 +321,7 @@ def run_water_surface_smoke(
             f"item_y={capture.item_y:.4f} item_vy={capture.item_vy:.4f} "
             f"jitter={capture.last_jitter:.4f} "
             f"water_triangles={capture.water_mesh_triangles} "
+            f"shore_vertices={capture.water_shore_vertices} "
             f"screenshot={capture.screenshot}"
         )
     return 0

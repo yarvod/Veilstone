@@ -231,7 +231,9 @@ class BlockBroken:
 
 ### R-B005: Vegetation Wind Animation
 
-- **Status:** open
+- **Status:** done (2026-07-09) — block model snapshots classify cross-plant and
+  foliage wind motion; chunk and shadow vertex paths apply render-only sway,
+  quality presets gate it, and foliage/gameplay GL smoke passed.
 - **Observed:** grass, leaves, and future plants are static.
 - **Desired:** grass/leaves/vegetation use subtle Minecraft-like visual-only
   wind sway while preserving blocky silhouettes, resource-pack textures, and
@@ -244,7 +246,10 @@ class BlockBroken:
 
 ### R-B006: Block/Item Model Snapshot Layer
 
-- **Status:** open
+- **Status:** done (2026-07-01) — shared `BlockModelSnapshot` /
+  `ItemModelSnapshot` texture-slot policy is consumed by chunk meshing,
+  inventory icons, viewmodels, dropped items, and remote held items. Remaining
+  inventory icon depth/polish is tracked separately by `BUG-G006`.
 - **Observed:** inventory, held items, player hand, dropped items, and chunk
   blocks can drift visually because each path can interpret item/block rendering
   differently.
@@ -303,7 +308,9 @@ class RenderModelSnapshot:
 
 ### R-B008: Scalable Visual Quality Tiers
 
-- **Status:** promoted to `docs/WORKPLAN.md` Phase H (2026-07-09)
+- **Status:** done (Phase H, 2026-07-09) — persisted
+  `low_60`/`balanced`/`high`/`cinematic` profiles resolve renderer knobs, apply
+  from Settings, and expose active expensive effects in F3 diagnostics.
 - **Observed:** realistic graphics and weak-machine 60 FPS pull in opposite
   directions if every effect is always on.
 - **Desired:** settings expose clear presets such as `low_60`, `balanced`,
@@ -322,7 +329,10 @@ class RenderModelSnapshot:
 
 ### R-B009: Water Surface Visual Quality
 
-- **Status:** open
+- **Status:** done (Phase J, 2026-07-10) — quality-gated crest/specular cues,
+  procedural ripple normals, Fresnel/sky reflection treatment, render-only
+  shoreline factors, and deterministic low/detail GL smoke are implemented;
+  fluid simulation remained separate and stable.
 - **Observed:** current water behaves functionally but does not yet read like a
   polished water surface; user called out missing reflections/highlights, richer
   surface movement, waves, and ripples.

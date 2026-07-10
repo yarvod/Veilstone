@@ -53,6 +53,33 @@ def _smooth_top_vertex_heights(
     return heights
 
 
+def _top_shore_factors(
+    coordinates: NDArray[np.intp],
+    corners: NDArray[np.float32],
+    padded_opaque: NDArray[np.bool_],
+) -> NDArray[np.float32]:
+    factors = np.zeros((coordinates.shape[0], corners.shape[0]), dtype=np.float32)
+    padded_y = coordinates[:, 1] + HALO_RADIUS
+
+    for vertex_index, corner in enumerate(corners):
+        if corner[1] != 1.0:
+            continue
+        x_offset = -1 if corner[0] == 0.0 else 1
+        z_offset = -1 if corner[2] == 0.0 else 1
+        x_indices = coordinates[:, 0] + HALO_RADIUS + x_offset
+        z_indices = coordinates[:, 2] + HALO_RADIUS + z_offset
+        center_x = coordinates[:, 0] + HALO_RADIUS
+        center_z = coordinates[:, 2] + HALO_RADIUS
+        touches_x = padded_opaque[x_indices, padded_y, center_z]
+        touches_z = padded_opaque[center_x, padded_y, z_indices]
+        touches_diagonal = padded_opaque[x_indices, padded_y, z_indices]
+        factors[:, vertex_index] = np.maximum(
+            np.maximum(touches_x, touches_z).astype(np.float32),
+            touches_diagonal.astype(np.float32) * 0.65,
+        )
+    return factors
+
+
 def build_water_mesh(
     section: ChunkSection | MeshingNeighborhood,
     registry: BlockRegistry,
@@ -122,6 +149,11 @@ def build_water_mesh(
             padded_render_heights,
         )
         positions[:, top_vertices, 1] = coordinates[:, None, 1] + smooth_heights[:, top_vertices]
+        shore_factors = (
+            _top_shore_factors(coordinates, corners_array, padded_opaque)
+            if dy == 1
+            else np.zeros((face_count, 4), dtype=np.float32)
+        )
         if dy == 0:
             adjacent_fluid = neighbor_fluid[coordinates[:, 0], coordinates[:, 1], coordinates[:, 2]]
             adjacent_levels = neighbor_heights[
@@ -147,7 +179,7 @@ def build_water_mesh(
         vertices[:, :, 5:8] = np.asarray(normal, dtype=np.float32)
         vertices[:, :, 8] = sky
         vertices[:, :, 9] = block_light
-        vertices[:, :, 10] = ao
+        vertices[:, :, 10] = shore_factors
         vertices[:, :, 11:15] = texture_lookup[block_ids, None, :]
         vertex_batches.append(vertices.reshape((-1, 15)))
         index_batches.append(build_quad_indices(sky, block_light, ao, vertex_offset))

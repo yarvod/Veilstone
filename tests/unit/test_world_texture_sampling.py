@@ -37,6 +37,8 @@ def test_water_mesh_cache_skips_wind_motion_attribute_binding() -> None:
     assert '"3f 2f 3f 1f 1f 1f 4f"' in cache_source
     assert '"3f 2f 24x 4f"' in cache_source
     assert "wind_motion=False" in scene_source
+    assert "shoreline_factor=True" in scene_source
+    assert '"in_shore_factor" if self.shoreline_factor else "in_ao"' in cache_source
 
 
 def test_world_renderer_binds_neutral_shadow_texture_when_shadows_disabled() -> None:

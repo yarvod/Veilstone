@@ -15,6 +15,7 @@ in float vertex_light;
 in vec3 vertex_world_position;
 in vec4 vertex_atlas_rect;
 in vec3 vertex_normal;
+in float vertex_shore_factor;
 
 out vec4 frag_color;
 
@@ -49,10 +50,20 @@ void main() {
     crest *= water_detail;
     vec3 highlight_color = mix(vec3(0.16, 0.42, 0.56), sky_color, 0.72);
     lit_color += highlight_color * crest * (0.05 + fresnel * 0.22) * vertex_light;
+    float shoreline = smoothstep(0.08, 0.9, vertex_shore_factor) * surface * water_detail;
+    float shore_ripple = 0.72 + 0.28 * sin(
+        (vertex_world_position.x + vertex_world_position.z) * 5.2 - animation_time * 1.8
+    );
+    vec3 shore_color = mix(vec3(0.20, 0.48, 0.60), sky_color, 0.76);
+    lit_color += shore_color * shoreline * shore_ripple * 0.10 * vertex_light;
     float distance_to_camera = length(vertex_world_position - camera_position);
     float fog_factor = fog_enabled == 1
         ? smoothstep(fog_start, max(fog_start + 0.1, fog_end), distance_to_camera)
         : 0.0;
-    float alpha = mix(0.62, 0.44 + fresnel * 0.24 + crest * 0.05, surface);
+    float alpha = mix(
+        0.62,
+        0.44 + fresnel * 0.24 + crest * 0.05 + shoreline * 0.04,
+        surface
+    );
     frag_color = vec4(mix(lit_color, fog_color, fog_factor), alpha);
 }

@@ -232,7 +232,10 @@ class DemoWorldRenderer:
             self.shadow_shader.program if self.shadow_map is not None else None,
         )
         self.water_mesh_cache = SectionMeshCache(
-            context, self.water_shader.program, wind_motion=False
+            context,
+            self.water_shader.program,
+            wind_motion=False,
+            shoreline_factor=True,
         )
         self._meshing_workers = meshing_workers
         self._meshing_backend = cast(Literal["thread", "process"], meshing_backend)
@@ -329,6 +332,13 @@ class DemoWorldRenderer:
     def water_mesh_triangles(self) -> int:
         return sum(
             gpu_mesh.data.indices.size // 3 for _key, gpu_mesh in self.water_mesh_cache.items()
+        )
+
+    @property
+    def water_shore_vertices(self) -> int:
+        return sum(
+            int(np.count_nonzero(gpu_mesh.data.vertices[:, 10] > 0.0))
+            for _key, gpu_mesh in self.water_mesh_cache.items()
         )
 
     def perf_queues(self) -> RenderQueueSnapshot:
@@ -668,7 +678,10 @@ class DemoWorldRenderer:
             self.shadow_shader.program if self.shadow_map is not None else None,
         )
         self.water_mesh_cache = SectionMeshCache(
-            self.context, self.water_shader.program, wind_motion=False
+            self.context,
+            self.water_shader.program,
+            wind_motion=False,
+            shoreline_factor=True,
         )
         self._remesh_all()
 

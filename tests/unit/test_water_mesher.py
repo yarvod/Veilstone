@@ -32,3 +32,25 @@ def test_water_top_surface_smooths_shared_edge_between_flow_levels() -> None:
         2.0,
         2.0,
     ]
+
+
+def test_water_top_vertices_expose_shore_factor_next_to_opaque_block() -> None:
+    section = lit_section()
+    section.set_block(1, 1, 1, 8)
+    section.set_block(0, 1, 1, 1)
+
+    mesh = build_water_mesh(section, create_core_block_registry(), UVS)
+
+    faces = mesh.vertices.reshape((-1, 4, 15))
+    top_face = next(
+        face
+        for face in faces
+        if np.isclose(face[:, 6], 1.0).all()
+        and np.isclose(face[:, 0].min(), 1.0)
+        and np.isclose(face[:, 2].min(), 1.0)
+    )
+    shore_side = top_face[np.isclose(top_face[:, 0], 1.0), 10]
+    open_side = top_face[np.isclose(top_face[:, 0], 2.0), 10]
+
+    assert np.allclose(shore_side, 1.0)
+    assert np.allclose(open_side, 0.0)

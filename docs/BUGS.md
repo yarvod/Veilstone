@@ -51,9 +51,9 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Regression check:** reusable `water-surface-smoke --frames 180` kept the
   floating item stable in matched `low_60` and `detailed` captures at
   `item_y=97.86`,
-  `item_vy=-0.0001`, `last_jitter=0.0001`, with one visible water section / 162
-  triangles. Metadata:
-  `saves/water_surface_smoke_j4_clean/water_surface_smoke.json`.
+  `item_vy=-0.0001`, `last_jitter=0.0001`, with one visible water section, 162
+  triangles, and 68 shoreline vertices. Metadata:
+  `saves/water_surface_smoke_j5_final/water_surface_smoke.json`.
 
 
 ### BUG-R003: Material atlas bindings clobbered the shadow map texture unit
@@ -186,8 +186,9 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   and drag slot states are present; inventory UI logic now refreshes the active
   world inventory reference after creating or switching worlds so stale saved
   items cannot leak into the new-world UI state.
-- **Next action:** add render-facing item icon/model snapshots and improve slot
-  interaction incrementally without moving inventory rules into render code.
+- **Next action:** reuse the existing `ItemModelSnapshot` face slots for
+  isometric block icons, then improve slot interaction incrementally without
+  moving inventory rules into render code.
 
 ### BUG-G007: World generation lacks distant richness
 

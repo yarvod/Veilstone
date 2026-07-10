@@ -154,3 +154,17 @@ def test_water_shader_uses_detail_gated_ripple_normals_for_reflections() -> None
     assert "surface * water_detail" in fragment
     assert "dot(water_normal, view_direction)" in fragment
     assert "float reflection_strength" in fragment
+
+
+def test_water_shader_uses_detail_gated_shoreline_cue() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    vertex = (shader_root / "water.vert").read_text(encoding="utf-8")
+    fragment = (shader_root / "water.frag").read_text(encoding="utf-8")
+
+    assert "in float in_shore_factor;" in vertex
+    assert "out float vertex_shore_factor;" in vertex
+    assert "vertex_shore_factor = in_shore_factor;" in vertex
+    assert "in float vertex_shore_factor;" in fragment
+    assert "vertex_shore_factor) * surface * water_detail" in fragment
+    assert "shore_ripple" in fragment
+    assert "lit_color += shore_color * shoreline" in fragment

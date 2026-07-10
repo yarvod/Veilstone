@@ -35,11 +35,15 @@ class SectionMeshCache:
         depth_program: moderngl.Program | None = None,
         *,
         wind_motion: bool = True,
+        shoreline_factor: bool = False,
     ) -> None:
+        if wind_motion and shoreline_factor:
+            raise ValueError("Shoreline factor is only supported by non-wind mesh layouts")
         self.context = context
         self.program = program
         self.depth_program = depth_program
         self.wind_motion = wind_motion
+        self.shoreline_factor = shoreline_factor
         self._meshes: dict[SectionCoord, GpuSectionMesh] = {}
 
     def upload(self, key: SectionCoord, mesh: MeshData) -> None:
@@ -60,6 +64,7 @@ class SectionMeshCache:
                 "in_wind_motion",
             )
         else:
+            detail_attribute = "in_shore_factor" if self.shoreline_factor else "in_ao"
             vertex_content = (
                 vertex_buffer,
                 "3f 2f 3f 1f 1f 1f 4f",
@@ -68,7 +73,7 @@ class SectionMeshCache:
                 "in_normal",
                 "in_sky_light",
                 "in_block_light",
-                "in_ao",
+                detail_attribute,
                 "in_atlas_rect",
             )
         vertex_array = self.context.vertex_array(

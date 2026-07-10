@@ -30,6 +30,17 @@
 
 ### Added
 
+- **Detail-gated shoreline water cue** - water meshing now emits a render-only
+  shoreline factor for top vertices touching opaque terrain, and the detailed
+  water shader turns it into a subtle animated edge tint while `low_60` keeps
+  the previous output. The water VAO reuses the existing 15-float stride with an
+  explicit shoreline attribute; simulation/source levels are unchanged. Real
+  180-frame A/B:
+  `saves/water_surface_smoke_j5_final/low_60/screenshots/veilstone_20260710_044309.png`,
+  `saves/water_surface_smoke_j5_final/detailed/screenshots/veilstone_20260710_044319.png`,
+  metadata `saves/water_surface_smoke_j5_final/water_surface_smoke.json`
+  (68 shoreline vertices, 162 water triangles, both `item_y=97.86`,
+  `item_vy=-0.0001`, `last_jitter=0.0001`).
 - **Reproducible water surface smoke** - new `python -m voxel_sandbox
   water-surface-smoke` builds a deterministic closed pool in a fresh temporary
   world for matched `low_60` and custom `detailed` profiles, captures screenshots,
