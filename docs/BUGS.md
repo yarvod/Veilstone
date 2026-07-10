@@ -241,8 +241,14 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   cursor and clears the source, matching crafting; empty, odd/even, placement,
   and drag behavior remain covered. The GL case is present but skipped with
   `screens=0`.
-- **Next action:** consolidate the completed inventory interaction evidence into
-  the active `WORLD-B004` reproducible smoke command.
+- **Fix notes:** `inventory-interaction-smoke` now consolidates active-pack icon,
+  crafting quick-move, right/left drag, and right-click split evidence behind
+  one deterministic CLI. Each scenario validates numeric JSON and uses the
+  normal screenshot path; all six real GL scenarios passed under
+  `saves/inventory_interaction_smoke_l1/` when the display returned.
+- **Next action:** use the reproducible command for future inventory parity
+  slices; prioritize remaining crafting/inventory polish from observed player
+  gaps rather than expanding this bug with unverified interaction rewrites.
 
 ### BUG-G007: World generation lacks distant richness
 

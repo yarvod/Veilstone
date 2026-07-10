@@ -78,6 +78,23 @@ def build_parser() -> argparse.ArgumentParser:
     water_smoke.add_argument("--frames", type=int, default=180)
     water_smoke.add_argument("--render-distance", type=int, default=2)
     water_smoke.add_argument("--output-dir", default=None)
+    inventory_smoke = subparsers.add_parser(
+        "inventory-interaction-smoke",
+        help="Capture deterministic inventory interaction smoke evidence",
+    )
+    inventory_smoke.add_argument(
+        "--scenario",
+        choices=(
+            "icons",
+            "crafting-result",
+            "crafting-input",
+            "right-drag",
+            "left-drag",
+            "right-click-split",
+        ),
+        default="icons",
+    )
+    inventory_smoke.add_argument("--output-dir", default=None)
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",

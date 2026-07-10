@@ -137,6 +137,19 @@ def run_command(args: argparse.Namespace) -> int:
             render_distance=int(getattr(args, "render_distance", 2)),
             output_dir=Path(str(output_dir)) if output_dir else None,
         )
+    if command == "inventory-interaction-smoke":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.inventory_interaction_smoke import (
+            run_inventory_interaction_smoke,
+        )
+
+        output_dir = getattr(args, "output_dir", None)
+        return run_inventory_interaction_smoke(
+            settings,
+            scenario=str(getattr(args, "scenario", "icons")),
+            output_dir=Path(str(output_dir)) if output_dir else None,
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 

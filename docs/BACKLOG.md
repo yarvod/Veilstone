@@ -157,9 +157,16 @@ class BlockBroken:
 - **Desired:** keep a small set of deterministic reference scenes for generation,
   water, foliage, lighting, mob movement, inventory icons, and first-person
   interaction.
-- **Candidate work:** add debug scene fixtures plus screenshot/manual smoke
-  commands. Store numeric summaries first; visual golden images can follow only
-  after render output stabilizes enough to avoid churn.
+- **Existing coverage:** deterministic walking, water/buoyancy, shadow-preset,
+  and inventory-interaction commands now write numeric evidence and real
+  screenshots when a display is available. The inventory command covers active
+  resource-pack icons, crafting quick-move, right/left drag, and right-click
+  split through real input routing.
+- **Candidate work:** connect the existing pure `reference_gameplay_scene`
+  fixture to a deterministic isometric hidden-window capture for generation,
+  foliage, and lighting first; add mob movement and first-person interaction in
+  later narrow slices. Keep numeric summaries primary; visual golden images can
+  follow only after render output stabilizes enough to avoid churn.
 
 ### WORLD-B005: Swimming Stroke Audio Polish
 

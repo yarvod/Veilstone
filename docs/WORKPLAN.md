@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase L (reference gameplay verification, `WORLD-B004`) — core
-inventory click/drag/quick-move parity slices are complete; next work replaces
-their ad-hoc `/tmp` capture scripts with one reproducible inventory smoke tool.
+Активная цель: Phase L (reference gameplay verification, `WORLD-B004`) —
+inventory interaction evidence is now reproducible; next work turns the
+existing pure reference-scene fixture into a narrow real render capture.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,23 @@ their ad-hoc `/tmp` capture scripts with one reproducible inventory smoke tool.
 
 ## Current Phase
 
-### Phase L1: Reproducible Inventory Interaction Smoke
+### Phase L2: Rendered Reference Scene Foundation
 
-Tracked backlog: `WORLD-B004`; coverage source: completed `BUG-G006` slices.
+Tracked backlog: `WORLD-B004`, `DX-B002`.
 
-Цель: provide one deterministic CLI smoke command that prepares representative
-inventory/crafting state, exercises a selected interaction scenario, and writes
-numeric JSON evidence plus a screenshot when a display is available.
+Цель: render the existing pure `reference_gameplay_scene` block fixture from a
+known isometric camera through a fresh hidden runtime, producing one stable
+numeric sidecar and a normal screenshot without moving scene ownership into
+`GameWindow`.
 
-- [ ] Add `inventory-interaction-smoke` CLI/bootstrap routing with a narrow tool
-  module rather than growing `GameWindow`.
-- [ ] Encode deterministic scenarios for resource-pack icons, crafting/result
-  quick-move, right/left drag, and right-click split with numeric assertions.
-- [ ] Write stable JSON metadata and capture through the normal screenshot flow;
-  return an explicit skip when no display exists.
-- [ ] Add unit tests for scenario metadata/validation and run the real command
-  when a display is available.
+- [ ] Add a narrow screenshot adapter/CLI around `reference_gameplay_scene`;
+  keep its pure fixture and summary builders renderer-independent.
+- [ ] Apply the fixture blocks to a temporary authoritative world and position a
+  deterministic isometric camera without adding state to `GameWindow`.
+- [ ] Validate block/camera/mesh numeric metadata, capture through
+  `GameWindow.save_screenshot()`, and return an explicit display-less skip.
+- [ ] Add focused unit tests, run a real OpenGL capture when available, and keep
+  mob movement/inventory/first-person staging for later small slices.
 
 ## Check Gate
 

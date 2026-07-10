@@ -57,6 +57,17 @@
 
 ### Added
 
+- **Reproducible inventory interaction smoke** - the new
+  `inventory-interaction-smoke` CLI runs selected resource-pack icon,
+  crafting-result/input quick-move, right/left drag, and right-click split
+  scenarios through the real input/controller path. Each scenario validates a
+  stable numeric metadata contract, saves sorted JSON, and captures through
+  `GameWindow.save_screenshot()`; display-less runs exit successfully with an
+  explicit skip. Unit/parser coverage: `19 passed`; full unit gate: `782`
+  passed; focused Pyright: `0` errors. All six real OpenGL captures passed under
+  `saves/inventory_interaction_smoke_l1/<scenario>/`, including
+  `icons/screenshots/veilstone_20260710_061724.png` and
+  `left-drag/screenshots/veilstone_20260710_061508.png`.
 - **Capacity-aware left-drag distribution** - left-drag now collects ordered
   distinct inventory/crafting targets in input gesture state, then delegates one
   even allocation to `InventoryLogic`. Incompatible/full targets are skipped,

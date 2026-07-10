@@ -88,6 +88,21 @@ def test_water_surface_smoke_command_accepts_runtime_options() -> None:
     assert args.output_dir == "saves/water-smoke"
 
 
+def test_inventory_interaction_smoke_command_accepts_scenario_and_output() -> None:
+    args = build_parser().parse_args(
+        [
+            "inventory-interaction-smoke",
+            "--scenario",
+            "left-drag",
+            "--output-dir",
+            "saves/inventory-smoke",
+        ]
+    )
+    assert args.command == "inventory-interaction-smoke"
+    assert args.scenario == "left-drag"
+    assert args.output_dir == "saves/inventory-smoke"
+
+
 def test_update_commands_are_registered() -> None:
     parser = build_parser()
     assert parser.parse_args(["check-update"]).command == "check-update"
