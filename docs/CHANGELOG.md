@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- **Odd-stack right-click split parity** - `Inventory.split()` now takes the
+  ceil-half of odd stacks, so `5` becomes cursor `3` plus source `2`, matching
+  crafting-grid and Minecraft behavior; even stacks and the scoped single-item
+  no-split behavior remain unchanged. Domain/UI/Input focused coverage:
+  `101 passed`. The new GL integration is included but skipped because Pyglet
+  still reports `headless=false, screens=0`.
 - **Transactional inventory quick-move routing** - Shift-click between hotbar
   and main inventory now merges matching stacks first and then uses empty slots,
   skipping incompatible targets instead of calling swap-capable

@@ -231,8 +231,14 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Observed:** `Inventory.split()` takes `count // 2`, so right-clicking an odd
   inventory stack takes the smaller half, unlike crafting-grid right-click and
   Minecraft ceil-half behavior.
-- **Next action:** align odd inventory split rounding with crafting behavior and
-  preserve even/single-stack semantics.
+- **Fix notes:** odd inventory splits now take the ceil-half and match crafting;
+  even and single-item behavior stayed unchanged in this slice. Focused tests
+  passed; the GL case is present but skipped with `screens=0`.
+- **Observed:** right-clicking a single inventory item remains a no-op because
+  `Inventory.split()` returns `None`, while crafting-grid right-click correctly
+  moves the single item to the cursor.
+- **Next action:** align single-item inventory right-click pickup with crafting
+  without regressing odd/even split or drag behavior.
 
 ### BUG-G007: World generation lacks distant richness
 

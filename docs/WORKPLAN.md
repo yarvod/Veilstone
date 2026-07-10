@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — transactional
-Shift-click routing is complete; next work aligns odd-stack inventory right-click
-splitting with crafting/Minecraft ceil-half behavior.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — odd-stack
+right-click rounding now matches crafting; next work fixes the separate
+single-item inventory right-click no-op.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,18 +29,18 @@ splitting with crafting/Minecraft ceil-half behavior.
 
 ## Current Phase
 
-### Phase K9: Odd-Stack Right-Click Split Parity
+### Phase K10: Single-Item Right-Click Pickup
 
 Tracked issue: `BUG-G006`.
 
-Цель: right-click pickup from an odd inventory stack takes the larger half and
-leaves the smaller half, matching the existing crafting-grid behavior.
+Цель: right-clicking a single inventory item picks it up onto the cursor and
+clears the source slot, matching crafting-grid and Minecraft behavior.
 
-- [ ] Correct `Inventory.split()` rounding without changing even-stack or
-  single-item behavior.
-- [ ] Prove inventory and crafting-grid odd splits produce the same cursor/source
-  counts.
-- [ ] Preserve right-click placement, drag distribution, and max-stack behavior.
+- [ ] Separate empty-slot handling from single-item pickup in the inventory
+  split/right-click path.
+- [ ] Prove inventory and crafting-grid single-item pickup produce identical
+  cursor/source state.
+- [ ] Preserve odd/even split rounding, right-click placement, and drag behavior.
 - [ ] Run real inventory GL smoke when a display is available; otherwise record
   the same verified environment limitation and closest deterministic coverage.
 

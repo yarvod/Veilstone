@@ -25,6 +25,27 @@ def test_inventory_merges_splits_moves_and_removes_stacks() -> None:
     assert not inventory.remove(3, 31)
 
 
+def test_inventory_split_takes_larger_half_from_odd_stack() -> None:
+    inventory = Inventory()
+    registry = create_core_item_registry()
+    inventory.set(0, ItemStack(3, 5), registry)
+
+    assert inventory.split(0) == ItemStack(3, 3)
+    assert inventory[0] == ItemStack(3, 2)
+
+
+def test_inventory_split_keeps_even_and_single_stack_behavior() -> None:
+    inventory = Inventory()
+    registry = create_core_item_registry()
+    inventory.set(0, ItemStack(3, 6), registry)
+    inventory.set(1, ItemStack(3, 1), registry)
+
+    assert inventory.split(0) == ItemStack(3, 3)
+    assert inventory[0] == ItemStack(3, 3)
+    assert inventory.split(1) is None
+    assert inventory[1] == ItemStack(3, 1)
+
+
 def test_inventory_returns_remainder_and_honors_unstackable_items() -> None:
     registry = create_core_item_registry()
     inventory = Inventory(9, 1)

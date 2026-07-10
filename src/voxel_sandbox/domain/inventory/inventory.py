@@ -82,7 +82,7 @@ class Inventory:
         current = self[index]
         if current is None or current.count == 1:
             return None
-        return self.take_from_slot(index, current.count // 2)
+        return self.take_from_slot(index, (current.count + 1) // 2)
 
     def move(self, source: int, target: int, registry: ItemRegistry) -> None:
         self._validate_index(source)
