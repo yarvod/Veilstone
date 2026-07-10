@@ -237,8 +237,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Observed:** right-clicking a single inventory item remains a no-op because
   `Inventory.split()` returns `None`, while crafting-grid right-click correctly
   moves the single item to the cursor.
-- **Next action:** align single-item inventory right-click pickup with crafting
-  without regressing odd/even split or drag behavior.
+- **Fix notes:** single-item inventory right-click now moves the item to the
+  cursor and clears the source, matching crafting; empty, odd/even, placement,
+  and drag behavior remain covered. The GL case is present but skipped with
+  `screens=0`.
+- **Next action:** consolidate the completed inventory interaction evidence into
+  the active `WORLD-B004` reproducible smoke command.
 
 ### BUG-G007: World generation lacks distant richness
 

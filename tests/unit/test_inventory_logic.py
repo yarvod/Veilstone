@@ -397,6 +397,24 @@ class TestInventoryClick:
         assert crafting_logic.s.cursor_stack == ItemStack(1, 3)
         assert crafting_logic.s.crafting_grid[0] == ItemStack(1, 2)
 
+    def test_single_item_right_click_matches_crafting_grid_pickup(self):
+        inventory_logic = _make_logic()
+        inventory_logic.s.inventory.set(
+            0,
+            ItemStack(1, 1),
+            inventory_logic.s.item_registry,
+        )
+        crafting_logic = _make_logic()
+        crafting_logic.s.crafting_grid.set_index(0, ItemStack(1, 1))
+
+        inventory_logic.handle_inventory_click(0, mouse.RIGHT, quick_move=False)
+        crafting_logic.handle_crafting_click(0, mouse.RIGHT)
+
+        assert inventory_logic.s.cursor_stack == ItemStack(1, 1)
+        assert inventory_logic.s.inventory[0] is None
+        assert crafting_logic.s.cursor_stack == ItemStack(1, 1)
+        assert crafting_logic.s.crafting_grid[0] is None
+
     def test_left_click_merges_cursor_stack_into_same_item(self):
         logic = _make_logic()
         reg = logic.s.item_registry

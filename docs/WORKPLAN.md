@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — odd-stack
-right-click rounding now matches crafting; next work fixes the separate
-single-item inventory right-click no-op.
+Активная цель: Phase L (reference gameplay verification, `WORLD-B004`) — core
+inventory click/drag/quick-move parity slices are complete; next work replaces
+their ad-hoc `/tmp` capture scripts with one reproducible inventory smoke tool.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,20 +29,22 @@ single-item inventory right-click no-op.
 
 ## Current Phase
 
-### Phase K10: Single-Item Right-Click Pickup
+### Phase L1: Reproducible Inventory Interaction Smoke
 
-Tracked issue: `BUG-G006`.
+Tracked backlog: `WORLD-B004`; coverage source: completed `BUG-G006` slices.
 
-Цель: right-clicking a single inventory item picks it up onto the cursor and
-clears the source slot, matching crafting-grid and Minecraft behavior.
+Цель: provide one deterministic CLI smoke command that prepares representative
+inventory/crafting state, exercises a selected interaction scenario, and writes
+numeric JSON evidence plus a screenshot when a display is available.
 
-- [ ] Separate empty-slot handling from single-item pickup in the inventory
-  split/right-click path.
-- [ ] Prove inventory and crafting-grid single-item pickup produce identical
-  cursor/source state.
-- [ ] Preserve odd/even split rounding, right-click placement, and drag behavior.
-- [ ] Run real inventory GL smoke when a display is available; otherwise record
-  the same verified environment limitation and closest deterministic coverage.
+- [ ] Add `inventory-interaction-smoke` CLI/bootstrap routing with a narrow tool
+  module rather than growing `GameWindow`.
+- [ ] Encode deterministic scenarios for resource-pack icons, crafting/result
+  quick-move, right/left drag, and right-click split with numeric assertions.
+- [ ] Write stable JSON metadata and capture through the normal screenshot flow;
+  return an explicit skip when no display exists.
+- [ ] Add unit tests for scenario metadata/validation and run the real command
+  when a display is available.
 
 ## Check Gate
 

@@ -80,7 +80,7 @@ class Inventory:
 
     def split(self, index: int) -> ItemStack | None:
         current = self[index]
-        if current is None or current.count == 1:
+        if current is None:
             return None
         return self.take_from_slot(index, (current.count + 1) // 2)
 

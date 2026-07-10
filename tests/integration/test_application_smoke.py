@@ -879,3 +879,32 @@ def test_right_click_odd_inventory_stack_takes_larger_half() -> None:
             assert window.cursor_stack == ItemStack(1, 3)
         finally:
             window.close()
+
+
+def test_right_click_single_inventory_item_moves_it_to_cursor() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key, mouse
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-single-item-pickup-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.inventory.set(9, ItemStack(1, 1), window.item_registry)
+            controller = vars(window)["_inv_ctrl"]
+            source_x, source_y = controller._inventory_slot_position(0)
+
+            window.on_mouse_press(source_x + 24, source_y + 24, mouse.RIGHT, 0)
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.inventory[9] is None
+            assert window.cursor_stack == ItemStack(1, 1)
+        finally:
+            window.close()

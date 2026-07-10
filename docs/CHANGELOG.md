@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- **Single-item right-click pickup parity** - right-clicking a single inventory
+  item now moves it onto the cursor and clears the source slot, matching the
+  crafting-grid path. Empty slots remain no-ops, while odd/even ceil-half
+  behavior and drag placement remain covered. Focused domain/UI/Input coverage:
+  `103 passed`; full unit gate: `763 passed`, `10` display-dependent skips. The
+  real-GL integration is included but skipped while Pyglet reports `screens=0`.
 - **Odd-stack right-click split parity** - `Inventory.split()` now takes the
   ceil-half of odd stacks, so `5` becomes cursor `3` plus source `2`, matching
   crafting-grid and Minecraft behavior; even stacks and the scoped single-item

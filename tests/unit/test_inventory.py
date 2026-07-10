@@ -34,7 +34,7 @@ def test_inventory_split_takes_larger_half_from_odd_stack() -> None:
     assert inventory[0] == ItemStack(3, 2)
 
 
-def test_inventory_split_keeps_even_and_single_stack_behavior() -> None:
+def test_inventory_split_keeps_even_behavior_and_picks_up_single_item() -> None:
     inventory = Inventory()
     registry = create_core_item_registry()
     inventory.set(0, ItemStack(3, 6), registry)
@@ -42,8 +42,15 @@ def test_inventory_split_keeps_even_and_single_stack_behavior() -> None:
 
     assert inventory.split(0) == ItemStack(3, 3)
     assert inventory[0] == ItemStack(3, 3)
-    assert inventory.split(1) is None
-    assert inventory[1] == ItemStack(3, 1)
+    assert inventory.split(1) == ItemStack(3, 1)
+    assert inventory[1] is None
+
+
+def test_inventory_split_empty_slot_remains_no_op() -> None:
+    inventory = Inventory()
+
+    assert inventory.split(0) is None
+    assert inventory[0] is None
 
 
 def test_inventory_returns_remainder_and_honors_unstackable_items() -> None:
