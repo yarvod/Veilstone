@@ -209,8 +209,15 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   compatible inventory/crafting slot, skips revisits, and stops when the cursor
   empties. Real GL screenshot:
   `saves/right_drag_distribution_smoke_k5/screenshots/right_drag_three_slots.png`.
-- **Next action:** add capacity-aware even left-drag distribution through a
-  narrow `InventoryLogic` allocation operation.
+- **Fix notes:** left-drag now evenly allocates a carried stack across distinct
+  compatible inventory/crafting targets, respects capacity, and keeps remainder
+  on the cursor. Real GL screenshot:
+  `saves/left_drag_distribution_smoke_k6/screenshots/left_drag_mixed_capacity.png`.
+- **Observed:** the K6 smoke showed that derived `No matching recipe` feedback
+  immediately masks a fresh `Distributed ...` action message in the inventory
+  panel even though `inventory_status` contains the correct result.
+- **Next action:** resolve action-versus-recipe feedback priority in a pure
+  presentation helper and repeat the K6 scene.
 
 ### BUG-G007: World generation lacks distant richness
 

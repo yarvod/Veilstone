@@ -428,6 +428,26 @@ class TestOnMouseScroll:
 
 
 class TestInventoryDrag:
+    def test_left_drag_collects_distinct_targets_for_logic_distribution(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = object()
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.side_effect = [0, 1, 2, 1, 3]
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.LEFT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
+        h.on_mouse_drag(50, 10, 20, 0, mouse.LEFT, 0)
+        h.on_mouse_drag(30, 10, -20, 0, mouse.LEFT, 0)
+        h.on_mouse_drag(70, 10, 40, 0, mouse.LEFT, 0)
+        h.on_mouse_release(70, 10, mouse.LEFT, 0)
+
+        win._inv_ctrl.distribute_cursor_stack.assert_called_once_with(
+            (("inventory", 1), ("inventory", 2), ("inventory", 3))
+        )
+
     def test_right_drag_distributes_once_per_distinct_inventory_slot(self):
         win = _make_win(in_game=True)
         win.inventory_open = True
@@ -558,10 +578,7 @@ class TestInventoryDrag:
         h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
         h.on_mouse_release(30, 10, mouse.LEFT, 0)
 
-        assert win._inv_ctrl.handle_inventory_click.call_args_list[-1].args == (1, mouse.LEFT)
-        assert win._inv_ctrl.handle_inventory_click.call_args_list[-1].kwargs == {
-            "quick_move": False
-        }
+        win._inv_ctrl.distribute_cursor_stack.assert_called_once_with((("inventory", 1),))
 
     def test_shift_click_does_not_start_inventory_drag(self):
         win = _make_win(in_game=True)
@@ -603,7 +620,7 @@ class TestInventoryDrag:
         h.on_mouse_drag(30, 10, 20, 0, mouse.LEFT, 0)
         h.on_mouse_release(30, 10, mouse.LEFT, 0)
 
-        win._inv_ctrl.handle_crafting_click.assert_called_once_with(2, mouse.LEFT)
+        win._inv_ctrl.distribute_cursor_stack.assert_called_once_with((("crafting", 2),))
 
     def test_drag_release_outside_slots_keeps_cursor_stack_carried(self):
         win = _make_win(in_game=True)
@@ -627,6 +644,7 @@ class TestInventoryDrag:
 
         assert win.cursor_stack is carried
         win._inv_ctrl.handle_inventory_click.assert_called_once()
+        win._inv_ctrl.distribute_cursor_stack.assert_not_called()
 
     def test_no_cycle_when_text_input_active(self):
         win = _make_win(in_game=True)

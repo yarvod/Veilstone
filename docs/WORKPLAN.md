@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — distinct-slot
-right-drag distribution is complete; next work is bounded capacity-aware
-left-drag distribution.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — both drag
+distribution gestures are complete; next work fixes the concrete action-status
+priority regression exposed by the K6 smoke.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,21 @@ left-drag distribution.
 
 ## Current Phase
 
-### Phase K6: Left-Drag Even Distribution
+### Phase K7: Inventory Action Feedback Priority
 
 Tracked issue: `BUG-G006`.
 
-Цель: while carrying a cursor stack, left-drag across distinct compatible slots
-distributes the stack as evenly as slot capacity allows and leaves any
-unaccepted remainder on the cursor.
+Цель: fresh inventory actions such as `Distributed`, `Moved`, and `Crafted`
+remain visible instead of being immediately masked by derived recipe feedback
+such as `No matching recipe`.
 
-- [ ] Keep distinct target collection in gesture state, but perform capacity and
-  item-count allocation through a narrow `InventoryLogic` operation.
-- [ ] Distribute evenly across compatible inventory/crafting targets, respect
-  max-stack limits, and retain any remainder on the cursor.
-- [ ] Add pure allocation/input coverage for uneven counts, revisits,
-  incompatible/full slots, and ordinary left-click behavior.
-- [ ] Run real inventory/crafting GL smoke before committing.
+- [ ] Extract a pure presentation resolver for action status versus crafting
+  result feedback without adding conditionals to `draw_inventory()`.
+- [ ] Preserve recipe availability/error feedback when no fresh action message
+  exists, while keeping explicit action messages readable.
+- [ ] Add focused presentation tests for action, recipe error, available result,
+  and default instruction states.
+- [ ] Re-run the mixed-capacity K6 GL scene and capture visible action feedback.
 
 ## Check Gate
 

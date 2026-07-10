@@ -19,6 +19,7 @@ from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
 from voxel_sandbox.render.input_state import mouse
+from voxel_sandbox.render.inventory_drag import InventoryDragTarget
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.ui.item_icons import (
     HEART_SIZE,
@@ -289,6 +290,53 @@ class InventoryLogic:
                 return
             remaining = self.s.cursor_stack.count - 1
             self.s.cursor_stack = self.s.cursor_stack.with_count(remaining) if remaining else None
+
+    def distribute_cursor_stack(self, targets: tuple[InventoryDragTarget, ...]) -> None:
+        cursor = self.s.cursor_stack
+        if cursor is None:
+            return
+        maximum = self.s.item_registry.by_id(cursor.item_id).max_stack
+        compatible: list[tuple[InventoryDragTarget, ItemStack | None]] = []
+        seen: set[InventoryDragTarget] = set()
+        for target in targets:
+            if target in seen:
+                continue
+            seen.add(target)
+            kind, index = target
+            current = (
+                self.s.inventory[index] if kind == "inventory" else self.s.crafting_grid[index]
+            )
+            if current is not None and (
+                current.item_id != cursor.item_id or current.count >= maximum
+            ):
+                continue
+            compatible.append((target, current))
+        if not compatible:
+            return
+        share = cursor.count // len(compatible)
+        if share < 1:
+            return
+        moved_total = 0
+        for (kind, index), current in compatible:
+            moved = min(share, maximum - (current.count if current is not None else 0))
+            if moved < 1:
+                continue
+            next_stack = (
+                cursor.with_count(moved)
+                if current is None
+                else current.with_count(current.count + moved)
+            )
+            if kind == "inventory":
+                self.s.inventory.set(index, next_stack, self.s.item_registry)
+            else:
+                self.s.crafting_grid.set_index(index, next_stack)
+            moved_total += moved
+        remaining = cursor.count - moved_total
+        self.s.cursor_stack = cursor.with_count(remaining) if remaining else None
+        definition = self.s.item_registry.by_id(cursor.item_id)
+        self.s.status = (
+            f"Distributed {definition.name} x{moved_total} across {len(compatible)} slots."
+        )
 
     def _return_or_drop(self, stack: ItemStack, drop_callback: Callable[[ItemStack], None]) -> None:
         remainder = self.s.inventory.add(stack, self.s.item_registry)
@@ -845,6 +893,11 @@ class InventoryController:
     def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
         self._sync_to_inv()
         self.win._inv.handle_inventory_click(index, button, quick_move=quick_move)
+        self._sync_from_inv()
+
+    def distribute_cursor_stack(self, targets: tuple[InventoryDragTarget, ...]) -> None:
+        self._sync_to_inv()
+        self.win._inv.distribute_cursor_stack(targets)
         self._sync_from_inv()
 
     def drop_selected_item(self) -> None:

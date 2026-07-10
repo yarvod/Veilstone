@@ -15,6 +15,7 @@ from voxel_sandbox.engine.events import (
     EntityDamaged,
     EntityDied,
 )
+from voxel_sandbox.render.inventory_drag import InventoryDragTarget
 from voxel_sandbox.render.ui.menu import Screen
 from voxel_sandbox.render.ui.text_input import TextPurpose
 
@@ -124,6 +125,8 @@ class InventoryInputPort(Protocol):
     def take_crafting_result(self, *, quick_move: bool = False) -> None: ...
 
     def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None: ...
+
+    def distribute_cursor_stack(self, targets: tuple[InventoryDragTarget, ...]) -> None: ...
 
     def drop_selected_item(self) -> None: ...
 
@@ -272,7 +275,8 @@ class InputHandler:
         self._inventory_drag_button: int | None = None
         self._inventory_drag_start: tuple[int, int] | None = None
         self._inventory_drag_moved = False
-        self._inventory_drag_visited: set[tuple[str, int]] = set()
+        self._inventory_drag_visited: set[InventoryDragTarget] = set()
+        self._inventory_drag_targets: list[InventoryDragTarget] = []
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         win = self.win
@@ -421,10 +425,11 @@ class InputHandler:
             self._inventory_drag_start = None
             self._inventory_drag_moved = False
             self._inventory_drag_visited.clear()
+            self._inventory_drag_targets.clear()
             can_start_drag = button in {mouse.LEFT, mouse.RIGHT} and not bool(
                 modifiers & key.MOD_SHIFT
             )
-            pressed_slot: tuple[str, int] | None = None
+            pressed_slot: InventoryDragTarget | None = None
             crafting_slot = win.inventory_input.crafting_slot_at(x, y)
             if crafting_slot is not None:
                 pressed_slot = ("crafting", crafting_slot)
@@ -557,16 +562,14 @@ class InputHandler:
             and button == mouse.LEFT
             and self._inventory_drag_moved
             and win.cursor_stack is not None
+            and self._inventory_drag_targets
         ):
-            crafting_slot = win.inventory_input.crafting_slot_at(x, y)
-            if crafting_slot is not None:
-                win.inventory_input.handle_crafting_click(crafting_slot, button)
-            elif (slot := win.inventory_input.slot_at(x, y)) is not None:
-                win.inventory_input.handle_inventory_click(slot, button, quick_move=False)
+            win.inventory_input.distribute_cursor_stack(tuple(self._inventory_drag_targets))
         self._inventory_drag_button = None
         self._inventory_drag_start = None
         self._inventory_drag_moved = False
         self._inventory_drag_visited.clear()
+        self._inventory_drag_targets.clear()
         if not win.menu.in_game and hasattr(win, "ui_renderer") and win.ui_renderer:
             win.ui_renderer.on_mouse_release(x, y, button, modifiers)
 
@@ -604,15 +607,33 @@ class InputHandler:
             and self.win.cursor_stack is not None
         ):
             self._distribute_right_drag_at(x, y)
+        elif (
+            self.win.menu.in_game
+            and self.win.inventory_open
+            and self._inventory_drag_button == mouse.LEFT
+            and self.win.cursor_stack is not None
+        ):
+            self._collect_left_drag_target_at(x, y)
 
-    def _distribute_right_drag_at(self, x: int, y: int) -> None:
+    def _drag_target_at(self, x: int, y: int) -> InventoryDragTarget | None:
         win = self.win
         crafting_slot = win.inventory_input.crafting_slot_at(x, y)
         if crafting_slot is not None:
-            slot = ("crafting", crafting_slot)
-        elif (inventory_slot := win.inventory_input.slot_at(x, y)) is not None:
-            slot = ("inventory", inventory_slot)
-        else:
+            return "crafting", crafting_slot
+        inventory_slot = win.inventory_input.slot_at(x, y)
+        return ("inventory", inventory_slot) if inventory_slot is not None else None
+
+    def _collect_left_drag_target_at(self, x: int, y: int) -> None:
+        target = self._drag_target_at(x, y)
+        if target is None or target in self._inventory_drag_visited:
+            return
+        self._inventory_drag_visited.add(target)
+        self._inventory_drag_targets.append(target)
+
+    def _distribute_right_drag_at(self, x: int, y: int) -> None:
+        win = self.win
+        slot = self._drag_target_at(x, y)
+        if slot is None:
             return
         if slot in self._inventory_drag_visited:
             return

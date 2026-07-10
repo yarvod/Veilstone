@@ -251,6 +251,49 @@ class TestCraftingResult:
 
 
 class TestInventoryClick:
+    def test_left_drag_distribution_splits_even_share_and_keeps_remainder(self):
+        logic = _make_logic()
+        logic.s.cursor_stack = ItemStack(1, 10)
+
+        logic.distribute_cursor_stack((("inventory", 0), ("inventory", 1), ("crafting", 0)))
+
+        assert logic.s.inventory[0] == ItemStack(1, 3)
+        assert logic.s.inventory[1] == ItemStack(1, 3)
+        assert logic.s.crafting_grid[0] == ItemStack(1, 3)
+        assert logic.s.cursor_stack == ItemStack(1, 1)
+        assert logic.s.status == "Distributed Stone x9 across 3 slots."
+
+    def test_left_drag_distribution_skips_invalid_targets_and_respects_capacity(self):
+        logic = _make_logic()
+        logic.s.inventory.set(0, ItemStack(2, 3), logic.s.item_registry)
+        logic.s.inventory.set(1, ItemStack(1, 63), logic.s.item_registry)
+        logic.s.cursor_stack = ItemStack(1, 8)
+
+        logic.distribute_cursor_stack(
+            (
+                ("inventory", 0),
+                ("inventory", 1),
+                ("crafting", 0),
+                ("crafting", 0),
+            )
+        )
+
+        assert logic.s.inventory[0] == ItemStack(2, 3)
+        assert logic.s.inventory[1] == ItemStack(1, 64)
+        assert logic.s.crafting_grid[0] == ItemStack(1, 4)
+        assert logic.s.cursor_stack == ItemStack(1, 3)
+        assert logic.s.status == "Distributed Stone x5 across 2 slots."
+
+    def test_left_drag_distribution_keeps_cursor_when_share_is_zero(self):
+        logic = _make_logic()
+        logic.s.cursor_stack = ItemStack(1, 2)
+
+        logic.distribute_cursor_stack((("inventory", 0), ("inventory", 1), ("crafting", 0)))
+
+        assert logic.s.cursor_stack == ItemStack(1, 2)
+        assert all(logic.s.inventory[index] is None for index in (0, 1))
+        assert logic.s.crafting_grid[0] is None
+
     def test_pick_up_item(self):
         logic = _make_logic()
         reg = logic.s.item_registry

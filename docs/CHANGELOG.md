@@ -30,6 +30,14 @@
 
 ### Added
 
+- **Capacity-aware left-drag distribution** - left-drag now collects ordered
+  distinct inventory/crafting targets in input gesture state, then delegates one
+  even allocation to `InventoryLogic`. Incompatible/full targets are skipped,
+  duplicate targets are ignored, per-slot max stacks are respected, and all
+  unaccepted items remain on the cursor. Real mixed-target smoke:
+  `saves/left_drag_distribution_smoke_k6/screenshots/left_drag_mixed_capacity.png`,
+  metadata `saves/left_drag_distribution_smoke_k6/left_drag_distribution_smoke.json`
+  (`10` carried, `7` accepted across `3` slots, cursor remainder `3`).
 - **Right-drag single-item distribution** - right-dragging a carried stack now
   places one item into each distinct inventory or crafting slot crossed by the
   gesture. Source/revisited slots are skipped, incompatible/full slots reuse the
