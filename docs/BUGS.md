@@ -4,6 +4,53 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ## Open
 
+### BUG-I001: Movement keys can remain active after release
+
+- **Status:** open
+- **Affected area:** input / movement / focus and key-state lifecycle
+- **Observed:** during real gameplay the player can occasionally continue
+  moving or running after the movement key is no longer held.
+- **Reproduction:** intermittent user report; enter a world, move and sprint with
+  normal keyboard input, release the movement keys, and repeat around focus,
+  inventory, and pause transitions until movement remains active.
+- **Expected:** releasing a movement key, losing focus, opening inventory, or
+  entering the pause menu clears the corresponding gameplay key state
+  immediately.
+- **Verification required:** a visible-game pass must exercise press/release,
+  sprint, focus loss/re-entry, inventory open/close, and Escape/Resume while
+  observing that movement stops without an extra key press.
+
+### BUG-I002: Fresh game UI can require double clicks
+
+- **Status:** open
+- **Affected area:** input / menu UI / initial mouse focus and event routing
+- **Observed:** on some launches, if the mouse is not moved or focused in the
+  expected way, menu buttons and other interactions respond only to a double
+  click instead of the first single click.
+- **Reproduction:** intermittent user report; launch the visible client fresh,
+  vary initial mouse movement/focus before interacting, then try each initial
+  menu action with one click.
+- **Expected:** the first ordinary click activates the intended UI control
+  regardless of the initial mouse movement pattern.
+- **Verification required:** repeat cold visible launches and confirm first-click
+  activation with and without initial pointer movement; automated callback tests
+  alone are insufficient.
+
+### BUG-I003: Resume leaves mouse visible and camera uncaptured
+
+- **Status:** open
+- **Affected area:** input / pause menu / exclusive mouse capture
+- **Observed:** after pressing Escape during gameplay and clicking `Resume`, the
+  pointer can remain visible and mouse movement no longer rotates the camera
+  correctly.
+- **Reproduction:** enter a world, confirm normal camera control, press Escape,
+  click `Resume`, then move the mouse without any extra click.
+- **Expected:** Resume immediately hides/recaptures the pointer, returns input to
+  gameplay, and rotates the camera on the first mouse movement.
+- **Verification required:** test repeated Escape/Resume cycles through the
+  visible client and verify both the internal capture state and real first-motion
+  camera behavior; existing mocked sync-call coverage is not sufficient.
+
 ### BUG-T001: test_ui_renderer fails when run after other render tests
 
 - **Status:** open

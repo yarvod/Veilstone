@@ -774,6 +774,14 @@
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
 ### Changed
+- **Backlog promotion and real-game acceptance rules** - agent guidance now
+  requires active tasks to move from `BACKLOG` into `WORKPLAN` without
+  duplication, then move completed results into `CHANGELOG`. Player-facing
+  acceptance now requires a visible-game interaction pass, normal screenshots,
+  and actual visual inspection; controls work additionally checks key release,
+  first-click behavior, pause/Resume, mouse recapture, and first-motion camera
+  response. The newly reported stuck-key, initial double-click, and Resume
+  capture regressions are tracked separately in `docs/BUGS.md`.
 - **GitHub Actions runtime dependencies** - package workflow now uses Node
   24-compatible action releases for checkout, uv setup, artifact transfer, and
   GitHub Release publishing without the old force-Node env override.

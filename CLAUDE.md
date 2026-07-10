@@ -150,6 +150,25 @@ Update when:
 
 Keep only active plans here. Move completed history to `docs/CHANGELOG.md`.
 
+### Backlog Promotion Lifecycle
+
+Treat backlog promotion as a move, never as a copy:
+
+1. Before implementation, move the selected concrete task or slice from
+   `docs/BACKLOG.md` into `docs/WORKPLAN.md` and remove that active scope from
+   `docs/BACKLOG.md` in the same change.
+2. If a backlog item is broader than the selected slice, split out the future
+   remainder as clearly separate backlog items; do not leave the active slice
+   duplicated under an umbrella entry.
+3. While implementation is active, `docs/WORKPLAN.md` is the only source for
+   its scope, checklist, and acceptance criteria.
+4. When the phase is complete, remove it from `docs/WORKPLAN.md` and record the
+   meaningful result in `docs/CHANGELOG.md` in the same coherent commit. Update
+   `docs/BUGS.md` for any bugs fixed, discovered, or still open.
+5. If active work is deliberately abandoned or reprioritized, move the
+   unfinished scope back to `docs/BACKLOG.md`; never leave the same task active
+   in both files.
+
 ### `docs/BUGS.md`
 
 Use for:
@@ -272,14 +291,32 @@ Work in small coherent phases.
 
 For UI, rendering, controls, audio, movement, mobs, world streaming, resource
 packs, or other player-facing gameplay changes, do not rely only on unit tests.
-Run the real application path whenever the environment allows it: use smoke
-tests, hidden-window benchmarks, manual/automated movement through the world,
-F3/debug overlay checks, texture-pack switching, mob/object behavior checks, and
-screenshots saved under the normal screenshot flow. Record the exact command,
-key result, and screenshot path in docs or the final report when the check is
-part of accepting the slice. If OpenGL/display/audio is unavailable, document
-that limitation and run the closest deterministic headless or hidden-window
-coverage instead.
+When a display is available, launch the visible game client, enter a real world,
+and personally exercise the exact feature through normal player input. Move
+through the scene, inspect the feature from relevant angles/states, and check
+nearby behavior likely to regress; a successful launch or hidden-window smoke
+alone is not player-facing acceptance.
+
+Capture representative screenshots through the normal F2/
+`GameWindow.save_screenshot()` flow and visually inspect every acceptance
+screenshot, not merely its existence or metadata. Confirm that the requested
+feature is visibly correct and that there are no obvious clipping, state,
+lighting, UI, or interaction regressions. Record the exact launch command,
+actions performed, observed result, and inspected screenshot paths in docs or
+the final report.
+
+For controls and mouse work, explicitly verify key press/release, focus changes,
+single-click activation, Escape pause, Resume, exclusive mouse recapture, and
+immediate camera rotation after returning to gameplay. Screenshots supplement
+these checks but do not prove input behavior, so report the exact interaction
+sequence and outcome.
+
+Smoke tests, hidden-window benchmarks, automated movement, F3/debug overlay
+checks, texture-pack switching, and mob/object behavior checks remain useful
+supplemental evidence. If OpenGL/display/audio is unavailable, document the
+limitation and run the closest deterministic headless or hidden-window coverage
+instead; do not claim full player-facing acceptance without the real visible
+gameplay pass.
 
 Before editing:
 

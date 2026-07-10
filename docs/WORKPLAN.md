@@ -31,7 +31,8 @@ existing pure reference-scene fixture into a narrow real render capture.
 
 ### Phase L2: Rendered Reference Scene Foundation
 
-Tracked backlog: `WORLD-B004`, `DX-B002`.
+Promoted from `WORLD-B004` and `DX-B002`; their active entries were removed from
+`docs/BACKLOG.md` when this phase entered the workplan.
 
 Цель: render the existing pure `reference_gameplay_scene` block fixture from a
 known isometric camera through a fresh hidden runtime, producing one stable
@@ -44,8 +45,8 @@ numeric sidecar and a normal screenshot without moving scene ownership into
   deterministic isometric camera without adding state to `GameWindow`.
 - [ ] Validate block/camera/mesh numeric metadata, capture through
   `GameWindow.save_screenshot()`, and return an explicit display-less skip.
-- [ ] Add focused unit tests, run a real OpenGL capture when available, and keep
-  mob movement/inventory/first-person staging for later small slices.
+- [ ] Add focused unit tests and run a real visible-game/OpenGL capture when
+  available, including visual inspection of the saved screenshot.
 
 ## Check Gate
 

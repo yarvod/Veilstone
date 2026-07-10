@@ -149,25 +149,6 @@ class BlockBroken:
 - **Acceptance idea:** unit tests can prove hand animation, sound routing, and
   particle intent derive from the same event without constructing `GameWindow`.
 
-### WORLD-B004: Reference Gameplay Snapshot Scenes
-
-- **Status:** open
-- **Observed:** Minecraft-like feel is hard to protect with isolated unit tests
-  alone.
-- **Desired:** keep a small set of deterministic reference scenes for generation,
-  water, foliage, lighting, mob movement, inventory icons, and first-person
-  interaction.
-- **Existing coverage:** deterministic walking, water/buoyancy, shadow-preset,
-  and inventory-interaction commands now write numeric evidence and real
-  screenshots when a display is available. The inventory command covers active
-  resource-pack icons, crafting quick-move, right/left drag, and right-click
-  split through real input routing.
-- **Candidate work:** connect the existing pure `reference_gameplay_scene`
-  fixture to a deterministic isometric hidden-window capture for generation,
-  foliage, and lighting first; add mob movement and first-person interaction in
-  later narrow slices. Keep numeric summaries primary; visual golden images can
-  follow only after render output stabilizes enough to avoid churn.
-
 ### WORLD-B005: Swimming Stroke Audio Polish
 
 - **Status:** open
@@ -363,18 +344,6 @@ class RenderModelSnapshot:
   rendering, and multiplayer issues without expensive per-frame telemetry.
 - **Candidate work:** extend cached HUD debug data with low-frequency sampling
   and integration tests.
-
-### DX-B002: Isometric/Reference Screenshot Tool
-
-- **Status:** open
-- **Observed:** manual screenshots exist, but there is no stable debug tool for
-  comparing generation, lighting, foliage, and resource-pack output across
-  changes.
-- **Desired:** a dev-only screenshot command/mode can capture a deterministic
-  world region from a known camera preset, including an isometric/debug view.
-- **Candidate work:** add screenshot command behind dev/debug UI, seedable scene
-  fixture selection, and metadata sidecar with seed, preset, render distance,
-  resource pack, commit, and settings.
 
 ## Performance
 
