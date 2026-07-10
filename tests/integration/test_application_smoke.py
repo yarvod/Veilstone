@@ -809,3 +809,44 @@ def test_left_drag_even_distribution_respects_mixed_target_capacity() -> None:
             assert controller._inv_status_label.text == ("Distributed Stone x7 across 3 slots.")
         finally:
             window.close()
+
+
+def test_shift_click_inventory_skips_incompatible_and_merges_before_empty() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key, mouse
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-inventory-quick-move-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.inventory.set(0, ItemStack(1, 10), window.item_registry)
+            window.inventory.set(9, ItemStack(2, 5), window.item_registry)
+            window.inventory.set(10, ItemStack(1, 62), window.item_registry)
+            controller = vars(window)["_inv_ctrl"]
+            hotbar_display_index = len(window.inventory) - 9
+            source_x, source_y = controller._inventory_slot_position(hotbar_display_index)
+
+            window.on_mouse_press(
+                source_x + 24,
+                source_y + 24,
+                mouse.LEFT,
+                key.MOD_SHIFT,
+            )
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.inventory[0] is None
+            assert window.inventory[9] == ItemStack(2, 5)
+            assert window.inventory[10] == ItemStack(1, 64)
+            assert window.inventory[11] == ItemStack(1, 8)
+            assert window.inventory_status == "Moved Stone x10."
+            assert controller._inv_status_label.text == "Moved Stone x10."
+        finally:
+            window.close()

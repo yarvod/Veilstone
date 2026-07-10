@@ -223,8 +223,16 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Observed:** inventory Shift-click currently loops through `Inventory.move()`;
   because `move()` swaps incompatible stacks, an occupied first destination can
   replace the source item and route the wrong stack instead of being skipped.
-- **Next action:** implement merge-then-empty quick-move routing that never swaps
-  incompatible targets and preserves source remainder.
+- **Fix notes:** inventory Shift-click now uses dedicated merge-then-empty
+  routing, skips incompatible targets, and preserves the original source
+  remainder when destination capacity is exhausted. The new GL test could not
+  rerun because the environment reported `screens=0` and no headless `EGL`;
+  focused routing/input tests and the full unit gate passed.
+- **Observed:** `Inventory.split()` takes `count // 2`, so right-clicking an odd
+  inventory stack takes the smaller half, unlike crafting-grid right-click and
+  Minecraft ceil-half behavior.
+- **Next action:** align odd inventory split rounding with crafting behavior and
+  preserve even/single-stack semantics.
 
 ### BUG-G007: World generation lacks distant richness
 

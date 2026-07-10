@@ -327,13 +327,48 @@ class TestInventoryClick:
         assert logic.s.cursor_stack is None
         assert logic.s.inventory[0] is not None
 
-    def test_quick_move(self):
+    def test_quick_move_skips_incompatible_target_before_empty_slot(self):
         logic = _make_logic()
         reg = logic.s.item_registry
         logic.s.inventory.set(0, ItemStack(1, 10), reg)
+        logic.s.inventory.set(9, ItemStack(2, 5), reg)
+
         logic.handle_inventory_click(0, mouse.LEFT, quick_move=True)
+
         assert logic.s.inventory[0] is None
-        assert any(logic.s.inventory[i] is not None for i in range(9, 27))
+        assert logic.s.inventory[9] == ItemStack(2, 5)
+        assert logic.s.inventory[10] == ItemStack(1, 10)
+        assert logic.s.status == "Moved Stone x10."
+
+    def test_quick_move_preserves_source_remainder_when_main_inventory_is_full(self):
+        logic = _make_logic()
+        reg = logic.s.item_registry
+        logic.s.inventory.set(0, ItemStack(1, 10), reg)
+        logic.s.inventory.set(9, ItemStack(1, 60), reg)
+        for index in range(10, len(logic.s.inventory)):
+            logic.s.inventory.set(index, ItemStack(2, 64), reg)
+
+        logic.handle_inventory_click(0, mouse.LEFT, quick_move=True)
+
+        assert logic.s.inventory[0] == ItemStack(1, 6)
+        assert logic.s.inventory[9] == ItemStack(1, 64)
+        assert all(logic.s.inventory[index] == ItemStack(2, 64) for index in range(10, 36))
+        assert logic.s.status == "Moved Stone x4."
+
+    def test_quick_move_from_main_merges_then_uses_empty_hotbar_slot(self):
+        logic = _make_logic()
+        reg = logic.s.item_registry
+        logic.s.inventory.set(9, ItemStack(1, 10), reg)
+        logic.s.inventory.set(0, ItemStack(2, 5), reg)
+        logic.s.inventory.set(1, ItemStack(1, 60), reg)
+
+        logic.handle_inventory_click(9, mouse.LEFT, quick_move=True)
+
+        assert logic.s.inventory[9] is None
+        assert logic.s.inventory[0] == ItemStack(2, 5)
+        assert logic.s.inventory[1] == ItemStack(1, 64)
+        assert logic.s.inventory[2] == ItemStack(1, 6)
+        assert logic.s.status == "Moved Stone x10."
 
     def test_split_with_right_click(self):
         logic = _make_logic()

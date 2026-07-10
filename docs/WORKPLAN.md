@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — action feedback
-priority is fixed; next work corrects a concrete Shift-click routing hazard
-where incompatible target stacks can be swapped instead of skipped.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — transactional
+Shift-click routing is complete; next work aligns odd-stack inventory right-click
+splitting with crafting/Minecraft ceil-half behavior.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,20 @@ where incompatible target stacks can be swapped instead of skipped.
 
 ## Current Phase
 
-### Phase K8: Transactional Inventory Quick-Move Routing
+### Phase K9: Odd-Stack Right-Click Split Parity
 
 Tracked issue: `BUG-G006`.
 
-Цель: Shift-click between hotbar and main inventory merges matching stacks and
-then uses empty targets, never swapping incompatible stacks or changing the
-source item identity mid-operation.
+Цель: right-click pickup from an odd inventory stack takes the larger half and
+leaves the smaller half, matching the existing crafting-grid behavior.
 
-- [ ] Replace `Inventory.move()` reuse in the quick-move path with a narrow
-  merge-then-empty transfer that skips incompatible targets.
-- [ ] Preserve source remainder when destination capacity is exhausted and leave
-  unrelated stacks untouched.
-- [ ] Add pure coverage for incompatible-first targets, partial capacity,
-  hotbar-to-main and main-to-hotbar routing, and ordinary click/swap behavior.
-- [ ] Run real Shift-click inventory GL smoke before committing.
+- [ ] Correct `Inventory.split()` rounding without changing even-stack or
+  single-item behavior.
+- [ ] Prove inventory and crafting-grid odd splits produce the same cursor/source
+  counts.
+- [ ] Preserve right-click placement, drag distribution, and max-stack behavior.
+- [ ] Run real inventory GL smoke when a display is available; otherwise record
+  the same verified environment limitation and closest deterministic coverage.
 
 ## Check Gate
 

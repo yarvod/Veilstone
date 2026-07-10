@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Transactional inventory quick-move routing** - Shift-click between hotbar
+  and main inventory now merges matching stacks first and then uses empty slots,
+  skipping incompatible targets instead of calling swap-capable
+  `Inventory.move()`. Destination exhaustion preserves the original source item
+  and remainder. Focused routing/input coverage: `94 passed`; full unit gate:
+  `758 passed`, `10` display-dependent skips. A real-GL integration case is
+  included but the final rerun was unavailable because Pyglet reported
+  `headless=false, screens=0`; the macOS environment also lacks headless `EGL`.
 - **Inventory action feedback priority** - a pure presentation resolver now
   prefers fresh explicit inventory actions over derived recipe warnings, while
   still showing `No matching recipe` when no action message exists. Ordinary

@@ -251,10 +251,7 @@ class InventoryLogic:
         self.s.status = ""
         if quick_move and button == mouse.LEFT and self.s.cursor_stack is None:
             target_range = range(9, len(inv)) if index < 9 else range(9)
-            for target in target_range:
-                inv.move(index, target, reg)
-                if inv[index] is None:
-                    break
+            self._quick_move_inventory_stack(index, target_range)
             return
         current = inv[index]
         if button == mouse.LEFT:
@@ -293,6 +290,52 @@ class InventoryLogic:
                 return
             remaining = self.s.cursor_stack.count - 1
             self.s.cursor_stack = self.s.cursor_stack.with_count(remaining) if remaining else None
+
+    def _quick_move_inventory_stack(self, source_index: int, targets: range) -> None:
+        inventory = self.s.inventory
+        source = inventory[source_index]
+        if source is None:
+            return
+        maximum = self.s.item_registry.by_id(source.item_id).max_stack
+        remaining = source.count
+        for target_index in targets:
+            target = inventory[target_index]
+            if target is None or target.item_id != source.item_id or target.count >= maximum:
+                continue
+            moved = min(maximum - target.count, remaining)
+            inventory.set(
+                target_index,
+                target.with_count(target.count + moved),
+                self.s.item_registry,
+            )
+            remaining -= moved
+            if remaining == 0:
+                break
+        if remaining:
+            for target_index in targets:
+                if inventory[target_index] is not None:
+                    continue
+                moved = min(maximum, remaining)
+                inventory.set(
+                    target_index,
+                    source.with_count(moved),
+                    self.s.item_registry,
+                )
+                remaining -= moved
+                if remaining == 0:
+                    break
+        inventory.set(
+            source_index,
+            source.with_count(remaining) if remaining else None,
+            self.s.item_registry,
+        )
+        moved_total = source.count - remaining
+        definition = self.s.item_registry.by_id(source.item_id)
+        self.s.status = (
+            f"Moved {definition.name} x{moved_total}."
+            if moved_total
+            else f"No destination room for {definition.name}."
+        )
 
     def distribute_cursor_stack(self, targets: tuple[InventoryDragTarget, ...]) -> None:
         cursor = self.s.cursor_stack
