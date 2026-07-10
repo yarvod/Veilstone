@@ -216,8 +216,15 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Observed:** the K6 smoke showed that derived `No matching recipe` feedback
   immediately masks a fresh `Distributed ...` action message in the inventory
   panel even though `inventory_status` contains the correct result.
-- **Next action:** resolve action-versus-recipe feedback priority in a pure
-  presentation helper and repeat the K6 scene.
+- **Fix notes:** a pure resolver now keeps fresh explicit action feedback above
+  derived recipe warnings; ordinary clicks clear stale action text. Real GL
+  screenshot:
+  `saves/inventory_feedback_smoke_k7/screenshots/distribution_action_visible.png`.
+- **Observed:** inventory Shift-click currently loops through `Inventory.move()`;
+  because `move()` swaps incompatible stacks, an occupied first destination can
+  replace the source item and route the wrong stack instead of being skipped.
+- **Next action:** implement merge-then-empty quick-move routing that never swaps
+  incompatible targets and preserves source remainder.
 
 ### BUG-G007: World generation lacks distant richness
 

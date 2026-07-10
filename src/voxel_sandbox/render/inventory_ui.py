@@ -13,6 +13,7 @@ import pyglet
 from voxel_sandbox.application.inventory_presentation import (
     build_crafting_result_snapshot,
     build_item_icon_snapshot,
+    resolve_inventory_status_text,
 )
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
@@ -139,6 +140,7 @@ class InventoryLogic:
         quick_move: bool = False,
     ) -> None:
         current = self.s.crafting_grid[index]
+        self.s.status = ""
         if quick_move and button == mouse.LEFT:
             self._quick_move_crafting_input(index, current)
             return
@@ -246,6 +248,7 @@ class InventoryLogic:
     def handle_inventory_click(self, index: int, button: int, *, quick_move: bool) -> None:
         inv = self.s.inventory
         reg = self.s.item_registry
+        self.s.status = ""
         if quick_move and button == mouse.LEFT and self.s.cursor_stack is None:
             target_range = range(9, len(inv)) if index < 9 else range(9)
             for target in target_range:
@@ -699,7 +702,10 @@ class InventoryController:
         self.crafting_arrow.x = result_x - 50
         self.crafting_arrow.y = result_y + 28
         self.crafting_arrow.draw()
-        self._inv_status_label.text = result_snapshot.status_text or win.inventory_status
+        self._inv_status_label.text = resolve_inventory_status_text(
+            win.inventory_status,
+            result_snapshot,
+        )
         self._inv_status_label.x = center_x
         self._inv_status_label.y = center_y - 270
         self._inv_status_label.draw()

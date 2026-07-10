@@ -53,3 +53,12 @@ def build_crafting_result_snapshot(
     item = build_item_icon_snapshot(result, item_registry) if result is not None else None
     status_text = "" if item is not None or not has_inputs else "No matching recipe"
     return CraftingResultSnapshot(result=item, has_inputs=has_inputs, status_text=status_text)
+
+
+def resolve_inventory_status_text(
+    action_status: str,
+    crafting_result: CraftingResultSnapshot,
+) -> str:
+    """Prefer fresh explicit actions, then fall back to derived recipe feedback."""
+
+    return action_status or crafting_result.status_text

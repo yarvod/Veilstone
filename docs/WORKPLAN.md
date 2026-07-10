@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — both drag
-distribution gestures are complete; next work fixes the concrete action-status
-priority regression exposed by the K6 smoke.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — action feedback
+priority is fixed; next work corrects a concrete Shift-click routing hazard
+where incompatible target stacks can be swapped instead of skipped.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,21 @@ priority regression exposed by the K6 smoke.
 
 ## Current Phase
 
-### Phase K7: Inventory Action Feedback Priority
+### Phase K8: Transactional Inventory Quick-Move Routing
 
 Tracked issue: `BUG-G006`.
 
-Цель: fresh inventory actions such as `Distributed`, `Moved`, and `Crafted`
-remain visible instead of being immediately masked by derived recipe feedback
-such as `No matching recipe`.
+Цель: Shift-click between hotbar and main inventory merges matching stacks and
+then uses empty targets, never swapping incompatible stacks or changing the
+source item identity mid-operation.
 
-- [ ] Extract a pure presentation resolver for action status versus crafting
-  result feedback without adding conditionals to `draw_inventory()`.
-- [ ] Preserve recipe availability/error feedback when no fresh action message
-  exists, while keeping explicit action messages readable.
-- [ ] Add focused presentation tests for action, recipe error, available result,
-  and default instruction states.
-- [ ] Re-run the mixed-capacity K6 GL scene and capture visible action feedback.
+- [ ] Replace `Inventory.move()` reuse in the quick-move path with a narrow
+  merge-then-empty transfer that skips incompatible targets.
+- [ ] Preserve source remainder when destination capacity is exhausted and leave
+  unrelated stacks untouched.
+- [ ] Add pure coverage for incompatible-first targets, partial capacity,
+  hotbar-to-main and main-to-hotbar routing, and ordinary click/swap behavior.
+- [ ] Run real Shift-click inventory GL smoke before committing.
 
 ## Check Gate
 

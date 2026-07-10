@@ -806,5 +806,6 @@ def test_left_drag_even_distribution_respects_mixed_target_capacity() -> None:
             assert window.crafting_grid[0] == ItemStack(1, 3)
             assert window.cursor_stack == ItemStack(1, 3)
             assert window.inventory_status == "Distributed Stone x7 across 3 slots."
+            assert controller._inv_status_label.text == ("Distributed Stone x7 across 3 slots.")
         finally:
             window.close()

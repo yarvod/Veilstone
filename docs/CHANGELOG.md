@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- **Inventory action feedback priority** - a pure presentation resolver now
+  prefers fresh explicit inventory actions over derived recipe warnings, while
+  still showing `No matching recipe` when no action message exists. Ordinary
+  slot/crafting clicks clear stale actions. The K6 mixed-capacity scene now
+  visibly renders `Distributed Stone x7 across 3 slots.`:
+  `saves/inventory_feedback_smoke_k7/screenshots/distribution_action_visible.png`,
+  metadata `saves/inventory_feedback_smoke_k7/inventory_feedback_smoke.json`.
 - **Softer terrain shadow filtering** - chunk color-only and material-preview
   receivers now use a 5x5 PCF average with a softer shadow floor, reducing hard
   triangular/blocky terrain shadow artifacts while preserving actual occluder

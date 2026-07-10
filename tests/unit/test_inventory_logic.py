@@ -128,6 +128,15 @@ class TestInventoryOpen:
 
 
 class TestCraftingClick:
+    def test_ordinary_crafting_click_clears_stale_action_feedback(self):
+        logic = _make_logic()
+        logic.s.status = "Distributed Stone x4 across 2 slots."
+        logic.s.crafting_grid.set_index(0, ItemStack(1, 1))
+
+        logic.handle_crafting_click(0, mouse.LEFT)
+
+        assert logic.s.status == ""
+
     def test_shift_click_moves_full_stack_to_inventory_without_cursor(self):
         logic = _make_logic()
         logic.s.crafting_grid.set_index(0, ItemStack(4, 5))
@@ -251,6 +260,14 @@ class TestCraftingResult:
 
 
 class TestInventoryClick:
+    def test_ordinary_inventory_click_clears_stale_action_feedback(self):
+        logic = _make_logic()
+        logic.s.status = "Moved Stone x2 to inventory."
+
+        logic.handle_inventory_click(0, mouse.LEFT, quick_move=False)
+
+        assert logic.s.status == ""
+
     def test_left_drag_distribution_splits_even_share_and_keeps_remainder(self):
         logic = _make_logic()
         logic.s.cursor_stack = ItemStack(1, 10)
