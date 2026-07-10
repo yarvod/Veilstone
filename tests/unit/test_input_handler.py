@@ -428,6 +428,70 @@ class TestOnMouseScroll:
 
 
 class TestInventoryDrag:
+    def test_right_drag_distributes_once_per_distinct_inventory_slot(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = object()
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.side_effect = [0, 1, 1, 2]
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.RIGHT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.RIGHT, 0)
+        h.on_mouse_drag(30, 10, 0, 0, mouse.RIGHT, 0)
+        h.on_mouse_drag(50, 10, 20, 0, mouse.RIGHT, 0)
+        h.on_mouse_release(50, 10, mouse.RIGHT, 0)
+
+        assert [call.args[0] for call in win._inv_ctrl.handle_inventory_click.call_args_list] == [
+            0,
+            1,
+            2,
+        ]
+        assert all(
+            call.args[1] == mouse.RIGHT and call.kwargs == {"quick_move": False}
+            for call in win._inv_ctrl.handle_inventory_click.call_args_list
+        )
+
+    def test_right_drag_stops_when_cursor_stack_empties(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = object()
+        win._inv_ctrl.crafting_slot_at.return_value = None
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.side_effect = [0, 1]
+
+        def place_one(slot: int, _button: int, *, quick_move: bool) -> None:
+            assert not quick_move
+            if slot == 1:
+                win.cursor_stack = None
+
+        win._inv_ctrl.handle_inventory_click.side_effect = place_one
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.RIGHT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.RIGHT, 0)
+        h.on_mouse_drag(50, 10, 20, 0, mouse.RIGHT, 0)
+
+        assert [call.args[0] for call in win._inv_ctrl.handle_inventory_click.call_args_list] == [
+            0,
+            1,
+        ]
+
+    def test_right_drag_routes_distinct_crafting_target(self):
+        win = _make_win(in_game=True)
+        win.inventory_open = True
+        win.cursor_stack = object()
+        win._inv_ctrl.crafting_slot_at.side_effect = [None, 2]
+        win._inv_ctrl.crafting_result_at.return_value = False
+        win._inv_ctrl.slot_at.return_value = 0
+        h = InputHandler(win)
+
+        h.on_mouse_press(10, 10, mouse.RIGHT, 0)
+        h.on_mouse_drag(30, 10, 20, 0, mouse.RIGHT, 0)
+
+        win._inv_ctrl.handle_crafting_click.assert_called_once_with(2, mouse.RIGHT)
+
     def test_shift_click_crafting_input_requests_quick_move(self):
         win = _make_win(in_game=True)
         win.inventory_open = True

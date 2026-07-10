@@ -325,3 +325,23 @@ class TestInventoryClick:
 
         assert logic.s.cursor_stack == ItemStack(1, 4)
         assert logic.s.inventory[0] == ItemStack(1, 1)
+
+    def test_right_click_skips_incompatible_slot_without_changing_cursor(self):
+        logic = _make_logic()
+        logic.s.inventory.set(0, ItemStack(2, 3), logic.s.item_registry)
+        logic.s.cursor_stack = ItemStack(1, 5)
+
+        logic.handle_inventory_click(0, mouse.RIGHT, quick_move=False)
+
+        assert logic.s.cursor_stack == ItemStack(1, 5)
+        assert logic.s.inventory[0] == ItemStack(2, 3)
+
+    def test_right_click_skips_full_compatible_slot_without_changing_cursor(self):
+        logic = _make_logic()
+        logic.s.inventory.set(0, ItemStack(1, 64), logic.s.item_registry)
+        logic.s.cursor_stack = ItemStack(1, 5)
+
+        logic.handle_inventory_click(0, mouse.RIGHT, quick_move=False)
+
+        assert logic.s.cursor_stack == ItemStack(1, 5)
+        assert logic.s.inventory[0] == ItemStack(1, 64)

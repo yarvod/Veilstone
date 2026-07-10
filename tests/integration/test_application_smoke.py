@@ -702,3 +702,49 @@ def test_shift_click_crafting_input_preserves_partial_remainder() -> None:
             assert window.inventory_status == "Moved Oak Log x2 to inventory."
         finally:
             window.close()
+
+
+def test_right_drag_distributes_cursor_stack_across_distinct_inventory_slots() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key, mouse
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-right-drag-distribution-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.inventory.set(9, ItemStack(1, 6), window.item_registry)
+            controller = vars(window)["_inv_ctrl"]
+            source_x, source_y = controller._inventory_slot_position(0)
+            targets = [controller._inventory_slot_position(index) for index in (1, 2, 1, 3)]
+
+            window.on_mouse_press(source_x + 24, source_y + 24, mouse.RIGHT, 0)
+            previous_x, previous_y = source_x + 24, source_y + 24
+            for target_x, target_y in targets:
+                x, y = target_x + 24, target_y + 24
+                window.on_mouse_drag(
+                    x,
+                    y,
+                    x - previous_x,
+                    y - previous_y,
+                    mouse.RIGHT,
+                    0,
+                )
+                previous_x, previous_y = x, y
+            window.on_mouse_release(previous_x, previous_y, mouse.RIGHT, 0)
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.inventory[9] == ItemStack(1, 3)
+            assert window.inventory[10] == ItemStack(1, 1)
+            assert window.inventory[11] == ItemStack(1, 1)
+            assert window.inventory[12] == ItemStack(1, 1)
+            assert window.cursor_stack is None
+        finally:
+            window.close()

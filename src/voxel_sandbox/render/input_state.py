@@ -272,6 +272,7 @@ class InputHandler:
         self._inventory_drag_button: int | None = None
         self._inventory_drag_start: tuple[int, int] | None = None
         self._inventory_drag_moved = False
+        self._inventory_drag_visited: set[tuple[str, int]] = set()
 
     def on_key_press(self, symbol: int | None, modifiers: int) -> None:
         win = self.win
@@ -419,9 +420,14 @@ class InputHandler:
             self._inventory_drag_button = None
             self._inventory_drag_start = None
             self._inventory_drag_moved = False
-            can_start_drag = button == mouse.LEFT and not bool(modifiers & key.MOD_SHIFT)
+            self._inventory_drag_visited.clear()
+            can_start_drag = button in {mouse.LEFT, mouse.RIGHT} and not bool(
+                modifiers & key.MOD_SHIFT
+            )
+            pressed_slot: tuple[str, int] | None = None
             crafting_slot = win.inventory_input.crafting_slot_at(x, y)
             if crafting_slot is not None:
+                pressed_slot = ("crafting", crafting_slot)
                 win.inventory_input.handle_crafting_click(
                     crafting_slot,
                     button,
@@ -432,6 +438,7 @@ class InputHandler:
                     quick_move=button == mouse.LEFT and bool(modifiers & key.MOD_SHIFT)
                 )
             elif (slot := win.inventory_input.slot_at(x, y)) is not None:
+                pressed_slot = ("inventory", slot)
                 win.inventory_input.handle_inventory_click(
                     slot,
                     button,
@@ -440,6 +447,8 @@ class InputHandler:
             if can_start_drag and win.cursor_stack is not None:
                 self._inventory_drag_button = button
                 self._inventory_drag_start = (x, y)
+                if pressed_slot is not None:
+                    self._inventory_drag_visited.add(pressed_slot)
             return
         if not win.menu.in_game or not win.mouse_captured or win.inventory_open:
             return
@@ -545,6 +554,7 @@ class InputHandler:
             win.menu.in_game
             and win.inventory_open
             and button == self._inventory_drag_button
+            and button == mouse.LEFT
             and self._inventory_drag_moved
             and win.cursor_stack is not None
         ):
@@ -556,6 +566,7 @@ class InputHandler:
         self._inventory_drag_button = None
         self._inventory_drag_start = None
         self._inventory_drag_moved = False
+        self._inventory_drag_visited.clear()
         if not win.menu.in_game and hasattr(win, "ui_renderer") and win.ui_renderer:
             win.ui_renderer.on_mouse_release(x, y, button, modifiers)
 
@@ -586,6 +597,31 @@ class InputHandler:
     def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, buttons: int, modifiers: int) -> None:
         del buttons, modifiers
         self.on_mouse_motion(x, y, dx, dy)
+        if (
+            self.win.menu.in_game
+            and self.win.inventory_open
+            and self._inventory_drag_button == mouse.RIGHT
+            and self.win.cursor_stack is not None
+        ):
+            self._distribute_right_drag_at(x, y)
+
+    def _distribute_right_drag_at(self, x: int, y: int) -> None:
+        win = self.win
+        crafting_slot = win.inventory_input.crafting_slot_at(x, y)
+        if crafting_slot is not None:
+            slot = ("crafting", crafting_slot)
+        elif (inventory_slot := win.inventory_input.slot_at(x, y)) is not None:
+            slot = ("inventory", inventory_slot)
+        else:
+            return
+        if slot in self._inventory_drag_visited:
+            return
+        self._inventory_drag_visited.add(slot)
+        kind, index = slot
+        if kind == "crafting":
+            win.inventory_input.handle_crafting_click(index, mouse.RIGHT)
+        else:
+            win.inventory_input.handle_inventory_click(index, mouse.RIGHT, quick_move=False)
 
     def apply_rebind(self, symbol: int) -> None:
         win = self.win

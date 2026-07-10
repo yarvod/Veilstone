@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — result and
-crafting-input quick-move paths are complete; next work is one bounded
-Minecraft-like cursor distribution interaction.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — distinct-slot
+right-drag distribution is complete; next work is bounded capacity-aware
+left-drag distribution.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,20 +29,20 @@ Minecraft-like cursor distribution interaction.
 
 ## Current Phase
 
-### Phase K5: Right-Drag Single-Item Distribution
+### Phase K6: Left-Drag Even Distribution
 
 Tracked issue: `BUG-G006`.
 
-Цель: while carrying a cursor stack, right-drag across inventory/crafting slots
-places at most one item into each distinct compatible slot, reusing existing
-`InventoryLogic` right-click rules.
+Цель: while carrying a cursor stack, left-drag across distinct compatible slots
+distributes the stack as evenly as slot capacity allows and leaves any
+unaccepted remainder on the cursor.
 
-- [ ] Track distinct slots crossed during a right-button drag without putting
-  inventory mutation rules into `InputHandler`.
-- [ ] Reuse existing one-item right-click operations, skip incompatible/full
-  slots, and stop cleanly when the cursor empties.
-- [ ] Add input/logic coverage for distinct-slot distribution, revisits,
-  incompatible slots, and unchanged click/left-drag behavior.
+- [ ] Keep distinct target collection in gesture state, but perform capacity and
+  item-count allocation through a narrow `InventoryLogic` operation.
+- [ ] Distribute evenly across compatible inventory/crafting targets, respect
+  max-stack limits, and retain any remainder on the cursor.
+- [ ] Add pure allocation/input coverage for uneven counts, revisits,
+  incompatible/full slots, and ordinary left-click behavior.
 - [ ] Run real inventory/crafting GL smoke before committing.
 
 ## Check Gate

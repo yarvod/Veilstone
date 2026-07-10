@@ -205,8 +205,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   inventory, preserves any capacity-limited remainder in the grid, and leaves
   the cursor unchanged. Real GL screenshot:
   `saves/crafting_input_quick_move_smoke_k4/screenshots/shift_click_input.png`.
-- **Next action:** add bounded right-drag one-item distribution across distinct
-  compatible inventory/crafting slots using existing `InventoryLogic` rules.
+- **Fix notes:** right-drag now distributes one carried item per distinct
+  compatible inventory/crafting slot, skips revisits, and stops when the cursor
+  empties. Real GL screenshot:
+  `saves/right_drag_distribution_smoke_k5/screenshots/right_drag_three_slots.png`.
+- **Next action:** add capacity-aware even left-drag distribution through a
+  narrow `InventoryLogic` allocation operation.
 
 ### BUG-G007: World generation lacks distant richness
 

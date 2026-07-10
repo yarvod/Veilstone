@@ -30,6 +30,14 @@
 
 ### Added
 
+- **Right-drag single-item distribution** - right-dragging a carried stack now
+  places one item into each distinct inventory or crafting slot crossed by the
+  gesture. Source/revisited slots are skipped, incompatible/full slots reuse the
+  existing no-op right-click rules, cursor exhaustion stops distribution, and
+  button release does not duplicate the last target. Real smoke:
+  `saves/right_drag_distribution_smoke_k5/screenshots/right_drag_three_slots.png`,
+  metadata `saves/right_drag_distribution_smoke_k5/right_drag_distribution_smoke.json`
+  (`6 -> 3 + 1 + 1 + 1`, revisited target remains `1`, cursor empty).
 - **Crafting-input quick-move** - Shift-clicking a crafting input now returns
   its stack directly to inventory through `InventoryLogic`: existing stacks are
   merged first, accepted items are removed from the grid, any remainder stays
