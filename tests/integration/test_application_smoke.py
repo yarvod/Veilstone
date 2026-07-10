@@ -574,3 +574,56 @@ def test_inventory_grid_and_item_icons_render() -> None:
             window.on_key_press(None, 0)
         finally:
             window.close()
+
+
+def test_active_resource_pack_refreshes_existing_inventory_icon_sprites() -> None:
+    import pyglet
+    from PIL import Image
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key
+
+    from voxel_sandbox.render.resource_pack_presentation import ResourcePackPresentationAdapter
+    from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-inventory-pack-") as directory:
+        root = Path(directory)
+        pack = root / "contrast_pack"
+        texture_root = pack / "assets" / "minecraft" / "textures" / "block"
+        texture_root.mkdir(parents=True)
+        (pack / "pack.mcmeta").write_text(
+            '{"pack":{"pack_format":18,"description":"Inventory smoke"}}',
+            encoding="utf-8",
+        )
+        Image.new("RGBA", (16, 16), (240, 40, 30, 255)).save(texture_root / "grass_block_top.png")
+        Image.new("RGBA", (16, 16), (20, 220, 70, 255)).save(texture_root / "grass_block_side.png")
+        window = GameWindow(AppSettings(), visible=False, save_root=root / "save")
+        try:
+            controller = window._inv_ctrl
+            inventory = window.inventory
+            grass_id = window.item_registry.by_key("grass_block").id
+            old_icon = controller.item_icon_images[grass_id]
+            old_hotbar_texture = controller.hotbar_icons[0].image
+            atlas = load_active_block_atlas(
+                pack,
+                registry=window.world_runtime.block_registry,
+                cache_root=root / "texture_cache",
+            )
+
+            ResourcePackPresentationAdapter(window.world_renderer, controller).apply_texture_pack(
+                atlas
+            )
+
+            assert window._inv_ctrl is controller
+            assert window.inventory is inventory
+            assert controller.item_icon_images[grass_id] is not old_icon
+            assert controller.hotbar_icons[0].image is not old_hotbar_texture
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.on_draw()
+            window.mgl_context.finish()
+        finally:
+            window.close()

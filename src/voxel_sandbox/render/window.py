@@ -258,7 +258,10 @@ class GameWindow(pyglet.window.Window):
         self.hud_text_group = pyglet.graphics.Group(order=2)
         self._perf = RuntimePerfTracker()
         self._hud = HudController(cast(HudView, HudWindowAdapter(self)))
-        self._inv_ctrl = InventoryController(cast(InventoryView, InventoryWindowAdapter(self)))
+        self._inv_ctrl = InventoryController(
+            cast(InventoryView, InventoryWindowAdapter(self)),
+            self.world_renderer.active_atlas,
+        )
         self._net = NetworkController(cast(NetworkView, NetworkWindowAdapter(self)))
         self.menu_ui = MenuUI(self)
         self._net.start_local_authority()

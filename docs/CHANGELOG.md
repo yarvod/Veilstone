@@ -30,6 +30,16 @@
 
 ### Added
 
+- **Resource-pack-aware inventory icons** - the icon factory now consumes the
+  active renderer atlas instead of creating a procedural default, and a narrow
+  presentation adapter applies live pack switches to both world rendering and
+  existing hotbar/inventory/crafting/cursor sprites without rebuilding gameplay
+  state. Fake-atlas tests lock top/side changes and non-block fallback stability;
+  real default/contrast GL captures:
+  `saves/inventory_icon_smoke_k2/screenshots/default_inventory.png`,
+  `saves/inventory_icon_smoke_k2/screenshots/contrast_pack_inventory.png`, with
+  metadata `saves/inventory_icon_smoke_k2/inventory_icon_smoke.json`
+  (`grass_changed=true`, controller and inventory identity preserved).
 - **Isometric block inventory icons** - block items now reuse
   `ItemModelSnapshot` top/side texture slots in a pure nearest-neighbor PIL
   composer, producing a compact three-face Minecraft-like silhouette across

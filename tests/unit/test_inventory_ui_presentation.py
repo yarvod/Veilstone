@@ -1,14 +1,18 @@
 """Tests for inventory UI presentation helpers."""
+# pyright: reportAttributeAccessIssue=false, reportPrivateUsage=false
 
 from __future__ import annotations
 
 from types import SimpleNamespace
 from typing import Any, cast
 
+import pytest
+
 from voxel_sandbox.domain.crafting import CraftingGrid
 from voxel_sandbox.domain.inventory import Inventory
 from voxel_sandbox.domain.items import ItemStack, create_core_item_registry
 from voxel_sandbox.render.inventory_ui import InventoryController
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 
 
 def _controller() -> InventoryController:
@@ -75,3 +79,54 @@ def test_drag_target_slot_uses_distinct_highlight() -> None:
     )
 
     assert shape.border_color == (120, 255, 185, 255)
+
+
+def test_resource_pack_refresh_reuses_sprites_and_inventory_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old_stone = object()
+    old_dirt = object()
+    next_stone = object()
+    next_dirt = object()
+    inventory_state = [ItemStack(1, 1), ItemStack(2, 1)]
+    controller = cast(Any, InventoryController.__new__(InventoryController))
+    controller.win = SimpleNamespace(
+        item_registry=object(),
+        inventory=inventory_state,
+        crafting_grid=[ItemStack(1, 1)],
+        cursor_stack=ItemStack(2, 1),
+        selected_hotbar_index=lambda: 1,
+        world_runtime=SimpleNamespace(block_registry=object()),
+    )
+    controller.item_icon_images = {1: old_stone, 2: old_dirt}
+    controller.hotbar_icons = [SimpleNamespace(image=old_stone)]
+    controller.inventory_icons = [
+        SimpleNamespace(image=old_stone),
+        SimpleNamespace(image=old_dirt),
+    ]
+    controller.crafting_icons = [SimpleNamespace(image=old_stone)]
+    controller.crafting_result_icon = SimpleNamespace(image=old_dirt)
+    controller.cursor_item_icon = SimpleNamespace(image=old_stone)
+    controller.held_item_icon = SimpleNamespace(image=old_dirt)
+    controller.crafting_result_stack = lambda: ItemStack(2, 1)
+
+    def fake_create_item_icons(*_args: Any) -> dict[int, Any]:
+        return {1: next_stone, 2: next_dirt}
+
+    monkeypatch.setattr(
+        "voxel_sandbox.render.inventory_ui.create_item_icons",
+        fake_create_item_icons,
+    )
+    atlas = GeneratedAtlas(1, 1, b"\x00\x00\x00\xff", {})
+
+    controller.refresh_item_icons(atlas)
+
+    assert controller.item_icon_images == {1: next_stone, 2: next_dirt}
+    assert controller.hotbar_icons[0].image is next_stone
+    assert controller.inventory_icons[0].image is next_stone
+    assert controller.inventory_icons[1].image is next_dirt
+    assert controller.crafting_icons[0].image is next_stone
+    assert controller.crafting_result_icon.image is next_dirt
+    assert controller.cursor_item_icon.image is next_dirt
+    assert controller.held_item_icon.image is next_dirt
+    assert controller.win.inventory is inventory_state

@@ -40,6 +40,7 @@ from voxel_sandbox.render.render_quality import (
     build_custom_profile,
     resolve_render_quality_profile,
 )
+from voxel_sandbox.render.resource_pack_presentation import ResourcePackPresentationAdapter
 from voxel_sandbox.render.texture_packs.models import ImportReport
 from voxel_sandbox.render.ui.menu import MenuCommand, Screen, platform_font_name
 from voxel_sandbox.render.ui.text_input import TextInput, TextPurpose
@@ -690,7 +691,10 @@ class MenuUI:
         ).execute(
             path=None if pack_path is None else str(pack_path),
             settings=win.settings,
-            renderer=win.world_renderer,
+            renderer=ResourcePackPresentationAdapter(
+                win.world_renderer,
+                win._inv_ctrl,
+            ),
             block_registry=win.world_runtime.block_registry,
             cache_root=win.active_save_root.parent / "texture_cache",
             report_callback=capture_report,

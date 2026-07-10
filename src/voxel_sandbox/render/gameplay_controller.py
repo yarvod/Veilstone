@@ -27,6 +27,7 @@ from voxel_sandbox.application.resource_packs import (
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.generation import TerrainGenerator
 from voxel_sandbox.engine.physics.player import PlayerController
+from voxel_sandbox.render.resource_pack_presentation import ResourcePackPresentationAdapter
 
 if TYPE_CHECKING:
     from voxel_sandbox.render.window import GameWindow
@@ -72,7 +73,10 @@ class GameplayWindowAdapter:
         ).execute(
             path=path,
             settings=self._window.settings,
-            renderer=self._window.world_renderer,
+            renderer=ResourcePackPresentationAdapter(
+                self._window.world_renderer,
+                self._window._inv_ctrl,
+            ),
             block_registry=cast(BlockRegistry, self._window.world_runtime.block_registry),
             cache_root=self._window.active_save_root.parent / "texture_cache",
         )

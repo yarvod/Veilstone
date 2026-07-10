@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import pyglet
 from PIL import Image, ImageDraw
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.domain.items import ItemDef, ItemRegistry, ItemType
-from voxel_sandbox.render.model_snapshots import build_item_model_snapshot
-from voxel_sandbox.render.texture_atlas import create_block_atlas
+from voxel_sandbox.render.model_snapshots import TextureRect, build_item_model_snapshot
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.ui.item_icon_composer import compose_item_model_icon
 
 ICON_SIZE = 32
@@ -17,15 +19,13 @@ HAND_SIZE = 128
 def create_item_icons(
     items: ItemRegistry,
     blocks: BlockRegistry,
+    atlas_image: Image.Image,
+    atlas_uvs: Mapping[str, TextureRect],
 ) -> dict[int, pyglet.image.AbstractImage]:
-    atlas = create_block_atlas()
-    atlas_image = Image.frombytes("RGBA", (atlas.width, atlas.height), atlas.pixels).transpose(
-        Image.Transpose.FLIP_TOP_BOTTOM
-    )
     icons: dict[int, pyglet.image.AbstractImage] = {}
     for item in items:
         model = build_item_model_snapshot(item.id, items, blocks)
-        image = compose_item_model_icon(model, atlas_image, atlas.uvs, size=ICON_SIZE)
+        image = compose_item_model_icon(model, atlas_image, atlas_uvs, size=ICON_SIZE)
         if image is None:
             image = _draw_non_block_icon(item)
         icons[item.id] = pyglet.image.ImageData(
@@ -36,6 +36,14 @@ def create_item_icons(
             pitch=-ICON_SIZE * 4,
         )
     return icons
+
+
+def generated_atlas_image(atlas: GeneratedAtlas) -> Image.Image:
+    """Convert renderer atlas pixels back to top-left-origin PIL layout."""
+
+    return Image.frombytes("RGBA", (atlas.width, atlas.height), atlas.pixels).transpose(
+        Image.Transpose.FLIP_TOP_BOTTOM
+    )
 
 
 def create_heart_icons() -> tuple[pyglet.image.AbstractImage, ...]:

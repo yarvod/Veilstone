@@ -181,6 +181,7 @@ class DemoWorldRenderer:
             self.material_pipeline,
             material_roles,
         )
+
         self.material_shader_wiring: MaterialShaderRuntimeWiring = (
             build_material_shader_runtime_wiring(
                 self.material_shader_setup,
@@ -646,6 +647,10 @@ class DemoWorldRenderer:
         self.selection = self.raycast(camera.position, camera.direction)
         if self.selection is not None:
             self.highlight.render(matrix, self.selection.block)
+
+    @property
+    def active_atlas(self) -> GeneratedAtlas:
+        return self._atlas
 
     def apply_texture_pack(self, atlas: GeneratedAtlas) -> None:
         """Hot-swap the block texture atlas and remesh all loaded chunks."""

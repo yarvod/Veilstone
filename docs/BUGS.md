@@ -181,7 +181,8 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** UI / inventory / item rendering
-- **Observed:** inventory still lacks 3D item icons and full crafting UX polish.
+- **Observed:** block icons now have isometric depth and follow the active
+  resource pack, but full Minecraft-like crafting interaction polish remains.
 - **Fix notes:** stack counts, hover names, drag-and-drop movement, and selected
   and drag slot states are present; inventory UI logic now refreshes the active
   world inventory reference after creating or switching worlds so stale saved
@@ -190,9 +191,14 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   shared `ItemModelSnapshot`; resource/fluid-container fallbacks are unchanged.
   Real GL screenshot:
   `saves/inventory_icon_smoke_k1/screenshots/veilstone_20260710_050110.png`.
-- **Next action:** source the same composer from the active resource-pack atlas,
-  then improve crafting/slot interaction incrementally without moving inventory
-  rules into render code.
+- **Fix notes:** inventory/hotbar/crafting/cursor block icons now consume the
+  active renderer atlas and refresh in place after live resource-pack switches;
+  resource/fluid-container fallbacks and inventory/controller identity are
+  preserved. Real A/B screenshots:
+  `saves/inventory_icon_smoke_k2/screenshots/default_inventory.png`,
+  `saves/inventory_icon_smoke_k2/screenshots/contrast_pack_inventory.png`.
+- **Next action:** add transactional Shift-click quick-move for crafting results
+  through `InventoryLogic`, without moving recipe rules into input/render code.
 
 ### BUG-G007: World generation lacks distant richness
 

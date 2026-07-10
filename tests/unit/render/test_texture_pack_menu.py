@@ -44,6 +44,7 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(tmp_path: 
             return atlas
 
     applied: list[GeneratedAtlas] = []
+    refreshed: list[GeneratedAtlas] = []
     win = SimpleNamespace(
         menu=SimpleNamespace(status=""),
         settings=AppSettings(),
@@ -56,6 +57,9 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(tmp_path: 
         world_renderer=SimpleNamespace(
             apply_texture_pack=lambda next_atlas: applied.append(next_atlas),
         ),
+        _inv_ctrl=SimpleNamespace(
+            refresh_item_icons=lambda next_atlas: refreshed.append(next_atlas),
+        ),
     )
     menu_ui = MenuUI.__new__(MenuUI)
     menu_ui.win = win
@@ -65,6 +69,7 @@ def test_apply_selected_texture_pack_applies_atlas_and_saves_settings(tmp_path: 
     menu_ui._apply_selected_texture_pack()
 
     assert applied == [atlas]
+    assert refreshed == [atlas]
     assert saved_settings == [win.settings]
     assert win.settings.graphics.resource_pack_path == str(pack)
     assert win.menu.status == "Texture pack applied: Pack (1 fallback, 1 missing)."

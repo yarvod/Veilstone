@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory icon polish, `BUG-G006`) — block items now
-render as compact isometric icons; next work should source those faces from the
-active resource-pack atlas without widening inventory/controller ownership.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — block icons are
+isometric and follow live resource-pack switches; next work is one narrow
+Minecraft-like crafting-result interaction without widening render ownership.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,21 @@ active resource-pack atlas without widening inventory/controller ownership.
 
 ## Current Phase
 
-### Phase K2: Resource-Pack-Aware Inventory Icons
+### Phase K3: Crafting Result Quick-Move
 
-Tracked issue: `BUG-G006`; related resource-pack gap: `R-B002`.
+Tracked issue: `BUG-G006`.
 
-Цель: make inventory/hotbar/crafting block icons consume the active block atlas
-and refresh after a resource-pack switch while preserving the pure isometric
-composer and existing non-block fallbacks.
+Цель: make Shift-click on a valid crafting result transfer crafted output into
+inventory through `InventoryLogic`, while keeping input handling and rendering
+free of recipe/inventory mutation rules.
 
-- [ ] Replace the procedural-default atlas lookup in `create_item_icons()` with
-  a narrow active-atlas image/UV input owned by render composition.
-- [ ] Refresh existing hotbar/inventory/crafting/cursor icon images after
-  resource-pack apply without reconstructing inventory gameplay state.
-- [ ] Add focused fake-atlas tests for top/side changes and fallback stability.
-- [ ] Run real default/alternate-pack inventory GL smoke and capture exact
-  screenshot paths before committing.
+- [ ] Carry the Shift modifier from result-slot input into a narrow crafting
+  quick-move operation.
+- [ ] Craft repeatedly only while the recipe still matches and the full result
+  stack can be accepted; never consume ingredients for rejected output.
+- [ ] Add pure logic coverage for normal transfer, repeated transfer, full
+  inventory, stack limits, and unchanged ordinary result clicks.
+- [ ] Run real crafting/inventory GL smoke before committing.
 
 ## Check Gate
 

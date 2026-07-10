@@ -19,12 +19,14 @@ from voxel_sandbox.domain.crafting import CraftingGrid, RecipeBook
 from voxel_sandbox.domain.inventory import Hotbar, Inventory
 from voxel_sandbox.domain.items import ItemRegistry, ItemStack
 from voxel_sandbox.render.input_state import mouse
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.ui.item_icons import (
     HEART_SIZE,
     ICON_SIZE,
     create_hand_image,
     create_heart_icons,
     create_item_icons,
+    generated_atlas_image,
 )
 from voxel_sandbox.render.ui.menu import platform_font_name
 
@@ -254,11 +256,16 @@ _FONT = platform_font_name(sys.platform)
 class InventoryController:
     """Owns all inventory sprites and rendering; delegates logic to InventoryLogic."""
 
-    def __init__(self, win: InventoryView) -> None:
+    def __init__(self, win: InventoryView, atlas: GeneratedAtlas) -> None:
         self.win = win
 
         block_registry = cast(BlockRegistry, win.world_runtime.block_registry)
-        self.item_icon_images = create_item_icons(win.item_registry, block_registry)
+        self.item_icon_images = create_item_icons(
+            win.item_registry,
+            block_registry,
+            generated_atlas_image(atlas),
+            atlas.uvs,
+        )
         self.heart_images = create_heart_icons()
         self.heart_sprites = [
             pyglet.sprite.Sprite(self.heart_images[0], batch=win.hud_batch, group=win.hud_fg_group)
@@ -422,6 +429,32 @@ class InventoryController:
             font_size=13,
             color=(245, 245, 245, 255),
         )
+
+    def refresh_item_icons(self, atlas: GeneratedAtlas) -> None:
+        """Refresh active-pack images without rebuilding inventory state or sprites."""
+
+        block_registry = cast(BlockRegistry, self.win.world_runtime.block_registry)
+        next_images = create_item_icons(
+            self.win.item_registry,
+            block_registry,
+            generated_atlas_image(atlas),
+            atlas.uvs,
+        )
+
+        def image_for(stack: ItemStack | None) -> pyglet.image.AbstractImage:
+            return next_images[stack.item_id if stack is not None else 1]
+
+        for index, sprite in enumerate(self.hotbar_icons):
+            sprite.image = image_for(self.win.inventory[index])
+        for index, sprite in enumerate(self.inventory_icons):
+            sprite.image = image_for(self.win.inventory[index])
+        for index, sprite in enumerate(self.crafting_icons):
+            stack = self.win.crafting_grid[index] if index < len(self.win.crafting_grid) else None
+            sprite.image = image_for(stack)
+        self.crafting_result_icon.image = image_for(self.crafting_result_stack())
+        self.cursor_item_icon.image = image_for(self.win.cursor_stack)
+        self.held_item_icon.image = image_for(self.win.inventory[self.win.selected_hotbar_index()])
+        self.item_icon_images = next_images
 
     def draw_hotbar(self) -> None:
         win = self.win
