@@ -128,6 +128,47 @@ class TestInventoryOpen:
 
 
 class TestCraftingClick:
+    def test_shift_click_moves_full_stack_to_inventory_without_cursor(self):
+        logic = _make_logic()
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 5))
+        logic.s.cursor_stack = ItemStack(2, 3)
+
+        logic.handle_crafting_click(0, mouse.LEFT, quick_move=True)
+
+        assert logic.s.crafting_grid[0] is None
+        assert logic.s.inventory.count(4) == 5
+        assert logic.s.cursor_stack == ItemStack(2, 3)
+        assert logic.s.status == "Moved Oak Log x5 to inventory."
+
+    def test_shift_click_preserves_remainder_when_inventory_only_partly_fits(self):
+        inventory = Inventory(1, 1)
+        logic = _make_logic()
+        logic.s.inventory = inventory
+        inventory.set(0, ItemStack(4, 62), logic.s.item_registry)
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 5))
+
+        logic.handle_crafting_click(0, mouse.LEFT, quick_move=True)
+
+        assert inventory[0] == ItemStack(4, 64)
+        assert logic.s.crafting_grid[0] == ItemStack(4, 3)
+        assert logic.s.cursor_stack is None
+        assert logic.s.status == "Moved Oak Log x2 to inventory."
+
+    def test_shift_click_full_inventory_keeps_crafting_stack_and_cursor(self):
+        inventory = Inventory(1, 1)
+        logic = _make_logic()
+        logic.s.inventory = inventory
+        inventory.set(0, ItemStack(1, 64), logic.s.item_registry)
+        logic.s.crafting_grid.set_index(0, ItemStack(4, 5))
+        logic.s.cursor_stack = ItemStack(2, 3)
+
+        logic.handle_crafting_click(0, mouse.LEFT, quick_move=True)
+
+        assert inventory[0] == ItemStack(1, 64)
+        assert logic.s.crafting_grid[0] == ItemStack(4, 5)
+        assert logic.s.cursor_stack == ItemStack(2, 3)
+        assert logic.s.status == "Inventory has no room for Oak Log."
+
     def test_pick_up_item_from_grid(self):
         logic = _make_logic()
         logic.open(2)

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — resource-pack
-icons and transactional result quick-move are complete; next work is one narrow
-crafting-input quick-move interaction owned by `InventoryLogic`.
+Активная цель: Phase K (inventory/crafting polish, `BUG-G006`) — result and
+crafting-input quick-move paths are complete; next work is one bounded
+Minecraft-like cursor distribution interaction.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,21 @@ crafting-input quick-move interaction owned by `InventoryLogic`.
 
 ## Current Phase
 
-### Phase K4: Crafting Input Quick-Move
+### Phase K5: Right-Drag Single-Item Distribution
 
 Tracked issue: `BUG-G006`.
 
-Цель: make Shift-click on a crafting input return that stack to inventory
-without routing it through the cursor, while keeping capacity/remainder rules in
-`InventoryLogic`.
+Цель: while carrying a cursor stack, right-drag across inventory/crafting slots
+places at most one item into each distinct compatible slot, reusing existing
+`InventoryLogic` right-click rules.
 
-- [ ] Carry the Shift modifier from crafting-slot input into a narrow quick-move
-  operation without changing ordinary left/right click behavior.
-- [ ] Merge into existing inventory stacks first, preserve any unaccepted
-  remainder in the crafting slot, and leave the cursor unchanged.
-- [ ] Add pure logic/input coverage for full transfer, partial/full inventory,
-  and unchanged ordinary crafting clicks.
-- [ ] Run real crafting/inventory GL smoke before committing.
+- [ ] Track distinct slots crossed during a right-button drag without putting
+  inventory mutation rules into `InputHandler`.
+- [ ] Reuse existing one-item right-click operations, skip incompatible/full
+  slots, and stop cleanly when the cursor empties.
+- [ ] Add input/logic coverage for distinct-slot distribution, revisits,
+  incompatible slots, and unchanged click/left-drag behavior.
+- [ ] Run real inventory/crafting GL smoke before committing.
 
 ## Check Gate
 

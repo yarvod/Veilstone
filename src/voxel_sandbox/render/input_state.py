@@ -113,7 +113,13 @@ class InventoryInputPort(Protocol):
 
     def close(self) -> None: ...
 
-    def handle_crafting_click(self, index: int, button: int) -> None: ...
+    def handle_crafting_click(
+        self,
+        index: int,
+        button: int,
+        *,
+        quick_move: bool = False,
+    ) -> None: ...
 
     def take_crafting_result(self, *, quick_move: bool = False) -> None: ...
 
@@ -416,7 +422,11 @@ class InputHandler:
             can_start_drag = button == mouse.LEFT and not bool(modifiers & key.MOD_SHIFT)
             crafting_slot = win.inventory_input.crafting_slot_at(x, y)
             if crafting_slot is not None:
-                win.inventory_input.handle_crafting_click(crafting_slot, button)
+                win.inventory_input.handle_crafting_click(
+                    crafting_slot,
+                    button,
+                    quick_move=button == mouse.LEFT and bool(modifiers & key.MOD_SHIFT),
+                )
             elif win.inventory_input.crafting_result_at(x, y):
                 win.inventory_input.take_crafting_result(
                     quick_move=button == mouse.LEFT and bool(modifiers & key.MOD_SHIFT)

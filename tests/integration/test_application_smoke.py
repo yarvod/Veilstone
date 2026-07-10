@@ -663,3 +663,42 @@ def test_shift_click_crafting_result_quick_moves_all_valid_outputs() -> None:
             assert window.inventory_status == "Crafted Oak Planks x12 into inventory."
         finally:
             window.close()
+
+
+def test_shift_click_crafting_input_preserves_partial_remainder() -> None:
+    import pyglet
+
+    if not pyglet.display.get_display().get_screens():
+        pytest.skip("OpenGL smoke requires an active display")
+    from pyglet.window import key, mouse
+
+    from voxel_sandbox.render.ui.menu import Screen
+    from voxel_sandbox.render.window import GameWindow
+
+    with tempfile.TemporaryDirectory(prefix="veilstone-crafting-input-move-") as directory:
+        window = GameWindow(AppSettings(), visible=False, save_root=Path(directory))
+        try:
+            window.menu.screen = Screen.GAME
+            window.on_key_press(key.E, 0)
+            window.inventory.set(0, ItemStack(4, 62), window.item_registry)
+            for index in range(1, len(window.inventory)):
+                window.inventory.set(index, ItemStack(1, 64), window.item_registry)
+            window.crafting_grid.set_index(0, ItemStack(4, 5))
+            controller = vars(window)["_inv_ctrl"]
+            slot_x, slot_y = controller._crafting_slot_position(0)
+
+            window.on_mouse_press(
+                slot_x + 24,
+                slot_y + 24,
+                mouse.LEFT,
+                key.MOD_SHIFT,
+            )
+            window.on_draw()
+            window.mgl_context.finish()
+
+            assert window.inventory[0] == ItemStack(4, 64)
+            assert window.crafting_grid[0] == ItemStack(4, 3)
+            assert window.cursor_stack is None
+            assert window.inventory_status == "Moved Oak Log x2 to inventory."
+        finally:
+            window.close()

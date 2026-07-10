@@ -201,8 +201,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   recipe into inventory until inputs or capacity run out; rejected output never
   consumes ingredients. Real GL screenshot:
   `saves/crafting_quick_move_smoke_k3/screenshots/shift_click_result.png`.
-- **Next action:** add Shift-click return of crafting input stacks to inventory,
-  preserving unaccepted remainder and cursor state inside `InventoryLogic`.
+- **Fix notes:** Shift-clicking a crafting input now merges its stack back into
+  inventory, preserves any capacity-limited remainder in the grid, and leaves
+  the cursor unchanged. Real GL screenshot:
+  `saves/crafting_input_quick_move_smoke_k4/screenshots/shift_click_input.png`.
+- **Next action:** add bounded right-drag one-item distribution across distinct
+  compatible inventory/crafting slots using existing `InventoryLogic` rules.
 
 ### BUG-G007: World generation lacks distant richness
 

@@ -30,6 +30,15 @@
 
 ### Added
 
+- **Crafting-input quick-move** - Shift-clicking a crafting input now returns
+  its stack directly to inventory through `InventoryLogic`: existing stacks are
+  merged first, accepted items are removed from the grid, any remainder stays
+  in place, and the cursor is untouched. Unit and real-GL integration cover
+  full, partial, and rejected transfers. Real smoke:
+  `saves/crafting_input_quick_move_smoke_k4/screenshots/shift_click_input.png`,
+  metadata
+  `saves/crafting_input_quick_move_smoke_k4/crafting_input_quick_move_smoke.json`
+  (5 logs moved, input empty, cursor empty, state identity preserved).
 - **Transactional crafting-result quick-move** - Shift-clicking a valid result
   now repeatedly crafts directly into inventory while capacity remains. Each
   result is tested against a cloned inventory before ingredients are consumed,
