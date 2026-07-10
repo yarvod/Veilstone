@@ -24,16 +24,29 @@ void main() {
     vec2 first_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, first_wave);
     vec2 second_uv = mix(vertex_atlas_rect.xy, vertex_atlas_rect.zw, second_wave);
     vec3 water_color = mix(texture(texture_atlas, first_uv).rgb, texture(texture_atlas, second_uv).rgb, 0.42);
-    vec3 view_direction = normalize(camera_position - vertex_world_position);
-    float fresnel = pow(1.0 - max(dot(normalize(vertex_normal), view_direction), 0.0), 4.0);
     float surface = smoothstep(0.45, 0.9, vertex_normal.y);
+    float water_detail = float(water_detail_enabled);
+    vec3 base_normal = normalize(vertex_normal);
+    float ripple_x = cos(vertex_world_position.x * 1.8 + vertex_world_position.z * 0.35
+        + animation_time * 0.9)
+        + cos(vertex_world_position.x * 0.7 - vertex_world_position.z * 2.1
+            - animation_time * 1.1) * 0.55;
+    float ripple_z = sin(vertex_world_position.z * 1.6 - vertex_world_position.x * 0.4
+        - animation_time * 0.75)
+        + sin(vertex_world_position.z * 0.65 + vertex_world_position.x * 2.2
+            + animation_time * 1.2) * 0.5;
+    vec3 ripple_normal = normalize(vec3(-ripple_x * 0.14, 1.0, -ripple_z * 0.14));
+    vec3 water_normal = normalize(mix(base_normal, ripple_normal, surface * water_detail));
+    vec3 view_direction = normalize(camera_position - vertex_world_position);
+    float fresnel = pow(1.0 - max(dot(water_normal, view_direction), 0.0), 4.0);
     vec3 deep_tint = vec3(0.045, 0.20, 0.28);
     vec3 lit_color = mix(deep_tint, water_color, 0.58 + surface * 0.18) * vertex_light;
-    lit_color = mix(lit_color, sky_color, fresnel * surface * 0.68);
+    float reflection_strength = fresnel * surface * (0.68 + water_detail * 0.12);
+    lit_color = mix(lit_color, sky_color, reflection_strength);
     float crest_wave = sin(vertex_world_position.x * 3.7 + animation_time * 1.25)
         + sin(vertex_world_position.z * 4.1 - animation_time * 1.55);
     float crest = smoothstep(0.42, 0.95, crest_wave * 0.5 + 0.5) * surface;
-    crest *= float(water_detail_enabled);
+    crest *= water_detail;
     vec3 highlight_color = mix(vec3(0.16, 0.42, 0.56), sky_color, 0.72);
     lit_color += highlight_color * crest * (0.05 + fresnel * 0.22) * vertex_light;
     float distance_to_camera = length(vertex_world_position - camera_position);

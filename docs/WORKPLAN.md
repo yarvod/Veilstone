@@ -3,9 +3,9 @@
 ## Overview
 
 Активная цель: Phase J (water surface visual quality, `R-B009`) — crest
-highlights and quality-profile water-detail gating are implemented and
-smoke-tested; next work should deepen near-surface/reflection cues without
-mixing simulation fixes back into render/UI classes.
+highlights, quality-profile gating, and procedural ripple reflections are
+implemented and smoke-tested; next work should make water visual/physics smoke
+evidence reproducible without mixing simulation fixes into render/UI classes.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -30,20 +30,21 @@ mixing simulation fixes back into render/UI classes.
 
 ## Current Phase
 
-### Phase J3: Near-Surface Water Cues
+### Phase J4: Reproducible Water Surface Smoke
 
 Promoted backlog: `R-B009`.
 
-Цель: build on crest highlights and quality gating with richer
-gameplay-readable near-surface water/reflection cues while preserving stable
-item buoyancy from `BUG-G008`.
+Цель: replace one-off water screenshot scripts with a deterministic smoke tool
+that captures visual quality tiers and stable item buoyancy from `BUG-G008`.
 
-- [ ] Add a stronger near-surface ripple/reflection cue that remains readable
-  from shallow camera angles.
-- [ ] Keep water simulation untouched unless a fresh `BUG-G008` regression is
-  observed.
-- [ ] Run real gameplay water smoke with screenshot path and item stability
-  metrics before committing.
+- [ ] Add a reusable water-surface smoke command/tool with a deterministic
+  camera and visible water scene.
+- [ ] Capture `low_60` and detailed-profile screenshots plus resolved
+  `water_detail` state in machine-readable metadata.
+- [ ] Include floating-item height/velocity/jitter metrics without coupling the
+  smoke tool to render internals beyond the existing window/runtime adapters.
+- [ ] Run the smoke on a real GL context and document exact output paths before
+  committing.
 
 ## Check Gate
 

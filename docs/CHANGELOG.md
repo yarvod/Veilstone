@@ -30,6 +30,13 @@
 
 ### Added
 
+- **Procedural water ripple reflections** - detailed water profiles now perturb
+  the top-surface normal with two low-cost animated ripple fields, making
+  Fresnel/sky reflection cues readable from shallow camera angles while
+  `low_60` retains the previous base-normal path. Real GL smoke:
+  `saves/water_ripple_smoke/screenshots/veilstone_20260710_041105.png`
+  (`water_detail=true`, `item_y=87.86`, `item_vy=-0.0001`,
+  `last_jitter=0.0`).
 - **Water detail quality gating** - render quality profiles now gate extra water
   crest/glint detail: `low_60` keeps the cheaper base water path, while higher
   profiles keep detailed highlights. F3 diagnostics and Settings live preset

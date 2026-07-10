@@ -48,6 +48,9 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   leaving water. Unit coverage locks stable item-in-water buoyancy; real smoke
   `saves/item_water_smoke/screenshots/veilstone_20260709_152329.png` measured
   `item_vy=-0.002` and `last_jitter=0.0007`.
+- **Regression check:** ripple-reflection GL smoke kept the floating item stable
+  at `item_y=87.86`, `item_vy=-0.0001`, `last_jitter=0.0`; screenshot:
+  `saves/water_ripple_smoke/screenshots/veilstone_20260710_041105.png`.
 
 
 ### BUG-R003: Material atlas bindings clobbered the shadow map texture unit
@@ -241,7 +244,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** typing / quality gate
-- **Observed:** `uv run pyright` reports 382 existing strict typing errors across engine, render, tests, and infrastructure.
+- **Observed:** `uv run pyright` reports 389 existing strict typing errors across engine, render, tests, and infrastructure (verified 2026-07-10).
 - **Notes:** Not caused by Phase A docs/import-linter/composition skeleton. Do not mix a project-wide typing cleanup into architecture stabilization unless a Phase A change introduces new type errors.
 - **Next action:** Fix incrementally when touching affected modules, or schedule a dedicated typing cleanup phase.
 

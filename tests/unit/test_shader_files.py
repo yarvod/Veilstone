@@ -137,7 +137,20 @@ def test_water_shader_adds_surface_crest_highlights() -> None:
 
     assert "crest_wave" in fragment
     assert "uniform int water_detail_enabled;" in fragment
-    assert "crest *= float(water_detail_enabled);" in fragment
+    assert "crest *= water_detail;" in fragment
     assert "highlight_color" in fragment
     assert "lit_color += highlight_color * crest" in fragment
     assert "0.44 + fresnel * 0.24 + crest * 0.05" in fragment
+
+
+def test_water_shader_uses_detail_gated_ripple_normals_for_reflections() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragment = (shader_root / "water.frag").read_text(encoding="utf-8")
+
+    assert "float water_detail = float(water_detail_enabled);" in fragment
+    assert "ripple_x" in fragment
+    assert "ripple_z" in fragment
+    assert "vec3 ripple_normal" in fragment
+    assert "surface * water_detail" in fragment
+    assert "dot(water_normal, view_direction)" in fragment
+    assert "float reflection_strength" in fragment
