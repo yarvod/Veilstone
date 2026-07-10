@@ -101,6 +101,21 @@ def run_command(args: argparse.Namespace) -> int:
             render_distance=int(getattr(args, "render_distance", 3)),
             settings_profile=str(getattr(args, "settings_profile", "dev-reference")),
         )
+    if command == "reference-gameplay-screenshot":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.reference_gameplay_screenshot import (
+            run_reference_gameplay_screenshot,
+        )
+
+        output_dir = getattr(args, "output_dir", None)
+        return run_reference_gameplay_screenshot(
+            settings,
+            seed=int(getattr(args, "seed", 1337)),
+            resource_pack=str(getattr(args, "resource_pack", "default")),
+            render_distance=int(getattr(args, "render_distance", 2)),
+            output_dir=Path(str(output_dir)) if output_dir else None,
+        )
     if command == "gameplay-smoke-screenshot":
         from pathlib import Path
 

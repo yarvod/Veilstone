@@ -61,6 +61,17 @@
 
 ### Added
 
+- **Rendered reference gameplay screenshot** - the new
+  `reference-gameplay-screenshot` CLI consumes the existing renderer-independent
+  fixture, offsets all `160` blocks above a fresh temporary world, applies one
+  deterministic isometric camera, rebuilds the affected chunk synchronously,
+  and writes validated numeric JSON through a narrow tool module. Real GL
+  evidence recorded `1` rebuilt chunk, `6` visible sections, and `52` water
+  triangles. The final scene-only screenshot was visually inspected after an
+  initial review caught and removed the first-person hand overlay:
+  `saves/reference_gameplay_screenshot_l2/screenshots/veilstone_20260710_063329.png`.
+  Focused CLI/layout/metadata coverage: `18 passed`; focused Pyright: `0`
+  errors; full unit gate: `782 passed`, `10` display-dependent skips.
 - **Reproducible inventory interaction smoke** - the new
   `inventory-interaction-smoke` CLI runs selected resource-pack icon,
   crafting-result/input quick-move, right/left drag, and right-click split

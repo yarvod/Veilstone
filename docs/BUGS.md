@@ -19,6 +19,10 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Verification required:** a visible-game pass must exercise press/release,
   sprint, focus loss/re-entry, inventory open/close, and Escape/Resume while
   observing that movement stops without an extra key press.
+- **Current evidence:** one visible automated-input pass moved `0.1667` blocks
+  with `W` and measured `0.0000` horizontal drift after release. The bug remains
+  open because the intermittent focus/inventory/sprint transitions from the
+  report are not yet reproduced or exhausted.
 
 ### BUG-I002: Fresh game UI can require double clicks
 
@@ -53,8 +57,10 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Fix notes:** the mouse menu callback now detects target-screen transitions
   and synchronizes both game state and exclusive mouse capture, matching the
   keyboard menu path. A focused callback regression test covers the missing
-  synchronization; visible Escape/Resume/F2 verification follows in the active
-  reference-scene phase.
+  synchronization. After-fix visible verification confirmed one-click Resume,
+  `mouse_captured=true`, and `1.44` degrees of camera yaw on the first motion;
+  F2 evidence:
+  `saves/visible_gameplay_l2/screenshots/veilstone_20260710_064333.png`.
 
 ### BUG-T001: test_ui_renderer fails when run after other render tests
 

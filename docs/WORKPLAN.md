@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase L (reference gameplay verification, `WORLD-B004`) —
-inventory interaction evidence is now reproducible; next work turns the
-existing pure reference-scene fixture into a narrow real render capture.
+Активная цель: Phase M (player input stability) — rendered reference-scene
+capture is complete; next work reproduces and removes the reported intermittent
+stuck movement state before expanding other gameplay polish.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,24 +29,24 @@ existing pure reference-scene fixture into a narrow real render capture.
 
 ## Current Phase
 
-### Phase L2: Rendered Reference Scene Foundation
+### Phase M1: Stuck Movement Key Lifecycle
 
-Promoted from `WORLD-B004` and `DX-B002`; their active entries were removed from
-`docs/BACKLOG.md` when this phase entered the workplan.
+Tracked bug: `BUG-I001`.
 
-Цель: render the existing pure `reference_gameplay_scene` block fixture from a
-known isometric camera through a fresh hidden runtime, producing one stable
-numeric sidecar and a normal screenshot without moving scene ownership into
-`GameWindow`.
+Цель: deterministically reproduce and eliminate any movement state that remains
+active after key release or gameplay focus transitions, without hiding the
+problem behind per-frame polling or broad input rewrites.
 
-- [ ] Add a narrow screenshot adapter/CLI around `reference_gameplay_scene`;
-  keep its pure fixture and summary builders renderer-independent.
-- [ ] Apply the fixture blocks to a temporary authoritative world and position a
-  deterministic isometric camera without adding state to `GameWindow`.
-- [ ] Validate block/camera/mesh numeric metadata, capture through
-  `GameWindow.save_screenshot()`, and return an explicit display-less skip.
-- [ ] Add focused unit tests and run a real visible-game/OpenGL capture when
-  available, including visual inspection of the saved screenshot.
+- [ ] Audit `KeyState`, Pyglet key press/release, focus deactivate/activate,
+  inventory, pause, and Resume transitions; add deterministic failing coverage
+  for any stale movement path found.
+- [ ] Apply the smallest lifecycle fix at the input boundary and keep gameplay
+  movement rules independent from presentation/window state.
+- [ ] Add a repeatable visible-game sequence for walk/sprint release, focus
+  change, inventory, and repeated Escape/Resume; record numeric post-release
+  drift and exact interaction results.
+- [ ] Capture and visually inspect an F2 frame after the sequence, while treating
+  the screenshot as supplemental evidence rather than proof of key behavior.
 
 ## Check Gate
 

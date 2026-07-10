@@ -57,6 +57,14 @@ def build_parser() -> argparse.ArgumentParser:
     reference_scene.add_argument("--resource-pack", default="default")
     reference_scene.add_argument("--render-distance", type=int, default=3)
     reference_scene.add_argument("--settings-profile", default="dev-reference")
+    reference_screenshot = subparsers.add_parser(
+        "reference-gameplay-screenshot",
+        help="Capture the deterministic reference gameplay scene",
+    )
+    reference_screenshot.add_argument("--seed", type=int, default=1337)
+    reference_screenshot.add_argument("--resource-pack", default="default")
+    reference_screenshot.add_argument("--render-distance", type=int, default=2)
+    reference_screenshot.add_argument("--output-dir", default=None)
     gameplay_smoke = subparsers.add_parser(
         "gameplay-smoke-screenshot",
         help="Capture a deterministic gameplay walking smoke screenshot",

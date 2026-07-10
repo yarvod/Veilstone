@@ -70,6 +70,27 @@ def test_gameplay_smoke_screenshot_command_accepts_runtime_options() -> None:
     assert args.metadata == "saves/screenshots/smoke.json"
 
 
+def test_reference_gameplay_screenshot_command_accepts_runtime_options() -> None:
+    args = build_parser().parse_args(
+        [
+            "reference-gameplay-screenshot",
+            "--seed",
+            "42",
+            "--resource-pack",
+            "faithful",
+            "--render-distance",
+            "3",
+            "--output-dir",
+            "saves/reference-scene",
+        ]
+    )
+    assert args.command == "reference-gameplay-screenshot"
+    assert args.seed == 42
+    assert args.resource_pack == "faithful"
+    assert args.render_distance == 3
+    assert args.output_dir == "saves/reference-scene"
+
+
 def test_water_surface_smoke_command_accepts_runtime_options() -> None:
     args = build_parser().parse_args(
         [
