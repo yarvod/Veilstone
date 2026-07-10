@@ -164,6 +164,15 @@ class TestOnKeyPress:
         win.menu.back.assert_called_once()
         win._sync_mouse_capture.assert_called_once()
 
+    def test_in_game_escape_clears_pressed_movement_keys(self):
+        win = _make_win(in_game=True)
+        win.key_state.press(key.W)
+        h = InputHandler(win)
+
+        h.on_key_press(key.ESCAPE, 0)
+
+        assert not win.key_state.is_pressed(key.W)
+
     def test_f3_toggles_debug_overlay(self):
         win = _make_win(in_game=True)
         win.debug_overlay_visible = False

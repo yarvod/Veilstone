@@ -165,6 +165,16 @@ def run_command(args: argparse.Namespace) -> int:
             scenario=str(getattr(args, "scenario", "icons")),
             output_dir=Path(str(output_dir)) if output_dir else None,
         )
+    if command == "input-lifecycle-smoke":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.input_lifecycle_smoke import run_input_lifecycle_smoke
+
+        output_dir = getattr(args, "output_dir", None)
+        return run_input_lifecycle_smoke(
+            settings,
+            output_dir=Path(str(output_dir)) if output_dir else None,
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 

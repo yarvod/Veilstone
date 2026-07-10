@@ -124,6 +124,14 @@ def test_inventory_interaction_smoke_command_accepts_scenario_and_output() -> No
     assert args.output_dir == "saves/inventory-smoke"
 
 
+def test_input_lifecycle_smoke_command_accepts_output() -> None:
+    args = build_parser().parse_args(
+        ["input-lifecycle-smoke", "--output-dir", "saves/input-lifecycle"]
+    )
+    assert args.command == "input-lifecycle-smoke"
+    assert args.output_dir == "saves/input-lifecycle"
+
+
 def test_update_commands_are_registered() -> None:
     parser = build_parser()
     assert parser.parse_args(["check-update"]).command == "check-update"

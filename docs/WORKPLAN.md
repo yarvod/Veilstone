@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase M (player input stability) — rendered reference-scene
-capture is complete; next work reproduces and removes the reported intermittent
-stuck movement state before expanding other gameplay polish.
+Активная цель: Phase M (player input stability) — movement, pause/Resume,
+inventory, and focus key lifecycles now have repeatable visible coverage; next
+work isolates the reported fresh-launch first-click/double-click regression.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,24 +29,23 @@ stuck movement state before expanding other gameplay polish.
 
 ## Current Phase
 
-### Phase M1: Stuck Movement Key Lifecycle
+### Phase M2: Fresh-Launch First-Click Reliability
 
-Tracked bug: `BUG-I001`.
+Tracked bug: `BUG-I002`.
 
-Цель: deterministically reproduce and eliminate any movement state that remains
-active after key release or gameplay focus transitions, without hiding the
-problem behind per-frame polling or broad input rewrites.
+Цель: ensure the first ordinary mouse click after a fresh visible launch or
+window activation reaches exactly one intended UI action regardless of initial
+pointer movement, without adding double-click workarounds or duplicate dispatch.
 
-- [ ] Audit `KeyState`, Pyglet key press/release, focus deactivate/activate,
-  inventory, pause, and Resume transitions; add deterministic failing coverage
-  for any stale movement path found.
-- [ ] Apply the smallest lifecycle fix at the input boundary and keep gameplay
-  movement rules independent from presentation/window state.
-- [ ] Add a repeatable visible-game sequence for walk/sprint release, focus
-  change, inventory, and repeated Escape/Resume; record numeric post-release
-  drift and exact interaction results.
-- [ ] Capture and visually inspect an F2 frame after the sequence, while treating
-  the screenshot as supplemental evidence rather than proof of key behavior.
+- [ ] Audit Cocoa/Pyglet activate/deactivate ordering, widget hover/pressed state,
+  and menu mouse press/release dispatch during cold start and focus regain.
+- [ ] Add deterministic regression coverage for the exact lost-first-click or
+  duplicate-dispatch path found; do not add timing/debounce guesses.
+- [ ] Apply the smallest focus/event-routing fix and preserve one action per
+  single click across main, world-list, Settings, and pause menus.
+- [ ] Run repeated visible cold launches with and without initial pointer motion,
+  record first-click action counts, and visually inspect representative menu and
+  in-game F2 frames.
 
 ## Check Gate
 

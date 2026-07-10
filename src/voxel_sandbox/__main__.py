@@ -103,6 +103,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="icons",
     )
     inventory_smoke.add_argument("--output-dir", default=None)
+    input_lifecycle_smoke = subparsers.add_parser(
+        "input-lifecycle-smoke",
+        help="Run visible movement and mouse input lifecycle verification",
+    )
+    input_lifecycle_smoke.add_argument("--output-dir", default=None)
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",

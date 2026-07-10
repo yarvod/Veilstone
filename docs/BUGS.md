@@ -6,7 +6,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-I001: Movement keys can remain active after release
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** input / movement / focus and key-state lifecycle
 - **Observed:** during real gameplay the player can occasionally continue
   moving or running after the movement key is no longer held.
@@ -16,13 +16,18 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Expected:** releasing a movement key, losing focus, opening inventory, or
   entering the pause menu clears the corresponding gameplay key state
   immediately.
-- **Verification required:** a visible-game pass must exercise press/release,
-  sprint, focus loss/re-entry, inventory open/close, and Escape/Resume while
-  observing that movement stops without an extra key press.
-- **Current evidence:** one visible automated-input pass moved `0.1667` blocks
-  with `W` and measured `0.0000` horizontal drift after release. The bug remains
-  open because the intermittent focus/inventory/sprint transitions from the
-  report are not yet reproduced or exhausted.
+- **Fix notes:** entering pause through Escape now clears `KeyState` before the
+  menu transition, matching inventory, text-input, and deactivate boundaries.
+  This prevents a missed OS key-release event from becoming active again after
+  Resume.
+- **Verification:** the visible `input-lifecycle-smoke` deliberately holds
+  `W+Shift` while entering pause without sending release events, resumes twice
+  by single click, and exercises inventory plus deactivate/activate. It measured
+  `walk_distance=0.1667`, ordinary and post-Resume drift `0.0000`, and confirmed
+  pause/inventory/focus clears plus mouse recapture. Metadata:
+  `saves/input_lifecycle_smoke_m1/input_lifecycle_smoke.json`; visually inspected
+  F2 frame:
+  `saves/input_lifecycle_smoke_m1/screenshots/veilstone_20260710_065056.png`.
 
 ### BUG-I002: Fresh game UI can require double clicks
 

@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- **Stuck movement after pause** - Escape now clears held movement/sprint state
+  before entering the pause menu, so a release event lost during the transition
+  cannot resume movement later. The visible lifecycle pass measured `0.0000`
+  drift after ordinary release and after two Resume cycles while also confirming
+  inventory and focus transitions clear input.
 - **Mouse Resume capture** - clicking `Resume` now synchronizes game state and
   exclusive mouse capture after the menu target changes to gameplay, matching
   keyboard activation instead of leaving the pointer visible and the camera
@@ -61,6 +66,16 @@
 
 ### Added
 
+- **Visible input lifecycle smoke** - `input-lifecycle-smoke` now drives the real
+  visible `GameWindow` through walk/release, deliberately missing `W+Shift`
+  releases at pause, two single-click Resume cycles, inventory, focus
+  deactivate/activate, first-motion camera rotation, and normal F2 capture. It
+  writes validated numeric JSON and skips explicitly without a display. Focused
+  CLI/input/metadata coverage: `80 passed`; focused Pyright: `0` errors; full
+  unit gate: `791 passed`, `10` display-dependent skips. Real metadata and
+  visually inspected screenshot:
+  `saves/input_lifecycle_smoke_m1/input_lifecycle_smoke.json`,
+  `saves/input_lifecycle_smoke_m1/screenshots/veilstone_20260710_065056.png`.
 - **Rendered reference gameplay screenshot** - the new
   `reference-gameplay-screenshot` CLI consumes the existing renderer-independent
   fixture, offsets all `160` blocks above a fresh temporary world, applies one

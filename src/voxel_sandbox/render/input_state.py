@@ -345,6 +345,7 @@ class InputHandler:
                 win.select_hotbar_slot(symbol - ord("1"))
             return
         if symbol == key.ESCAPE:
+            win.key_state.clear()
             win.menu.back()
             win.sync_game_state()
             win.sync_mouse_capture()
