@@ -70,6 +70,24 @@ def test_gameplay_smoke_screenshot_command_accepts_runtime_options() -> None:
     assert args.metadata == "saves/screenshots/smoke.json"
 
 
+def test_water_surface_smoke_command_accepts_runtime_options() -> None:
+    args = build_parser().parse_args(
+        [
+            "water-surface-smoke",
+            "--frames",
+            "24",
+            "--render-distance",
+            "3",
+            "--output-dir",
+            "saves/water-smoke",
+        ]
+    )
+    assert args.command == "water-surface-smoke"
+    assert args.frames == 24
+    assert args.render_distance == 3
+    assert args.output_dir == "saves/water-smoke"
+
+
 def test_update_commands_are_registered() -> None:
     parser = build_parser()
     assert parser.parse_args(["check-update"]).command == "check-update"

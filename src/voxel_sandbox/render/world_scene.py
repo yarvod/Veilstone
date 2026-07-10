@@ -321,6 +321,16 @@ class DemoWorldRenderer:
     def pending_meshes(self) -> int:
         return self.mesh_worker.pending_count
 
+    @property
+    def water_mesh_sections(self) -> int:
+        return sum(1 for _key, _mesh in self.water_mesh_cache.items())
+
+    @property
+    def water_mesh_triangles(self) -> int:
+        return sum(
+            gpu_mesh.data.indices.size // 3 for _key, gpu_mesh in self.water_mesh_cache.items()
+        )
+
     def perf_queues(self) -> RenderQueueSnapshot:
         return RenderQueueSnapshot(
             loaded_chunks=self.loaded_chunks,
@@ -739,6 +749,19 @@ class DemoWorldRenderer:
             affected_chunks[affected.coord] = affected
         for affected in affected_chunks.values():
             self._schedule_chunk(affected)
+
+    def rebuild_loaded_chunk_meshes_sync(self, coordinates: Iterable[ChunkCoord]) -> int:
+        """Rebuild selected loaded chunks immediately for deterministic tooling."""
+
+        rebuilt = 0
+        for coord in set(coordinates):
+            chunk = self._streamer.get_chunk(coord)
+            if chunk is None:
+                continue
+            self.mesh_worker.invalidate_chunk(coord.x, coord.z)
+            self._upload_chunk_sync(chunk)
+            rebuilt += 1
+        return rebuilt
 
     def enable_remote_mode(self) -> None:
         self.remote_mode = True

@@ -30,6 +30,18 @@
 
 ### Added
 
+- **Reproducible water surface smoke** - new `python -m voxel_sandbox
+  water-surface-smoke` builds a deterministic closed pool in a fresh temporary
+  world for matched `low_60` and custom `detailed` profiles, captures screenshots,
+  and writes JSON with the
+  resolved water-detail state, floating-item stability, pending work, and actual
+  GPU water mesh sections/triangles. The tool fails if the scene has fluid data
+  but no visible water mesh. Real 180-frame capture:
+  `saves/water_surface_smoke_j4_clean/water_surface_smoke.json`,
+  `saves/water_surface_smoke_j4_clean/low_60/screenshots/veilstone_20260710_043327.png`,
+  `saves/water_surface_smoke_j4_clean/detailed/screenshots/veilstone_20260710_043337.png`
+  (both `item_y=97.86`, `item_vy=-0.0001`, `last_jitter=0.0001`,
+  `water_mesh_triangles=162`).
 - **Procedural water ripple reflections** - detailed water profiles now perturb
   the top-surface normal with two low-cost animated ripple fields, making
   Fresnel/sky reflection cues readable from shallow camera angles while

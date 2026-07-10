@@ -2,10 +2,10 @@
 
 ## Overview
 
-Активная цель: Phase J (water surface visual quality, `R-B009`) — crest
-highlights, quality-profile gating, and procedural ripple reflections are
-implemented and smoke-tested; next work should make water visual/physics smoke
-evidence reproducible without mixing simulation fixes into render/UI classes.
+Активная цель: Phase J (water surface visual quality, `R-B009`) — highlights,
+ripple reflections, quality gating, and reproducible visual/physics smoke are
+implemented; next work should add a shoreline cue without mixing simulation
+fixes into render/UI classes.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -30,21 +30,21 @@ evidence reproducible without mixing simulation fixes into render/UI classes.
 
 ## Current Phase
 
-### Phase J4: Reproducible Water Surface Smoke
+### Phase J5: Shoreline Water Readability
 
 Promoted backlog: `R-B009`.
 
-Цель: replace one-off water screenshot scripts with a deterministic smoke tool
-that captures visual quality tiers and stable item buoyancy from `BUG-G008`.
+Цель: make water edges read clearly against terrain with a detail-gated,
+render-only shoreline cue while preserving the low-cost `low_60` path and
+stable item buoyancy from `BUG-G008`.
 
-- [ ] Add a reusable water-surface smoke command/tool with a deterministic
-  camera and visible water scene.
-- [ ] Capture `low_60` and detailed-profile screenshots plus resolved
-  `water_detail` state in machine-readable metadata.
-- [ ] Include floating-item height/velocity/jitter metrics without coupling the
-  smoke tool to render internals beyond the existing window/runtime adapters.
-- [ ] Run the smoke on a real GL context and document exact output paths before
-  committing.
+- [ ] Expose a render-facing shoreline factor from water meshing without
+  changing fluid source/level simulation.
+- [ ] Add a subtle shoreline tint/foam cue gated by `water_detail`, preserving
+  the exact cheaper `low_60` fallback.
+- [ ] Extend focused mesh/shader coverage for the shoreline contract.
+- [ ] Run `water-surface-smoke` on real GL and verify both visual tiers, nonzero
+  water mesh geometry, and stable item metrics before committing.
 
 ## Check Gate
 

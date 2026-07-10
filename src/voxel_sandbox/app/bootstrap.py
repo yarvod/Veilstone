@@ -125,6 +125,18 @@ def run_command(args: argparse.Namespace) -> int:
             render_distance=int(getattr(args, "render_distance", 2)),
             output_dir=Path(str(output_dir)) if output_dir else None,
         )
+    if command == "water-surface-smoke":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.water_surface_smoke import run_water_surface_smoke
+
+        output_dir = getattr(args, "output_dir", None)
+        return run_water_surface_smoke(
+            settings,
+            frames=int(getattr(args, "frames", 180)),
+            render_distance=int(getattr(args, "render_distance", 2)),
+            output_dir=Path(str(output_dir)) if output_dir else None,
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 

@@ -48,9 +48,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   leaving water. Unit coverage locks stable item-in-water buoyancy; real smoke
   `saves/item_water_smoke/screenshots/veilstone_20260709_152329.png` measured
   `item_vy=-0.002` and `last_jitter=0.0007`.
-- **Regression check:** ripple-reflection GL smoke kept the floating item stable
-  at `item_y=87.86`, `item_vy=-0.0001`, `last_jitter=0.0`; screenshot:
-  `saves/water_ripple_smoke/screenshots/veilstone_20260710_041105.png`.
+- **Regression check:** reusable `water-surface-smoke --frames 180` kept the
+  floating item stable in matched `low_60` and `detailed` captures at
+  `item_y=97.86`,
+  `item_vy=-0.0001`, `last_jitter=0.0001`, with one visible water section / 162
+  triangles. Metadata:
+  `saves/water_surface_smoke_j4_clean/water_surface_smoke.json`.
 
 
 ### BUG-R003: Material atlas bindings clobbered the shadow map texture unit

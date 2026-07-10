@@ -71,6 +71,13 @@ def build_parser() -> argparse.ArgumentParser:
     shadow_smoke.add_argument("--frames", type=int, default=100)
     shadow_smoke.add_argument("--render-distance", type=int, default=2)
     shadow_smoke.add_argument("--output-dir", default=None)
+    water_smoke = subparsers.add_parser(
+        "water-surface-smoke",
+        help="Capture deterministic water quality and buoyancy smoke evidence",
+    )
+    water_smoke.add_argument("--frames", type=int, default=180)
+    water_smoke.add_argument("--render-distance", type=int, default=2)
+    water_smoke.add_argument("--output-dir", default=None)
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",
