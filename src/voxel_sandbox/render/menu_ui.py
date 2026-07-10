@@ -126,8 +126,12 @@ class MenuUI:
         win = self.win
 
         def on_item_click(index: int) -> None:
+            previous_screen = win.menu.screen
             win.menu.select(index)
             self._handle_menu_command(win.menu.activate())
+            if win.menu.screen is not previous_screen:
+                win._sync_game_state()
+                win._sync_mouse_capture()
 
         win.ui_renderer.update(
             win.menu,

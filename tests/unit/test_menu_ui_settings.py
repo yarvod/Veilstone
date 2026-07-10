@@ -10,6 +10,36 @@ from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.ui.menu import MenuCommand, MenuController, Screen
 
 
+def test_mouse_resume_syncs_game_state_and_mouse_capture() -> None:
+    calls: list[str] = []
+    menu = MenuController()
+    menu.screen = Screen.PAUSE
+
+    class FakeUiRenderer:
+        def update(self, _menu, _label, on_click, _hover) -> None:
+            on_click(0)
+
+        def draw(self) -> None:
+            pass
+
+    win = SimpleNamespace(
+        menu=menu,
+        ui_renderer=FakeUiRenderer(),
+        text_input=None,
+        _sync_game_state=lambda: calls.append("game_state"),
+        _sync_mouse_capture=lambda: calls.append("mouse_capture"),
+    )
+    menu_ui = MenuUI.__new__(MenuUI)
+    menu_ui.win = win
+    menu_ui.text_input_overlay = SimpleNamespace(opacity=255)
+    menu_ui.text_input_panel = SimpleNamespace(opacity=255)
+
+    menu_ui._draw_menu()
+
+    assert menu.screen is Screen.GAME
+    assert calls == ["game_state", "mouse_capture"]
+
+
 def test_render_distance_menu_label_and_cycle(monkeypatch) -> None:
     saved: list[AppSettings] = []
     monkeypatch.setattr("voxel_sandbox.render.menu_ui.save_user_settings", saved.append)

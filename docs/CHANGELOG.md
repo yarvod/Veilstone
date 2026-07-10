@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- **Mouse Resume capture** - clicking `Resume` now synchronizes game state and
+  exclusive mouse capture after the menu target changes to gameplay, matching
+  keyboard activation instead of leaving the pointer visible and the camera
+  inactive.
 - **Single-item right-click pickup parity** - right-clicking a single inventory
   item now moves it onto the cursor and clears the source slot, matching the
   crafting-grid path. Empty slots remain no-ops, while odd/even ceil-half

@@ -38,7 +38,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-I003: Resume leaves mouse visible and camera uncaptured
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** input / pause menu / exclusive mouse capture
 - **Observed:** after pressing Escape during gameplay and clicking `Resume`, the
   pointer can remain visible and mouse movement no longer rotates the camera
@@ -50,6 +50,11 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Verification required:** test repeated Escape/Resume cycles through the
   visible client and verify both the internal capture state and real first-motion
   camera behavior; existing mocked sync-call coverage is not sufficient.
+- **Fix notes:** the mouse menu callback now detects target-screen transitions
+  and synchronizes both game state and exclusive mouse capture, matching the
+  keyboard menu path. A focused callback regression test covers the missing
+  synchronization; visible Escape/Resume/F2 verification follows in the active
+  reference-scene phase.
 
 ### BUG-T001: test_ui_renderer fails when run after other render tests
 
