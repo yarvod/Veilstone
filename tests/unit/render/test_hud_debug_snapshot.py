@@ -37,6 +37,7 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
     )
 
     assert "FPS  60.0 Frame  16.7 ms" in snapshot.text
+    assert "Update   4.0 Render  12.7 Bottleneck render" in snapshot.text
     assert "Biome plains Memory 123 MB" in snapshot.text
     assert "Resource pack Faithful" in snapshot.text
     assert (
@@ -107,6 +108,7 @@ def _fake_window() -> SimpleNamespace:
             frame_ms=16.7,
             update_ms=4.0,
             render_ms=12.7,
+            bottleneck="render",
             queues=RenderQueueSnapshot(
                 loaded_chunks=9,
                 pending_chunks=1,

@@ -190,7 +190,8 @@ class HudWindowAdapter:
         biome = _biome_key_at(win, block_x, block_z)
         text = (
             f"FPS {perf.fps:5.1f} Frame {perf.frame_ms:5.1f} ms "
-            f"Update {perf.update_ms:5.1f} Render {perf.render_ms:5.1f}\n"
+            f"Update {perf.update_ms:5.1f} Render {perf.render_ms:5.1f} "
+            f"Bottleneck {perf.bottleneck}\n"
             f"Position {x:7.2f} {y:7.2f} {z:7.2f}\n"
             f"Grounded {win.player.on_ground} VelocityY {win.player.velocity_y:5.2f}\n"
             f"Yaw {win.camera.yaw_degrees:6.1f} Pitch {win.camera.pitch_degrees:5.1f} "

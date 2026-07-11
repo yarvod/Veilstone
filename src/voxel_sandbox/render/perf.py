@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Literal
+
+FrameBottleneck = Literal["idle", "balanced", "update", "render"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +22,7 @@ class RuntimePerfSnapshot:
     frame_ms: float = 0.0
     update_ms: float = 0.0
     render_ms: float = 0.0
+    bottleneck: FrameBottleneck = "idle"
     queues: RenderQueueSnapshot = field(default_factory=RenderQueueSnapshot)
 
 
@@ -43,8 +47,17 @@ class RuntimePerfTracker:
             frame_ms=frame_ms,
             update_ms=self._update_ms,
             render_ms=self._render_ms,
+            bottleneck=_frame_bottleneck(self._update_ms, self._render_ms),
             queues=queues,
         )
 
     def _refresh_frame_ms(self) -> None:
         self._frame_ms = self._update_ms + self._render_ms
+
+
+def _frame_bottleneck(update_ms: float, render_ms: float) -> FrameBottleneck:
+    if update_ms <= 0.0 and render_ms <= 0.0:
+        return "idle"
+    if update_ms == render_ms:
+        return "balanced"
+    return "update" if update_ms > render_ms else "render"

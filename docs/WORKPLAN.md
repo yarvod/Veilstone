@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (frame diagnostics) — after exposing all current bounded
-streaming queues, identify whether the already-measured update or render stage is
-the coarse frame bottleneck before adding finer subsystem timers.
+Активная цель: Phase N (benchmark evidence) — aggregate the new coarse
+update/render classification across deterministic RD3/RD4 streaming runs before
+choosing the next optimization target.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,22 @@ the coarse frame bottleneck before adding finer subsystem timers.
 
 ## Current Phase
 
-### Phase N8: Coarse Frame Bottleneck Indicator
+### Phase N9: Streaming Bottleneck Distribution
 
-Promoted slice: update-vs-render bottleneck indication split out of `PERF-B002`;
-this active scope was removed from that backlog entry in the same transition.
+Promoted slice: RD3/RD4 bottleneck-distribution measurement split out of
+`PERF-B001`; this active scope was removed from that backlog entry in the same
+transition.
 
-Цель: derive a deterministic coarse bottleneck label from the update/render
-timings already owned by `RuntimePerfTracker`, expose it through the immutable
-snapshot, and show it in F3 without inventing unmeasured subsystem data.
+Цель: make `benchmark-frame-streaming` report how many measured frames are
+update-bound, render-bound, balanced, or idle, using the same classification as
+F3 so the next performance phase follows evidence rather than a single frame.
 
-- [ ] Define update/render/tie/idle semantics in pure tracker tests and preserve
-  the current frame timing behavior.
-- [ ] Add the label to the existing F3 timing line through `RuntimePerfSnapshot`,
-  without direct controller or renderer reads.
-- [ ] Run focused/full gates and inspect a visible F3/F2 frame, then move N8 into
-  CHANGELOG.
+- [ ] Reuse one pure public classification rule in tracker and benchmark paths;
+  do not duplicate thresholds or add renderer/window ownership.
+- [ ] Add deterministic distribution formatting and focused tests independent of
+  Pyglet/OpenGL.
+- [ ] Run RD3/RD4 benchmarks, compare p95/max and distributions, then move N9
+  into CHANGELOG and select the next measured bottleneck slice.
 
 ## Check Gate
 

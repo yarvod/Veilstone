@@ -22,6 +22,7 @@ def test_runtime_perf_tracker_combines_frame_timings_and_queues() -> None:
     assert snapshot.frame_ms == 20.0
     assert snapshot.update_ms == 4.0
     assert snapshot.render_ms == 6.0
+    assert snapshot.bottleneck == "render"
     assert snapshot.queues == queues
 
 
@@ -40,3 +41,22 @@ def test_runtime_perf_tracker_uses_recorded_frame_time_without_fps() -> None:
     snapshot = tracker.snapshot(fps=0.0, queues=RenderQueueSnapshot())
 
     assert snapshot.frame_ms == 5.0
+
+
+def test_runtime_perf_tracker_reports_update_bottleneck() -> None:
+    tracker = RuntimePerfTracker()
+    tracker.record_update(0.007)
+    tracker.record_render(0.003)
+
+    assert tracker.snapshot(fps=0.0, queues=RenderQueueSnapshot()).bottleneck == "update"
+
+
+def test_runtime_perf_tracker_reports_balanced_and_idle_stages() -> None:
+    tracker = RuntimePerfTracker()
+
+    assert tracker.snapshot(fps=0.0, queues=RenderQueueSnapshot()).bottleneck == "idle"
+
+    tracker.record_update(0.004)
+    tracker.record_render(0.004)
+
+    assert tracker.snapshot(fps=0.0, queues=RenderQueueSnapshot()).bottleneck == "balanced"

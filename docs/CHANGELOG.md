@@ -840,6 +840,15 @@
 
 ### Changed
 
+- **Coarse frame bottleneck indicator** - `RuntimePerfTracker` now derives an
+  immutable `idle`/`balanced`/`update`/`render` label from the update/render
+  timings it already owns, and F3 shows the result on the existing timing line
+  without adding new timers or renderer/controller reads. Pure tests cover all
+  four semantics and HUD formatting: `9` focused tests passed, full unit passed
+  `838`, focused Pyright passed with `0`, and the full known-red baseline stayed
+  `389`. A direct visible `rtk uv` run showed `Update 1.2`, `Render 5.3`, and
+  `Bottleneck render`; the complete F3/world frame was inspected at
+  `saves/frame_bottleneck_n8/screenshots/veilstone_20260711_043126.png`.
 - **Relight queue diagnostics** - the existing immutable render queue snapshot
   now exposes pending bounded relight work, `DemoWorldRenderer` populates it at
   the renderer-to-HUD boundary, and F3 displays `Stream relight` beside mesh and
