@@ -80,7 +80,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-T001: test_ui_renderer fails when run after other render tests
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** tests / pyglet UI renderer test isolation
 - **Observed:** `uv run pytest tests/unit/render` currently fails all 9
   `test_ui_renderer.py` cases with
@@ -90,6 +90,15 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   layout/callback failure.
 - **Reproduction:** `uv run pytest tests/unit/render` (fails) vs
   `uv run pytest tests/unit/render/test_ui_renderer.py` (passes).
+- **Fix notes:** the capability probe still closes its temporary window, but the
+  UI renderer module now owns a separate hidden shader-capable window for the
+  full module fixture lifetime. This keeps a valid current context even when the
+  preceding HUD snapshot module disables Pyglet's shadow window; production UI
+  code and display-less skip behavior are unchanged.
+- **Verification:** the shortest reproducer
+  (`test_hud_debug_snapshot.py` then `test_ui_renderer.py`) passes `13` tests;
+  `tests/unit/render` passes all `122`; full unit gate passes `822` with no new
+  skips. Focused Pyright is clean and the full baseline remains `389` errors.
 
 ### BUG-R006: Shadow artifacts on terrain surfaces
 

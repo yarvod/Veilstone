@@ -8,11 +8,17 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.support.pyglet_gl import has_shader_capable_gl
+from tests.support.pyglet_gl import has_shader_capable_gl, shader_capable_gl_window
 
 pytestmark = pytest.mark.skipif(
     not has_shader_capable_gl(), reason="requires shader-capable OpenGL display"
 )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def owned_gl_context():
+    with shader_capable_gl_window() as window:
+        yield window
 
 
 def _make_renderer(w: int = 800, h: int = 600):

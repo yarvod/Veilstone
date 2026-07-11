@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- **Order-independent Pyglet UI renderer tests** - UI widget tests now keep an
+  explicitly owned hidden GL context alive for their module lifetime, so an
+  earlier test disabling the Pyglet shadow window can no longer leave
+  `pyglet.gl.current_context=None`. The shortest failing order now passes `13`
+  tests and the complete render group passes `122`; production UI behavior and
+  display-less skips are unchanged.
 - **Fresh-launch first-click reliability on macOS** - the native Pyglet view now
   accepts the first activating mouse click, so menu controls no longer require a
   second click when the window starts or regains focus. The fix stays at the

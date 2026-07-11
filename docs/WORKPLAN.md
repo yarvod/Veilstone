@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (quality isolation) — swimming feedback is complete with
-real input/audio/render evidence; the next small slice removes the confirmed
-order-dependent Pyglet context failure from the render test group.
+Активная цель: Phase N (planning truth) — swimming feedback and render-test
+isolation are complete; the next small slice removes completed/stale entries
+from BACKLOG so future promotion cannot accidentally repeat finished work.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,23 +29,22 @@ order-dependent Pyglet context failure from the render test group.
 
 ## Current Phase
 
-### Phase N2: Pyglet UI Renderer Test Isolation
+### Phase N3: Backlog Truth Audit
 
-Tracked bug: `BUG-T001`.
+Scope: `docs/BACKLOG.md` status/history cleanup.
 
-Цель: `tests/unit/render/test_ui_renderer.py` passes both alone and after the
-preceding render tests by owning a valid shader-capable Pyglet context for its
-actual lifetime, without hiding failures behind skips or changing production UI
-behavior.
+Цель: BACKLOG contains only genuinely future/open work. Entries already marked
+`fixed` or `done`, or proven implemented by current code plus CHANGELOG/history,
+are removed rather than promoted again; historical results remain in CHANGELOG.
 
-- [ ] Identify which preceding test/module closes or replaces the shared Pyglet
-  context and reproduce the shortest deterministic order.
-- [ ] Give UI renderer tests explicit context setup/teardown ownership using the
-  existing GL test support; do not rely on import-time shadow-window accidents.
-- [ ] Prove the isolated file, shortest reproducer, full `tests/unit/render`, and
-  full unit gate all pass without new skips.
-- [ ] Mark `BUG-T001` fixed with the exact reproducer and final counts, then move
-  this phase out of WORKPLAN into CHANGELOG.
+- [ ] Remove every explicitly `fixed`/`done` backlog entry after confirming its
+  result is already represented in CHANGELOG or current code/tests.
+- [ ] Audit remaining `open` entries for obvious implementation/history
+  contradictions; remove only those proven complete, not merely partially done.
+- [ ] Keep broad open items split into real future remainder without copying any
+  active scope back into BACKLOG.
+- [ ] Record the cleanup count in CHANGELOG, replace this completed phase with
+  the next verified active slice, and commit the docs-only audit separately.
 
 ## Check Gate
 
