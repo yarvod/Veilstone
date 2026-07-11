@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (streaming priority) — backlog now contains only verified
-open remainder; the next small slice makes bounded relight/remesh work prefer
-near-camera chunks without discarding FIFO stability or existing budgets.
+Активная цель: Phase N (streaming priority) — bounded relight/remesh work now
+prefers near-camera chunks; the next small slice adds camera-visible priority
+without conflating it with the separate collision-critical future remainder.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,22 @@ near-camera chunks without discarding FIFO stability or existing budgets.
 
 ## Current Phase
 
-### Phase N4: Camera-Distance Streaming Queue Priority
+### Phase N5: Camera-Visible Streaming Queue Priority
 
 Promoted slice: `PERF-B003`.
 
-Цель: existing bounded stream relight/remesh queues drain nearer chunk work
-before farther work, while preserving insertion order for equal priority and
-leaving visibility/collision-critical policy as explicit future backlog scope.
+Цель: among queued work at comparable distance, camera-visible chunks win over
+off-screen chunks using a renderer-facing visibility snapshot or narrow score;
+collision-critical priority remains future backlog scope.
 
-- [ ] Add a renderer-independent bounded priority drain with deterministic FIFO
-  ties and no mutation beyond the selected budget.
-- [ ] Feed current camera/chunk distance into relight and remesh scheduling
-  without moving ownership into `GameWindow` or changing generation authority.
-- [ ] Cover negative coordinates, equal-distance ties, zero budget, and queue
-  remainder order with focused tests.
-- [ ] Run frame-streaming checks plus a visible walking/F3 pass at render distance
-  above two, inspect F2 evidence, and compare queue behavior for regressions.
+- [ ] Identify the narrowest existing frustum/camera snapshot that can rank chunk
+  or section keys without making the queue helper depend on OpenGL objects.
+- [ ] Compose visibility with existing distance priority while preserving budget,
+  FIFO ties, and deterministic behavior when visibility data is unavailable.
+- [ ] Add pure order tests plus world-scene integration coverage for visible vs
+  off-screen work at equal distance.
+- [ ] Repeat RD3/RD4 frame-streaming and visible turn/walk/F3 acceptance, inspect
+  F2 evidence, then move the completed slice into CHANGELOG.
 
 ## Check Gate
 

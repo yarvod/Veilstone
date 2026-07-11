@@ -193,21 +193,19 @@ class WorldGenerationConfig:
   sample missing stage timings at bounded frequency, and add upload/dirty/slowest
   fields only where a real benchmark can populate them.
 
-### PERF-B003: Prioritized Chunk Streaming And Mesh Scheduling
+### PERF-B003: Collision-Critical Chunk Streaming Priority
 
 - **Status:** open
-- **Observed:** submission, relight, and remesh queues already drain under
-  per-frame FIFO budgets, but FIFO order does not guarantee camera-visible,
-  player-near, or collision-critical chunks win first.
-- **Desired:** player-near, camera-visible, collision-critical chunks win over
-  far decorative work; chunk generation, lighting, meshing, and GPU upload each
-  have a per-frame budget.
+- **Observed:** bounded relight/remesh queues now have player-near ordering and
+  camera-visible ordering is active in WORKPLAN, but no explicit signal protects
+  collision-critical chunks needed by local physics.
+- **Desired:** collision-critical chunks win over decorative work at comparable
+  visibility/distance without bypassing existing per-frame budgets.
 - **Architecture direction:** evolve the existing bounded queues toward an
   engine-owned priority policy; render only uploads/draws ready data through a
   narrow port.
-- **Candidate work:** after the active camera-distance ordering slice, add
-  visibility and collision-critical priority signals while preserving the same
-  budgets and deterministic order within equal priority.
+- **Candidate work:** add a narrow collision-need snapshot or priority flag while
+  preserving the same budgets and deterministic order within equal priority.
 
 ### PERF-B004: Hot-Path Native/Cython Acceleration Spike
 

@@ -72,7 +72,11 @@ from voxel_sandbox.render.meshes.worker import SectionMeshWorker
 from voxel_sandbox.render.perf import RenderQueueSnapshot
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
-from voxel_sandbox.render.streaming_schedule import drain_fifo_keys, frame_budget
+from voxel_sandbox.render.streaming_schedule import (
+    chunk_distance,
+    drain_priority_keys,
+    frame_budget,
+)
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas, GeneratedMaterialAtlasBundle
 from voxel_sandbox.render.texture_packs.importer import (
     load_active_block_atlas,
@@ -486,8 +490,8 @@ class DemoWorldRenderer:
             for coord in batch.unloaded:
                 self._stream_relight_queue[coord] = None
             self._queue_loaded_chunk_boundaries(batch.loaded)
-        self._flush_stream_relight_queue()
-        self._flush_stream_remesh_queue()
+        self._flush_stream_relight_queue(center)
+        self._flush_stream_remesh_queue(center)
 
     def _queue_loaded_chunk_boundaries(self, chunks: Iterable[Chunk]) -> None:
         affected_chunks = {chunk.coord: chunk for chunk in chunks}
@@ -500,8 +504,12 @@ class DemoWorldRenderer:
                         affected_chunks[nc] = neighbor
         self._queue_stream_remesh(affected_chunks.values())
 
-    def _flush_stream_relight_queue(self) -> None:
-        centers = drain_fifo_keys(self._stream_relight_queue, self.uploads_per_frame)
+    def _flush_stream_relight_queue(self, center: ChunkCoord) -> None:
+        centers = drain_priority_keys(
+            self._stream_relight_queue,
+            self.uploads_per_frame,
+            lambda coord: chunk_distance((coord.x, coord.z), (center.x, center.z)),
+        )
         if centers:
             self._queue_stream_remesh(self._relight_neighborhood(centers))
 
@@ -511,8 +519,12 @@ class DemoWorldRenderer:
                 key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
                 self._stream_remesh_queue[key] = None
 
-    def _flush_stream_remesh_queue(self) -> None:
-        for key in drain_fifo_keys(self._stream_remesh_queue, self.mesh_uploads_per_frame):
+    def _flush_stream_remesh_queue(self, center: ChunkCoord) -> None:
+        for key in drain_priority_keys(
+            self._stream_remesh_queue,
+            self.mesh_uploads_per_frame,
+            lambda section: chunk_distance((section.x, section.z), (center.x, center.z)),
+        ):
             self._schedule_section(key)
 
     def render(

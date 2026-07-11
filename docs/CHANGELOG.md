@@ -840,6 +840,15 @@
 
 ### Changed
 
+- **Camera-distance streaming queue priority** - bounded relight and remesh
+  queues now drain nearer chunks before farther chunks while preserving FIFO
+  insertion order for equal distances and leaving unselected queue order intact.
+  Negative coordinates and zero budgets are covered by pure scheduling tests.
+  RD3 frame-streaming stayed below budget at p95 `9.778 ms` (max `14.368 ms`),
+  with `43` loaded chunks, `4` pending chunks, and mesh queue `2`. A visible RD3
+  walking/F3 pass reached `49` loaded chunks with `Pending 0`; inspected F2:
+  `saves/stream_priority_n4/screenshots/veilstone_20260711_033532.png`. Full
+  gates: `825 passed`, focused Pyright `0`, full baseline `389`.
 - **Backlog truth audit** - removed 7 rendering entries already marked
   `fixed`/`done` and represented in current code/CHANGELOG. The 15 remaining
   entries are all genuinely `open`; partially implemented architecture,
