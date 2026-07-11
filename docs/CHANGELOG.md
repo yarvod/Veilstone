@@ -840,6 +840,20 @@
 
 ### Changed
 
+- **Collision-critical streaming queue priority** - player physics now owns a
+  deterministic ordered collision-chunk footprint, and synchronous collision
+  loading reuses the same negative/boundary-safe coordinate rule. `GameWindow`
+  passes only the resulting chunk set into streaming; at equal camera distance,
+  collision-critical relight/remesh work wins before visible work, while nearer
+  work, budgets, FIFO ties, and unavailable-data fallback retain their previous
+  behavior. Focused coverage passed `30` tests; full unit passed `834`; full
+  Pyright stayed at the known `389`-error baseline. Benchmarks: RD3 p95
+  `11.375 ms` (max `13.762`), RD4 p95 `12.651 ms` (one max spike `33.111`). In
+  the visible RD4 pass, a real `W` press moved the player from `x=15.75` to
+  `x=18.08` across the `x=16` chunk boundary in 28 frames; the recorded footprint
+  contained chunks `(0,0)` and `(1,0)` together at the boundary, F3 remained
+  active, and the inspected F2 frame is
+  `saves/collision_priority_n6/screenshots/veilstone_20260711_042337.png`.
 - **Camera-visible streaming queue priority** - `WorldScene` now retains its
   latest real render frustum as a renderer-owned visibility snapshot. At equal
   camera distance, visible relight/remesh work drains before off-screen work;

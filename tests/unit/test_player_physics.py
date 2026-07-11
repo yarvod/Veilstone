@@ -1,6 +1,28 @@
 from __future__ import annotations
 
-from voxel_sandbox.engine.physics import PlayerController, PlayerInput
+from voxel_sandbox.engine.chunks import ChunkCoord
+from voxel_sandbox.engine.physics import (
+    PlayerController,
+    PlayerInput,
+    collision_chunk_footprint,
+)
+
+
+def test_collision_chunk_footprint_crosses_positive_and_negative_boundaries() -> None:
+    assert collision_chunk_footprint(15.9, 8.0, 0.3) == (
+        ChunkCoord(0, 0),
+        ChunkCoord(1, 0),
+    )
+    assert collision_chunk_footprint(-0.1, -0.1, 0.3) == (
+        ChunkCoord(-1, -1),
+        ChunkCoord(-1, 0),
+        ChunkCoord(0, -1),
+        ChunkCoord(0, 0),
+    )
+
+
+def test_collision_chunk_footprint_clamps_negative_radius() -> None:
+    assert collision_chunk_footprint(16.0, 16.0, -1.0) == (ChunkCoord(1, 1),)
 
 
 def flat_world(x: int, y: int, z: int) -> int:

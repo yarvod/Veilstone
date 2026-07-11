@@ -44,8 +44,12 @@ def chunk_distance(left: tuple[int, int], right: tuple[int, int]) -> int:
     return max(abs(left[0] - right[0]), abs(left[1] - right[1]))
 
 
-def streaming_priority(distance: int, visible: bool | None) -> tuple[int, int]:
-    return distance, int(visible is False)
+def streaming_priority(
+    distance: int,
+    visible: bool | None,
+    collision_critical: bool | None = None,
+) -> tuple[int, int, int]:
+    return distance, int(collision_critical is not True), int(visible is False)
 
 
 def chunk_visible(

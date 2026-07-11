@@ -68,6 +68,12 @@ def test_streaming_priority_uses_visibility_only_after_distance() -> None:
     assert streaming_priority(2, None) == streaming_priority(2, True)
 
 
+def test_streaming_priority_uses_collision_before_visibility_at_equal_distance() -> None:
+    assert streaming_priority(2, False, True) < streaming_priority(2, True, False)
+    assert streaming_priority(1, False, False) < streaming_priority(2, True, True)
+    assert streaming_priority(2, True, None) == streaming_priority(2, True, False)
+
+
 class _RecordingView:
     def __init__(self, *, visible: bool) -> None:
         self.visible = visible

@@ -66,7 +66,11 @@ from voxel_sandbox.engine.events import (
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator
-from voxel_sandbox.engine.physics import PlayerController, PlayerInput
+from voxel_sandbox.engine.physics import (
+    PlayerController,
+    PlayerInput,
+    collision_chunk_footprint,
+)
 from voxel_sandbox.infrastructure.storage import WorldStorage
 from voxel_sandbox.network import (
     ClientSession,
@@ -359,7 +363,17 @@ class GameWindow(pyglet.window.Window):
                 math.floor(self.camera.x / SECTION_SIZE),
                 math.floor(self.camera.z / SECTION_SIZE),
             )
-            self.world_renderer.update_streaming(center)
+            collision_player = cast(PlayerController, self.player)
+            self.world_renderer.update_streaming(
+                center,
+                collision_chunks=frozenset(
+                    collision_chunk_footprint(
+                        collision_player.x,
+                        collision_player.z,
+                        collision_player.width / 2.0,
+                    )
+                ),
+            )
             self._network_accumulator += delta_time
         finally:
             self._perf.record_update(time.perf_counter() - update_start)

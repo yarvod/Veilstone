@@ -4,6 +4,8 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from voxel_sandbox.engine.chunks import ChunkCoord, split_world_axis
+
 BlockGetter = Callable[[int, int, int], int]
 SolidChecker = Callable[[int, int, int], bool]
 FluidChecker = Callable[[int, int, int], bool]
@@ -12,6 +14,19 @@ _COYOTE_TIME: float = 0.12
 _JUMP_BUFFER_TIME: float = 0.12
 # Extra gravity scale when rising with jump released (variable height)
 _JUMP_CUT_GRAVITY_SCALE: float = 2.5
+
+
+def collision_chunk_footprint(x: float, z: float, radius: float) -> tuple[ChunkCoord, ...]:
+    bounded_radius = max(0.0, radius)
+    min_chunk_x, _ = split_world_axis(math.floor(x - bounded_radius))
+    max_chunk_x, _ = split_world_axis(math.floor(x + bounded_radius))
+    min_chunk_z, _ = split_world_axis(math.floor(z - bounded_radius))
+    max_chunk_z, _ = split_world_axis(math.floor(z + bounded_radius))
+    return tuple(
+        ChunkCoord(chunk_x, chunk_z)
+        for chunk_x in range(min_chunk_x, max_chunk_x + 1)
+        for chunk_z in range(min_chunk_z, max_chunk_z + 1)
+    )
 
 
 @dataclass(frozen=True, slots=True)

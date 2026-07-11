@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (streaming priority) — bounded relight/remesh work now
-prefers near and camera-visible chunks; the final promoted slice protects
-collision-critical work needed by local player physics.
+Активная цель: Phase N (streaming diagnostics) — after completing bounded
+distance/visibility/collision priority, expose the still-hidden relight queue so
+the next bottleneck decision is based on actual runtime evidence.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,21 @@ collision-critical work needed by local player physics.
 
 ## Current Phase
 
-### Phase N6: Collision-Critical Streaming Queue Priority
+### Phase N7: Relight Queue Diagnostics
 
-Promoted slice: `PERF-B003`.
+Promoted slice: relight-queue visibility split out of `PERF-B002`; this active
+scope was removed from that backlog entry in the same transition.
 
-Цель: queued chunks/sections required for the local player's collision envelope
-receive an explicit narrow priority signal without bypassing budgets, duplicating
-physics rules in render code, or weakening distance/visibility determinism.
+Цель: expose pending bounded relight work through the existing immutable runtime
+diagnostics snapshot and F3 HUD without adding per-frame filesystem reads or
+reaching from HUD code into renderer internals.
 
-- [ ] Find the existing player/collision-area ownership seam and derive a compact
-  set or predicate of collision-critical chunk coordinates outside render rules.
-- [ ] Compose collision need with distance and visibility priority while keeping
-  per-frame budgets and FIFO order inside equal scores.
-- [ ] Cover boundary/negative coordinates, unavailable collision data, and
-  world-scene queue integration without constructing `GameWindow` in unit tests.
-- [ ] Repeat RD3/RD4 benchmarks and visible movement across a chunk boundary,
-  inspect F2/F3 evidence, then move N6 into CHANGELOG.
+- [ ] Add pending relight count to `RenderQueueSnapshot` at the existing
+  renderer-to-HUD boundary and render it in the F3 queue line.
+- [ ] Cover default/explicit snapshot values and HUD text without constructing
+  `GameWindow` or a real GL scene in unit tests.
+- [ ] Run the focused/full gates and a visible F3/F2 pass that creates or drains
+  relight work, then move N7 into CHANGELOG.
 
 ## Check Gate
 

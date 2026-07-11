@@ -26,7 +26,7 @@ from voxel_sandbox.engine.chunks import (
 from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
 from voxel_sandbox.engine.generation import find_safe_spawn
 from voxel_sandbox.engine.lighting import effective_light_level, relight_chunks
-from voxel_sandbox.engine.physics import RaycastHit, voxel_raycast
+from voxel_sandbox.engine.physics import RaycastHit, collision_chunk_footprint, voxel_raycast
 from voxel_sandbox.render.atmosphere import (
     celestial_light_direction,
     daylight_factor,
@@ -374,16 +374,10 @@ class DemoWorldRenderer:
         return self._registry.by_id(self.get_block(x, y, z)).is_solid
 
     def ensure_collision_area_loaded(self, x: float, z: float, radius: float) -> None:
-        min_chunk_x, _ = split_world_axis(int(np.floor(x - radius)))
-        max_chunk_x, _ = split_world_axis(int(np.floor(x + radius)))
-        min_chunk_z, _ = split_world_axis(int(np.floor(z - radius)))
-        max_chunk_z, _ = split_world_axis(int(np.floor(z + radius)))
-        for chunk_x in range(min_chunk_x, max_chunk_x + 1):
-            for chunk_z in range(min_chunk_z, max_chunk_z + 1):
-                coord = ChunkCoord(chunk_x, chunk_z)
-                if self._streamer.get_chunk(coord) is not None:
-                    continue
-                self._upload_chunk_sync(self._streamer.prime(coord))
+        for coord in collision_chunk_footprint(x, z, radius):
+            if self._streamer.get_chunk(coord) is not None:
+                continue
+            self._upload_chunk_sync(self._streamer.prime(coord))
 
     def _create_emergency_spawn(self, x: int, z: int) -> tuple[float, float, float]:
         self.ensure_collision_area_loaded(float(x) + 0.5, float(z) + 0.5, 0.0)
@@ -479,7 +473,12 @@ class DemoWorldRenderer:
     def set_render_distance(self, render_distance: int) -> bool:
         return self._streamer.set_render_distance(render_distance)
 
-    def update_streaming(self, center: ChunkCoord) -> None:
+    def update_streaming(
+        self,
+        center: ChunkCoord,
+        *,
+        collision_chunks: frozenset[ChunkCoord] | None = None,
+    ) -> None:
         if not self.remote_mode:
             chunk_budget = frame_budget(self.uploads_per_frame)
             batch = self._streamer.update(
@@ -494,8 +493,8 @@ class DemoWorldRenderer:
             for coord in batch.unloaded:
                 self._stream_relight_queue[coord] = None
             self._queue_loaded_chunk_boundaries(batch.loaded)
-        self._flush_stream_relight_queue(center)
-        self._flush_stream_remesh_queue(center)
+        self._flush_stream_relight_queue(center, collision_chunks=collision_chunks)
+        self._flush_stream_remesh_queue(center, collision_chunks=collision_chunks)
 
     def _queue_loaded_chunk_boundaries(self, chunks: Iterable[Chunk]) -> None:
         affected_chunks = {chunk.coord: chunk for chunk in chunks}
@@ -508,13 +507,19 @@ class DemoWorldRenderer:
                         affected_chunks[nc] = neighbor
         self._queue_stream_remesh(affected_chunks.values())
 
-    def _flush_stream_relight_queue(self, center: ChunkCoord) -> None:
+    def _flush_stream_relight_queue(
+        self,
+        center: ChunkCoord,
+        *,
+        collision_chunks: frozenset[ChunkCoord] | None = None,
+    ) -> None:
         centers = drain_priority_keys(
             self._stream_relight_queue,
             self.uploads_per_frame,
             lambda coord: streaming_priority(
                 chunk_distance((coord.x, coord.z), (center.x, center.z)),
                 chunk_visible(self._streaming_frustum, (coord.x, coord.z)),
+                None if collision_chunks is None else coord in collision_chunks,
             ),
         )
         if centers:
@@ -526,7 +531,12 @@ class DemoWorldRenderer:
                 key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
                 self._stream_remesh_queue[key] = None
 
-    def _flush_stream_remesh_queue(self, center: ChunkCoord) -> None:
+    def _flush_stream_remesh_queue(
+        self,
+        center: ChunkCoord,
+        *,
+        collision_chunks: frozenset[ChunkCoord] | None = None,
+    ) -> None:
         for key in drain_priority_keys(
             self._stream_remesh_queue,
             self.mesh_uploads_per_frame,
@@ -536,6 +546,7 @@ class DemoWorldRenderer:
                     self._streaming_frustum,
                     (section.x, section.y, section.z),
                 ),
+                None if collision_chunks is None else section.chunk in collision_chunks,
             ),
         ):
             self._schedule_section(key)
