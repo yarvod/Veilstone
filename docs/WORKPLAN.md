@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (planning truth) — swimming feedback and render-test
-isolation are complete; the next small slice removes completed/stale entries
-from BACKLOG so future promotion cannot accidentally repeat finished work.
+Активная цель: Phase N (streaming priority) — backlog now contains only verified
+open remainder; the next small slice makes bounded relight/remesh work prefer
+near-camera chunks without discarding FIFO stability or existing budgets.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,22 @@ from BACKLOG so future promotion cannot accidentally repeat finished work.
 
 ## Current Phase
 
-### Phase N3: Backlog Truth Audit
+### Phase N4: Camera-Distance Streaming Queue Priority
 
-Scope: `docs/BACKLOG.md` status/history cleanup.
+Promoted slice: `PERF-B003`.
 
-Цель: BACKLOG contains only genuinely future/open work. Entries already marked
-`fixed` or `done`, or proven implemented by current code plus CHANGELOG/history,
-are removed rather than promoted again; historical results remain in CHANGELOG.
+Цель: existing bounded stream relight/remesh queues drain nearer chunk work
+before farther work, while preserving insertion order for equal priority and
+leaving visibility/collision-critical policy as explicit future backlog scope.
 
-- [ ] Remove every explicitly `fixed`/`done` backlog entry after confirming its
-  result is already represented in CHANGELOG or current code/tests.
-- [ ] Audit remaining `open` entries for obvious implementation/history
-  contradictions; remove only those proven complete, not merely partially done.
-- [ ] Keep broad open items split into real future remainder without copying any
-  active scope back into BACKLOG.
-- [ ] Record the cleanup count in CHANGELOG, replace this completed phase with
-  the next verified active slice, and commit the docs-only audit separately.
+- [ ] Add a renderer-independent bounded priority drain with deterministic FIFO
+  ties and no mutation beyond the selected budget.
+- [ ] Feed current camera/chunk distance into relight and remesh scheduling
+  without moving ownership into `GameWindow` or changing generation authority.
+- [ ] Cover negative coordinates, equal-distance ties, zero budget, and queue
+  remainder order with focused tests.
+- [ ] Run frame-streaming checks plus a visible walking/F3 pass at render distance
+  above two, inspect F2 evidence, and compare queue behavior for regressions.
 
 ## Check Gate
 

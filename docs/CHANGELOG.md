@@ -839,6 +839,14 @@
 - **Display-less unit collection** — key/mouse constants now have a fallback-safe import path, so input and inventory unit tests do not fail collection when no Pyglet display is available.
 
 ### Changed
+
+- **Backlog truth audit** - removed 7 rendering entries already marked
+  `fixed`/`done` and represented in current code/CHANGELOG. The 15 remaining
+  entries are all genuinely `open`; partially implemented architecture,
+  landmark/event, diagnostics, streaming, and low-end performance items now
+  describe only their unimplemented remainder instead of inviting completed
+  snapshots, event/audio routing, quality tiers, water, or FIFO budgets to be
+  rebuilt.
 - **Backlog promotion and real-game acceptance rules** - agent guidance now
   requires active tasks to move from `BACKLOG` into `WORKPLAN` without
   duplication, then move completed results into `CHANGELOG`. Player-facing

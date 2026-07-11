@@ -15,15 +15,15 @@ validated against `docs/ARCHITECTURE.md`.
 
 - **Status:** open
 - **Observed:** `GameWindow` remains the practical composition root and several
-  controllers still receive the full window instead of narrow ports.
+  compatibility adapters still expose broad window-like surfaces, despite the
+  existing HUD/debug/player snapshots and controller adapters.
 - **Desired:** `GameWindow` becomes a thin presentation shell: application
   use-cases own orchestration, snapshots cross render/network/UI boundaries,
   renderer adapters consume render data, and tests cover most behavior without
   constructing Pyglet/ModernGL objects.
-- **Candidate work:** split HUD/debug snapshots, input command ports, gameplay
-  command use-cases, network presentation adapters, world-runtime lifecycle
-  ownership, and renderer settings ports into small independently verified
-  slices.
+- **Candidate work:** narrow the remaining adapter protocols, extract gameplay
+  command use-cases, move world-runtime lifecycle ownership out of the window,
+  and add renderer settings ports in independently verified slices.
 - **Acceptance idea:** architecture docs/watchlist no longer list `GameWindow`
   as broad runtime owner, import-linter contracts remain green, and new
   Minecraft-feel features can be added without adding state to `render/window.py`.
@@ -99,9 +99,9 @@ class WorldGenerationConfig:
 ### WORLD-B002: Distant Landmarks And Biome Silhouettes
 
 - **Status:** open
-- **Observed:** terrain has more biome variety than early MVP, but distant views
-  still do not consistently produce memorable Minecraft-like silhouettes or
-  navigable landmarks.
+- **Observed:** deterministic highland/plain/swamp silhouettes plus ruin, camp,
+  and spire density coverage exist, but a fresh spawn still does not guarantee
+  a readable nearby horizon landmark or cave-mouth hint.
 - **Desired:** from spawn, the player should usually see at least one readable
   horizon feature: hill ridge, forest edge, swamp basin, tower/pillar, cave
   mouth, or generated structure hint.
@@ -109,16 +109,16 @@ class WorldGenerationConfig:
   `engine/generation`; add a feature-placement pass that emits lightweight
   placement records before block mutation. Rendering should only visualize final
   chunks or debug overlays, not decide placement.
-- **Candidate work:** add feature budget per region, landmark spacing rules,
-  biome-aware height exaggeration, cave-mouth decorators, and debug snapshot
-  tests that assert feature density and spacing.
+- **Candidate work:** measure landmark visibility from actual safe-spawn camera
+  positions, then add only the missing spawn-aware spacing/selection or
+  cave-mouth decoration needed by a deterministic visual acceptance scene.
 
 ### WORLD-B003: Minecraft-Like Block Interaction Event Spine
 
 - **Status:** open
-- **Observed:** player hand swing, block sounds, breaking feedback, particles,
-  item durability, and future multiplayer replication are related actions but
-  can drift if each subsystem observes input separately.
+- **Observed:** typed interaction-start/broken/placed events already synchronize
+  hand swing and block audio, but particles, item durability, use actions, and
+  multiplayer authority still lack the same complete event chain.
 - **Desired:** mining/placing/using blocks should feel like one physical event
   chain: input starts intent, simulation validates it, gameplay event is emitted,
   presentation plays swing/particles/sound, network sends compact authority
@@ -126,45 +126,13 @@ class WorldGenerationConfig:
 - **Architecture direction:** engine/application emits typed events; render,
   audio, network adapters subscribe through ports. Do not let render call
   gameplay mutation directly.
-- **Candidate event sketch:**
-
-```python
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class BlockInteractionStarted:
-    actor_id: int
-    block_pos: tuple[int, int, int]
-    face: int
-    tool_item_id: str | None
-
-@dataclass(frozen=True)
-class BlockBroken:
-    actor_id: int
-    block_pos: tuple[int, int, int]
-    block_id: str
-    drops: tuple[str, ...]
-```
-
-- **Acceptance idea:** unit tests can prove hand animation, sound routing, and
-  particle intent derive from the same event without constructing `GameWindow`.
+- **Candidate work:** extend the existing events with actor/tool/drop authority
+  data, particle intent, durability mutation, use actions, and compact network
+  replication without reimplementing the already-routed swing/audio path.
+- **Acceptance idea:** unit tests prove durability, particles, and replication
+  derive from the validated interaction event without constructing `GameWindow`.
 
 ## Rendering And Resource Packs
-
-### R-B001: Default Short Grass Renders Like Green Reinforcement Cubes
-
-- **Status:** fixed
-- **Observed:** default resource-pack grass/short grass could appear as green
-  cage or crossed structural planes inside block-sized cubes instead of
-  Minecraft-like small grass tufts.
-- **Desired:** default grass uses Minecraft-like cross/plant model semantics,
-  correct cutout texture, tint, scale, placement, and no misleading full-cube
-  silhouette.
-- **Fix notes:** `short_grass` and `wildflower` now use data-driven
-  `render_shape = "cross"` plant mesh instead of full cube faces. Procedural
-  short-grass fallback uses sparse bottom-rooted cutout blades without opaque
-  texture borders, plant quads receive top-biased lighting, and chunk texture
-  variation no longer vertically flips rooted plant textures.
 
 ### R-B002: Minecraft Resource-Pack Grass/Foliage Looks Distorted
 
@@ -178,22 +146,8 @@ class BlockBroken:
   native. Avoid mapping-first shortcuts; map pack assets into a render-material
   model that chunk meshing can consume.
 - **Candidate work:** verify imported packs visually, add missing aliases/tint
-  metadata, add atlas gutter/mipmap-safe sampling checks, and add pack-specific
-  fixtures for concrete failures.
-
-### R-B003: Cutout Plant Shadows Too Faint On Terrain
-
-- **Status:** fixed
-- **Observed:** visible plant rendering discarded transparent texels, but thin
-  cutout caster shadows could disappear after receiver bias and 3x3 PCF
-  filtering, so grass appeared to cast no terrain shadow.
-- **Desired:** grass/foliage shadows respect alpha cutouts and remain readable
-  enough on nearby terrain without turning transparent texture planes into
-  solid-sheet shadows.
-- **Fix notes:** chunk shadow-depth rendering receives atlas UV/rect attributes,
-  binds block atlas, discards transparent texels before writing depth, and the
-  receiver shader preserves center shadow hits so thin plant samples are not
-  blurred away.
+  metadata or sampling fixes only for a captured concrete failure, and add that
+  pack-specific fixture before changing general atlas/model behavior.
 
 ### R-B004: Grass Block Surface Tiling Still Looks Too Noisy
 
@@ -209,120 +163,6 @@ class BlockBroken:
   smoothing, and/or subtle terrain overlay blending that does not blur
   inventory/held-item textures.
 
-### R-B005: Vegetation Wind Animation
-
-- **Status:** done (2026-07-09) — block model snapshots classify cross-plant and
-  foliage wind motion; chunk and shadow vertex paths apply render-only sway,
-  quality presets gate it, and foliage/gameplay GL smoke passed.
-- **Observed:** grass, leaves, and future plants are static.
-- **Desired:** grass/leaves/vegetation use subtle Minecraft-like visual-only
-  wind sway while preserving blocky silhouettes, resource-pack textures, and
-  deterministic collision/gameplay state.
-- **Architecture direction:** animation belongs in render vertex data/shader
-  inputs. Simulation should not mutate plant blocks for wind.
-- **Candidate work:** drive visual-only vertex shader sway from world time,
-  biome/wind settings, block/material kind, and chunk coordinates; add
-  screenshot/manual smoke scenes for animated vegetation.
-
-### R-B006: Block/Item Model Snapshot Layer
-
-- **Status:** done (2026-07-01) — shared `BlockModelSnapshot` /
-  `ItemModelSnapshot` texture-slot policy is consumed by chunk meshing,
-  inventory icons, viewmodels, dropped items, and remote held items. Remaining
-  inventory icon depth/polish is tracked separately by `BUG-G006`.
-- **Observed:** inventory, held items, player hand, dropped items, and chunk
-  blocks can drift visually because each path can interpret item/block rendering
-  differently.
-- **Desired:** a block/item has one render-facing model description that can be
-  reused by chunk meshing, held item rendering, inventory icons, drops, and
-  remote-player held items.
-- **Architecture direction:** domain owns item/block identity and gameplay
-  metadata; application/render adapter builds `RenderModelSnapshot`; render
-  consumes the snapshot. UI must not mutate domain inventory internals to obtain
-  visuals.
-- **Candidate shape:**
-
-```python
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class RenderModelSnapshot:
-    resource_id: str
-    model_kind: str
-    texture_slots: dict[str, str]
-    tint: tuple[float, float, float] | None
-    cutout: bool
-    icon_camera: str
-```
-
-### R-B007: Iris/PBR-Like Shader Material Pipeline
-
-- **Status:** done (Phase G, 2026-07-09) — opt-in `material-preview` profile
-  draws chunks with a material shader consuming NORMAL/SPECULAR atlases built
-  from default-pack `_n`/`_s` sidecars; default/low profiles stay color-only
-  without extra texture binds; toggle available via `/materials` and Settings
-  UI. Remaining ideas (emissive conventions, LabPBR metadata, reflections) can
-  be re-promoted as new items when needed.
-- **Observed:** Veilstone supports Minecraft Java-style color textures, cutout
-  alpha, fog, smooth lighting, AO, water animation, and shadow maps, but not
-  shaderpack-style material inputs such as normal/specular/emissive/parallax
-  maps. PBR resource packs therefore import mostly as flat color atlases.
-- **Desired:** high-quality mode can make resource packs read closer to
-  Iris/shaderpack screenshots: directional light, soft-ish block shadows,
-  emissive blocks, richer water/sky response, normal/specular material detail,
-  and optional screen-space reflections where hardware allows it.
-- **Architecture direction:** keep shader/material metadata in render-facing
-  snapshots and atlas build outputs. Domain registries should name block/item
-  identity and gameplay data only. Renderer owns quality tiers and extra GPU
-  textures; application/settings select tiers.
-- **Candidate work:** continue from material metadata, parallel material atlases,
-  `MaterialVisualSnapshot`, material visual lookup consumers, shader variant
-  selection, material atlas binding plans, shader setup/runtime fixtures,
-  `WorldScene` planning hook, runtime wiring plans, and material-preview shader
-  fixtures into opt-in `WorldScene` material atlas texture binding; add emissive
-  conventions/LabPBR-style metadata, and keep low-tier chunks color-only.
-- **Acceptance idea:** a deterministic PBR fixture pack produces color, normal,
-  and material atlases with matching UV rects; low-tier renders the same chunks
-  without binding those atlases; high-tier screenshot/manual smoke scene shows
-  visible normal/specular/emissive differences.
-
-### R-B008: Scalable Visual Quality Tiers
-
-- **Status:** done (Phase H, 2026-07-09) — persisted
-  `low_60`/`balanced`/`high`/`cinematic` profiles resolve renderer knobs, apply
-  from Settings, and expose active expensive effects in F3 diagnostics.
-- **Observed:** realistic graphics and weak-machine 60 FPS pull in opposite
-  directions if every effect is always on.
-- **Desired:** settings expose clear presets such as `low_60`, `balanced`,
-  `high`, and `cinematic`, each mapping to concrete render behavior: render
-  distance, shadows, AO, water quality, clouds, vegetation wind, PBR maps,
-  reflections, and postprocess.
-- **Architecture direction:** use a small render-quality policy object consumed
-  by renderer construction and live settings updates. Avoid scattering
-  independent booleans across `GameWindow` and `DemoWorldRenderer`.
-- **Candidate work:** add preset data under settings, convert current graphics
-  flags into resolved `RenderQualityProfile`, and keep F3 showing active preset
-  plus expensive enabled effects.
-- **Acceptance idea:** changing presets in Settings updates active runtime
-  without world reload; low preset disables high-cost shader paths and keeps
-  visual fallback correct.
-
-### R-B009: Water Surface Visual Quality
-
-- **Status:** done (Phase J, 2026-07-10) — quality-gated crest/specular cues,
-  procedural ripple normals, Fresnel/sky reflection treatment, render-only
-  shoreline factors, and deterministic low/detail GL smoke are implemented;
-  fluid simulation remained separate and stable.
-- **Observed:** current water behaves functionally but does not yet read like a
-  polished water surface; user called out missing reflections/highlights, richer
-  surface movement, waves, and ripples.
-- **Desired:** water quality tiers should eventually cover subtle animated
-  surface normals, specular highlights, shoreline/ripple cues, and optional
-  reflection-like treatment without breaking low-end presets.
-- **Candidate work:** define low/balanced/high water quality knobs, add shader
-  and mesh smoke scenes near water, keep fluid simulation rules separate from
-  render-only wave presentation.
-
 ## Performance
 
 ### PERF-B001: Render Distance Above Two Chunks Too Slow
@@ -333,67 +173,41 @@ class RenderModelSnapshot:
   higher FPS at much larger render distances.
 - **Desired:** chunk generation, meshing, uploading, and streaming are bounded
   and prioritized enough for smooth play at higher render distances.
-- **Candidate work:** profile generation/meshing/upload budgets, add frame-time
-  instrumentation, prioritize visible/near chunks, avoid blocking render paths,
-  tune worker counts, and evaluate process/thread split for generation/meshing.
+- **Candidate work:** use the existing frame/queue diagnostics and streaming
+  benchmark to profile generation/meshing/upload bottlenecks, then prioritize
+  visible/near chunks, tune worker counts, and evaluate process/thread splits.
 
 ### PERF-B002: Frame Budget And Chunk Pipeline Instrumentation
 
 - **Status:** open
-- **Observed:** performance complaints can be hard to classify: generation,
-  meshing, GPU upload, texture loading, lighting, entity simulation, and debug
-  telemetry can all appear as "lag".
+- **Observed:** `RuntimePerfSnapshot` already reports update/render/frame timing
+  and core chunk/mesh queue depths, but it does not yet separate generation,
+  lighting, GPU upload, dirty work, or the slowest subsystem.
 - **Desired:** each frame exposes a compact budget summary: simulation time,
   render time, chunk generation jobs, mesh jobs, upload jobs, queue depth,
   visible chunks, dirty chunks, and slowest subsystem.
 - **Architecture direction:** collect timings in a small application-facing
   diagnostics service updated at bounded frequency. Render HUD reads a snapshot;
   it should not time subsystems by reaching into internals.
-- **Candidate shape:**
-
-```python
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class RuntimePerfSnapshot:
-    frame_ms: float
-    simulation_ms: float
-    render_ms: float
-    chunk_generation_queue: int
-    mesh_queue: int
-    upload_queue: int
-    visible_chunks: int
-    dirty_chunks: int
-```
+- **Candidate work:** extend the existing snapshot rather than replacing it,
+  sample missing stage timings at bounded frequency, and add upload/dirty/slowest
+  fields only where a real benchmark can populate them.
 
 ### PERF-B003: Prioritized Chunk Streaming And Mesh Scheduling
 
 - **Status:** open
-- **Observed:** chunk work can block or arrive in an order that does not match
-  what the player needs right now.
+- **Observed:** submission, relight, and remesh queues already drain under
+  per-frame FIFO budgets, but FIFO order does not guarantee camera-visible,
+  player-near, or collision-critical chunks win first.
 - **Desired:** player-near, camera-visible, collision-critical chunks win over
   far decorative work; chunk generation, lighting, meshing, and GPU upload each
   have a per-frame budget.
-- **Architecture direction:** split world runtime work into stages with explicit
-  budgets. `WorldRuntime` owns scheduling policy; `WorldSceneRenderer` only
-  uploads/draws ready render data through a narrow port.
-- **Candidate shape:**
-
-```python
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class ChunkWorkBudget:
-    generation_ms: float
-    lighting_ms: float
-    meshing_ms: float
-    upload_ms: float
-
-class ChunkPipeline:
-    def tick(self, camera_chunk: tuple[int, int], budget: ChunkWorkBudget) -> None:
-        """Advance bounded chunk work without blocking the render frame."""
-        ...
-```
+- **Architecture direction:** evolve the existing bounded queues toward an
+  engine-owned priority policy; render only uploads/draws ready data through a
+  narrow port.
+- **Candidate work:** after the active camera-distance ordering slice, add
+  visibility and collision-critical priority signals while preserving the same
+  budgets and deterministic order within equal priority.
 
 ### PERF-B004: Hot-Path Native/Cython Acceleration Spike
 
@@ -471,14 +285,12 @@ except ImportError:
   cross-chunk neighbor invalidation tests, and stress scenes for breaking blocks
   near water/light sources.
 
-### PERF-B007: Low-End 60 FPS Baseline
+### PERF-B007: Prove The Low-End 60 FPS Baseline
 
 - **Status:** open
-- **Observed:** default settings currently favor a nice prototype view: render
-  distance 2, process-backed generation and meshing workers, smooth lighting,
-  AO, fog, medium shadows, and clouds. On a two-core low-end machine, worker
-  processes, simulation, rendering, and OS scheduling can compete for the same
-  CPU budget.
+- **Observed:** the `low_60` quality profile and frame-streaming benchmark exist,
+  but no recorded two-core/720p acceptance run proves p95 frame time and queue
+  stability on the intended low-end target.
 - **Desired:** a `low_60` profile targets stable 60 FPS at 720p on a two-core
   CPU-class machine before high-end visual effects are enabled. The profile can
   look simpler, but it must remain readable, Minecraft-like, and free of chunk
