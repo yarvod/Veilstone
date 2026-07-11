@@ -30,6 +30,7 @@ from voxel_sandbox.application.player_animation import (
     PlayerAnimationState,
     PlayerInteraction,
     advance_player_animation,
+    build_player_animation_events,
     start_player_interaction,
 )
 from voxel_sandbox.application.player_camera import (
@@ -60,6 +61,7 @@ from voxel_sandbox.engine.events import (
     EntityDamaged,
     EntityDied,
     PlayerLanded,
+    PlayerSwimStroke,
     PlayerWaterTransition,
 )
 from voxel_sandbox.engine.game_state import GameState, GameStateMachine
@@ -476,6 +478,12 @@ class GameWindow(pyglet.window.Window):
             ),
             delta_time,
         )
+        player = cast(PlayerController, self.player)
+        for event in build_player_animation_events(
+            self._player_animation_snapshot,
+            position=(player.x, player.y, player.z),
+        ):
+            self.events.publish(event)
         if self._player_animation_snapshot.footstep_due:
             block_id = self.world_renderer.get_block(
                 math.floor(self.player.x),
@@ -738,6 +746,7 @@ class GameWindow(pyglet.window.Window):
         self.events.subscribe(EntityDamaged, self._play_entity_damaged_event)
         self.events.subscribe(EntityDied, self._play_entity_died_event)
         self.events.subscribe(PlayerLanded, self._play_player_landed_event)
+        self.events.subscribe(PlayerSwimStroke, self._play_player_swim_stroke_event)
         self.events.subscribe(PlayerWaterTransition, self._play_player_water_transition_event)
 
     def _start_block_interaction(self, event: BlockInteractionStarted) -> None:
@@ -784,6 +793,10 @@ class GameWindow(pyglet.window.Window):
 
     def _play_player_landed_event(self, event: PlayerLanded) -> None:
         key_name = "player.land" if "player.land" in self.audio.registry else "footstep"
+        self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, event.position))
+
+    def _play_player_swim_stroke_event(self, event: PlayerSwimStroke) -> None:
+        key_name = "player.swim" if "player.swim" in self.audio.registry else "player.splash"
         self.audio.emit(AudioEvent(AudioEventKind.SOUND, key_name, event.position))
 
     def _play_player_water_transition_event(self, event: PlayerWaterTransition) -> None:

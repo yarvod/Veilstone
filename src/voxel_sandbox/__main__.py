@@ -114,6 +114,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     first_click_smoke.add_argument("--initial-motion", action="store_true")
     first_click_smoke.add_argument("--output-dir", default=None)
+    swim_audio_smoke = subparsers.add_parser(
+        "swim-audio-smoke",
+        help="Run visible swimming cadence and audio verification",
+    )
+    swim_audio_smoke.add_argument("--output-dir", default=None)
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",

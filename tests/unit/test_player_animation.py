@@ -7,8 +7,10 @@ from voxel_sandbox.application.player_animation import (
     PlayerAnimationState,
     PlayerInteraction,
     advance_player_animation,
+    build_player_animation_events,
     start_player_interaction,
 )
+from voxel_sandbox.engine.events import PlayerSwimStroke
 
 
 def test_walking_advances_gait_and_emits_footstep_contact() -> None:
@@ -92,9 +94,60 @@ def test_swimming_advances_motion_without_ground_footstep() -> None:
     assert snapshot.moving is True
     assert snapshot.swimming is True
     assert snapshot.footstep_due is False
+    assert snapshot.swim_stroke_due is True
     assert math.isclose(snapshot.gait_phase, 0.5)
     assert math.isclose(snapshot.viewmodel_bob_y, snapshot.camera_bob_y * 1.35)
     assert state.step_index == 1
+
+
+def test_swim_stroke_cadence_does_not_spam_between_contacts() -> None:
+    state, early = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, in_water=True),
+        0.30,
+    )
+    state, contact = advance_player_animation(
+        state,
+        PlayerAnimationInput(forward=1.0, in_water=True),
+        0.25,
+    )
+    _, between = advance_player_animation(
+        state,
+        PlayerAnimationInput(forward=1.0, in_water=True),
+        0.10,
+    )
+
+    assert early.swim_stroke_due is False
+    assert contact.swim_stroke_due is True
+    assert between.swim_stroke_due is False
+
+
+def test_swim_stroke_requires_movement_in_water() -> None:
+    _, stationary_water = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(in_water=True),
+        1.0,
+    )
+    _, dry_movement = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, on_ground=True),
+        0.55,
+    )
+
+    assert stationary_water.swim_stroke_due is False
+    assert dry_movement.swim_stroke_due is False
+
+
+def test_swim_stroke_snapshot_builds_typed_gameplay_event() -> None:
+    _, snapshot = advance_player_animation(
+        PlayerAnimationState(),
+        PlayerAnimationInput(forward=1.0, in_water=True),
+        0.55,
+    )
+
+    assert build_player_animation_events(snapshot, position=(1.0, 2.0, 3.0)) == (
+        PlayerSwimStroke(position=(1.0, 2.0, 3.0)),
+    )
 
 
 def test_interaction_progresses_and_returns_to_idle() -> None:

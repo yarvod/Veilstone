@@ -130,6 +130,12 @@ def main() -> None:
     )
     _write(root / "player/land.wav", 0.13, _noise(71, 1600.0, 2.6), peak=0.32)
     _write(root / "player/splash.wav", 0.30, _noise(79, 2400.0, 1.8), peak=0.36)
+    _write(
+        root / "player/swim_stroke.wav",
+        0.16,
+        _mix((_noise(83, 1800.0, 2.2), 0.78), (_tone(180.0, 9.0), 0.22)),
+        peak=0.22,
+    )
     for path, duration, voice, peak in (
         ("cow/hurt_1.wav", 0.34, _creature_voice(145.0, -35.0, 43), 0.42),
         ("cow/hurt_2.wav", 0.38, _creature_voice(132.0, -28.0, 44), 0.40),

@@ -186,6 +186,16 @@ def run_command(args: argparse.Namespace) -> int:
             initial_motion=bool(getattr(args, "initial_motion", False)),
             output_dir=Path(str(output_dir)) if output_dir else None,
         )
+    if command == "swim-audio-smoke":
+        from pathlib import Path
+
+        from voxel_sandbox.tools.swim_audio_smoke import run_swim_audio_smoke
+
+        output_dir = getattr(args, "output_dir", None)
+        return run_swim_audio_smoke(
+            settings,
+            output_dir=Path(str(output_dir)) if output_dir else None,
+        )
     if command == "check-update":
         from voxel_sandbox.app.updates import REPO_SLUG, run_check_update
 

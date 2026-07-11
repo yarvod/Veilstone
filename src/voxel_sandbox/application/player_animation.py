@@ -4,6 +4,8 @@ import math
 from dataclasses import dataclass
 from enum import StrEnum
 
+from voxel_sandbox.engine.events import PlayerSwimStroke
+
 _WALK_STEP_SECONDS = 0.42
 _SPRINT_STEP_SECONDS = 0.28
 _SWIM_STEP_SECONDS = 0.55
@@ -55,6 +57,7 @@ class PlayerAnimationSnapshot:
     gait_phase: float
     step_index: int
     footstep_due: bool
+    swim_stroke_due: bool
     camera_bob_y: float
     viewmodel_bob_y: float
     interaction: PlayerInteraction
@@ -99,6 +102,7 @@ def advance_player_animation(
 
     next_step_index = math.floor(gait_cycle * 2.0)
     footstep_due = grounded and moving and next_step_index > state.step_index
+    swim_stroke_due = swimming and moving and next_step_index > state.step_index
 
     interaction, interaction_elapsed = _advance_interaction(state, dt)
     interaction_progress = _interaction_progress(interaction, interaction_elapsed)
@@ -126,6 +130,7 @@ def advance_player_animation(
         gait_phase=gait_phase,
         step_index=next_step_index,
         footstep_due=footstep_due,
+        swim_stroke_due=swim_stroke_due,
         camera_bob_y=camera_bob_y,
         viewmodel_bob_y=camera_bob_y * 1.35,
         interaction=interaction,
@@ -133,6 +138,16 @@ def advance_player_animation(
         interaction_active=interaction_active,
     )
     return next_state, snapshot
+
+
+def build_player_animation_events(
+    snapshot: PlayerAnimationSnapshot,
+    *,
+    position: tuple[float, float, float],
+) -> tuple[PlayerSwimStroke, ...]:
+    if snapshot.swim_stroke_due:
+        return (PlayerSwimStroke(position=position),)
+    return ()
 
 
 def build_player_animation_input(

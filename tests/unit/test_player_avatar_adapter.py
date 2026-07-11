@@ -81,6 +81,7 @@ def test_build_player_avatar_world_carries_player_gait_animation() -> None:
         gait_phase=1.25,
         step_index=2,
         footstep_due=False,
+        swim_stroke_due=False,
         camera_bob_y=0.0,
         viewmodel_bob_y=0.0,
         interaction=PlayerInteraction.IDLE,

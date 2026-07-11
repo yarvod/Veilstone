@@ -71,6 +71,12 @@ group = "effects"
 gain = 0.12
 
 [[audio]]
+key = "player.swim"
+path = "minecraft:player/swim_stroke"
+group = "effects"
+gain = 0.08
+
+[[audio]]
 key = "mob.passive_hurt"
 paths = ["minecraft:entity/cow/hurt_1", "minecraft:entity/cow/hurt_2"]
 group = "effects"

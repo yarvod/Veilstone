@@ -82,11 +82,12 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 - **Status:** open
 - **Affected area:** tests / pyglet UI renderer test isolation
-- **Observed:** `uv run pytest tests/unit/render` fails 8 `test_ui_renderer.py`
-  tests (widget layout/callback assertions), while the same file passes in
-  isolation and the `-m unit` gate stays green. Reproduced on a clean `main`
-  checkout, so it is a pre-existing test-order interaction, likely shared
-  pyglet/GL global state from earlier render tests.
+- **Observed:** `uv run pytest tests/unit/render` currently fails all 9
+  `test_ui_renderer.py` cases with
+  `pyglet.gl.current_context.create_program` reading a `None` context, while the
+  same file passes in isolation and the `-m unit` gate stays green. Reverified
+  before Phase N2 promotion; this is shared Pyglet/GL test state, not a widget
+  layout/callback failure.
 - **Reproduction:** `uv run pytest tests/unit/render` (fails) vs
   `uv run pytest tests/unit/render/test_ui_renderer.py` (passes).
 

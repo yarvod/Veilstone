@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (swimming feedback) — player input regressions are closed
-with repeatable visible coverage; the next small slice gives continuous swimming
-its own soft audio cadence instead of relying only on water enter/exit splashes.
+Активная цель: Phase N (quality isolation) — swimming feedback is complete with
+real input/audio/render evidence; the next small slice removes the confirmed
+order-dependent Pyglet context failure from the render test group.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,23 +29,23 @@ its own soft audio cadence instead of relying only on water enter/exit splashes.
 
 ## Current Phase
 
-### Phase N1: Swimming Stroke Audio Polish
+### Phase N2: Pyglet UI Renderer Test Isolation
 
-Promoted backlog item: `WORLD-B005`.
+Tracked bug: `BUG-T001`.
 
-Цель: continuous swimming emits a soft Minecraft-like stroke cadence distinct
-from water enter/exit and landing sounds, through typed gameplay/application
-events and resource-pack audio routing rather than render-only timing state.
+Цель: `tests/unit/render/test_ui_renderer.py` passes both alone and after the
+preceding render tests by owning a valid shader-capable Pyglet context for its
+actual lifetime, without hiding failures behind skips or changing production UI
+behavior.
 
-- [ ] Reuse renderer-independent swimming/movement cadence state or add the
-  smallest explicit event state needed; do not put cadence timers in
-  `GameWindow`.
-- [ ] Add a typed swim-stroke event and route it through the existing audio event
-  adapter to a default resource-pack sound location.
-- [ ] Add deterministic cadence/no-spam tests for moving, stationary, entering,
-  exiting, and grounded player states.
-- [ ] Run a visible real-water movement pass, listen for distinct repeated soft
-  strokes without enter/exit spam, capture through F2, and inspect the frame.
+- [ ] Identify which preceding test/module closes or replaces the shared Pyglet
+  context and reproduce the shortest deterministic order.
+- [ ] Give UI renderer tests explicit context setup/teardown ownership using the
+  existing GL test support; do not rely on import-time shadow-window accidents.
+- [ ] Prove the isolated file, shortest reproducer, full `tests/unit/render`, and
+  full unit gate all pass without new skips.
+- [ ] Mark `BUG-T001` fixed with the exact reproducer and final counts, then move
+  this phase out of WORKPLAN into CHANGELOG.
 
 ## Check Gate
 

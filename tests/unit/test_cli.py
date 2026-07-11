@@ -146,6 +146,12 @@ def test_first_click_smoke_command_accepts_runtime_options() -> None:
     assert args.output_dir == "saves/first-click"
 
 
+def test_swim_audio_smoke_command_accepts_output() -> None:
+    args = build_parser().parse_args(["swim-audio-smoke", "--output-dir", "saves/swim-audio"])
+    assert args.command == "swim-audio-smoke"
+    assert args.output_dir == "saves/swim-audio"
+
+
 def test_update_commands_are_registered() -> None:
     parser = build_parser()
     assert parser.parse_args(["check-update"]).command == "check-update"

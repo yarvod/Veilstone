@@ -12,6 +12,7 @@ type GameEvent = (
     | EntityDamaged
     | EntityDied
     | PlayerLanded
+    | PlayerSwimStroke
     | PlayerWaterTransition
 )
 type EventHandler[T: GameEvent] = Callable[[T], None]
@@ -57,6 +58,11 @@ class EntityDied:
 class PlayerLanded:
     position: tuple[float, float, float]
     vertical_velocity: float
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerSwimStroke:
+    position: tuple[float, float, float]
 
 
 @dataclass(frozen=True, slots=True)

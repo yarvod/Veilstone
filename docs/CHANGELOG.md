@@ -74,6 +74,18 @@
 
 ### Added
 
+- **Swimming stroke audio cadence** - continuous movement in water now turns the
+  existing renderer-independent swim gait contacts into typed
+  `PlayerSwimStroke` events, routed to a soft `minecraft:player/swim_stroke`
+  default-pack sound separately from enter/exit splash events. Stationary water,
+  dry movement, and frames between cadence contacts do not emit strokes. The
+  visible `swim-audio-smoke` drove real `W` input through a rendered pool and the
+  actual `PygletAudioBackend`: `3.7500` blocks, `2` stroke events, `2` swim
+  sounds, one enter plus one exit, and `2` splashes. Metadata:
+  `saves/swim_audio_smoke_n1/swim_audio_smoke.json`; visually inspected F2 frame:
+  `saves/swim_audio_smoke_n1/screenshots/veilstone_20260711_032204.png`. Full
+  gates: import-linter/Ruff/format green, `822 passed`; focused Pyright `0`, full
+  baseline unchanged at `389` errors.
 - **Visible first-click cold-launch smoke** - `first-click-smoke` opens the real
   visible `GameWindow`, verifies the native Cocoa first-mouse contract, routes
   single clicks through main, Settings, world-list, and pause screens, then

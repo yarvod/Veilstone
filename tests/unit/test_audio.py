@@ -50,7 +50,9 @@ def test_player_movement_sounds_are_registered() -> None:
 
     assert "player.land" in bus.registry
     assert "player.splash" in bus.registry
+    assert "player.swim" in bus.registry
     assert bus.registry.get("player.land").gain > bus.registry.get("footstep").gain
+    assert bus.registry.get("player.swim").gain < bus.registry.get("player.splash").gain
 
 
 def test_audio_registry_resolves_default_resource_pack_sounds() -> None:
