@@ -355,6 +355,7 @@ class DemoWorldRenderer:
             loaded_chunks=self.loaded_chunks,
             pending_chunks=self.pending_chunks,
             pending_meshes=self.pending_meshes,
+            pending_stream_relights=len(self._stream_relight_queue),
             pending_stream_remeshes=len(self._stream_remesh_queue),
             visible_sections=self.visible_sections,
         )

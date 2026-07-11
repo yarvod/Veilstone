@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (streaming diagnostics) — after completing bounded
-distance/visibility/collision priority, expose the still-hidden relight queue so
-the next bottleneck decision is based on actual runtime evidence.
+Активная цель: Phase N (frame diagnostics) — after exposing all current bounded
+streaming queues, identify whether the already-measured update or render stage is
+the coarse frame bottleneck before adding finer subsystem timers.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,21 +29,21 @@ the next bottleneck decision is based on actual runtime evidence.
 
 ## Current Phase
 
-### Phase N7: Relight Queue Diagnostics
+### Phase N8: Coarse Frame Bottleneck Indicator
 
-Promoted slice: relight-queue visibility split out of `PERF-B002`; this active
-scope was removed from that backlog entry in the same transition.
+Promoted slice: update-vs-render bottleneck indication split out of `PERF-B002`;
+this active scope was removed from that backlog entry in the same transition.
 
-Цель: expose pending bounded relight work through the existing immutable runtime
-diagnostics snapshot and F3 HUD without adding per-frame filesystem reads or
-reaching from HUD code into renderer internals.
+Цель: derive a deterministic coarse bottleneck label from the update/render
+timings already owned by `RuntimePerfTracker`, expose it through the immutable
+snapshot, and show it in F3 without inventing unmeasured subsystem data.
 
-- [ ] Add pending relight count to `RenderQueueSnapshot` at the existing
-  renderer-to-HUD boundary and render it in the F3 queue line.
-- [ ] Cover default/explicit snapshot values and HUD text without constructing
-  `GameWindow` or a real GL scene in unit tests.
-- [ ] Run the focused/full gates and a visible F3/F2 pass that creates or drains
-  relight work, then move N7 into CHANGELOG.
+- [ ] Define update/render/tie/idle semantics in pure tracker tests and preserve
+  the current frame timing behavior.
+- [ ] Add the label to the existing F3 timing line through `RuntimePerfSnapshot`,
+  without direct controller or renderer reads.
+- [ ] Run focused/full gates and inspect a visible F3/F2 frame, then move N8 into
+  CHANGELOG.
 
 ## Check Gate
 

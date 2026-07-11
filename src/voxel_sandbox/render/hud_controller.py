@@ -202,6 +202,7 @@ class HudWindowAdapter:
             f"\nChunks {perf.queues.loaded_chunks} "
             f"Pending {perf.queues.pending_chunks} "
             f"Mesh queue {perf.queues.pending_meshes} "
+            f"Stream relight {perf.queues.pending_stream_relights} "
             f"Stream remesh {perf.queues.pending_stream_remeshes} "
             f"Visible sections {perf.queues.visible_sections}\n"
             f"Faces {win.world_renderer.face_count} "

@@ -181,18 +181,20 @@ class WorldGenerationConfig:
 
 - **Status:** open
 - **Observed:** `RuntimePerfSnapshot` already reports update/render/frame timing
-  and core chunk/mesh queue depths. Relight-queue visibility has moved into the
-  active N7 workplan; the remaining backlog scope does not yet separate
-  generation, GPU upload, dirty work, or the slowest subsystem.
+  and all current bounded streaming queue depths. A coarse update-vs-render
+  bottleneck label has moved into the active N8 workplan; the remaining backlog
+  scope does not yet separate generation, GPU upload, dirty work, or a
+  fine-grained slowest subsystem.
 - **Desired:** each frame exposes a compact budget summary: simulation time,
   render time, chunk generation jobs, mesh jobs, upload jobs, queue depth,
   visible chunks, dirty chunks, and slowest subsystem.
 - **Architecture direction:** collect timings in a small application-facing
   diagnostics service updated at bounded frequency. Render HUD reads a snapshot;
   it should not time subsystems by reaching into internals.
-- **Candidate work:** after N7, extend the existing snapshot rather than
+- **Candidate work:** after N8, extend the existing snapshot rather than
   replacing it, sample missing stage timings at bounded frequency, and add
-  upload/dirty/slowest fields only where a real benchmark can populate them.
+  generation/upload/dirty detail only where a real benchmark can populate it;
+  then refine the coarse label from measured evidence.
 
 ### PERF-B004: Hot-Path Native/Cython Acceleration Spike
 

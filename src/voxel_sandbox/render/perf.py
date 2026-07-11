@@ -8,6 +8,7 @@ class RenderQueueSnapshot:
     loaded_chunks: int = 0
     pending_chunks: int = 0
     pending_meshes: int = 0
+    pending_stream_relights: int = 0
     pending_stream_remeshes: int = 0
     visible_sections: int = 0
 

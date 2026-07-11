@@ -840,6 +840,16 @@
 
 ### Changed
 
+- **Relight queue diagnostics** - the existing immutable render queue snapshot
+  now exposes pending bounded relight work, `DemoWorldRenderer` populates it at
+  the renderer-to-HUD boundary, and F3 displays `Stream relight` beside mesh and
+  remesh queues without reaching into renderer internals. Snapshot defaults,
+  renderer aggregation, and HUD formatting are covered by `10` focused tests;
+  full unit passed `836`, focused Pyright passed with `0`, and the full known-red
+  baseline remained `389`. A direct visible `rtk uv` run toggled F3 through the
+  normal key path, displayed `Stream relight 3`, and saved through F2; the full
+  world/HUD frame was visually inspected at
+  `saves/relight_diagnostics_n7/screenshots/veilstone_20260711_042757.png`.
 - **Collision-critical streaming queue priority** - player physics now owns a
   deterministic ordered collision-chunk footprint, and synchronous collision
   loading reuses the same negative/boundary-safe coordinate rule. `GameWindow`

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, cast
 
 from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
@@ -50,3 +51,21 @@ def test_world_scene_remesh_queue_prefers_collision_section_over_visibility() ->
 
     assert scheduled == [critical_offscreen]
     assert tuple(renderer._stream_remesh_queue) == (visible,)
+
+
+def test_world_scene_perf_queues_exposes_pending_relight_work() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    renderer._streamer = SimpleNamespace(loaded_count=7, pending_count=2)
+    renderer.mesh_worker = SimpleNamespace(pending_count=3)
+    renderer._stream_relight_queue = {ChunkCoord(0, 0): None, ChunkCoord(1, 0): None}
+    renderer._stream_remesh_queue = {SectionCoord(0, 0, 0): None}
+    renderer.visible_sections = 9
+
+    queues = renderer.perf_queues()
+
+    assert queues.loaded_chunks == 7
+    assert queues.pending_chunks == 2
+    assert queues.pending_meshes == 3
+    assert queues.pending_stream_relights == 2
+    assert queues.pending_stream_remeshes == 1
+    assert queues.visible_sections == 9
