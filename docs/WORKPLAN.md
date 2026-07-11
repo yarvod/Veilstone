@@ -3,8 +3,8 @@
 ## Overview
 
 Активная цель: Phase N (streaming priority) — bounded relight/remesh work now
-prefers near-camera chunks; the next small slice adds camera-visible priority
-without conflating it with the separate collision-critical future remainder.
+prefers near and camera-visible chunks; the final promoted slice protects
+collision-critical work needed by local player physics.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,22 @@ without conflating it with the separate collision-critical future remainder.
 
 ## Current Phase
 
-### Phase N5: Camera-Visible Streaming Queue Priority
+### Phase N6: Collision-Critical Streaming Queue Priority
 
 Promoted slice: `PERF-B003`.
 
-Цель: among queued work at comparable distance, camera-visible chunks win over
-off-screen chunks using a renderer-facing visibility snapshot or narrow score;
-collision-critical priority remains future backlog scope.
+Цель: queued chunks/sections required for the local player's collision envelope
+receive an explicit narrow priority signal without bypassing budgets, duplicating
+physics rules in render code, or weakening distance/visibility determinism.
 
-- [ ] Identify the narrowest existing frustum/camera snapshot that can rank chunk
-  or section keys without making the queue helper depend on OpenGL objects.
-- [ ] Compose visibility with existing distance priority while preserving budget,
-  FIFO ties, and deterministic behavior when visibility data is unavailable.
-- [ ] Add pure order tests plus world-scene integration coverage for visible vs
-  off-screen work at equal distance.
-- [ ] Repeat RD3/RD4 frame-streaming and visible turn/walk/F3 acceptance, inspect
-  F2 evidence, then move the completed slice into CHANGELOG.
+- [ ] Find the existing player/collision-area ownership seam and derive a compact
+  set or predicate of collision-critical chunk coordinates outside render rules.
+- [ ] Compose collision need with distance and visibility priority while keeping
+  per-frame budgets and FIFO order inside equal scores.
+- [ ] Cover boundary/negative coordinates, unavailable collision data, and
+  world-scene queue integration without constructing `GameWindow` in unit tests.
+- [ ] Repeat RD3/RD4 benchmarks and visible movement across a chunk boundary,
+  inspect F2/F3 evidence, then move N6 into CHANGELOG.
 
 ## Check Gate
 

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from voxel_sandbox.engine.chunks import CHUNK_HEIGHT
 from voxel_sandbox.render.streaming_schedule import (
     chunk_distance,
+    chunk_visible,
     drain_fifo_keys,
     drain_priority_keys,
     frame_budget,
+    section_visible,
+    streaming_priority,
 )
 
 
@@ -56,3 +60,54 @@ def test_chunk_distance_handles_negative_coordinates_and_boundaries() -> None:
     assert chunk_distance((-3, -5), (-3, -5)) == 0
     assert chunk_distance((-3, -5), (-1, -8)) == 3
     assert chunk_distance((0, 0), (4, -4)) == 4
+
+
+def test_streaming_priority_uses_visibility_only_after_distance() -> None:
+    assert streaming_priority(2, True) < streaming_priority(2, False)
+    assert streaming_priority(1, False) < streaming_priority(2, True)
+    assert streaming_priority(2, None) == streaming_priority(2, True)
+
+
+class _RecordingView:
+    def __init__(self, *, visible: bool) -> None:
+        self.visible = visible
+        self.bounds: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+
+    def intersects(
+        self,
+        minimum: tuple[float, float, float],
+        maximum: tuple[float, float, float],
+    ) -> bool:
+        self.bounds.append((minimum, maximum))
+        return self.visible
+
+
+def test_chunk_and_section_visibility_use_world_aabbs() -> None:
+    view = _RecordingView(visible=True)
+
+    assert chunk_visible(view, (-2, 3)) is True
+    assert section_visible(view, (-2, 4, 3)) is True
+    assert view.bounds == [
+        ((-32.0, 0.0, 48.0), (-16.0, float(CHUNK_HEIGHT), 64.0)),
+        ((-32.0, 64.0, 48.0), (-16.0, 80.0, 64.0)),
+    ]
+
+
+def test_missing_visibility_snapshot_preserves_fallback_priority() -> None:
+    assert chunk_visible(None, (4, 5)) is None
+    assert section_visible(None, (4, 2, 5)) is None
+
+
+def test_priority_drain_prefers_visible_work_at_equal_distance() -> None:
+    queue = {"offscreen": None, "visible": None, "near-offscreen": None}
+    priorities = {
+        "offscreen": streaming_priority(2, False),
+        "visible": streaming_priority(2, True),
+        "near-offscreen": streaming_priority(1, False),
+    }
+
+    assert drain_priority_keys(queue, 2, priorities.__getitem__) == (
+        "near-offscreen",
+        "visible",
+    )
+    assert tuple(queue) == ("offscreen",)

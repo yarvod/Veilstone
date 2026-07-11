@@ -840,6 +840,18 @@
 
 ### Changed
 
+- **Camera-visible streaming queue priority** - `WorldScene` now retains its
+  latest real render frustum as a renderer-owned visibility snapshot. At equal
+  camera distance, visible relight/remesh work drains before off-screen work;
+  nearer work still wins first, FIFO ties remain stable, and pre-first-render
+  `None` preserves the previous deterministic fallback. Pure AABB/order tests
+  plus a world-scene integration test cover the policy. Benchmarks: RD3 p95
+  `11.232 ms` (max `12.533`), RD4 p95 `12.229 ms` (one max spike `23.808`),
+  mesh queue `3` in both. The visible RD4 pass rotated `180°`, refreshed the
+  frustum, walked `10.0` blocks, and reached `81` loaded chunks with `Pending 0`;
+  inspected F2:
+  `saves/stream_visibility_n5/screenshots/veilstone_20260711_041407.png`. Full
+  gates: `830 passed`, focused Pyright `0`, full baseline `389`.
 - **Camera-distance streaming queue priority** - bounded relight and remesh
   queues now drain nearer chunks before farther chunks while preserving FIFO
   insertion order for equal distances and leaving unselected queue order intact.

@@ -74,8 +74,11 @@ from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
 from voxel_sandbox.render.streaming_schedule import (
     chunk_distance,
+    chunk_visible,
     drain_priority_keys,
     frame_budget,
+    section_visible,
+    streaming_priority,
 )
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas, GeneratedMaterialAtlasBundle
 from voxel_sandbox.render.texture_packs.importer import (
@@ -225,6 +228,7 @@ class DemoWorldRenderer:
         self.remote_mode = False
         self._stream_relight_queue: dict[ChunkCoord, None] = {}
         self._stream_remesh_queue: dict[SectionCoord, None] = {}
+        self._streaming_frustum: Frustum | None = None
         if (
             self.shader.program is None
             or self.water_shader.program is None
@@ -508,7 +512,10 @@ class DemoWorldRenderer:
         centers = drain_priority_keys(
             self._stream_relight_queue,
             self.uploads_per_frame,
-            lambda coord: chunk_distance((coord.x, coord.z), (center.x, center.z)),
+            lambda coord: streaming_priority(
+                chunk_distance((coord.x, coord.z), (center.x, center.z)),
+                chunk_visible(self._streaming_frustum, (coord.x, coord.z)),
+            ),
         )
         if centers:
             self._queue_stream_remesh(self._relight_neighborhood(centers))
@@ -523,7 +530,13 @@ class DemoWorldRenderer:
         for key in drain_priority_keys(
             self._stream_remesh_queue,
             self.mesh_uploads_per_frame,
-            lambda section: chunk_distance((section.x, section.z), (center.x, center.z)),
+            lambda section: streaming_priority(
+                chunk_distance((section.x, section.z), (center.x, center.z)),
+                section_visible(
+                    self._streaming_frustum,
+                    (section.x, section.y, section.z),
+                ),
+            ),
         ):
             self._schedule_section(key)
 
@@ -631,6 +644,7 @@ class DemoWorldRenderer:
         self.face_count = 0
         self.triangle_count = 0
         frustum = Frustum(matrix)
+        self._streaming_frustum = frustum
         for key, gpu_mesh in self.mesh_cache.items():
             origin = (key.x * SECTION_SIZE, key.y * SECTION_SIZE, key.z * SECTION_SIZE)
             minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
