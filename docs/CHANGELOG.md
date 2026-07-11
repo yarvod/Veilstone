@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Fresh-launch first-click reliability on macOS** - the native Pyglet view now
+  accepts the first activating mouse click, so menu controls no longer require a
+  second click when the window starts or regains focus. The fix stays at the
+  Cocoa boundary and preserves the existing one-press/one-release widget path.
+  Four independent visible cold launches, split evenly with and without initial
+  pointer motion, each recorded exact action counts `1,1,1,1,1` across
+  Settings/Back, Singleplayer/Cancel, and pause/Resume; Resume recaptured the
+  mouse and first motion changed yaw by `2.8800` degrees.
 - **Stuck movement after pause** - Escape now clears held movement/sprint state
   before entering the pause menu, so a release event lost during the transition
   cannot resume movement later. The visible lifecycle pass measured `0.0000`
@@ -66,6 +74,15 @@
 
 ### Added
 
+- **Visible first-click cold-launch smoke** - `first-click-smoke` opens the real
+  visible `GameWindow`, verifies the native Cocoa first-mouse contract, routes
+  single clicks through main, Settings, world-list, and pause screens, then
+  resumes, rotates the camera, walks through the world, and captures menu plus
+  F2 gameplay evidence. All eight frames from the four M2 acceptance runs were
+  visually inspected under `saves/first_click_smoke_m2_*`; menu layout remained
+  unclipped and gameplay frames showed the loaded world, HUD, crosshair, and no
+  stale pointer/pause overlay. Full gates: import-linter/Ruff/format green,
+  `810 passed`; focused Pyright `0`, full baseline unchanged at `389` errors.
 - **Visible input lifecycle smoke** - `input-lifecycle-smoke` now drives the real
   visible `GameWindow` through walk/release, deliberately missing `W+Shift`
   releases at pause, two single-click Resume cycles, inventory, focus

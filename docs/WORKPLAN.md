@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase M (player input stability) — movement, pause/Resume,
-inventory, and focus key lifecycles now have repeatable visible coverage; next
-work isolates the reported fresh-launch first-click/double-click regression.
+Активная цель: Phase N (practical F3 diagnostics) — player input regressions are
+closed with repeatable visible coverage; the next small slice makes location and
+facing diagnosable directly in the running game.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,23 +29,23 @@ work isolates the reported fresh-launch first-click/double-click regression.
 
 ## Current Phase
 
-### Phase M2: Fresh-Launch First-Click Reliability
+### Phase N1: F3 Facing And Chunk Coordinates
 
-Tracked bug: `BUG-I002`.
+Promoted slice: `DX-B001`.
 
-Цель: ensure the first ordinary mouse click after a fresh visible launch or
-window activation reaches exactly one intended UI action regardless of initial
-pointer movement, without adding double-click workarounds or duplicate dispatch.
+Цель: extend the cached, renderer-agnostic F3 debug snapshot with Minecraft-like
+block coordinates, chunk coordinates, and cardinal facing so world-streaming,
+spawn, and navigation issues can be reported precisely without adding expensive
+filesystem/device reads to the per-frame path.
 
-- [ ] Audit Cocoa/Pyglet activate/deactivate ordering, widget hover/pressed state,
-  and menu mouse press/release dispatch during cold start and focus regain.
-- [ ] Add deterministic regression coverage for the exact lost-first-click or
-  duplicate-dispatch path found; do not add timing/debounce guesses.
-- [ ] Apply the smallest focus/event-routing fix and preserve one action per
-  single click across main, world-list, Settings, and pause menus.
-- [ ] Run repeated visible cold launches with and without initial pointer motion,
-  record first-click action counts, and visually inspect representative menu and
-  in-game F2 frames.
+- [ ] Audit the existing cached HUD/debug snapshot boundary and derive block,
+  chunk, and facing values outside draw-only presentation code.
+- [ ] Add deterministic unit coverage for negative coordinates, chunk boundaries,
+  and cardinal direction transitions.
+- [ ] Render compact F3 lines without growing `GameWindow` ownership or adding
+  per-frame system queries.
+- [ ] Launch the visible game, walk and turn across representative headings,
+  confirm F3 values change correctly, capture through F2, and inspect the frame.
 
 ## Check Gate
 

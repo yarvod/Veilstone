@@ -31,7 +31,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-I002: Fresh game UI can require double clicks
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** input / menu UI / initial mouse focus and event routing
 - **Observed:** on some launches, if the mouse is not moved or focused in the
   expected way, menu buttons and other interactions respond only to a double
@@ -41,9 +41,20 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
   menu action with one click.
 - **Expected:** the first ordinary click activates the intended UI control
   regardless of the initial mouse movement pattern.
-- **Verification required:** repeat cold visible launches and confirm first-click
-  activation with and without initial pointer movement; automated callback tests
-  alone are insufficient.
+- **Fix notes:** on macOS, the Pyglet Cocoa view now implements
+  `acceptsFirstMouse:` before window construction, so the activating click is
+  delivered to the existing press/release widget path instead of being consumed
+  by AppKit. Other platforms are unchanged; no debounce or duplicate dispatch
+  workaround was added.
+- **Verification:** four independent visible cold launches (two without initial
+  pointer motion and two with it) reported `cocoa_accepts_first_mouse=True`,
+  exact Settings/Back/Singleplayer/Cancel/Resume callback counts
+  `1,1,1,1,1`, immediate Resume capture, `2.8800` degrees of first-motion yaw,
+  and nonzero player movement. Metadata and all visually inspected menu/game
+  frames live under `saves/first_click_smoke_m2_no_motion/`,
+  `saves/first_click_smoke_m2_no_motion_2/`,
+  `saves/first_click_smoke_m2_motion_1/`, and
+  `saves/first_click_smoke_m2_motion_2/`.
 
 ### BUG-I003: Resume leaves mouse visible and camera uncaptured
 

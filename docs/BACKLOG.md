@@ -337,13 +337,13 @@ class RenderModelSnapshot:
 
 - **Status:** open
 - **Observed:** F3 does not yet show enough practical debugging information such
-  as FPS, precise coordinates, chunk/block coordinates, memory, biome, facing,
-  render distance, chunk/mesh counts, runtime/device details, and streaming
-  queue depth.
-- **Desired:** F3 should diagnose world streaming, performance, spawn, biome,
+  as memory, biome, render distance, chunk/mesh counts, runtime/device details,
+  and streaming queue depth.
+- **Desired:** the remaining diagnostics should explain performance, biome,
   rendering, and multiplayer issues without expensive per-frame telemetry.
-- **Candidate work:** extend cached HUD debug data with low-frequency sampling
-  and integration tests.
+- **Candidate work:** extend cached HUD debug data with low-frequency memory,
+  biome, device, and streaming sampling plus integration tests. The active
+  facing and block/chunk-coordinate slice has moved to Phase N1 in `WORKPLAN`.
 
 ## Performance
 

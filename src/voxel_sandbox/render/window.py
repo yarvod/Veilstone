@@ -95,6 +95,7 @@ from voxel_sandbox.render.inventory_ui import (
     InventoryView,
     InventoryWindowAdapter,
 )
+from voxel_sandbox.render.macos_input import configure_macos_first_mouse_acceptance
 from voxel_sandbox.render.menu_ui import MenuUI
 from voxel_sandbox.render.network_controller import (
     NetworkController,
@@ -134,6 +135,7 @@ class GameWindow(pyglet.window.Window):
     ) -> None:
         if app_runtime is not None:
             settings = app_runtime.settings
+        configure_macos_first_mouse_acceptance()
         configure_layout_independent_game_keys()
         config = pyglet.gl.Config(
             major_version=3,

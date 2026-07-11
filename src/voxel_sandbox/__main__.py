@@ -108,6 +108,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run visible movement and mouse input lifecycle verification",
     )
     input_lifecycle_smoke.add_argument("--output-dir", default=None)
+    first_click_smoke = subparsers.add_parser(
+        "first-click-smoke",
+        help="Run visible cold-launch first-click verification",
+    )
+    first_click_smoke.add_argument("--initial-motion", action="store_true")
+    first_click_smoke.add_argument("--output-dir", default=None)
     check_update = subparsers.add_parser(
         "check-update",
         help="Check the latest Veilstone GitHub release",

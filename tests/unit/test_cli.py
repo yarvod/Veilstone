@@ -132,6 +132,20 @@ def test_input_lifecycle_smoke_command_accepts_output() -> None:
     assert args.output_dir == "saves/input-lifecycle"
 
 
+def test_first_click_smoke_command_accepts_runtime_options() -> None:
+    args = build_parser().parse_args(
+        [
+            "first-click-smoke",
+            "--initial-motion",
+            "--output-dir",
+            "saves/first-click",
+        ]
+    )
+    assert args.command == "first-click-smoke"
+    assert args.initial_motion is True
+    assert args.output_dir == "saves/first-click"
+
+
 def test_update_commands_are_registered() -> None:
     parser = build_parser()
     assert parser.parse_args(["check-update"]).command == "check-update"
