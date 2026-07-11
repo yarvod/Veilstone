@@ -149,14 +149,6 @@ class BlockBroken:
 - **Acceptance idea:** unit tests can prove hand animation, sound routing, and
   particle intent derive from the same event without constructing `GameWindow`.
 
-### WORLD-B005: Swimming Stroke Audio Polish
-
-- **Status:** open
-- **Observed:** water enter/exit splash events exist, but continuous swimming still lacks a distinct stroke/loop feel and dedicated splash assets.
-- **Desired:** swimming should have a soft Minecraft-like loop/stroke cadence separate from landing or water-entry splashes, routed through gameplay/audio events rather than render-window state.
-- **Architecture direction:** player movement or application presentation emits swim cadence events; audio adapter resolves resource-pack sound locations under `resource_packs/default/assets/<namespace>/sounds/...`.
-- **Candidate work:** add swim cadence state, default resource-pack stroke/splash sounds, event-to-audio routing tests, and a real water movement smoke check.
-
 ## Rendering And Resource Packs
 
 ### R-B001: Default Short Grass Renders Like Green Reinforcement Cubes
@@ -330,20 +322,6 @@ class RenderModelSnapshot:
 - **Candidate work:** define low/balanced/high water quality knobs, add shader
   and mesh smoke scenes near water, keep fluid simulation rules separate from
   render-only wave presentation.
-
-## Diagnostics
-
-### DX-B001: F3 Overlay Lacks Minecraft-Like Diagnostics
-
-- **Status:** open
-- **Observed:** F3 does not yet show enough practical debugging information such
-  as memory, biome, render distance, chunk/mesh counts, runtime/device details,
-  and streaming queue depth.
-- **Desired:** the remaining diagnostics should explain performance, biome,
-  rendering, and multiplayer issues without expensive per-frame telemetry.
-- **Candidate work:** extend cached HUD debug data with low-frequency memory,
-  biome, device, and streaming sampling plus integration tests. The active
-  facing and block/chunk-coordinate slice has moved to Phase N1 in `WORKPLAN`.
 
 ## Performance
 

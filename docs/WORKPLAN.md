@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (practical F3 diagnostics) — player input regressions are
-closed with repeatable visible coverage; the next small slice makes location and
-facing diagnosable directly in the running game.
+Активная цель: Phase N (swimming feedback) — player input regressions are closed
+with repeatable visible coverage; the next small slice gives continuous swimming
+its own soft audio cadence instead of relying only on water enter/exit splashes.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,23 +29,23 @@ facing diagnosable directly in the running game.
 
 ## Current Phase
 
-### Phase N1: F3 Facing And Chunk Coordinates
+### Phase N1: Swimming Stroke Audio Polish
 
-Promoted slice: `DX-B001`.
+Promoted backlog item: `WORLD-B005`.
 
-Цель: extend the cached, renderer-agnostic F3 debug snapshot with Minecraft-like
-block coordinates, chunk coordinates, and cardinal facing so world-streaming,
-spawn, and navigation issues can be reported precisely without adding expensive
-filesystem/device reads to the per-frame path.
+Цель: continuous swimming emits a soft Minecraft-like stroke cadence distinct
+from water enter/exit and landing sounds, through typed gameplay/application
+events and resource-pack audio routing rather than render-only timing state.
 
-- [ ] Audit the existing cached HUD/debug snapshot boundary and derive block,
-  chunk, and facing values outside draw-only presentation code.
-- [ ] Add deterministic unit coverage for negative coordinates, chunk boundaries,
-  and cardinal direction transitions.
-- [ ] Render compact F3 lines without growing `GameWindow` ownership or adding
-  per-frame system queries.
-- [ ] Launch the visible game, walk and turn across representative headings,
-  confirm F3 values change correctly, capture through F2, and inspect the frame.
+- [ ] Reuse renderer-independent swimming/movement cadence state or add the
+  smallest explicit event state needed; do not put cadence timers in
+  `GameWindow`.
+- [ ] Add a typed swim-stroke event and route it through the existing audio event
+  adapter to a default resource-pack sound location.
+- [ ] Add deterministic cadence/no-spam tests for moving, stationary, entering,
+  exiting, and grounded player states.
+- [ ] Run a visible real-water movement pass, listen for distinct repeated soft
+  strokes without enter/exit spam, capture through F2, and inspect the frame.
 
 ## Check Gate
 
