@@ -840,6 +840,17 @@
 
 ### Changed
 
+- **RD4 update-stage profile attribution** - `benchmark-frame-streaming` now has
+  an opt-in `--profile-update` mode that profiles only measured `fixed_update`
+  calls after warmup and prints a stable, bounded, Veilstone-only cumulative/self
+  time table; normal output is unchanged without the flag. Pure formatter/filter
+  coverage and CLI tests passed (`18` focused), full unit passed `842`, focused
+  Pyright passed with `0`, and the full baseline stayed `389`. The unprofiled RD4
+  control remained update-bound in `60/60` frames. The 240-frame RD4 profile was
+  update-bound in `240/240`: `relight_chunks` led at `659.149 ms` cumulative and
+  `_propagate_light` at `554.908 ms` self across `462` calls, well ahead of queue
+  selection (`269.128 ms` cumulative). This selects only lighting propagation
+  scratch-buffer churn for N11 rather than speculative meshing/render changes.
 - **Streaming bottleneck distribution** - the shared public frame classifier now
   drives both F3 and `benchmark-frame-streaming`, whose stable summary reports
   update/render/balanced/idle frame counts without importing Pyglet during pure

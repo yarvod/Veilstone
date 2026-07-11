@@ -172,13 +172,14 @@ class WorldGenerationConfig:
   lag heavily even on an M4 machine with 24 GB RAM, while Minecraft sustains
   higher FPS at much larger render distances. Distance, visibility, and
   collision-critical queue priority are now bounded. N9 measured update-bound
-  frames in `238/240` RD3 samples and `240/240` RD4 samples; deterministic RD4
-  update-path attribution has moved into the active N10 workplan.
+  frames in `238/240` RD3 samples and `240/240` RD4 samples. N10 attributed the
+  dominant update cost to `relight_chunks`/`_propagate_light`; scratch-buffer
+  reuse inside that function has moved into the active N11 workplan.
 - **Desired:** chunk generation, meshing, uploading, and streaming are bounded
   and prioritized enough for smooth play at higher render distances.
-- **Candidate work:** after N10 identifies the dominant update function chain,
-  optimize that one measured hotspot; tune worker counts or evaluate
-  process/thread splits only if attribution shows those choices are relevant.
+- **Candidate work:** after N11, reprofile the same RD4 workload and select the
+  next remaining measured hotspot. Tune worker counts or evaluate process/thread
+  splits only if later attribution shows those choices are relevant.
 
 ### PERF-B002: Frame Budget And Chunk Pipeline Instrumentation
 

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (update attribution) — RD3/RD4 streaming is conclusively
-update-bound, so profile the measured update path before choosing any generation,
-lighting, meshing, upload, or gameplay optimization.
+Активная цель: Phase N (measured lighting optimization) — RD4 update profiling
+attributes the dominant cost to NumPy light propagation, so optimize only its
+temporary-array churn before considering other streaming subsystems.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,23 +29,23 @@ lighting, meshing, upload, or gameplay optimization.
 
 ## Current Phase
 
-### Phase N10: RD4 Update-Stage Profile Attribution
+### Phase N11: Lighting Propagation Scratch-Buffer Reuse
 
-Promoted slice: deterministic RD4 update-path profiling split out of
+Promoted slice: `_propagate_light` temporary-allocation reduction split out of
 `PERF-B001`; this active scope was removed from that backlog entry in the same
 transition.
 
-Цель: attribute the update-bound RD4 benchmark to concrete Veilstone functions
-after warmup, separating generation/lighting/meshing/upload and unrelated
-gameplay work without changing runtime behavior during this measurement phase.
+Цель: reuse bounded NumPy scratch buffers inside the measured lighting hotspot
+without changing skylight/block-light results, early convergence, dirty flags,
+or chunk-boundary propagation behavior.
 
-- [ ] Add or use a reproducible profiler mode that excludes startup/warmup and
-  reports Veilstone-owned cumulative/self time with bounded output.
-- [ ] Profile the same RD4 movement workload, identify the dominant update
-  function chain, and verify the profiler itself does not alter normal benchmark
-  output or architecture boundaries.
-- [ ] Record evidence, select one narrow optimization slice, and move N10 into
-  CHANGELOG; do not optimize several subsystems speculatively.
+- [ ] Preserve exact propagation results across empty, opaque, emissive,
+  cross-chunk, and randomized deterministic fixtures before changing buffers.
+- [ ] Reuse per-call uint8 scratch arrays inside `_propagate_light` while keeping
+  the 15-step bound and convergence semantics explicit.
+- [ ] Compare lighting microbenchmark plus unprofiled RD3/RD4 p95/max, then run a
+  visible lighting/F2 pass and move N11 into CHANGELOG only if parity and runtime
+  evidence both hold.
 
 ## Check Gate
 

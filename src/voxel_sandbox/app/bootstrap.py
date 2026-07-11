@@ -67,6 +67,8 @@ def run_command(args: argparse.Namespace) -> int:
             frames=int(getattr(args, "frames", 240)),
             warmup_frames=int(getattr(args, "warmup_frames", 30)),
             render_distance=getattr(args, "render_distance", None),
+            profile_update=bool(getattr(args, "profile_update", False)),
+            profile_limit=int(getattr(args, "profile_limit", 15)),
         )
     if command == "benchmark-network":
         from voxel_sandbox.tools.benchmark_network import run_benchmark

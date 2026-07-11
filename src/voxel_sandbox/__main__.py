@@ -37,6 +37,12 @@ def build_parser() -> argparse.ArgumentParser:
     frame_streaming.add_argument("--render-distance", type=int, default=None)
     frame_streaming.add_argument("--frames", type=int, default=240)
     frame_streaming.add_argument("--warmup-frames", type=int, default=30)
+    frame_streaming.add_argument(
+        "--profile-update",
+        action="store_true",
+        help="Profile measured fixed-update calls and print bounded Veilstone hotspots",
+    )
+    frame_streaming.add_argument("--profile-limit", type=int, default=15)
     subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
     subparsers.add_parser("benchmark-server", help="Run the multiplayer server tick benchmark")
     subparsers.add_parser("benchmark-shadows", help="Run the medium shadow frame benchmark")
