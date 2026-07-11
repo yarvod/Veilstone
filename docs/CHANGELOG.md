@@ -840,6 +840,15 @@
 
 ### Changed
 
+- **Streaming bottleneck distribution** - the shared public frame classifier now
+  drives both F3 and `benchmark-frame-streaming`, whose stable summary reports
+  update/render/balanced/idle frame counts without importing Pyglet during pure
+  formatting tests. Focused tests passed `7`, full unit passed `840`, focused
+  Pyright passed with `0`, and the full baseline stayed at `389`. RD3 measured
+  p95 `11.164 ms` (max `13.536`) with `update:238`, `render:2`; RD4 measured p95
+  `15.236 ms` (max `19.004`) with `update:240`, `render:0`. RD4 update p95 was
+  `14.485 ms` versus render p95 `0.756 ms`, establishing update-path attribution
+  as the next performance step rather than speculative render work.
 - **Coarse frame bottleneck indicator** - `RuntimePerfTracker` now derives an
   immutable `idle`/`balanced`/`update`/`render` label from the update/render
   timings it already owns, and F3 shows the result on the existing timing line

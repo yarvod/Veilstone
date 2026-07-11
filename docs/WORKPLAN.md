@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (benchmark evidence) — aggregate the new coarse
-update/render classification across deterministic RD3/RD4 streaming runs before
-choosing the next optimization target.
+Активная цель: Phase N (update attribution) — RD3/RD4 streaming is conclusively
+update-bound, so profile the measured update path before choosing any generation,
+lighting, meshing, upload, or gameplay optimization.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,23 @@ choosing the next optimization target.
 
 ## Current Phase
 
-### Phase N9: Streaming Bottleneck Distribution
+### Phase N10: RD4 Update-Stage Profile Attribution
 
-Promoted slice: RD3/RD4 bottleneck-distribution measurement split out of
+Promoted slice: deterministic RD4 update-path profiling split out of
 `PERF-B001`; this active scope was removed from that backlog entry in the same
 transition.
 
-Цель: make `benchmark-frame-streaming` report how many measured frames are
-update-bound, render-bound, balanced, or idle, using the same classification as
-F3 so the next performance phase follows evidence rather than a single frame.
+Цель: attribute the update-bound RD4 benchmark to concrete Veilstone functions
+after warmup, separating generation/lighting/meshing/upload and unrelated
+gameplay work without changing runtime behavior during this measurement phase.
 
-- [ ] Reuse one pure public classification rule in tracker and benchmark paths;
-  do not duplicate thresholds or add renderer/window ownership.
-- [ ] Add deterministic distribution formatting and focused tests independent of
-  Pyglet/OpenGL.
-- [ ] Run RD3/RD4 benchmarks, compare p95/max and distributions, then move N9
-  into CHANGELOG and select the next measured bottleneck slice.
+- [ ] Add or use a reproducible profiler mode that excludes startup/warmup and
+  reports Veilstone-owned cumulative/self time with bounded output.
+- [ ] Profile the same RD4 movement workload, identify the dominant update
+  function chain, and verify the profiler itself does not alter normal benchmark
+  output or architecture boundaries.
+- [ ] Record evidence, select one narrow optimization slice, and move N10 into
+  CHANGELOG; do not optimize several subsystems speculatively.
 
 ## Check Gate
 

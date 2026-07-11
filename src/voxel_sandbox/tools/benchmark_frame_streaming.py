@@ -2,18 +2,28 @@ from __future__ import annotations
 
 import tempfile
 import time
+from collections import Counter
+from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 from statistics import quantiles
 from time import perf_counter
 
 from voxel_sandbox.app.settings import AppSettings
+from voxel_sandbox.render.perf import FrameBottleneck, frame_bottleneck
+
+_BOTTLENECK_ORDER: tuple[FrameBottleneck, ...] = ("update", "render", "balanced", "idle")
 
 
 def _p95(timings: list[float]) -> float:
     if len(timings) < 2:
         return timings[0] if timings else 0.0
     return quantiles(timings, n=20)[18]
+
+
+def format_bottleneck_distribution(samples: Iterable[tuple[float, float]]) -> str:
+    counts = Counter(frame_bottleneck(update_ms, render_ms) for update_ms, render_ms in samples)
+    return "bottlenecks=" + " ".join(f"{label}:{counts[label]}" for label in _BOTTLENECK_ORDER)
 
 
 def run_benchmark(
@@ -66,6 +76,9 @@ def run_benchmark(
                 render_timings.append((end - render_start) * 1000.0)
                 timings.append((end - start) * 1000.0)
                 time.sleep(0.002)
+            bottleneck_summary = format_bottleneck_distribution(
+                zip(update_timings, render_timings, strict=True)
+            )
             print(
                 f"frame streaming {frames} frames warmup={warmup_frames}: "
                 f"avg={sum(timings) / frames:.3f} ms "
@@ -74,6 +87,7 @@ def run_benchmark(
                 f"update_max={max(update_timings):.3f} ms "
                 f"render_p95={_p95(render_timings):.3f} ms "
                 f"render_max={max(render_timings):.3f} ms "
+                f"{bottleneck_summary} "
                 f"chunks={window.world_renderer.loaded_chunks} "
                 f"pending_chunks={window.world_renderer.pending_chunks} "
                 f"mesh_queue={window.world_renderer.pending_meshes}"

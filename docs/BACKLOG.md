@@ -171,13 +171,14 @@ class WorldGenerationConfig:
 - **Observed:** increasing render distance beyond two chunks can make gameplay
   lag heavily even on an M4 machine with 24 GB RAM, while Minecraft sustains
   higher FPS at much larger render distances. Distance, visibility, and
-  collision-critical queue priority are now bounded; RD3/RD4 bottleneck
-  distribution measurement has moved into the active N9 workplan.
+  collision-critical queue priority are now bounded. N9 measured update-bound
+  frames in `238/240` RD3 samples and `240/240` RD4 samples; deterministic RD4
+  update-path attribution has moved into the active N10 workplan.
 - **Desired:** chunk generation, meshing, uploading, and streaming are bounded
   and prioritized enough for smooth play at higher render distances.
-- **Candidate work:** after N9 identifies the dominant coarse stage, profile its
-  generation/meshing/upload internals, then tune worker counts or evaluate
-  process/thread splits only where the measured stage warrants it.
+- **Candidate work:** after N10 identifies the dominant update function chain,
+  optimize that one measured hotspot; tune worker counts or evaluate
+  process/thread splits only if attribution shows those choices are relevant.
 
 ### PERF-B002: Frame Budget And Chunk Pipeline Instrumentation
 

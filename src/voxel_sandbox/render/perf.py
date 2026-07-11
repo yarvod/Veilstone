@@ -47,7 +47,7 @@ class RuntimePerfTracker:
             frame_ms=frame_ms,
             update_ms=self._update_ms,
             render_ms=self._render_ms,
-            bottleneck=_frame_bottleneck(self._update_ms, self._render_ms),
+            bottleneck=frame_bottleneck(self._update_ms, self._render_ms),
             queues=queues,
         )
 
@@ -55,7 +55,7 @@ class RuntimePerfTracker:
         self._frame_ms = self._update_ms + self._render_ms
 
 
-def _frame_bottleneck(update_ms: float, render_ms: float) -> FrameBottleneck:
+def frame_bottleneck(update_ms: float, render_ms: float) -> FrameBottleneck:
     if update_ms <= 0.0 and render_ms <= 0.0:
         return "idle"
     if update_ms == render_ms:
