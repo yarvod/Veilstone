@@ -1,8 +1,37 @@
+# pyright: reportPrivateUsage=false
+
 from __future__ import annotations
+
+import numpy as np
+from numpy.typing import NDArray
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
 from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk, relight_chunks
+from voxel_sandbox.engine.lighting.propagation import _propagate_light
+
+
+def _reference_propagate_light(
+    sources: NDArray[np.uint8],
+    opaque: NDArray[np.bool_],
+) -> NDArray[np.uint8]:
+    light = sources.copy()
+    blocked = opaque & (sources == 0)
+    for _ in range(15):
+        attenuated = np.where(light > 0, light - 1, 0).astype(np.uint8)
+        neighbors = np.zeros_like(light)
+        neighbors[1:, :, :] = np.maximum(neighbors[1:, :, :], attenuated[:-1, :, :])
+        neighbors[:-1, :, :] = np.maximum(neighbors[:-1, :, :], attenuated[1:, :, :])
+        neighbors[:, 1:, :] = np.maximum(neighbors[:, 1:, :], attenuated[:, :-1, :])
+        neighbors[:, :-1, :] = np.maximum(neighbors[:, :-1, :], attenuated[:, 1:, :])
+        neighbors[:, :, 1:] = np.maximum(neighbors[:, :, 1:], attenuated[:, :, :-1])
+        neighbors[:, :, :-1] = np.maximum(neighbors[:, :, :-1], attenuated[:, :, 1:])
+        updated = np.maximum(sources, neighbors)
+        updated[blocked] = 0
+        if np.array_equal(updated, light):
+            break
+        light = updated
+    return light
 
 
 def test_skylight_blocks_opaque_roof_and_spreads_below_it() -> None:
@@ -88,3 +117,30 @@ def test_effective_spawn_light_tracks_daylight_and_block_sources() -> None:
     assert effective_light_level(15, 0, 1.0) == 15
     assert effective_light_level(15, 0, 0.12) == 2
     assert effective_light_level(0, 10, 0.0) == 10
+
+
+def test_light_propagation_empty_volume_matches_reference_without_mutating_inputs() -> None:
+    sources = np.zeros((5, 7, 4), dtype=np.uint8)
+    opaque = np.zeros_like(sources, dtype=np.bool_)
+    source_before = sources.copy()
+    opaque_before = opaque.copy()
+
+    actual = _propagate_light(sources, opaque)
+
+    np.testing.assert_array_equal(actual, _reference_propagate_light(sources, opaque))
+    np.testing.assert_array_equal(sources, source_before)
+    np.testing.assert_array_equal(opaque, opaque_before)
+
+
+def test_light_propagation_randomized_volumes_match_reference() -> None:
+    random = np.random.default_rng(20260711)
+    for _ in range(12):
+        sources = np.zeros((7, 9, 6), dtype=np.uint8)
+        source_mask = random.random(sources.shape) < 0.04
+        sources[source_mask] = random.integers(1, 16, size=np.count_nonzero(source_mask))
+        opaque = random.random(sources.shape) < 0.22
+
+        actual = _propagate_light(sources, opaque)
+        expected = _reference_propagate_light(sources, opaque)
+
+        np.testing.assert_array_equal(actual, expected)

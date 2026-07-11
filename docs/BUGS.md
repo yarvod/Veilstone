@@ -4,6 +4,22 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ## Open
 
+### BUG-R007: Selection highlight shows translucent diagonal bands
+
+- **Status:** open
+- **Affected area:** render / block selection highlight / transparency
+- **Observed:** the selected block face can contain overlapping translucent
+  diagonal/triangular bands instead of one uniform subtle highlight; nearby
+  natural skylight and terrain shadows remain coherent, so this is visually
+  distinct from the fixed broad terrain-shadow artifact in `BUG-R006`.
+- **Reproduction:** enter a visible world, aim at a nearby stone block with the
+  default color-only material profile, and inspect the filled selection overlay.
+  Current F2 evidence:
+  `saves/lighting_scratch_n11/screenshots/veilstone_20260711_045031.png`.
+- **Expected:** the yellow outline remains readable and each selected face has a
+  uniform low-alpha fill without internal diagonal bands or stacked-face
+  overdraw.
+
 ### BUG-I001: Movement keys can remain active after release
 
 - **Status:** fixed

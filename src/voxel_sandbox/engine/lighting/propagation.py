@@ -100,18 +100,22 @@ def _direct_skylight(opaque: NDArray[np.bool_]) -> NDArray[np.uint8]:
 def _propagate_light(sources: NDArray[np.uint8], opaque: NDArray[np.bool_]) -> NDArray[np.uint8]:
     light = sources.copy()
     blocked = opaque & (sources == 0)
+    attenuated = np.empty_like(light)
+    neighbors = np.empty_like(light)
+    updated = np.empty_like(light)
     for _ in range(15):
-        attenuated = np.where(light > 0, light - 1, 0).astype(np.uint8)
-        neighbors = np.zeros_like(light)
-        neighbors[1:, :, :] = np.maximum(neighbors[1:, :, :], attenuated[:-1, :, :])
-        neighbors[:-1, :, :] = np.maximum(neighbors[:-1, :, :], attenuated[1:, :, :])
-        neighbors[:, 1:, :] = np.maximum(neighbors[:, 1:, :], attenuated[:, :-1, :])
-        neighbors[:, :-1, :] = np.maximum(neighbors[:, :-1, :], attenuated[:, 1:, :])
-        neighbors[:, :, 1:] = np.maximum(neighbors[:, :, 1:], attenuated[:, :, :-1])
-        neighbors[:, :, :-1] = np.maximum(neighbors[:, :, :-1], attenuated[:, :, 1:])
-        updated = np.maximum(sources, neighbors)
+        np.maximum(light, 1, out=attenuated)
+        np.subtract(attenuated, 1, out=attenuated)
+        neighbors.fill(0)
+        np.maximum(neighbors[1:, :, :], attenuated[:-1, :, :], out=neighbors[1:, :, :])
+        np.maximum(neighbors[:-1, :, :], attenuated[1:, :, :], out=neighbors[:-1, :, :])
+        np.maximum(neighbors[:, 1:, :], attenuated[:, :-1, :], out=neighbors[:, 1:, :])
+        np.maximum(neighbors[:, :-1, :], attenuated[:, 1:, :], out=neighbors[:, :-1, :])
+        np.maximum(neighbors[:, :, 1:], attenuated[:, :, :-1], out=neighbors[:, :, 1:])
+        np.maximum(neighbors[:, :, :-1], attenuated[:, :, 1:], out=neighbors[:, :, :-1])
+        np.maximum(sources, neighbors, out=updated)
         updated[blocked] = 0
         if np.array_equal(updated, light):
             break
-        light = updated
+        light, updated = updated, light
     return light

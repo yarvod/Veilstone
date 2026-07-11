@@ -840,6 +840,18 @@
 
 ### Changed
 
+- **Lighting propagation scratch-buffer reuse** - the measured NumPy hotspot now
+  reuses per-call attenuated/neighbor/update arrays and in-place ufunc outputs
+  across its bounded 15 propagation steps instead of allocating fresh volumes
+  each iteration. Existing opaque/emissive/removal/cross-chunk behavior plus 12
+  deterministic randomized volumes match the former implementation byte for
+  byte; full unit passed `844`, focused Pyright passed with `0`, and the full
+  baseline stayed `389`. On a 3x3x128 volume, skylight median improved
+  `11.800 -> 10.746 ms` (`-8.9%`); RD3 p95 improved `11.164 -> 9.791 ms`, RD4
+  `15.236 -> 13.270 ms`, and RD4 max `19.004 -> 17.570 ms`. Reprofiling reduced
+  `_propagate_light` self time `554.908 -> 500.645 ms`. A visible RD4/F3 pass
+  loaded `81` chunks with `Pending 0`; skylight/shadows were inspected in F2:
+  `saves/lighting_scratch_n11/screenshots/veilstone_20260711_045031.png`.
 - **RD4 update-stage profile attribution** - `benchmark-frame-streaming` now has
   an opt-in `--profile-update` mode that profiles only measured `fixed_update`
   calls after warmup and prints a stable, bounded, Veilstone-only cumulative/self

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (measured lighting optimization) — RD4 update profiling
-attributes the dominant cost to NumPy light propagation, so optimize only its
-temporary-array churn before considering other streaming subsystems.
+Активная цель: Phase N (measured lighting optimization) — after reducing
+propagation scratch churn, skip the still-measured block-light sweep when a
+relight region contains no emitting source.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,23 +29,22 @@ temporary-array churn before considering other streaming subsystems.
 
 ## Current Phase
 
-### Phase N11: Lighting Propagation Scratch-Buffer Reuse
+### Phase N12: Zero-Source Light Propagation Fast Path
 
-Promoted slice: `_propagate_light` temporary-allocation reduction split out of
+Promoted slice: all-zero `_propagate_light` source fast path split out of
 `PERF-B001`; this active scope was removed from that backlog entry in the same
 transition.
 
-Цель: reuse bounded NumPy scratch buffers inside the measured lighting hotspot
-without changing skylight/block-light results, early convergence, dirty flags,
-or chunk-boundary propagation behavior.
+Цель: return an independent zero light volume before allocating propagation
+scratch arrays when a region has no sky/block emission, without weakening
+emissive, removal, opaque, or cross-chunk behavior.
 
-- [ ] Preserve exact propagation results across empty, opaque, emissive,
-  cross-chunk, and randomized deterministic fixtures before changing buffers.
-- [ ] Reuse per-call uint8 scratch arrays inside `_propagate_light` while keeping
-  the 15-step bound and convergence semantics explicit.
-- [ ] Compare lighting microbenchmark plus unprofiled RD3/RD4 p95/max, then run a
-  visible lighting/F2 pass and move N11 into CHANGELOG only if parity and runtime
-  evidence both hold.
+- [ ] Prove all-zero output, dtype, independent ownership, and no input mutation;
+  preserve existing lantern/removal/cross-chunk tests.
+- [ ] Add the zero-source guard before blocked/scratch allocation and retain the
+  shared propagation path for any nonzero source.
+- [ ] Compare zero-source microbenchmark and unprofiled RD3/RD4, then run a
+  visible emissive/removal F2 pass before moving N12 into CHANGELOG.
 
 ## Check Gate
 

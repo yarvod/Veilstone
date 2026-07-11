@@ -173,11 +173,12 @@ class WorldGenerationConfig:
   higher FPS at much larger render distances. Distance, visibility, and
   collision-critical queue priority are now bounded. N9 measured update-bound
   frames in `238/240` RD3 samples and `240/240` RD4 samples. N10 attributed the
-  dominant update cost to `relight_chunks`/`_propagate_light`; scratch-buffer
-  reuse inside that function has moved into the active N11 workplan.
+  dominant update cost to `relight_chunks`/`_propagate_light`; N11 reduced its
+  scratch churn while preserving exact output. The all-zero source fast path has
+  moved into the active N12 workplan.
 - **Desired:** chunk generation, meshing, uploading, and streaming are bounded
   and prioritized enough for smooth play at higher render distances.
-- **Candidate work:** after N11, reprofile the same RD4 workload and select the
+- **Candidate work:** after N12, reprofile the same RD4 workload and select the
   next remaining measured hotspot. Tune worker counts or evaluate process/thread
   splits only if later attribution shows those choices are relevant.
 
