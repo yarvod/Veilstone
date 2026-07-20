@@ -4,6 +4,19 @@
 
 ### Fixed
 
+- **Continuous biome ridges and clustered highland formations** - registry-
+  driven terrain now blends biome base height and variation from smooth climate
+  weights instead of switching elevation profiles at the discrete surface-biome
+  boundary. Dusk Highlands ore landmarks use sparse deterministic cells with a
+  stepped circular footprint and one crown, including consistent cross-chunk
+  placement. The former flat stone wall is now a readable terraced slope in
+  `saves/terrain_n16/rd12_1800_highlands.png`; nearby formation and visible F2
+  evidence live under `saves/terrain_n16/`. A 1800-frame paced RD12 walk measured
+  p95 `9.403 ms`, p99 `10.422 ms`, max `17.801 ms`, with every queue drained.
+- **Display-less GL capability preflight** - test support now checks for an
+  active Pyglet screen before importing `pyglet.gl`, preventing its implicit
+  shadow window from reaching a Cocoa destructor crash when `screens=0`.
+
 - **Bounded streaming unload persistence** - walking across an RD12 chunk border
   no longer compresses and writes all 25 departing dirty chunks in one update.
   Deferred saves drain one per frame and an unsaved chunk can return directly if

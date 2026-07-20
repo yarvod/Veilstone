@@ -6,7 +6,7 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-R008: Dusk Highlands form abrupt walls and pillar forests
 
-- **Status:** open
+- **Status:** fixed
 - **Affected area:** world generation / biome blending / highland features
 - **Observed:** fresh deterministic benchmark worlds can produce a flat stone
   wall at the Dusk Highlands boundary plus many isolated one-block-wide stone
@@ -23,6 +23,17 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 - **Expected:** biome elevation transitions produce readable ridges/slopes, and
   highland landmarks form sparse coherent clusters instead of a dense field of
   isolated vertical needles.
+- **Fix notes:** registry-driven terrain now blends biome base height and hill
+  variation through continuous temperature/moisture weights. Highlands features
+  are deterministic 16x16-cell candidates with circular stepped bases, bounded
+  density, one ore crown, and identical placement across chunk boundaries.
+- **Verification:** boundary regression coverage sampled at least 100 discrete
+  biome transitions and caps adjacent height delta at two blocks. The inspected
+  1800-frame RD12 scene replaces the former wall with a terraced ridge:
+  `saves/terrain_n16/rd12_1800_highlands.png`; close highland evidence is
+  `saves/terrain_n16/highland_formations.png`. Visible `GameWindow` input/F2
+  acceptance passed at
+  `saves/terrain_n16/visible_game/screenshots/veilstone_20260720_145054.png`.
 
 ### BUG-R007: Selection highlight shows translucent diagonal bands
 

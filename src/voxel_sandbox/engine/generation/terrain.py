@@ -13,7 +13,7 @@ from voxel_sandbox.engine.gameplay_constants import (
     GROUND_COVER_DENSITY_PLAINS,
     GROUND_COVER_DENSITY_SWAMP,
     GROUND_COVER_DENSITY_WOODS,
-    HIGHLANDS_PILLAR_DENSITY,
+    HIGHLANDS_FORMATION_DENSITY,
     ORE_DENSITY,
     TERRAIN_BASE_HEIGHT,
     TERRAIN_DETAIL_SCALE,
@@ -55,6 +55,14 @@ def _smooth(value: float) -> float:
 
 def _lerp(start: float, end: float, amount: float) -> float:
     return start + (end - start) * amount
+
+
+def _smoothstep(lower: float, upper: float, value: float) -> float:
+    if value <= lower:
+        return 0.0
+    if value >= upper:
+        return 1.0
+    return _smooth((value - lower) / (upper - lower))
 
 
 def _hash(seed_value: int, x: int, z: int, channel: int) -> float:
@@ -478,7 +486,10 @@ class _DungeonDecorator:
 
 
 class _HighlandsFeatureDecorator:
-    """Raises stone pillars capped with ore in Dusk Highlands columns."""
+    """Places sparse clustered stone formations with one ore crown."""
+
+    CELL_SIZE = 16
+    MAX_RADIUS = 2
 
     def __init__(self, seed: WorldSeed) -> None:
         self._seed_value = seed.value
@@ -490,22 +501,77 @@ class _HighlandsFeatureDecorator:
         height_provider: HeightProvider,
         touched_sections: set[int],
     ) -> None:
-        seed_value = self._seed_value
         min_x = coord.x * SECTION_SIZE
         min_z = coord.z * SECTION_SIZE
-        for world_x in range(min_x, min_x + SECTION_SIZE):
-            for world_z in range(min_z, min_z + SECTION_SIZE):
-                if height_provider.biome_key_at(world_x, world_z) != Biome.DUSK_HIGHLANDS.value:
+        max_x = min_x + SECTION_SIZE - 1
+        max_z = min_z + SECTION_SIZE - 1
+        for center_x, center_z, radius, peak_height in self._formations_overlapping(
+            min_x,
+            max_x,
+            min_z,
+            max_z,
+            height_provider,
+        ):
+            for dx in range(-radius, radius + 1):
+                for dz in range(-radius, radius + 1):
+                    if dx * dx + dz * dz > radius * radius:
+                        continue
+                    world_x = center_x + dx
+                    world_z = center_z + dz
+                    column_height = max(2, peak_height - 2 * max(abs(dx), abs(dz)))
+                    top_y = height_provider.height_at(world_x, world_z)
+                    for y in range(top_y, top_y + column_height):
+                        _set_if_inside(
+                            chunk,
+                            coord,
+                            world_x,
+                            y,
+                            world_z,
+                            1,
+                            touched_sections,
+                        )
+                    if dx == 0 and dz == 0:
+                        _set_if_inside(
+                            chunk,
+                            coord,
+                            world_x,
+                            top_y + column_height,
+                            world_z,
+                            6,
+                            touched_sections,
+                        )
+
+    def _formations_overlapping(
+        self,
+        min_x: int,
+        max_x: int,
+        min_z: int,
+        max_z: int,
+        height_provider: HeightProvider,
+    ) -> tuple[tuple[int, int, int, int], ...]:
+        cell_size = self.CELL_SIZE
+        radius = self.MAX_RADIUS
+        min_cell_x = (min_x - radius) // cell_size
+        max_cell_x = (max_x + radius) // cell_size
+        min_cell_z = (min_z - radius) // cell_size
+        max_cell_z = (max_z + radius) // cell_size
+        formations: list[tuple[int, int, int, int]] = []
+        for cell_x in range(min_cell_x, max_cell_x + 1):
+            for cell_z in range(min_cell_z, max_cell_z + 1):
+                if _hash(self._seed_value, cell_x, cell_z, 70) >= HIGHLANDS_FORMATION_DENSITY:
                     continue
-                if _hash3(seed_value, world_x, 0, world_z, 70) < HIGHLANDS_PILLAR_DENSITY:
-                    continue
-                top_y = height_provider.height_at(world_x, world_z)
-                pillar_h = 5 + int(_hash3(seed_value, world_x, 1, world_z, 71) * 10)
-                for y in range(top_y, top_y + pillar_h):
-                    _set_if_inside(chunk, coord, world_x, y, world_z, 1, touched_sections)
-                _set_if_inside(
-                    chunk, coord, world_x, top_y + pillar_h, world_z, 6, touched_sections
+                center_x = cell_x * cell_size + int(
+                    _hash(self._seed_value, cell_x, cell_z, 71) * cell_size
                 )
+                center_z = cell_z * cell_size + int(
+                    _hash(self._seed_value, cell_x, cell_z, 72) * cell_size
+                )
+                if height_provider.biome_key_at(center_x, center_z) != Biome.DUSK_HIGHLANDS.value:
+                    continue
+                formation_radius = 1 + int(_hash(self._seed_value, cell_x, cell_z, 73) >= 0.4)
+                peak_height = 7 + int(_hash(self._seed_value, cell_x, cell_z, 74) * 8)
+                formations.append((center_x, center_z, formation_radius, peak_height))
+        return tuple(formations)
 
 
 class _StructureDecorator:
@@ -591,10 +657,46 @@ class TerrainGenerator:
         broad = _value_noise(self.seed.value, world_x / 128.0, world_z / 128.0, 0)
         detail = _value_noise(self.seed.value, world_x / 32.0, world_z / 32.0, 1)
         hill_factor = broad * broad * broad
-        biome_key = self.biome_key_at(world_x, world_z)
-        base_height = self._biome_base_height.get(biome_key, TERRAIN_BASE_HEIGHT)
-        hill_scale = self._biome_hill_scale.get(biome_key, TERRAIN_HILL_SCALE)
-        return base_height + int(hill_factor * hill_scale + detail * TERRAIN_DETAIL_SCALE)
+        if self._biome_base_height:
+            base_height, hill_scale = self._blended_height_profile(world_x, world_z)
+            return round(base_height + hill_factor * hill_scale + detail * TERRAIN_DETAIL_SCALE)
+        return TERRAIN_BASE_HEIGHT + int(
+            hill_factor * TERRAIN_HILL_SCALE + detail * TERRAIN_DETAIL_SCALE
+        )
+
+    def _blended_height_profile(self, world_x: int, world_z: int) -> tuple[float, float]:
+        temperature = _value_noise(self.seed.value, world_x / 96.0, world_z / 96.0, 2)
+        moisture = _value_noise(self.seed.value, world_x / 96.0, world_z / 96.0, 3)
+
+        plains = Biome.TWILIGHT_PLAINS.value
+        woods = Biome.TWILIGHT_WOODS.value
+        swamp = Biome.GLOOM_SWAMP.value
+        highlands = Biome.DUSK_HIGHLANDS.value
+        plains_to_woods = _smoothstep(0.38, 0.54, moisture)
+        woods_to_swamp = _smoothstep(0.60, 0.76, moisture)
+        lowland_base = _lerp(
+            _lerp(
+                self._biome_base_height[plains],
+                self._biome_base_height[woods],
+                plains_to_woods,
+            ),
+            self._biome_base_height[swamp],
+            woods_to_swamp,
+        )
+        lowland_hills = _lerp(
+            _lerp(
+                self._biome_hill_scale[plains],
+                self._biome_hill_scale[woods],
+                plains_to_woods,
+            ),
+            self._biome_hill_scale[swamp],
+            woods_to_swamp,
+        )
+        highland_weight = 1.0 - _smoothstep(0.20, 0.44, temperature)
+        return (
+            _lerp(lowland_base, self._biome_base_height[highlands], highland_weight),
+            _lerp(lowland_hills, self._biome_hill_scale[highlands], highland_weight),
+        )
 
     def biome_key_at(self, world_x: int, world_z: int) -> str:
         temperature = _value_noise(self.seed.value, world_x / 96.0, world_z / 96.0, 2)

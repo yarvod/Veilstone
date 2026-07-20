@@ -22,12 +22,13 @@ def has_shader_capable_gl() -> bool:
     """Return whether Pyglet can create an OpenGL shader in this environment."""
     try:
         import pyglet
-        from pyglet.gl import GL_VERTEX_SHADER, glCreateShader
-        from pyglet.gl.lib import MissingFunctionException
 
         display = pyglet.display.get_display()
         if not display.get_screens():
             return False
+        from pyglet.gl import GL_VERTEX_SHADER, glCreateShader
+        from pyglet.gl.lib import MissingFunctionException
+
         with shader_capable_gl_window():
             try:
                 shader = glCreateShader(GL_VERTEX_SHADER)

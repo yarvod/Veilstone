@@ -99,18 +99,18 @@ class WorldGenerationConfig:
 ### WORLD-B002: Distant Landmarks And Biome Silhouettes
 
 - **Status:** open
-- **Observed:** deterministic highland/plain/swamp silhouettes plus ruin, camp,
-  and spire density coverage exist, but a fresh spawn still does not guarantee
-  a readable nearby horizon landmark or cave-mouth hint.
+- **Observed:** deterministic ruin, camp, and spire density coverage exists, but
+  a fresh spawn still does not guarantee a readable nearby landmark or
+  cave-mouth hint. Biome-ridge continuity and highland formation grouping moved
+  to active Phase N16.
 - **Desired:** from spawn, the player should usually see at least one readable
-  horizon feature: hill ridge, forest edge, swamp basin, tower/pillar, cave
-  mouth, or generated structure hint.
+  structure or cave-mouth hint without requiring a long search.
 - **Architecture direction:** keep base terrain deterministic and testable in
   `engine/generation`; add a feature-placement pass that emits lightweight
   placement records before block mutation. Rendering should only visualize final
   chunks or debug overlays, not decide placement.
 - **Candidate work:** measure landmark visibility from actual safe-spawn camera
-  positions, then add only the missing spawn-aware spacing/selection or
+  positions, then add only the missing spawn-aware structure selection or
   cave-mouth decoration needed by a deterministic visual acceptance scene.
 
 ### WORLD-B003: Minecraft-Like Block Interaction Event Spine

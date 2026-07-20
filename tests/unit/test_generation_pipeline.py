@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from voxel_sandbox.domain.biomes import load_biome_registry_from_toml
+from voxel_sandbox.domain.biomes import BiomeRegistry, load_biome_registry_from_toml
 from voxel_sandbox.domain.blocks import BlockRegistry, load_block_registry_from_toml
 from voxel_sandbox.engine.chunks import ChunkCoord
 from voxel_sandbox.engine.gameplay_constants import (
@@ -12,7 +12,7 @@ from voxel_sandbox.engine.gameplay_constants import (
     GROUND_COVER_DENSITY_PLAINS,
     GROUND_COVER_DENSITY_SWAMP,
     GROUND_COVER_DENSITY_WOODS,
-    HIGHLANDS_PILLAR_DENSITY,
+    HIGHLANDS_FORMATION_DENSITY,
     ORE_DENSITY,
     TREE_DENSITY_DEFAULT,
     TREE_DENSITY_SWAMP,
@@ -29,7 +29,10 @@ from voxel_sandbox.engine.generation import (
     WorldSeed,
     structure_placements_for_chunk,
 )
-from voxel_sandbox.engine.generation.terrain import Biome
+from voxel_sandbox.engine.generation.terrain import (
+    Biome,
+    _HighlandsFeatureDecorator,  # pyright: ignore[reportPrivateUsage]
+)
 
 
 @pytest.fixture()
@@ -143,7 +146,7 @@ def test_generation_feature_block_ids_match_registry(block_registry: BlockRegist
 def test_generation_feature_densities_are_probabilities() -> None:
     for density in (
         DUNGEON_DENSITY,
-        1.0 - HIGHLANDS_PILLAR_DENSITY,
+        HIGHLANDS_FORMATION_DENSITY,
         1.0 - ORE_DENSITY,
         TREE_DENSITY_DEFAULT,
         TREE_DENSITY_SWAMP,
@@ -214,18 +217,87 @@ def test_dungeon_decorator_carves_chamber_and_places_lamps() -> None:
     assert chunk.get_block(6, 12, 6) == 7
 
 
-def test_dusk_highlands_decorator_places_pillar_with_ore_cap() -> None:
+def test_dusk_highlands_decorator_places_clustered_formation_with_one_ore_cap() -> None:
     generator = TerrainGenerator(WorldSeed.parse("b3-generation"))
-    chunk = generator.generate_chunk(ChunkCoord(-20, -12))
+    decorator = _HighlandsFeatureDecorator(generator.seed)
+    formations = decorator._formations_overlapping(  # pyright: ignore[reportPrivateUsage]
+        -512, 511, -512, 511, generator
+    )
+    center_x, center_z, _radius, peak_height = next(
+        formation
+        for formation in formations
+        if formation[2] <= formation[0] % 16 < 16 - formation[2]
+        and formation[2] <= formation[1] % 16 < 16 - formation[2]
+    )
+    coord = ChunkCoord(center_x // 16, center_z // 16)
+    chunk = generator.generate_chunk(coord)
+    local_x = center_x % 16
+    local_z = center_z % 16
+    top_y = generator.height_at(center_x, center_z)
 
-    local_x = 3
-    local_z = 14
-    top_y = generator.height_at(-317, -178)
-    pillar_height = 13
+    assert chunk.get_block(local_x, top_y + peak_height, local_z) == 6
+    assert chunk.get_block(local_x + 1, generator.height_at(center_x + 1, center_z), local_z) == 1
+    ore_above_surface = 0
+    for x in range(16):
+        for z in range(16):
+            surface = generator.height_at(coord.x * 16 + x, coord.z * 16 + z)
+            ore_above_surface += sum(
+                chunk.get_block(x, y, z) == 6 for y in range(surface, surface + 16)
+            )
+    assert ore_above_surface == 1
 
-    for y in range(top_y, top_y + pillar_height):
-        assert chunk.get_block(local_x, y, local_z) == 1
-    assert chunk.get_block(local_x, top_y + pillar_height, local_z) == 6
+
+def test_highland_formation_crosses_chunk_boundary_consistently() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("highland-cross-chunk"))
+    decorator = _HighlandsFeatureDecorator(generator.seed)
+    formation = next(
+        candidate
+        for candidate in decorator._formations_overlapping(  # pyright: ignore[reportPrivateUsage]
+            -512, 511, -512, 511, generator
+        )
+        if candidate[0] % 16 < candidate[2]
+        or candidate[0] % 16 >= 16 - candidate[2]
+        or candidate[1] % 16 < candidate[2]
+        or candidate[1] % 16 >= 16 - candidate[2]
+    )
+    center_x, center_z, radius, _peak_height = formation
+    chunks = {
+        coord: generator.generate_chunk(coord)
+        for coord in {
+            ChunkCoord((center_x + dx) // 16, (center_z + dz) // 16)
+            for dx in range(-radius, radius + 1)
+            for dz in range(-radius, radius + 1)
+            if dx * dx + dz * dz <= radius * radius
+        }
+    }
+
+    touched_chunks: set[ChunkCoord] = set()
+    for dx in range(-radius, radius + 1):
+        for dz in range(-radius, radius + 1):
+            if dx * dx + dz * dz > radius * radius:
+                continue
+            world_x = center_x + dx
+            world_z = center_z + dz
+            coord = ChunkCoord(world_x // 16, world_z // 16)
+            touched_chunks.add(coord)
+            top_y = generator.height_at(world_x, world_z)
+            assert chunks[coord].get_block(world_x % 16, top_y, world_z % 16) == 1
+
+    assert len(touched_chunks) >= 2
+
+
+def test_highland_formation_density_is_sparse_and_deterministic() -> None:
+    generator = TerrainGenerator(WorldSeed.parse("distant-silhouette"))
+    first = _HighlandsFeatureDecorator(generator.seed)._formations_overlapping(  # pyright: ignore[reportPrivateUsage]
+        -512, 511, -512, 511, generator
+    )
+    second = _HighlandsFeatureDecorator(generator.seed)._formations_overlapping(  # pyright: ignore[reportPrivateUsage]
+        -512, 511, -512, 511, generator
+    )
+
+    assert first == second
+    assert 200 <= len(first) <= 450
+    assert all(radius >= 1 for _x, _z, radius, _height in first)
 
 
 def test_twilight_woods_decorator_places_mushrooms_and_fireflies() -> None:
@@ -282,6 +354,26 @@ def test_biome_silhouette_height_spread_stays_readable(block_registry, biome_reg
     assert spreads["dusk_highlands"] >= 18
     assert averages["dusk_highlands"] > averages["twilight_plains"] + 14
     assert averages["twilight_plains"] > averages["gloom_swamp"] + 2
+
+
+def test_biome_boundaries_have_bounded_adjacent_slopes(
+    block_registry: BlockRegistry,
+    biome_registry: BiomeRegistry,
+) -> None:
+    generator = TerrainGenerator(
+        WorldSeed.parse("distant-silhouette"),
+        block_registry=block_registry,
+        biome_registry=biome_registry,
+    )
+    boundary_deltas: list[int] = []
+    for x in range(-256, 257):
+        for z in range(-256, 257, 4):
+            if generator.biome_key_at(x, z) == generator.biome_key_at(x + 1, z):
+                continue
+            boundary_deltas.append(abs(generator.height_at(x, z) - generator.height_at(x + 1, z)))
+
+    assert len(boundary_deltas) >= 100
+    assert max(boundary_deltas) <= 2
 
 
 def test_structure_landmark_density_is_deterministic_across_distance_sample() -> None:
