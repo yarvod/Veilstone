@@ -92,7 +92,11 @@ def _configure_block_texture(
     *,
     linear_minification: bool = True,
 ) -> None:
-    minification_filter = moderngl.LINEAR if linear_minification else moderngl.NEAREST
+    if linear_minification:
+        texture.build_mipmaps(max_level=1)
+        minification_filter = moderngl.LINEAR_MIPMAP_LINEAR
+    else:
+        minification_filter = moderngl.NEAREST
     texture.filter = (minification_filter, moderngl.NEAREST)
     texture.repeat_x = False
     texture.repeat_y = False
@@ -712,6 +716,12 @@ class DemoWorldRenderer:
         cast(
             "moderngl.Uniform", self.shader.program["tile_uv_margin"]
         ).value = self.atlas_tile_margin
+        cast("moderngl.Uniform", self.shader.program["grass_top_rect"]).value = self.atlas_uvs[
+            "minecraft:block/grass_block_top"
+        ]
+        cast("moderngl.Uniform", self.shader.program["terrain_variation_enabled"]).value = int(
+            self.linear_texture_minification
+        )
         cast(
             "moderngl.Uniform", self.shader.program["vegetation_wind_time"]
         ).value = self.animation_time

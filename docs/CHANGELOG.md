@@ -4,6 +4,16 @@
 
 ### Fixed
 
+- **Coherent grass minification and macro color** - balanced/high terrain color
+  and material atlases now use one gutter-safe mip level instead of unbounded
+  atlas mipmaps, while `low_60`, held items, inventory icons, entities, and UI
+  remain nearest sampled. Only `grass_block_top` receives a subtle continuous
+  world-space color variation, breaking identical block phase without UV seams,
+  extra texture fetches, or draw calls. Inspected comparison:
+  `saves/grass_n18/grass_valid_baseline.png` and
+  `saves/grass_n18/grass_macro_one_mip.png`. A steady 1280x720 RD12 `low_60`
+  pass kept all 625 chunks and zero queues at p95 `8.267 ms`, p99 `9.154 ms`,
+  max `9.858 ms`; high/material-preview also compiled and rendered cleanly.
 - **Selection-highlight false positive closed** - the apparent translucent
   diagonal bands in the N11 F2 continue across neighboring terrain and are not
   selection geometry. The highlight has no filled faces: focused coverage now

@@ -31,6 +31,10 @@ class _FakeTexture:
         self.repeat_y = True
         self.released = False
         self.used_units: list[int] = []
+        self.mipmap_levels: list[int] = []
+
+    def build_mipmaps(self, *, max_level: int) -> None:
+        self.mipmap_levels.append(max_level)
 
     def release(self) -> None:
         self.released = True
@@ -106,7 +110,8 @@ def test_material_atlas_textures_create_only_present_roles() -> None:
     assert context.created[0].size == (1, 1)
     assert context.created[0].components == 4
     assert context.created[0].pixels == b"\x80\x80\xff\xff"
-    assert context.created[0].filter == (moderngl.LINEAR, moderngl.NEAREST)
+    assert context.created[0].filter == (moderngl.LINEAR_MIPMAP_LINEAR, moderngl.NEAREST)
+    assert context.created[0].mipmap_levels == [1]
     assert context.created[0].repeat_x is False
     assert context.created[0].repeat_y is False
 
@@ -122,6 +127,7 @@ def test_material_atlas_textures_keep_nearest_minification_for_low_end_profile()
     )
 
     assert context.created[0].filter == (moderngl.NEAREST, moderngl.NEAREST)
+    assert context.created[0].mipmap_levels == []
 
 
 def _normal_binding() -> MaterialAtlasBinding:

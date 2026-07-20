@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (world presentation) — make broad grass surfaces read as
-coherent ground cover at shallow camera angles without sacrificing pixel-sharp
-inventory and held-item rendering.
+Активная цель: Phase N (world presentation) — make imported Minecraft-style
+grass and foliage use the correct cube, overlay, cutout, and crossed-plane model
+semantics instead of distorted sheets.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,22 @@ inventory and held-item rendering.
 
 ## Current Phase
 
-### Phase N18: Coherent Grass Surface Tiling
+### Phase N19: Resource-Pack Grass And Foliage Models
 
-Promoted from `R-B004` after N17 proved `BUG-R007` obsolete.
+Promoted from `R-B002` after N18 completed terrain-only grass sampling.
 
-Цель: reduce harsh per-block repetition across large grass fields while keeping
-resource-pack texture resolution, atlas isolation, and non-terrain item sampling
-unchanged.
+Цель: reproduce a concrete imported-pack distortion, correct only the missing
+resource-location/model metadata or sampling contract, and preserve default-pack
+geometry and chunk frame budgets.
 
-- [ ] Capture a deterministic shallow-angle baseline and attribute visible
-  repetition to texture content, UV phase, biome tint, filtering, or lighting.
-- [ ] Apply the smallest terrain-only improvement; do not blur inventory,
-  held-item, entity, or UI textures and do not add extra chunk draw calls.
-- [ ] Add focused render/mesh coverage and compare RD12 `low_60` frame pacing
-  against the accepted N15 budget.
-- [ ] Run full gates and a visible `GameWindow` F2 pass when macOS exposes an
-  active display; visually inspect the before/after evidence.
+- [ ] Import the existing Minecraft-style fixture/pack and capture the exact
+  distorted grass, leaves, or crossed-plant case before changing model logic.
+- [ ] Trace resource aliases, grass side overlay composition, tint, alpha mode,
+  and render shape from importer through model snapshot and mesh lookup.
+- [ ] Apply the smallest data-driven fix with pack-specific regression coverage;
+  avoid pack-name conditionals and texture-content heuristics.
+- [ ] Run focused/full gates, production GL comparison, and visible F2 acceptance
+  when macOS exposes an active display.
 
 ## Check Gate
 

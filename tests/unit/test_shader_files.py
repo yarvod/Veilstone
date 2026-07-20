@@ -110,6 +110,20 @@ def test_chunk_shader_does_not_flip_cutout_tiles_randomly() -> None:
     assert "tile_uv.y = 1.0 - tile_uv.y" not in fragment
 
 
+def test_chunk_shaders_limit_macro_variation_to_grass_top() -> None:
+    shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
+    fragments = (
+        (shader_root / "chunk_opaque.frag").read_text(encoding="utf-8"),
+        (shader_root / "chunk_material_preview.frag").read_text(encoding="utf-8"),
+    )
+
+    for fragment in fragments:
+        assert "uniform vec4 grass_top_rect;" in fragment
+        assert "uniform int terrain_variation_enabled;" in fragment
+        assert "vertex_atlas_rect - grass_top_rect" in fragment
+        assert "grass_macro_variation(vertex_world_position.xz) * 0.035" in fragment
+
+
 def test_shadow_depth_shader_discards_cutout_alpha() -> None:
     shader_root = Path(__file__).parents[2] / "src/voxel_sandbox/render/shaders/glsl"
     vertex = (shader_root / "shadow_depth.vert").read_text(encoding="utf-8")

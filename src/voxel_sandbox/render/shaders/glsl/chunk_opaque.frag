@@ -13,6 +13,8 @@ uniform int shadows_enabled;
 uniform float shadow_bias;
 uniform float shadow_texel_size;
 uniform float tile_uv_margin;
+uniform vec4 grass_top_rect;
+uniform int terrain_variation_enabled;
 
 in vec2 vertex_uv;
 in float vertex_directional;
@@ -51,6 +53,12 @@ float sample_shadow() {
     return filtered_visibility;
 }
 
+float grass_macro_variation(vec2 world_position) {
+    float primary = dot(world_position, vec2(0.73, 0.51));
+    float secondary = dot(world_position, vec2(-0.37, 0.83));
+    return sin(primary + sin(secondary) * 1.4);
+}
+
 void main() {
     vec2 tile_uv = clamp(
         fract(vertex_uv),
@@ -61,6 +69,10 @@ void main() {
     vec4 base_color = texture(texture_atlas, atlas_uv);
     if (base_color.a < 0.5) {
         discard;
+    }
+    if (terrain_variation_enabled == 1
+            && all(lessThan(abs(vertex_atlas_rect - grass_top_rect), vec4(0.00001)))) {
+        base_color.rgb *= 1.0 + grass_macro_variation(vertex_world_position.xz) * 0.035;
     }
     float sky = vertex_sky_light * daylight;
     float shadow = mix(0.48, 1.0, sample_shadow());

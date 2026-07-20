@@ -33,7 +33,11 @@ def build_material_atlas_textures(
         if atlas is None:
             continue
         texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
-        minification_filter = moderngl.LINEAR if linear_minification else moderngl.NEAREST
+        if linear_minification:
+            texture.build_mipmaps(max_level=1)
+            minification_filter = moderngl.LINEAR_MIPMAP_LINEAR
+        else:
+            minification_filter = moderngl.NEAREST
         texture.filter = (minification_filter, moderngl.NEAREST)
         texture.repeat_x = False
         texture.repeat_y = False

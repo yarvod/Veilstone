@@ -134,21 +134,6 @@ class WorldGenerationConfig:
 
 ## Rendering And Resource Packs
 
-### R-B002: Minecraft Resource-Pack Grass/Foliage Looks Distorted
-
-- **Status:** open
-- **Observed:** applying Minecraft-like resource packs can still make some
-  grass/foliage assets render as distorted curtains or oversized cutout sheets.
-- **Desired:** Minecraft Java-style grass/foliage textures map to equivalent
-  model semantics: grass-block top/side/overlay, crossed-plane plant blocks,
-  cutout leaves, biome tint, and resource-location aliases.
-- **Architecture direction:** keep texture-pack importing resource-location
-  native. Avoid mapping-first shortcuts; map pack assets into a render-material
-  model that chunk meshing can consume.
-- **Candidate work:** verify imported packs visually, add missing aliases/tint
-  metadata or sampling fixes only for a captured concrete failure, and add that
-  pack-specific fixture before changing general atlas/model behavior.
-
 ## Performance
 
 ### PERF-B001: Render Distance Above Two Chunks Too Slow

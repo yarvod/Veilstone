@@ -32,6 +32,10 @@ class _FakeTexture:
         self.filter: tuple[int, int] | None = None
         self.repeat_x = True
         self.repeat_y = True
+        self.mipmap_levels: list[int] = []
+
+    def build_mipmaps(self, *, max_level: int) -> None:
+        self.mipmap_levels.append(max_level)
 
 
 class _MeshWorkerSpy:
@@ -55,7 +59,8 @@ def test_world_texture_smooths_minification_but_keeps_nearest_magnification() ->
 
     _configure_block_texture(cast(Any, texture))
 
-    assert texture.filter == (moderngl.LINEAR, moderngl.NEAREST)
+    assert texture.filter == (moderngl.LINEAR_MIPMAP_LINEAR, moderngl.NEAREST)
+    assert texture.mipmap_levels == [1]
     assert texture.repeat_x is False
     assert texture.repeat_y is False
 
@@ -66,6 +71,7 @@ def test_world_texture_keeps_nearest_sampling_for_low_end_profile() -> None:
     _configure_block_texture(cast(Any, texture), linear_minification=False)
 
     assert texture.filter == (moderngl.NEAREST, moderngl.NEAREST)
+    assert texture.mipmap_levels == []
     assert texture.repeat_x is False
     assert texture.repeat_y is False
 
@@ -83,6 +89,8 @@ def test_world_scene_applies_texture_minification_to_color_and_material_maps() -
     assert renderer.linear_texture_minification is False
     assert renderer.texture.filter == (moderngl.NEAREST, moderngl.NEAREST)
     assert material_texture.filter == (moderngl.NEAREST, moderngl.NEAREST)
+    assert renderer.texture.mipmap_levels == []
+    assert material_texture.mipmap_levels == []
 
 
 def test_fluid_neighborhood_activates_only_loaded_chunks() -> None:

@@ -3,15 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def test_world_block_atlas_uses_pixel_sampling_without_mip_bleed() -> None:
+def test_world_block_atlas_limits_mip_sampling_to_gutter_safe_level() -> None:
     source = (Path(__file__).parents[2] / "src/voxel_sandbox/render/world_scene.py").read_text(
         encoding="utf-8"
     )
 
-    assert "texture.filter = (moderngl.NEAREST, moderngl.NEAREST)" in source
+    assert "texture.build_mipmaps(max_level=1)" in source
+    assert "moderngl.LINEAR_MIPMAP_LINEAR" in source
     assert "texture.repeat_x = False" in source
     assert "texture.repeat_y = False" in source
-    assert ".build_mipmaps()" not in source
+    assert "max_level=2" not in source
 
 
 def test_shadow_depth_mesh_receives_atlas_cutout_attributes() -> None:
