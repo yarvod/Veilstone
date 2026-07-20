@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Imported foliage distortion watch closed** - a Java-style pack fixture now
+  traverses importer, atlas generation, model metadata, and greedy meshing in one
+  regression test. Vertical `short_grass` animation strips resolve to their first
+  square frame and retain four bounded crossed quads; grass remains a cube top
+  and alpha leaves remain a cutout cube. The historical visible foliage capture
+  `saves/screenshots/grass_lighting_veilstone_20260630_055127.png` was rechecked;
+  the previously reported oversized-curtain behavior is not reproducible in the
+  current renderer, so no pack-name or image-content workaround was added.
 - **Coherent grass minification and macro color** - balanced/high terrain color
   and material atlases now use one gutter-safe mip level instead of unbounded
   atlas mipmaps, while `low_60`, held items, inventory icons, entities, and UI

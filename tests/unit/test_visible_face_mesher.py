@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
+from PIL import Image
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import ChunkSection
@@ -11,6 +15,8 @@ from voxel_sandbox.render.meshes import (
 )
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.visible_faces import VERTEX_COMPONENTS, build_quad_indices
+from voxel_sandbox.render.texture_packs.importer import load_active_block_atlas
+from voxel_sandbox.render.texture_packs.models import ImportReport
 from voxel_sandbox.tools.benchmark_mesher import UVS
 
 
@@ -74,6 +80,50 @@ def test_short_grass_uses_cross_quads_instead_of_cube_faces() -> None:
     assert round(float(visible.vertices[:, 1].min()), 2) == 1.0
     assert round(float(visible.vertices[:, 1].max()), 2) == 1.82
     assert np.allclose(visible.vertices[:, 5:8], (0.0, 1.0, 0.0))
+
+
+def test_imported_pack_keeps_grass_and_foliage_model_topology(tmp_path: Path) -> None:
+    pack = tmp_path / "faithful_fixture"
+    block_dir = pack / "assets" / "minecraft" / "textures" / "block"
+    block_dir.mkdir(parents=True)
+    (pack / "pack.mcmeta").write_text(
+        json.dumps({"pack": {"pack_format": 18, "description": "Topology fixture"}}),
+        encoding="utf-8",
+    )
+    Image.new("RGBA", (16, 16), (128, 128, 128, 255)).save(block_dir / "grass_block_top.png")
+    leaves = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
+    leaves.putpixel((0, 0), (0, 0, 0, 0))
+    leaves.save(block_dir / "oak_leaves.png")
+    animated_grass = Image.new("RGBA", (16, 32), (0, 0, 0, 0))
+    for y in range(16):
+        animated_grass.putpixel((8, y), (255, 255, 255, 255))
+    animated_grass.save(block_dir / "short_grass.png")
+
+    registry = create_core_block_registry()
+    reports: list[ImportReport] = []
+    atlas = load_active_block_atlas(pack, registry=registry, report_callback=reports.append)
+    section = lit_section()
+    section.set_block(1, 1, 1, registry.by_key("grass_block").id)
+    section.set_block(4, 1, 1, registry.by_key("oak_leaves").id)
+    section.set_block(7, 1, 1, registry.by_key("short_grass").id)
+
+    mesh = build_greedy_mesh(section, registry, atlas.uvs)
+
+    def vertices_for(resource_id: str) -> np.ndarray:
+        rect = np.asarray(atlas.uvs[resource_id], dtype=np.float32)
+        return mesh.vertices[np.all(np.isclose(mesh.vertices[:, 11:15], rect), axis=1)]
+
+    grass_top = vertices_for("minecraft:block/grass_block_top")
+    leaf_cube = vertices_for("minecraft:block/oak_leaves")
+    crossed_grass = vertices_for("minecraft:block/short_grass")
+    assert reports[0].ignored_animations == ["minecraft:block/short_grass"]
+    assert grass_top.shape[0] == 4
+    assert leaf_cube.shape[0] == 24
+    assert crossed_grass.shape[0] == 16
+    np.testing.assert_allclose(crossed_grass[:, 0].min(), 7.12, atol=0.001)
+    np.testing.assert_allclose(crossed_grass[:, 0].max(), 7.88, atol=0.001)
+    np.testing.assert_allclose(crossed_grass[:, 1].min(), 1.0, atol=0.001)
+    np.testing.assert_allclose(crossed_grass[:, 1].max(), 1.82, atol=0.001)
 
 
 def test_short_grass_samples_light_from_air_above() -> None:

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (world presentation) — make imported Minecraft-style
-grass and foliage use the correct cube, overlay, cutout, and crossed-plane model
-semantics instead of distorted sheets.
+Активная цель: Phase N (performance) — keep RD12 streaming bounded during
+realistic sustained player movement, with stable 60 FPS and no accumulating
+generation, relight, remesh, or upload queues.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,22 +29,24 @@ semantics instead of distorted sheets.
 
 ## Current Phase
 
-### Phase N19: Resource-Pack Grass And Foliage Models
+### Phase N20: Sustained RD12 Movement Streaming
 
-Promoted from `R-B002` after N18 completed terrain-only grass sampling.
+Promoted from the remaining `PERF-B001` scope after N19 proved imported foliage
+topology correct.
 
-Цель: reproduce a concrete imported-pack distortion, correct only the missing
-resource-location/model metadata or sampling contract, and preserve default-pack
-geometry and chunk frame budgets.
+Цель: preserve the accepted stationary RD12 `low_60` frame budget while moving
+at normal gameplay speed, and keep loaded coverage plus all streaming queues
+bounded after warmup. Native Cython greedy/light kernels remain optional fast
+paths with deterministic Python fallbacks.
 
-- [ ] Import the existing Minecraft-style fixture/pack and capture the exact
-  distorted grass, leaves, or crossed-plant case before changing model logic.
-- [ ] Trace resource aliases, grass side overlay composition, tint, alpha mode,
-  and render shape from importer through model snapshot and mesh lookup.
-- [ ] Apply the smallest data-driven fix with pack-specific regression coverage;
-  avoid pack-name conditionals and texture-content heuristics.
-- [ ] Run focused/full gates, production GL comparison, and visible F2 acceptance
-  when macOS exposes an active display.
+- [ ] Measure RD12 at normal walk/sprint rates separately from the existing
+  45-block/s stress path; attribute any queue growth by streaming stage.
+- [ ] Bound or coalesce the dominant stage without weakening collision-critical
+  priority, save correctness, or stationary visibility.
+- [ ] Verify native kernels are actually loaded in the benchmark environment and
+  compare against their Python fallbacks where practical.
+- [ ] Pass 1280x720 RD12 `low_60` at stable 60 FPS with bounded end queues, then
+  run full gates and visible gameplay when macOS exposes an active display.
 
 ## Check Gate
 
