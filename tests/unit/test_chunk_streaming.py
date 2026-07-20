@@ -1,3 +1,5 @@
+# pyright: reportPrivateUsage=false
+
 from __future__ import annotations
 
 import threading
@@ -68,6 +70,31 @@ def test_streamer_reconfigures_render_distance() -> None:
         assert len(batch.unloaded) == 8
         assert streamer.loaded_count == 1
         assert streamer.set_render_distance(0) is False
+    finally:
+        streamer.close()
+
+
+def test_streamer_reuses_desired_coords_until_center_or_distance_changes() -> None:
+    streamer = ChunkStreamer(
+        TerrainGenerator(WorldSeed.parse("desired-cache")),
+        render_distance=1,
+        workers=1,
+    )
+    center = ChunkCoord(0, 0)
+    try:
+        streamer.update(center, max_completed=0, max_submitted=0)
+        first = streamer._desired
+
+        streamer.update(center, max_completed=0, max_submitted=0)
+
+        assert streamer._desired is first
+        streamer.update(ChunkCoord(1, 0), max_completed=0, max_submitted=0)
+        assert streamer._desired is not first
+        second = streamer._desired
+        assert streamer.set_render_distance(2) is True
+        streamer.update(ChunkCoord(1, 0), max_completed=0, max_submitted=0)
+        assert streamer._desired is not second
+        assert len(streamer._desired) == 25
     finally:
         streamer.close()
 

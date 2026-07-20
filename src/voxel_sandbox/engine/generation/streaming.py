@@ -66,6 +66,7 @@ class ChunkStreamer:
         self._pending: dict[ChunkCoord, Future[Chunk]] = {}
         self._deferred_saves: dict[ChunkCoord, Chunk] = {}
         self._desired: set[ChunkCoord] = set()
+        self._desired_center: ChunkCoord | None = None
         self._overrides: dict[tuple[int, int, int], int] = {}
         self._metadata_overrides: dict[tuple[int, int, int], int] = {}
 
@@ -105,6 +106,7 @@ class ChunkStreamer:
         if render_distance == self.render_distance:
             return False
         self.render_distance = render_distance
+        self._desired_center = None
         return True
 
     def install_chunk(self, chunk: Chunk) -> None:
@@ -241,7 +243,9 @@ class ChunkStreamer:
         max_completed: int,
         max_submitted: int | None = None,
     ) -> StreamBatch:
-        self._desired = self._desired_coords(center)
+        if center != self._desired_center:
+            self._desired = self._desired_coords(center)
+            self._desired_center = center
         restored: list[Chunk] = []
         restore_coords = tuple(self._desired & self._deferred_saves.keys())[:max_completed]
         for coord in restore_coords:

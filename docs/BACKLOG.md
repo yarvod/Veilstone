@@ -136,24 +136,6 @@ class WorldGenerationConfig:
 
 ## Performance
 
-### PERF-B002: Frame Budget And Chunk Pipeline Instrumentation
-
-- **Status:** open
-- **Observed:** `RuntimePerfSnapshot` already reports update/render/frame timing
-  and all current bounded streaming queue depths. Benchmark-only
-  streamer/integration/relight/remesh attribution moved into Phase N15; the
-  remaining scope does not yet expose generation, GPU upload, or dirty work in
-  the runtime HUD snapshot.
-- **Desired:** each frame exposes a compact budget summary: simulation time,
-  render time, chunk generation jobs, mesh jobs, upload jobs, queue depth,
-  visible chunks, dirty chunks, and slowest subsystem.
-- **Architecture direction:** collect timings in a small application-facing
-  diagnostics service updated at bounded frequency. Render HUD reads a snapshot;
-  it should not time subsystems by reaching into internals.
-- **Candidate work:** extend the existing runtime snapshot rather than replacing
-  it, sample generation/upload/dirty detail at bounded frequency, and refine the
-  HUD label only where real gameplay evidence needs it.
-
 ### PERF-B004: Hot-Path Native/Cython Acceleration Spike
 
 - **Status:** open

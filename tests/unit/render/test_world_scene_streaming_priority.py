@@ -93,6 +93,19 @@ def test_world_scene_applies_texture_minification_to_color_and_material_maps() -
     assert material_texture.mipmap_levels == []
 
 
+def test_world_scene_terrain_height_uses_floored_world_coordinates() -> None:
+    def height_at(x: int, z: int) -> int:
+        return x * 100 + z
+
+    renderer = object.__new__(DemoWorldRenderer)
+    renderer._generator = cast(
+        Any,
+        SimpleNamespace(height_at=height_at),
+    )
+
+    assert renderer.terrain_height_at(8.9, -2.1) == 797.0
+
+
 def test_fluid_neighborhood_activates_only_loaded_chunks() -> None:
     renderer = object.__new__(DemoWorldRenderer)
     center = Chunk(ChunkCoord(0, 0))

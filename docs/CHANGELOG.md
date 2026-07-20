@@ -4,6 +4,17 @@
 
 ### Fixed
 
+- **Sustained RD12 sprint streaming** - `ChunkStreamer` now reuses its 625-entry
+  desired-coordinate set while the player remains inside one chunk and
+  invalidates it on center or render-distance changes, removing repeated hot-path
+  object allocation without changing priorities. The standalone benchmark now
+  follows production terrain height so movement screenshots no longer fly into
+  hills. Both optional Cython kernels were confirmed loaded. A 600-frame 1280x720
+  RD12 sprint at 8 blocks/s measured p95 `5.932 ms`, p99 `9.363 ms`, max
+  `15.615 ms`; its one-column transition backlog stayed bounded across a separate
+  1800-frame/15-transition run. Inspected surface frame:
+  `saves/stream_n20/rd12_sprint8_surface.png`. Physical two-core and visible
+  window acceptance remain tracked separately.
 - **Imported foliage distortion watch closed** - a Java-style pack fixture now
   traverses importer, atlas generation, model metadata, and greedy meshing in one
   regression test. Vertical `short_grass` animation strips resolve to their first

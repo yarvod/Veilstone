@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from time import perf_counter
@@ -438,6 +439,9 @@ class DemoWorldRenderer:
         self.set_block((x, spawn_y, z), 0)
         self.set_block((x, spawn_y + 1, z), 0)
         return float(x) + 0.5, float(spawn_y), float(z) + 0.5
+
+    def terrain_height_at(self, x: float, z: float) -> float:
+        return float(self._generator.height_at(math.floor(x), math.floor(z)))
 
     def raycast(
         self,

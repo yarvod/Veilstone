@@ -2,9 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (performance) — keep RD12 streaming bounded during
-realistic sustained player movement, with stable 60 FPS and no accumulating
-generation, relight, remesh, or upload queues.
+Активная цель: Phase N (performance diagnostics) — expose generation, GPU upload,
+and dirty-work counters through the existing runtime performance snapshot so F3
+can explain future frame spikes without render-layer introspection.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -29,24 +29,22 @@ generation, relight, remesh, or upload queues.
 
 ## Current Phase
 
-### Phase N20: Sustained RD12 Movement Streaming
+### Phase N21: Runtime Chunk Pipeline Diagnostics
 
-Promoted from the remaining `PERF-B001` scope after N19 proved imported foliage
-topology correct.
+Promoted from `PERF-B002` after N20 established bounded RD12 sprint streaming.
 
-Цель: preserve the accepted stationary RD12 `low_60` frame budget while moving
-at normal gameplay speed, and keep loaded coverage plus all streaming queues
-bounded after warmup. Native Cython greedy/light kernels remain optional fast
-paths with deterministic Python fallbacks.
+Цель: extend `RuntimePerfSnapshot` rather than create a second diagnostics path;
+sample the missing counters at bounded frequency and keep the HUD a passive
+snapshot consumer.
 
-- [ ] Measure RD12 at normal walk/sprint rates separately from the existing
-  45-block/s stress path; attribute any queue growth by streaming stage.
-- [ ] Bound or coalesce the dominant stage without weakening collision-critical
-  priority, save correctness, or stationary visibility.
-- [ ] Verify native kernels are actually loaded in the benchmark environment and
-  compare against their Python fallbacks where practical.
-- [ ] Pass 1280x720 RD12 `low_60` at stable 60 FPS with bounded end queues, then
-  run full gates and visible gameplay when macOS exposes an active display.
+- [ ] Map existing streamer/mesh/cache state into generation jobs, completed GPU
+  uploads, and dirty/deferred-save counts without filesystem reads per frame.
+- [ ] Extend application-facing snapshot contracts and focused tests before
+  changing F3 labels.
+- [ ] Keep HUD sampling bounded and verify diagnostics collection does not regress
+  the accepted RD12 `low_60` frame budget.
+- [ ] Run full gates and visible F3 verification when macOS exposes an active
+  display.
 
 ## Check Gate
 

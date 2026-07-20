@@ -498,6 +498,7 @@ def _run_standalone_benchmark(
                         path=path,
                         movement_speed=movement_speed,
                     )
+                    camera.y = renderer.terrain_height_at(camera.x, camera.z) + 1.62
                     center = ChunkCoord(
                         math.floor(camera.x / SECTION_SIZE),
                         math.floor(camera.z / SECTION_SIZE),
@@ -538,6 +539,7 @@ def _run_standalone_benchmark(
                         path=path,
                         movement_speed=movement_speed,
                     )
+                    camera.y = renderer.terrain_height_at(camera.x, camera.z) + 1.62
                     start = perf_counter()
                     update_start = perf_counter()
                     if update_profile is not None and frame >= warmup_frames:
