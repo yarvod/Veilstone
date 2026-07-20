@@ -149,20 +149,6 @@ class WorldGenerationConfig:
   metadata or sampling fixes only for a captured concrete failure, and add that
   pack-specific fixture before changing general atlas/model behavior.
 
-### R-B004: Grass Block Surface Tiling Still Looks Too Noisy
-
-- **Status:** open
-- **Observed:** grass-block surfaces read as repeated noisy pixels instead of
-  continuous Minecraft-like green ground cover, especially with detailed resource
-  packs at shallow camera angles. Atlas gutters and terrain-only minification
-  filtering were completed in Phase N14.
-- **Desired:** terrain keeps source texture resolution, but large grass fields
-  read as coherent surfaces without visible atlas seams, random tile flips, or
-  harsh per-block discontinuity.
-- **Candidate work:** evaluate biome color smoothing and/or a subtle
-  terrain overlay blend only against captured shallow-angle grass evidence;
-  inventory and held-item textures must remain pixel-sharp.
-
 ## Performance
 
 ### PERF-B001: Render Distance Above Two Chunks Too Slow

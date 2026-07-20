@@ -2,8 +2,9 @@
 
 ## Overview
 
-Активная цель: Phase N (world presentation) — make the selected-block overlay
-uniform and readable without translucent diagonal bands or face overdraw.
+Активная цель: Phase N (world presentation) — make broad grass surfaces read as
+coherent ground cover at shallow camera angles without sacrificing pixel-sharp
+inventory and held-item rendering.
 
 Выполненная история живёт в `docs/CHANGELOG.md`; баги и watchlist — в
 `docs/BUGS.md`; идеи не в работе — в `docs/BACKLOG.md`.
@@ -28,21 +29,22 @@ uniform and readable without translucent diagonal bands or face overdraw.
 
 ## Current Phase
 
-### Phase N17: Uniform Block Selection Overlay
+### Phase N18: Coherent Grass Surface Tiling
 
-Driven by the still-open `BUG-R007`, reproduced again in the visible N16 F2
-capture.
+Promoted from `R-B004` after N17 proved `BUG-R007` obsolete.
 
-Цель: keep the selected block outline readable while rendering every filled face
-as one uniform subtle layer with no internal triangle bands or stacked alpha.
+Цель: reduce harsh per-block repetition across large grass fields while keeping
+resource-pack texture resolution, atlas isolation, and non-terrain item sampling
+unchanged.
 
-- [ ] Attribute the bands to highlight geometry, depth state, or blend state and
-  lock the intended mesh/state contract with focused tests.
-- [ ] Apply the smallest render-side fix without changing raycast/selection
-  authority or ordinary chunk depth behavior.
-- [ ] Run focused/full gates and a real visible `GameWindow` F2 pass from at
-  least two selected-face angles; visually inspect both captures before resolving
-  `BUG-R007`.
+- [ ] Capture a deterministic shallow-angle baseline and attribute visible
+  repetition to texture content, UV phase, biome tint, filtering, or lighting.
+- [ ] Apply the smallest terrain-only improvement; do not blur inventory,
+  held-item, entity, or UI textures and do not add extra chunk draw calls.
+- [ ] Add focused render/mesh coverage and compare RD12 `low_60` frame pacing
+  against the accepted N15 budget.
+- [ ] Run full gates and a visible `GameWindow` F2 pass when macOS exposes an
+  active display; visually inspect the before/after evidence.
 
 ## Check Gate
 

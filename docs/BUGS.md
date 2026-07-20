@@ -37,19 +37,27 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ### BUG-R007: Selection highlight shows translucent diagonal bands
 
-- **Status:** open
+- **Status:** obsolete
 - **Affected area:** render / block selection highlight / transparency
-- **Observed:** the selected block face can contain overlapping translucent
-  diagonal/triangular bands instead of one uniform subtle highlight; nearby
-  natural skylight and terrain shadows remain coherent, so this is visually
-  distinct from the fixed broad terrain-shadow artifact in `BUG-R006`.
+- **Observed:** the N11 capture appeared to contain overlapping translucent
+  diagonal bands inside the selected face, but the same bands continue across
+  neighboring terrain outside the yellow outline.
 - **Reproduction:** enter a visible world, aim at a nearby stone block with the
-  default color-only material profile, and inspect the filled selection overlay.
-  Current F2 evidence:
+  default color-only material profile, and inspect the terrain shadows around the
+  outline. Original F2 evidence:
   `saves/lighting_scratch_n11/screenshots/veilstone_20260711_045031.png`.
-- **Expected:** the yellow outline remains readable and each selected face has a
-  uniform low-alpha fill without internal diagonal bands or stacked-face
-  overdraw.
+- **Resolution:** code inspection and focused regression coverage prove that the
+  highlight consists of 12 unique cube edges rendered with `moderngl.LINES`; it
+  has no face triangles, alpha blend, or filled overlay. No render fix is
+  appropriate because it would change correct behavior to address a
+  misattributed world-shadow artifact.
+- **Verification:** `tests/unit/render/test_block_highlight.py` locks the line-only
+  topology and draw primitive. The original N11 F2 and current visible N16 F2 at
+  `saves/terrain_n16/visible_game/screenshots/veilstone_20260720_145054.png` were
+  visually inspected from different selected-face perspectives; the yellow
+  outline is uniform and current terrain has no selection-local diagonal
+  overdraw. A fresh two-capture visible session was attempted during N17, but
+  macOS reported no active Pyglet screen before window creation.
 
 ### BUG-I001: Movement keys can remain active after release
 

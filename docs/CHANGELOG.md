@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- **Selection-highlight false positive closed** - the apparent translucent
+  diagonal bands in the N11 F2 continue across neighboring terrain and are not
+  selection geometry. The highlight has no filled faces: focused coverage now
+  locks its 12 unique cube edges and `moderngl.LINES` draw primitive. The N11 and
+  current visible N16 F2 captures were rechecked from distinct selected-face
+  perspectives; a fresh visible two-angle session was blocked by macOS exposing
+  no active Pyglet screen.
 - **Continuous biome ridges and clustered highland formations** - registry-
   driven terrain now blends biome base height and variation from smooth climate
   weights instead of switching elevation profiles at the discrete surface-biome
