@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from pathlib import Path
+from time import perf_counter
 from typing import Literal, cast
 
 import moderngl
@@ -69,15 +70,14 @@ from voxel_sandbox.render.meshes import (
 from voxel_sandbox.render.meshes.gpu_cache import GpuSectionMesh, SectionMeshCache
 from voxel_sandbox.render.meshes.neighborhood import HALO_RADIUS, HALO_SIZE
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
-from voxel_sandbox.render.perf import RenderQueueSnapshot
+from voxel_sandbox.render.perf import RenderQueueSnapshot, StreamingStageSample
 from voxel_sandbox.render.shaders.loader import ShaderFiles, ShaderProgram
 from voxel_sandbox.render.shadows import ShadowMap, shadow_map_size, sun_light_matrix
 from voxel_sandbox.render.streaming_schedule import (
     chunk_distance,
     chunk_visible,
-    drain_priority_keys,
+    drain_grouped_priority_keys,
     frame_budget,
-    section_visible,
     streaming_priority,
 )
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas, GeneratedMaterialAtlasBundle
@@ -87,16 +87,38 @@ from voxel_sandbox.render.texture_packs.importer import (
 )
 
 
-def _configure_block_texture(texture: moderngl.Texture) -> None:
-    texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+def _configure_block_texture(
+    texture: moderngl.Texture,
+    *,
+    linear_minification: bool = True,
+) -> None:
+    minification_filter = moderngl.LINEAR if linear_minification else moderngl.NEAREST
+    texture.filter = (minification_filter, moderngl.NEAREST)
     texture.repeat_x = False
     texture.repeat_y = False
 
 
 def _atlas_tile_margin(atlas: GeneratedAtlas) -> float:
+    if atlas.gutter_pixels > 0:
+        return 0.0
     if atlas.tile_size <= 0 or atlas.edge_inset_pixels <= 0.0:
         return 0.0
     return min(0.25, atlas.edge_inset_pixels / atlas.tile_size)
+
+
+def _outside_fog_range(
+    position: tuple[float, float, float],
+    minimum: tuple[float, float, float],
+    maximum: tuple[float, float, float],
+    fog_end: float,
+) -> bool:
+    distance_squared = 0.0
+    for coordinate, lower, upper in zip(position, minimum, maximum, strict=True):
+        if coordinate < lower:
+            distance_squared += (lower - coordinate) ** 2
+        elif coordinate > upper:
+            distance_squared += (coordinate - upper) ** 2
+    return distance_squared > fog_end * fog_end
 
 
 class DemoWorldRenderer:
@@ -125,6 +147,8 @@ class DemoWorldRenderer:
         resource_pack_path: str = "",
         material_quality: str = "color-only",
         water_detail: bool = True,
+        linear_texture_minification: bool = True,
+        opaque_batch_chunks: int = 1,
         world_dependencies: WorldSceneDependencies | None = None,
     ) -> None:
         self.context = context
@@ -157,8 +181,13 @@ class DemoWorldRenderer:
             registry=self._registry,
             cache_root=save_root.parent / "texture_cache",
         )
+        self.linear_texture_minification = linear_texture_minification
+        self.opaque_batch_chunks = opaque_batch_chunks
         self.texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
-        _configure_block_texture(self.texture)
+        _configure_block_texture(
+            self.texture,
+            linear_minification=self.linear_texture_minification,
+        )
         self._atlas = atlas
         self._shader_root = shader_root
         self.atlas_uvs = atlas.uvs
@@ -203,6 +232,7 @@ class DemoWorldRenderer:
                 context,
                 self.material_shader_activation,
                 self.material_bundle,
+                linear_minification=self.linear_texture_minification,
             )
         )
         apply_material_sampler_bindings(self.material_shader_activation)
@@ -225,9 +255,10 @@ class DemoWorldRenderer:
         self.animation_time = 0.0
         self.vegetation_wind_enabled = True
         self._fluid_accumulator = 0.0
+        self._fluid_active_chunks: set[ChunkCoord] = set()
         self.remote_mode = False
         self._stream_relight_queue: dict[ChunkCoord, None] = {}
-        self._stream_remesh_queue: dict[SectionCoord, None] = {}
+        self._stream_remesh_queue: dict[ChunkCoord, None] = {}
         self._streaming_frustum: Frustum | None = None
         if (
             self.shader.program is None
@@ -239,6 +270,8 @@ class DemoWorldRenderer:
             context,
             self.shader.program,
             self.shadow_shader.program if self.shadow_map is not None else None,
+            batch_chunks=self.opaque_batch_chunks,
+            batch_vertical_sections=True,
         )
         self.water_mesh_cache = SectionMeshCache(
             context,
@@ -257,10 +290,14 @@ class DemoWorldRenderer:
         self.highlight = BlockHighlightRenderer(context)
         self.visible_sections = 0
         self.draw_calls = 0
+        self._streaming_stage_profiling = False
+        self.last_streaming_stage_sample = StreamingStageSample()
         self.face_count = 0
         self.triangle_count = 0
         self.selection: RaycastHit | None = None
-        self._upload_chunk_sync(self._streamer.prime(ChunkCoord(0, 0)))
+        initial_chunk = self._streamer.prime(ChunkCoord(0, 0))
+        self._fluid_active_chunks.add(initial_chunk.coord)
+        self._upload_chunk_sync(initial_chunk)
 
     @property
     def daylight(self) -> float:
@@ -417,6 +454,14 @@ class DemoWorldRenderer:
             changed = self._streamer.set_block(*block, block_id)
         if not changed:
             return False
+        self._activate_fluid_neighborhood(
+            (
+                ChunkCoord(
+                    split_world_axis(block[0])[0],
+                    split_world_axis(block[2])[0],
+                ),
+            )
+        )
         self._remesh_around(block, previous_id, block_id)
         return True
 
@@ -429,11 +474,14 @@ class DemoWorldRenderer:
             return
         self._fluid_accumulator %= 0.2
         chunks = self._streamer.loaded_chunks()
-        if not chunks:
+        if not chunks or not self._fluid_active_chunks:
             return
         chunk_by_coord = {c.coord: c for c in chunks}
+        self._fluid_active_chunks.intersection_update(chunk_by_coord)
         dirty_coords: set[ChunkCoord] = set()
-        for chunk in chunks:
+        next_active: set[ChunkCoord] = set()
+        for coord in tuple(self._fluid_active_chunks):
+            chunk = chunk_by_coord[coord]
             cx, cz = chunk.coord.x, chunk.coord.z
             neighbors = {}
             for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
@@ -443,10 +491,13 @@ class DemoWorldRenderer:
             result = simulate_water_step(chunk, neighbors or None)
             if result.changed:
                 dirty_coords.add(chunk.coord)
+                next_active.add(chunk.coord)
             for dx, dz in result.neighbor_keys:
                 nb_coord = ChunkCoord(cx + dx, cz + dz)
                 if nb_coord in chunk_by_coord:
                     dirty_coords.add(nb_coord)
+                    next_active.add(nb_coord)
+        self._fluid_active_chunks = next_active
         if dirty_coords:
             affected_chunks = {
                 coord: chunk_by_coord[coord] for coord in dirty_coords if coord in chunk_by_coord
@@ -474,28 +525,61 @@ class DemoWorldRenderer:
     def set_render_distance(self, render_distance: int) -> bool:
         return self._streamer.set_render_distance(render_distance)
 
+    def enable_streaming_stage_profiling(self, enabled: bool = True) -> None:
+        self._streaming_stage_profiling = enabled
+        self.last_streaming_stage_sample = StreamingStageSample()
+
     def update_streaming(
         self,
         center: ChunkCoord,
         *,
         collision_chunks: frozenset[ChunkCoord] | None = None,
     ) -> None:
+        profiling = self._streaming_stage_profiling
+        streamer_ms = 0.0
+        integration_ms = 0.0
         if not self.remote_mode:
             chunk_budget = frame_budget(self.uploads_per_frame)
+            stage_start = perf_counter() if profiling else 0.0
             batch = self._streamer.update(
                 center,
                 max_completed=chunk_budget,
                 max_submitted=chunk_budget,
             )
-            for coord in batch.unloaded:
-                self._remove_chunk(coord)
+            if profiling:
+                streamer_ms = (perf_counter() - stage_start) * 1000.0
+                stage_start = perf_counter()
+            self._remove_chunks(batch.unloaded)
             for chunk in batch.loaded:
                 self._stream_relight_queue[chunk.coord] = None
             for coord in batch.unloaded:
                 self._stream_relight_queue[coord] = None
             self._queue_loaded_chunk_boundaries(batch.loaded)
-        self._flush_stream_relight_queue(center, collision_chunks=collision_chunks)
-        self._flush_stream_remesh_queue(center, collision_chunks=collision_chunks)
+            self._activate_fluid_neighborhood(chunk.coord for chunk in batch.loaded)
+            if profiling:
+                integration_ms = (perf_counter() - stage_start) * 1000.0
+        stage_start = perf_counter() if profiling else 0.0
+        relight_work = self._flush_stream_relight_queue(
+            center,
+            collision_chunks=collision_chunks,
+        )
+        relight_ms = (perf_counter() - stage_start) * 1000.0 if profiling else 0.0
+        stage_start = perf_counter() if profiling else 0.0
+        remesh_budget = self.mesh_uploads_per_frame
+        if relight_work:
+            remesh_budget = max(1, remesh_budget // 2)
+        self._flush_stream_remesh_queue(
+            center,
+            collision_chunks=collision_chunks,
+            limit=remesh_budget,
+        )
+        if profiling:
+            self.last_streaming_stage_sample = StreamingStageSample(
+                streamer_ms=streamer_ms,
+                integration_ms=integration_ms,
+                relight_ms=relight_ms,
+                remesh_ms=(perf_counter() - stage_start) * 1000.0,
+            )
 
     def _queue_loaded_chunk_boundaries(self, chunks: Iterable[Chunk]) -> None:
         affected_chunks = {chunk.coord: chunk for chunk in chunks}
@@ -508,49 +592,62 @@ class DemoWorldRenderer:
                         affected_chunks[nc] = neighbor
         self._queue_stream_remesh(affected_chunks.values())
 
+    def _activate_fluid_neighborhood(self, coordinates: Iterable[ChunkCoord]) -> None:
+        for coord in coordinates:
+            if self._streamer.get_chunk(coord) is not None:
+                self._fluid_active_chunks.add(coord)
+            for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                neighbor = ChunkCoord(coord.x + dx, coord.z + dz)
+                if self._streamer.get_chunk(neighbor) is not None:
+                    self._fluid_active_chunks.add(neighbor)
+
     def _flush_stream_relight_queue(
         self,
         center: ChunkCoord,
         *,
         collision_chunks: frozenset[ChunkCoord] | None = None,
-    ) -> None:
-        centers = drain_priority_keys(
+    ) -> bool:
+        centers = drain_grouped_priority_keys(
             self._stream_relight_queue,
             self.uploads_per_frame,
+            lambda coord: chunk_distance((coord.x, coord.z), (center.x, center.z)),
             lambda coord: streaming_priority(
-                chunk_distance((coord.x, coord.z), (center.x, center.z)),
+                0,
                 chunk_visible(self._streaming_frustum, (coord.x, coord.z)),
                 None if collision_chunks is None else coord in collision_chunks,
-            ),
+            )[1:],
         )
         if centers:
             self._queue_stream_remesh(self._relight_neighborhood(centers))
+        return bool(centers)
 
     def _queue_stream_remesh(self, chunks: Iterable[Chunk]) -> None:
         for chunk in chunks:
-            for section_y in range(len(chunk.sections)):
-                key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
-                self._stream_remesh_queue[key] = None
+            self._stream_remesh_queue[chunk.coord] = None
 
     def _flush_stream_remesh_queue(
         self,
         center: ChunkCoord,
         *,
         collision_chunks: frozenset[ChunkCoord] | None = None,
+        limit: int | None = None,
     ) -> None:
-        for key in drain_priority_keys(
+        for key in drain_grouped_priority_keys(
             self._stream_remesh_queue,
-            self.mesh_uploads_per_frame,
-            lambda section: streaming_priority(
-                chunk_distance((section.x, section.z), (center.x, center.z)),
-                section_visible(
+            self.mesh_uploads_per_frame if limit is None else limit,
+            lambda coord: chunk_distance((coord.x, coord.z), (center.x, center.z)),
+            lambda coord: streaming_priority(
+                0,
+                chunk_visible(
                     self._streaming_frustum,
-                    (section.x, section.y, section.z),
+                    (coord.x, coord.z),
                 ),
-                None if collision_chunks is None else section.chunk in collision_chunks,
-            ),
+                None if collision_chunks is None else coord in collision_chunks,
+            )[1:],
         ):
-            self._schedule_section(key)
+            chunk = self._streamer.get_chunk(key)
+            if chunk is not None:
+                self._schedule_chunk(chunk)
 
     def render(
         self,
@@ -565,17 +662,15 @@ class DemoWorldRenderer:
             return
         matrix = camera_matrix(camera, max(width, 1) / max(height, 1), fov)
 
+        opaque_updates: dict[SectionCoord, MeshData | None] = {}
+        water_updates: dict[SectionCoord, MeshData | None] = {}
         for completed in self.mesh_worker.poll(self.mesh_uploads_per_frame):
             if self._streamer.get_chunk(completed.key.chunk) is None:
                 continue
-            if completed.mesh.indices.size:
-                self.mesh_cache.upload(completed.key, completed.mesh)
-            else:
-                self.mesh_cache.remove(completed.key)
-            if completed.transparent_mesh.indices.size:
-                self.water_mesh_cache.upload(completed.key, completed.transparent_mesh)
-            else:
-                self.water_mesh_cache.remove(completed.key)
+            opaque_updates[completed.key] = completed.mesh
+            water_updates[completed.key] = completed.transparent_mesh
+        self.mesh_cache.apply(opaque_updates)
+        self.water_mesh_cache.apply(water_updates)
 
         light_matrix = (
             sun_light_matrix(
@@ -657,19 +752,19 @@ class DemoWorldRenderer:
         self.triangle_count = 0
         frustum = Frustum(matrix)
         self._streaming_frustum = frustum
-        for key, gpu_mesh in self.mesh_cache.items():
-            origin = (key.x * SECTION_SIZE, key.y * SECTION_SIZE, key.z * SECTION_SIZE)
-            minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
-            maximum = (
-                float(origin[0] + SECTION_SIZE),
-                float(origin[1] + SECTION_SIZE),
-                float(origin[2] + SECTION_SIZE),
-            )
-            if not frustum.intersects(minimum, maximum):
+        for _key, gpu_mesh in self.mesh_cache.items():
+            if not frustum.intersects(gpu_mesh.minimum, gpu_mesh.maximum):
                 continue
-            origin_uniform.value = origin
+            if self.fog_enabled and _outside_fog_range(
+                camera.position,
+                gpu_mesh.minimum,
+                gpu_mesh.maximum,
+                active_fog_end,
+            ):
+                continue
+            origin_uniform.value = gpu_mesh.origin
             gpu_mesh.vertex_array.render(moderngl.TRIANGLES)
-            self.visible_sections += 1
+            self.visible_sections += gpu_mesh.section_count
             self.draw_calls += 1
             self.face_count += gpu_mesh.data.face_count
             self.triangle_count += gpu_mesh.data.triangle_count
@@ -694,7 +789,10 @@ class DemoWorldRenderer:
         """Hot-swap the block texture atlas and remesh all loaded chunks."""
         old_texture = self.texture
         self.texture = self.context.texture((atlas.width, atlas.height), 4, atlas.pixels)
-        _configure_block_texture(self.texture)
+        _configure_block_texture(
+            self.texture,
+            linear_minification=self.linear_texture_minification,
+        )
         self._atlas = atlas
         old_texture.release()
 
@@ -719,6 +817,8 @@ class DemoWorldRenderer:
             self.context,
             self.shader.program,
             self.shadow_shader.program if self.shadow_map is not None else None,
+            batch_chunks=self.opaque_batch_chunks,
+            batch_vertical_sections=True,
         )
         self.water_mesh_cache = SectionMeshCache(
             self.context,
@@ -727,6 +827,19 @@ class DemoWorldRenderer:
             shoreline_factor=True,
         )
         self._remesh_all()
+
+    def apply_texture_minification(self, linear_minification: bool) -> None:
+        """Apply the active quality profile's sampler choice without remeshing."""
+        self.linear_texture_minification = linear_minification
+        _configure_block_texture(
+            self.texture,
+            linear_minification=linear_minification,
+        )
+        for material_texture in self.material_atlas_textures.values():
+            _configure_block_texture(
+                material_texture.texture,
+                linear_minification=linear_minification,
+            )
 
     def apply_material_quality(self, material_quality: str, resource_pack_path: str = "") -> None:
         """Hot-swap the material quality profile and rebuild the chunk shader path."""
@@ -755,6 +868,7 @@ class DemoWorldRenderer:
             self.context,
             self.material_shader_activation,
             self.material_bundle,
+            linear_minification=self.linear_texture_minification,
         )
         apply_material_sampler_bindings(self.material_shader_activation)
         if self.material_shader_activation is not None:
@@ -771,6 +885,8 @@ class DemoWorldRenderer:
             self.context,
             self.shader.program,
             self.shadow_shader.program if self.shadow_map is not None else None,
+            batch_chunks=self.opaque_batch_chunks,
+            batch_vertical_sections=True,
         )
         self._remesh_all()
 
@@ -800,6 +916,7 @@ class DemoWorldRenderer:
 
     def install_remote_chunk(self, chunk: Chunk) -> None:
         self._streamer.install_chunk(chunk)
+        self._activate_fluid_neighborhood((chunk.coord,))
         affected_chunks = {chunk.coord: chunk}
         for affected in self._relight_neighborhood((chunk.coord,)):
             affected_chunks[affected.coord] = affected
@@ -823,27 +940,36 @@ class DemoWorldRenderer:
         self.remote_mode = True
 
     def _upload_chunk_sync(self, chunk: Chunk) -> None:
+        opaque_updates: dict[SectionCoord, MeshData | None] = {}
+        water_updates: dict[SectionCoord, MeshData | None] = {}
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
-                self.mesh_cache.remove(key)
-                self.water_mesh_cache.remove(key)
+                opaque_updates[key] = None
+                water_updates[key] = None
                 continue
             mesh, water_mesh = self._build_mesh(key, section)
-            if mesh.indices.size:
-                self.mesh_cache.upload(key, mesh)
-            if water_mesh.indices.size:
-                self.water_mesh_cache.upload(key, water_mesh)
+            opaque_updates[key] = mesh
+            water_updates[key] = water_mesh
+        self.mesh_cache.apply(opaque_updates)
+        self.water_mesh_cache.apply(water_updates)
 
-    def _remove_chunk(self, coord: ChunkCoord) -> None:
-        self._stream_relight_queue.pop(coord, None)
-        for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
-            self._stream_remesh_queue.pop(SectionCoord(coord.x, section_y, coord.z), None)
-        self.mesh_worker.invalidate_chunk(coord.x, coord.z)
-        for section_y in range(CHUNK_HEIGHT // SECTION_SIZE):
-            key = SectionCoord(coord.x, section_y, coord.z)
-            self.mesh_cache.remove(key)
-            self.water_mesh_cache.remove(key)
+    def _remove_chunks(self, coords: Iterable[ChunkCoord]) -> None:
+        unloaded = tuple(coords)
+        if not unloaded:
+            return
+        for coord in unloaded:
+            self._fluid_active_chunks.discard(coord)
+            self._stream_relight_queue.pop(coord, None)
+            self._stream_remesh_queue.pop(coord, None)
+            self.mesh_worker.invalidate_chunk(coord.x, coord.z)
+        keys = tuple(
+            SectionCoord(coord.x, section_y, coord.z)
+            for coord in unloaded
+            for section_y in range(CHUNK_HEIGHT // SECTION_SIZE)
+        )
+        self.mesh_cache.remove_many(iter(keys))
+        self.water_mesh_cache.remove_many(iter(keys))
 
     def _remesh_around(self, block: tuple[int, int, int], previous_id: int, new_id: int) -> None:
         x, y, z = block
@@ -911,13 +1037,16 @@ class DemoWorldRenderer:
 
     def _schedule_chunk(self, chunk: Chunk) -> None:
         tasks = {}
+        empty_keys: list[SectionCoord] = []
         for section_y, section in enumerate(chunk.sections):
             key = SectionCoord(chunk.coord.x, section_y, chunk.coord.z)
             if not np.any(section.blocks):
-                self.mesh_cache.remove(key)
-                self.water_mesh_cache.remove(key)
+                empty_keys.append(key)
                 continue
             tasks[key] = self._build_neighborhood(key)
+
+        self.mesh_cache.remove_many(empty_keys)
+        self.water_mesh_cache.remove_many(empty_keys)
 
         if tasks:
             self.mesh_worker.submit_chunk(
@@ -999,16 +1128,18 @@ class DemoWorldRenderer:
         visible: list[tuple[float, SectionCoord, GpuSectionMesh]] = []
         frustum = Frustum(matrix)
         for key, gpu_mesh in self.water_mesh_cache.items():
-            origin = (key.x * SECTION_SIZE, key.y * SECTION_SIZE, key.z * SECTION_SIZE)
-            minimum = (float(origin[0]), float(origin[1]), float(origin[2]))
-            maximum = (
-                float(origin[0] + SECTION_SIZE),
-                float(origin[1] + SECTION_SIZE),
-                float(origin[2] + SECTION_SIZE),
-            )
-            if not frustum.intersects(minimum, maximum):
+            if not frustum.intersects(gpu_mesh.minimum, gpu_mesh.maximum):
                 continue
-            center = tuple(value + SECTION_SIZE * 0.5 for value in origin)
+            if self.fog_enabled and _outside_fog_range(
+                camera.position,
+                gpu_mesh.minimum,
+                gpu_mesh.maximum,
+                fog_end,
+            ):
+                continue
+            center = tuple(
+                (gpu_mesh.minimum[index] + gpu_mesh.maximum[index]) * 0.5 for index in range(3)
+            )
             distance = sum((center[i] - camera.position[i]) ** 2 for i in range(3))
             visible.append((distance, key, gpu_mesh))
 
@@ -1016,12 +1147,8 @@ class DemoWorldRenderer:
         self.context.disable(moderngl.CULL_FACE)
         self.context.depth_mask = False  # pyright: ignore[reportAttributeAccessIssue]
         self.context.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
-        for _distance, key, gpu_mesh in sorted(visible, reverse=True, key=lambda item: item[0]):
-            origin_uniform.value = (
-                key.x * SECTION_SIZE,
-                key.y * SECTION_SIZE,
-                key.z * SECTION_SIZE,
-            )
+        for _distance, _key, gpu_mesh in sorted(visible, reverse=True, key=lambda item: item[0]):
+            origin_uniform.value = gpu_mesh.origin
             gpu_mesh.vertex_array.render(moderngl.TRIANGLES)
             self.draw_calls += 1
             self.face_count += gpu_mesh.data.face_count
@@ -1058,14 +1185,10 @@ class DemoWorldRenderer:
             light_matrix.T.astype("f4").tobytes()
         )
         origin_uniform = cast("moderngl.Uniform", program["section_origin"])
-        for key, gpu_mesh in self.mesh_cache.items():
+        for _key, gpu_mesh in self.mesh_cache.items():
             if gpu_mesh.depth_vertex_array is None:
                 continue
-            origin_uniform.value = (
-                key.x * SECTION_SIZE,
-                key.y * SECTION_SIZE,
-                key.z * SECTION_SIZE,
-            )
+            origin_uniform.value = gpu_mesh.origin
             gpu_mesh.depth_vertex_array.render(moderngl.TRIANGLES)
         if shadow_caster is not None:
             shadow_caster(light_matrix)

@@ -2,11 +2,180 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from types import SimpleNamespace
 from typing import Any, cast
 
-from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
-from voxel_sandbox.render.world_scene import DemoWorldRenderer
+import moderngl
+import pytest
+
+from voxel_sandbox.engine.chunks import (
+    CHUNK_HEIGHT,
+    SECTION_SIZE,
+    Chunk,
+    ChunkCoord,
+    SectionCoord,
+)
+from voxel_sandbox.engine.fluids import FluidUpdate
+from voxel_sandbox.render.material_metadata import MaterialMapRole
+from voxel_sandbox.render.texture_atlas import GeneratedAtlas
+from voxel_sandbox.render.world_scene import (
+    DemoWorldRenderer,
+    _atlas_tile_margin,
+    _configure_block_texture,
+    _outside_fog_range,
+)
+
+
+class _FakeTexture:
+    def __init__(self) -> None:
+        self.filter: tuple[int, int] | None = None
+        self.repeat_x = True
+        self.repeat_y = True
+
+
+class _MeshWorkerSpy:
+    def __init__(self) -> None:
+        self.invalidated: list[tuple[int, int]] = []
+
+    def invalidate_chunk(self, x: int, z: int) -> None:
+        self.invalidated.append((x, z))
+
+
+class _MeshCacheSpy:
+    def __init__(self) -> None:
+        self.removals: list[tuple[SectionCoord, ...]] = []
+
+    def remove_many(self, keys: Iterable[SectionCoord]) -> None:
+        self.removals.append(tuple(keys))
+
+
+def test_world_texture_smooths_minification_but_keeps_nearest_magnification() -> None:
+    texture = _FakeTexture()
+
+    _configure_block_texture(cast(Any, texture))
+
+    assert texture.filter == (moderngl.LINEAR, moderngl.NEAREST)
+    assert texture.repeat_x is False
+    assert texture.repeat_y is False
+
+
+def test_world_texture_keeps_nearest_sampling_for_low_end_profile() -> None:
+    texture = _FakeTexture()
+
+    _configure_block_texture(cast(Any, texture), linear_minification=False)
+
+    assert texture.filter == (moderngl.NEAREST, moderngl.NEAREST)
+    assert texture.repeat_x is False
+    assert texture.repeat_y is False
+
+
+def test_world_scene_applies_texture_minification_to_color_and_material_maps() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    renderer.texture = cast(Any, _FakeTexture())
+    material_texture = _FakeTexture()
+    renderer.material_atlas_textures = {
+        MaterialMapRole.NORMAL: cast(Any, SimpleNamespace(texture=material_texture))
+    }
+
+    renderer.apply_texture_minification(False)
+
+    assert renderer.linear_texture_minification is False
+    assert renderer.texture.filter == (moderngl.NEAREST, moderngl.NEAREST)
+    assert material_texture.filter == (moderngl.NEAREST, moderngl.NEAREST)
+
+
+def test_fluid_neighborhood_activates_only_loaded_chunks() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    center = Chunk(ChunkCoord(0, 0))
+    east = Chunk(ChunkCoord(1, 0))
+    chunks = {center.coord: center, east.coord: east}
+    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    renderer._fluid_active_chunks = set()
+
+    renderer._activate_fluid_neighborhood((center.coord,))
+
+    assert renderer._fluid_active_chunks == {center.coord, east.coord}
+
+
+def test_chunk_removal_coalesces_cache_updates_for_streaming_batch() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    first = ChunkCoord(0, 0)
+    second = ChunkCoord(1, 0)
+    renderer._fluid_active_chunks = {first, second}
+    renderer._stream_relight_queue = {first: None, second: None}
+    renderer._stream_remesh_queue = {first: None, second: None}
+    worker = _MeshWorkerSpy()
+    opaque_cache = _MeshCacheSpy()
+    water_cache = _MeshCacheSpy()
+    renderer.mesh_worker = cast(Any, worker)
+    renderer.mesh_cache = cast(Any, opaque_cache)
+    renderer.water_mesh_cache = cast(Any, water_cache)
+
+    renderer._remove_chunks((first, second))
+
+    expected_key_count = 2 * CHUNK_HEIGHT // SECTION_SIZE
+    assert worker.invalidated == [(0, 0), (1, 0)]
+    assert renderer._fluid_active_chunks == set()
+    assert renderer._stream_relight_queue == {}
+    assert renderer._stream_remesh_queue == {}
+    assert len(opaque_cache.removals) == 1
+    assert len(water_cache.removals) == 1
+    assert len(opaque_cache.removals[0]) == expected_key_count
+    assert opaque_cache.removals == water_cache.removals
+
+
+def test_fluid_update_scans_only_active_chunks_and_retires_stable_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    active = Chunk(ChunkCoord(0, 0))
+    idle = Chunk(ChunkCoord(1, 0))
+    renderer.day_cycle_seconds = 0.0
+    renderer.animation_time = 0.0
+    renderer._fluid_accumulator = 0.0
+    renderer._fluid_active_chunks = {active.coord}
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(loaded_chunks=lambda: (active, idle)),
+    )
+    scanned: list[ChunkCoord] = []
+
+    def stable_step(chunk: Chunk, _neighbors: object) -> FluidUpdate:
+        scanned.append(chunk.coord)
+        return FluidUpdate(0)
+
+    monkeypatch.setattr(
+        "voxel_sandbox.render.world_scene.simulate_water_step",
+        stable_step,
+    )
+
+    renderer.update(0.2)
+
+    assert scanned == [active.coord]
+    assert renderer._fluid_active_chunks == set()
+
+
+def test_gutter_atlas_keeps_full_tile_uv_range() -> None:
+    atlas = GeneratedAtlas(
+        width=18,
+        height=18,
+        pixels=b"",
+        uvs={},
+        tile_size=16,
+        edge_inset_pixels=0.5,
+        gutter_pixels=1,
+    )
+
+    assert _atlas_tile_margin(atlas) == 0.0
+
+
+def test_fog_range_culls_only_batches_entirely_beyond_fog_end() -> None:
+    camera = (0.0, 8.0, 0.0)
+
+    assert not _outside_fog_range(camera, (48.0, 0.0, 0.0), (64.0, 16.0, 16.0), 56.0)
+    assert _outside_fog_range(camera, (64.0, 0.0, 0.0), (80.0, 16.0, 16.0), 56.0)
+    assert not _outside_fog_range(camera, (-8.0, 0.0, -8.0), (8.0, 16.0, 8.0), 0.0)
 
 
 class _EastFacingView:
@@ -18,15 +187,17 @@ class _EastFacingView:
         return minimum[0] >= 0.0
 
 
-def test_world_scene_remesh_queue_prefers_visible_section_at_equal_distance() -> None:
+def test_world_scene_remesh_queue_prefers_visible_chunk_at_equal_distance() -> None:
     renderer = object.__new__(DemoWorldRenderer)
-    offscreen = SectionCoord(-1, 0, 0)
-    visible = SectionCoord(1, 0, 0)
+    offscreen = ChunkCoord(-1, 0)
+    visible = ChunkCoord(1, 0)
     renderer._stream_remesh_queue = {offscreen: None, visible: None}
     renderer._streaming_frustum = cast(Any, _EastFacingView())
     renderer.mesh_uploads_per_frame = 1
-    scheduled: list[SectionCoord] = []
-    renderer._schedule_section = scheduled.append  # type: ignore[method-assign]
+    chunks = {offscreen: Chunk(offscreen), visible: Chunk(visible)}
+    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    scheduled: list[ChunkCoord] = []
+    renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
 
     renderer._flush_stream_remesh_queue(ChunkCoord(0, 0))
 
@@ -34,23 +205,43 @@ def test_world_scene_remesh_queue_prefers_visible_section_at_equal_distance() ->
     assert tuple(renderer._stream_remesh_queue) == (offscreen,)
 
 
-def test_world_scene_remesh_queue_prefers_collision_section_over_visibility() -> None:
+def test_world_scene_remesh_queue_prefers_collision_chunk_over_visibility() -> None:
     renderer = object.__new__(DemoWorldRenderer)
-    critical_offscreen = SectionCoord(-1, 0, 0)
-    visible = SectionCoord(1, 0, 0)
+    critical_offscreen = ChunkCoord(-1, 0)
+    visible = ChunkCoord(1, 0)
     renderer._stream_remesh_queue = {visible: None, critical_offscreen: None}
     renderer._streaming_frustum = cast(Any, _EastFacingView())
     renderer.mesh_uploads_per_frame = 1
-    scheduled: list[SectionCoord] = []
-    renderer._schedule_section = scheduled.append  # type: ignore[method-assign]
+    chunks = {critical_offscreen: Chunk(critical_offscreen), visible: Chunk(visible)}
+    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    scheduled: list[ChunkCoord] = []
+    renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
 
     renderer._flush_stream_remesh_queue(
         ChunkCoord(0, 0),
-        collision_chunks=frozenset({critical_offscreen.chunk}),
+        collision_chunks=frozenset({critical_offscreen}),
     )
 
     assert scheduled == [critical_offscreen]
     assert tuple(renderer._stream_remesh_queue) == (visible,)
+
+
+def test_world_scene_remesh_queue_honors_shared_frame_limit() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    first = ChunkCoord(0, 0)
+    second = ChunkCoord(1, 0)
+    renderer._stream_remesh_queue = {first: None, second: None}
+    renderer._streaming_frustum = None
+    renderer.mesh_uploads_per_frame = 2
+    chunks = {first: Chunk(first), second: Chunk(second)}
+    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    scheduled: list[ChunkCoord] = []
+    renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
+
+    renderer._flush_stream_remesh_queue(ChunkCoord(0, 0), limit=1)
+
+    assert len(scheduled) == 1
+    assert len(renderer._stream_remesh_queue) == 1
 
 
 def test_world_scene_perf_queues_exposes_pending_relight_work() -> None:
@@ -58,7 +249,7 @@ def test_world_scene_perf_queues_exposes_pending_relight_work() -> None:
     renderer._streamer = SimpleNamespace(loaded_count=7, pending_count=2)
     renderer.mesh_worker = SimpleNamespace(pending_count=3)
     renderer._stream_relight_queue = {ChunkCoord(0, 0): None, ChunkCoord(1, 0): None}
-    renderer._stream_remesh_queue = {SectionCoord(0, 0, 0): None}
+    renderer._stream_remesh_queue = {ChunkCoord(0, 0): None}
     renderer.visible_sections = 9
 
     queues = renderer.perf_queues()

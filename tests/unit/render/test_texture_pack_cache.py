@@ -25,6 +25,7 @@ def test_texture_pack_cache_roundtrip(tmp_path: Path) -> None:
         {"minecraft:block/stone": (0.1, 0.2, 0.3, 0.4)},
         tile_size=16,
         edge_inset_pixels=0.5,
+        gutter_pixels=1,
         material_manifest=MaterialAtlasManifest(
             (
                 RenderMaterialMetadata(
@@ -77,7 +78,7 @@ def test_texture_pack_cache_invalidates_old_schema(tmp_path: Path) -> None:
     assert load_cached_atlas(cache_root, pack) is None
 
 
-def test_texture_pack_cache_invalidates_v4_materialless_schema(tmp_path: Path) -> None:
+def test_texture_pack_cache_invalidates_v5_gutterless_schema(tmp_path: Path) -> None:
     pack = tmp_path / "Pack.zip"
     pack.write_bytes(b"pack")
     cache_root = tmp_path / "cache"
@@ -86,7 +87,7 @@ def test_texture_pack_cache_invalidates_v4_materialless_schema(tmp_path: Path) -
     save_cached_atlas(cache_root, pack, atlas)
     metadata_path = next(cache_root.rglob("atlas.json"))
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    metadata["cache_version"] = 4
+    metadata["cache_version"] = 5
     metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
 
     assert load_cached_atlas(cache_root, pack) is None

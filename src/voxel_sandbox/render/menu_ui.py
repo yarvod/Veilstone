@@ -938,13 +938,14 @@ class MenuUI:
             profile.material_quality,
             win.settings.graphics.resource_pack_path,
         )
+        win.world_renderer.apply_texture_minification(profile.linear_texture_minification)
         win.world_renderer.fog_enabled = profile.fog
         win.world_renderer.vegetation_wind_enabled = profile.vegetation_wind
         win.world_renderer.water_detail_enabled = profile.water_detail
         win.sky_renderer.clouds = profile.clouds
         save_user_settings(win.settings)
         win.menu.status = (
-            f"Quality preset {next_preset} saved; live material/fog/clouds/wind/water "
+            f"Quality preset {next_preset} saved; live material/texture/fog/clouds/wind/water "
             "applied; shadows/smooth/AO/render distance apply restart."
         )
 

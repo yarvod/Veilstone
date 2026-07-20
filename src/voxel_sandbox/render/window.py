@@ -922,6 +922,8 @@ class GameWindow(pyglet.window.Window):
             resource_pack_path=settings.graphics.resource_pack_path,
             material_quality=quality.material_quality,
             water_detail=quality.water_detail,
+            linear_texture_minification=quality.linear_texture_minification,
+            opaque_batch_chunks=quality.opaque_batch_chunks,
             world_dependencies=world_dependencies,
         )
         renderer.vegetation_wind_enabled = quality.vegetation_wind

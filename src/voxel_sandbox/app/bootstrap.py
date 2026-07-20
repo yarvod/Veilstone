@@ -67,8 +67,19 @@ def run_command(args: argparse.Namespace) -> int:
             frames=int(getattr(args, "frames", 240)),
             warmup_frames=int(getattr(args, "warmup_frames", 30)),
             render_distance=getattr(args, "render_distance", None),
+            quality_preset=getattr(args, "quality_preset", None),
+            width=int(getattr(args, "width", 320)),
+            height=int(getattr(args, "height", 180)),
+            generation_workers=getattr(args, "generation_workers", None),
+            meshing_workers=getattr(args, "meshing_workers", None),
+            path=str(getattr(args, "path", "stress")),
+            movement_speed=float(getattr(args, "movement_speed", 45.0)),
+            startup_timeout=float(getattr(args, "startup_timeout", 10.0)),
+            startup_mode=str(getattr(args, "startup_mode", "visible")),
+            backend=str(getattr(args, "backend", "window")),
             profile_update=bool(getattr(args, "profile_update", False)),
             profile_limit=int(getattr(args, "profile_limit", 15)),
+            screenshot_output=getattr(args, "screenshot_output", None),
         )
     if command == "benchmark-network":
         from voxel_sandbox.tools.benchmark_network import run_benchmark

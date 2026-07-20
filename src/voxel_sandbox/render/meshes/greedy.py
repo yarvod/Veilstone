@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.chunks import SECTION_SIZE, ChunkSection
+from voxel_sandbox.engine.perf.greedy_rectangles import greedy_rectangles
 from voxel_sandbox.render.meshes.block_visuals import build_block_mesh_visual_lookups
 from voxel_sandbox.render.meshes.data import MeshData
 from voxel_sandbox.render.meshes.neighborhood import (
@@ -95,7 +96,7 @@ def build_greedy_mesh(
             signature_mask[v_values, u_values] = signatures[selected]
             face_mask[v_values, u_values] = selected
 
-            for u, v, width, height, face_index in _greedy_rectangles(signature_mask, face_mask):
+            for u, v, width, height, face_index in greedy_rectangles(signature_mask, face_mask):
                 coordinate = np.zeros(3, dtype=np.float32)
                 coordinate[normal_axis] = slice_index
                 coordinate[u_axis] = u
@@ -142,30 +143,3 @@ def build_greedy_mesh(
             np.empty(0, dtype=np.uint32),
         )
     return MeshData(np.concatenate(vertex_batches), np.concatenate(index_batches))
-
-
-def _greedy_rectangles(
-    signatures: NDArray[np.int32],
-    faces: NDArray[np.int32],
-) -> list[tuple[int, int, int, int, int]]:
-    rectangles: list[tuple[int, int, int, int, int]] = []
-    for v in range(SECTION_SIZE):
-        u = 0
-        while u < SECTION_SIZE:
-            signature = int(signatures[v, u])
-            if signature < 0:
-                u += 1
-                continue
-            width = 1
-            while u + width < SECTION_SIZE and int(signatures[v, u + width]) == signature:
-                width += 1
-            height = 1
-            while v + height < SECTION_SIZE and np.all(
-                signatures[v + height, u : u + width] == signature
-            ):
-                height += 1
-            face_index = int(faces[v, u])
-            signatures[v : v + height, u : u + width] = -1
-            rectangles.append((u, v, width, height, face_index))
-            u += width
-    return rectangles

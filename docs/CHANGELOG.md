@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- **Bounded streaming unload persistence** - walking across an RD12 chunk border
+  no longer compresses and writes all 25 departing dirty chunks in one update.
+  Deferred saves drain one per frame and an unsaved chunk can return directly if
+  the player reverses direction; restart persistence remains covered.
+
 - **Order-independent Pyglet UI renderer tests** - UI widget tests now keep an
   explicitly owned hidden GL context alive for their module lifetime, so an
   earlier test disabling the Pyglet shadow window can no longer leave
@@ -80,6 +85,45 @@
 
 ### Added
 
+- **RD12 low-end rendering pipeline** - the production-world standalone CGL
+  benchmark can now wait for all 625 radius-12 chunks, profile update work,
+  split render submission from GPU wait, report stage timing/draw calls, pace
+  asynchronous workers at real 60 Hz, and capture a final PNG. Streaming work
+  is frame-coalesced and budgeted; mesh replacements retain only the latest
+  request; background generation/meshing processes yield OS priority to the
+  frame owner. Fog-range AABB culling plus per-chunk vertical GPU batches reduced
+  a fully loaded 600-frame 1280x720 `low_60` walk on Apple M4 to p95 `6.235 ms`,
+  p99 `9.411 ms`, max `15.918 ms`, with `26` final draw calls and every queue
+  drained. Inspected production-CGL frame:
+  `saves/perf_rd12_n15/rd12_low60_acceptance_nice.png`. Physical two-core and
+  visible UI acceptance remain open.
+- **Optional native performance kernels** - Hatch/Cython now builds packaged
+  greedy-rectangle and sparse-light extension modules with typed array APIs,
+  `.pyi` contracts, and deterministic Python fallbacks. Full section meshing
+  improved about 11%, sparse light propagation about 5.1x; dense skylight is
+  intentionally dispatched to faster NumPy. A clean wheel install loads both
+  extension modules. Final gates: import contracts/Ruff/format green, `877
+  passed, 38 skipped`, focused Pyright `0`, full known-red baseline `389`.
+- **Terrain atlas sampling polish** - color and material atlases now extrude
+  one-pixel gutters with cache-versioned UVs. Balanced and higher world terrain
+  uses linear minification plus nearest magnification, while `low_60`, held
+  items, and CPU inventory icons remain pixel-sharp. Standalone production
+  shader comparison showed no adjacent-tile bleed; visible F2 acceptance is
+  still blocked while Cocoa reports no active screen.
+
+- **Low-end frame benchmark contract** - `benchmark-frame-streaming` now accepts
+  explicit framebuffer size, quality preset, worker allocation, movement path,
+  speed, and startup timeout; it waits for loaded visible geometry before
+  timing and reports p50/p95/p99, resolved effects, bottleneck distribution,
+  and queue start/max/end so an empty frame or growing backlog cannot pass.
+  The realistic 1280x720 walk with one generation and one meshing worker loaded
+  `25` chunks/`43` visible sections: p95 was `4.052 ms` for `low_60`, `4.139 ms`
+  for `balanced`, and `4.220 ms` for `high` on the M4 host. A 15-second
+  `low_60` run measured p95 `4.859 ms`, p99 `8.047 ms`, max `17.556 ms`, with
+  mesh queue `0 -> 60 -> 0`. The visible W/F3/F2 pass moved `15.0` blocks and
+  finished with every streaming/mesh queue at zero; inspected frame:
+  `saves/low_60_n13_final/screenshots/veilstone_20260720_101305.png`. Physical
+  two-core acceptance remains tracked separately in `PERF-B007`.
 - **Swimming stroke audio cadence** - continuous movement in water now turns the
   existing renderer-independent swim gait contacts into typed
   `PlayerSwimStroke` events, routed to a soft `minecraft:player/swim_stroke`
@@ -840,6 +884,20 @@
 
 ### Changed
 
+- **Zero-source light propagation fast path** - relight now returns an
+  independent zero `uint8` volume before allocating propagation scratch arrays
+  when a region has no skylight or block-light source. Deterministic coverage
+  preserves input ownership, opaque volumes, lantern/removal, randomized, and
+  cross-chunk behavior. On a 128x48x48 volume, the zero-source path measured
+  `0.0107 ms` versus `0.3277 ms` for a one-source propagation (`30.5x`); the
+  complete workload remained update-bound at RD3 p95 `11.020 ms` and RD4 p95
+  `13.655 ms`, so this is retained as a narrow win rather than treated as the
+  full 60 FPS solution. A visible 2560x1440 F3/F2 pass removed the targeted
+  lantern through the normal left-click path, spawned its item drop, and
+  correctly cleared surrounding light with no stale bright voxels. Inspected
+  frames:
+  `saves/lighting_zero_n12/screenshots/veilstone_20260720_095210.png` and
+  `saves/lighting_zero_n12/screenshots/veilstone_20260720_095212.png`.
 - **Lighting propagation scratch-buffer reuse** - the measured NumPy hotspot now
   reuses per-call attenuated/neighbor/update arrays and in-place ufunc outputs
   across its bounded 15 propagation steps instead of allocating fresh volumes

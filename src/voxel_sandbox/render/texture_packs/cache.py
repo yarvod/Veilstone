@@ -17,7 +17,7 @@ from voxel_sandbox.render.material_metadata import (
 )
 from voxel_sandbox.render.texture_atlas.generated import GeneratedAtlas
 
-CACHE_VERSION = 5
+CACHE_VERSION = 6
 
 
 def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | None:
@@ -53,6 +53,7 @@ def load_cached_atlas(cache_root: Path, pack_path: Path) -> GeneratedAtlas | Non
         uvs,
         tile_size=int(metadata.get("tile_size", 0)),
         edge_inset_pixels=float(metadata.get("edge_inset_pixels", 0.0)),
+        gutter_pixels=int(metadata.get("gutter_pixels", 0)),
         material_manifest=material_manifest,
     )
 
@@ -83,6 +84,7 @@ def save_cached_atlas(cache_root: Path, pack_path: Path, atlas: GeneratedAtlas) 
         "height": atlas.height,
         "tile_size": atlas.tile_size,
         "edge_inset_pixels": atlas.edge_inset_pixels,
+        "gutter_pixels": atlas.gutter_pixels,
         "materials": _material_manifest_to_json(atlas.material_manifest),
         "uvs": atlas.uvs,
     }

@@ -17,6 +17,7 @@ from voxel_sandbox.engine.chunks import (
     split_world_axis,
 )
 from voxel_sandbox.engine.generation.terrain import TerrainGenerator
+from voxel_sandbox.engine.perf.process_priority import lower_background_process_priority
 from voxel_sandbox.infrastructure.storage import WorldStorage
 
 
@@ -54,12 +55,16 @@ class ChunkStreamer:
         if backend == "process":
             if postprocess is not None:
                 raise ValueError("Process worldgen uses prepare_lighting instead of postprocess")
-            self._executor = ProcessPoolExecutor(max_workers=workers)
+            self._executor = ProcessPoolExecutor(
+                max_workers=workers,
+                initializer=lower_background_process_priority,
+            )
             _warm_process_pool(self._executor, workers)
         else:
             self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="worldgen")
         self._loaded: dict[ChunkCoord, Chunk] = {}
         self._pending: dict[ChunkCoord, Future[Chunk]] = {}
+        self._deferred_saves: dict[ChunkCoord, Chunk] = {}
         self._desired: set[ChunkCoord] = set()
         self._overrides: dict[tuple[int, int, int], int] = {}
         self._metadata_overrides: dict[tuple[int, int, int], int] = {}
@@ -72,11 +77,19 @@ class ChunkStreamer:
     def pending_count(self) -> int:
         return len(self._pending)
 
+    @property
+    def pending_save_count(self) -> int:
+        return len(self._deferred_saves)
+
     def prime(self, coord: ChunkCoord) -> Chunk:
         chunk = self._loaded.get(coord)
         if chunk is None:
+            chunk = self._deferred_saves.pop(coord, None)
+        if chunk is None:
             chunk = self._generate_chunk(coord)
             self._apply_overrides(chunk)
+            self._loaded[coord] = chunk
+        else:
             self._loaded[coord] = chunk
         return chunk
 
@@ -98,6 +111,7 @@ class ChunkStreamer:
         pending = self._pending.pop(chunk.coord, None)
         if pending is not None:
             pending.cancel()
+        self._deferred_saves.pop(chunk.coord, None)
         self._apply_overrides(chunk)
         self._loaded[chunk.coord] = chunk
 
@@ -228,17 +242,26 @@ class ChunkStreamer:
         max_submitted: int | None = None,
     ) -> StreamBatch:
         self._desired = self._desired_coords(center)
+        restored: list[Chunk] = []
+        restore_coords = tuple(self._desired & self._deferred_saves.keys())[:max_completed]
+        for coord in restore_coords:
+            self._loaded[coord] = self._deferred_saves.pop(coord)
+            restored.append(self._loaded[coord])
         unloaded = tuple(coord for coord in self._loaded if coord not in self._desired)
         for coord in unloaded:
-            if self._storage is not None:
-                self._save_chunk_if_dirty(self._loaded[coord])
-            del self._loaded[coord]
+            chunk = self._loaded.pop(coord)
+            if self._storage is not None and self._needs_save(chunk):
+                self._deferred_saves[coord] = chunk
+
+        self._drain_deferred_saves(1)
 
         for coord, future in tuple(self._pending.items()):
             if coord not in self._desired and future.cancel():
                 del self._pending[coord]
 
-        missing = self._desired - self._loaded.keys() - self._pending.keys()
+        missing = (
+            self._desired - self._loaded.keys() - self._pending.keys() - self._deferred_saves.keys()
+        )
         missing_coords = sorted(missing, key=lambda item: _distance_squared(item, center))
         if max_submitted is not None:
             if max_submitted < 0:
@@ -256,7 +279,7 @@ class ChunkStreamer:
             else:
                 self._pending[coord] = self._executor.submit(self._generate_chunk, coord)
 
-        completed: list[Chunk] = []
+        completed = restored
         for coord, future in tuple(self._pending.items()):
             if len(completed) >= max_completed or not future.done():
                 continue
@@ -275,6 +298,7 @@ class ChunkStreamer:
         self._executor.shutdown(wait=True, cancel_futures=True)
         self._pending.clear()
         self._loaded.clear()
+        self._deferred_saves.clear()
         self._overrides.clear()
         self._metadata_overrides.clear()
 
@@ -282,7 +306,8 @@ class ChunkStreamer:
         if self._storage is None:
             return 0
         saved = 0
-        for chunk in self._loaded.values():
+        chunks = {**self._deferred_saves, **self._loaded}
+        for chunk in chunks.values():
             if self._save_chunk_if_dirty(chunk):
                 saved += 1
         return saved
@@ -321,12 +346,20 @@ class ChunkStreamer:
         return chunk
 
     def _save_chunk_if_dirty(self, chunk: Chunk) -> bool:
-        if self._storage is None or not any(
-            section.dirty & DirtyFlag.SAVE for section in chunk.sections
-        ):
+        if self._storage is None or not self._needs_save(chunk):
             return False
         self._storage.save_chunk(chunk)
         return True
+
+    @staticmethod
+    def _needs_save(chunk: Chunk) -> bool:
+        return any(section.dirty & DirtyFlag.SAVE for section in chunk.sections)
+
+    def _drain_deferred_saves(self, limit: int) -> None:
+        saveable = (coord for coord in self._deferred_saves if coord not in self._desired)
+        for coord in tuple(saveable)[:limit]:
+            chunk = self._deferred_saves.pop(coord)
+            self._save_chunk_if_dirty(chunk)
 
 
 def _generate_chunk_task(

@@ -40,6 +40,31 @@ def drain_priority_keys[TKey, TPriority](
     return selected
 
 
+def drain_grouped_priority_keys[TKey, TPrimary, TSecondary](
+    queue: MutableMapping[TKey, None],
+    budget: int,
+    primary: Callable[[TKey], TPrimary],
+    secondary: Callable[[TKey], TSecondary],
+) -> tuple[TKey, ...]:
+    """Rank all work by cheap primary priority and score only the cutoff group."""
+    limit = min(frame_budget(budget), len(queue))
+    if limit == 0:
+        return ()
+
+    ranked_primary = [(primary(key), index, key) for index, key in enumerate(queue)]
+    ranked_primary.sort(key=lambda entry: (entry[0], entry[1]))
+    cutoff = ranked_primary[limit - 1][0]
+    candidate_count = limit
+    while candidate_count < len(ranked_primary) and ranked_primary[candidate_count][0] == cutoff:
+        candidate_count += 1
+    candidates = ranked_primary[:candidate_count]
+    candidates.sort(key=lambda entry: (entry[0], secondary(entry[2]), entry[1]))
+    selected = tuple(key for _primary, _index, key in candidates[:limit])
+    for key in selected:
+        queue.pop(key, None)
+    return selected
+
+
 def chunk_distance(left: tuple[int, int], right: tuple[int, int]) -> int:
     return max(abs(left[0] - right[0]), abs(left[1] - right[1]))
 

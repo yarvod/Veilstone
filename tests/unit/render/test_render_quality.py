@@ -22,6 +22,8 @@ def _custom_profile() -> RenderQualityProfile:
         vegetation_wind=True,
         water_detail=True,
         material_quality="color-only",
+        linear_texture_minification=True,
+        opaque_batch_chunks=1,
     )
 
 
@@ -74,12 +76,15 @@ def test_low_60_preset_disables_expensive_effects() -> None:
     assert resolved.vegetation_wind is False
     assert resolved.water_detail is False
     assert resolved.material_quality == "color-only"
+    assert resolved.linear_texture_minification is False
+    assert resolved.opaque_batch_chunks == 1
 
 
 def test_high_preset_enables_material_preview() -> None:
     resolved = resolve_render_quality_profile("high", custom=_custom_profile())
 
     assert resolved.material_quality == "material-preview"
+    assert resolved.linear_texture_minification is True
     assert resolved.shadow_quality == "medium"
     assert resolved.render_distance is None
 

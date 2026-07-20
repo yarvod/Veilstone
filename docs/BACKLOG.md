@@ -154,14 +154,14 @@ class WorldGenerationConfig:
 - **Status:** open
 - **Observed:** grass-block surfaces read as repeated noisy pixels instead of
   continuous Minecraft-like green ground cover, especially with detailed resource
-  packs at shallow camera angles.
+  packs at shallow camera angles. Atlas gutters and terrain-only minification
+  filtering were completed in Phase N14.
 - **Desired:** terrain keeps source texture resolution, but large grass fields
   read as coherent surfaces without visible atlas seams, random tile flips, or
   harsh per-block discontinuity.
-- **Candidate work:** add grass material visual pass with atlas gutters,
-  mip-safe sampling, optional distance-biased texture filtering, biome color
-  smoothing, and/or subtle terrain overlay blending that does not blur
-  inventory/held-item textures.
+- **Candidate work:** evaluate biome color smoothing and/or a subtle
+  terrain overlay blend only against captured shallow-angle grass evidence;
+  inventory and held-item textures must remain pixel-sharp.
 
 ## Performance
 
@@ -186,27 +186,26 @@ class WorldGenerationConfig:
 
 - **Status:** open
 - **Observed:** `RuntimePerfSnapshot` already reports update/render/frame timing
-  and all current bounded streaming queue depths. A coarse update-vs-render
-  bottleneck label has moved into the active N8 workplan; the remaining backlog
-  scope does not yet separate generation, GPU upload, dirty work, or a
-  fine-grained slowest subsystem.
+  and all current bounded streaming queue depths. Benchmark-only
+  streamer/integration/relight/remesh attribution moved into Phase N15; the
+  remaining scope does not yet expose generation, GPU upload, or dirty work in
+  the runtime HUD snapshot.
 - **Desired:** each frame exposes a compact budget summary: simulation time,
   render time, chunk generation jobs, mesh jobs, upload jobs, queue depth,
   visible chunks, dirty chunks, and slowest subsystem.
 - **Architecture direction:** collect timings in a small application-facing
   diagnostics service updated at bounded frequency. Render HUD reads a snapshot;
   it should not time subsystems by reaching into internals.
-- **Candidate work:** after N8, extend the existing snapshot rather than
-  replacing it, sample missing stage timings at bounded frequency, and add
-  generation/upload/dirty detail only where a real benchmark can populate it;
-  then refine the coarse label from measured evidence.
+- **Candidate work:** extend the existing runtime snapshot rather than replacing
+  it, sample generation/upload/dirty detail at bounded frequency, and refine the
+  HUD label only where real gameplay evidence needs it.
 
 ### PERF-B004: Hot-Path Native/Cython Acceleration Spike
 
 - **Status:** open
-- **Observed:** pure Python remains valuable for testability, but meshing,
-  lighting propagation, block scans, collision queries, and terrain noise can
-  become hot paths as render distance grows.
+- **Observed:** the measured greedy-rectangle and sparse-light kernels moved to
+  active Phase N15 with optional Cython builds and Python fallbacks. Dense
+  skylight was deliberately retained on NumPy after a slower native result.
 - **Desired:** accelerate only measured hot loops while keeping gameplay rules
   testable and architecture boundaries intact.
 - **Architecture direction:** profile first. If needed, add optional native
@@ -214,50 +213,16 @@ class WorldGenerationConfig:
   dataclasses/protocols; extension modules should accept primitive arrays and
   return plain mesh/light buffers. Do not let Cython import `render/window.py`,
   Pyglet, ModernGL, settings, or UI.
-- **Candidate Cython sketch:**
-
-```cython
-# src/voxel_sandbox/engine/perf/cy_mesh.pyx
-# cython: boundscheck=False, wraparound=False, cdivision=True
-
-cpdef int count_visible_faces(
-    const unsigned short[:, :, :] block_ids,
-    const unsigned char[:] opaque_by_id,
-) except -1:
-    cdef Py_ssize_t x, y, z
-    cdef int faces = 0
-    cdef unsigned short block_id
-
-    for y in range(block_ids.shape[0]):
-        for z in range(block_ids.shape[1]):
-            for x in range(block_ids.shape[2]):
-                block_id = block_ids[y, z, x]
-                if block_id == 0:
-                    continue
-                # Real implementation would bounds-check neighbors and add
-                # only faces adjacent to air/cutout/non-opaque blocks.
-                faces += 6
-    return faces
-```
-
-- **Candidate Python wrapper:**
-
-```python
-try:
-    from voxel_sandbox.engine.perf.cy_mesh import count_visible_faces
-except ImportError:
-    from voxel_sandbox.engine.perf.py_mesh import count_visible_faces
-```
-
-- **Acceptance idea:** the Python fallback and Cython path must pass the same
-  deterministic fixtures and produce byte-for-byte equivalent mesh summaries.
-  Packaging must tolerate missing compiled extensions in development.
+- **Candidate work:** profile terrain noise, collision, and any remaining mesh
+  stages only after RD12 evidence identifies them; do not broaden native scope
+  speculatively.
 
 ### PERF-B005: Mesh Data Layout And GPU Upload Budget
 
 - **Status:** open
-- **Observed:** even fast meshing can stutter if upload-ready data is too large,
-  fragmented, or pushed to GPU without budget.
+- **Observed:** vertical/2x2 opaque GPU batching and chunk-coalesced remesh work
+  moved to Phase N15. Remaining risk is compact data layout and upload-buffer
+  churn, especially with material packs.
 - **Desired:** chunk mesh output is compact, cache-friendly, and uploaded in
   bounded batches; large texture-pack atlases do not force unnecessary remeshes.
 - **Candidate work:** evaluate struct-of-arrays vs interleaved vertex buffers,
@@ -267,8 +232,9 @@ except ImportError:
 ### PERF-B006: Lighting And Fluid Update Budgets
 
 - **Status:** open
-- **Observed:** lighting and water/fluid updates can become invisible frame-time
-  spikes when many blocks change or chunks load together.
+- **Observed:** active-fluid chunk retirement and hybrid sparse native lighting
+  moved to Phase N15. Mass edits can still require incremental light work rather
+  than one complete relight.
 - **Desired:** light/fluid propagation advances in deterministic bounded work
   units with visible progress and no long render-thread stalls.
 - **Architecture direction:** keep simulation correctness in engine tests; expose
@@ -277,12 +243,13 @@ except ImportError:
   cross-chunk neighbor invalidation tests, and stress scenes for breaking blocks
   near water/light sources.
 
-### PERF-B007: Prove The Low-End 60 FPS Baseline
+### PERF-B007: Physical Two-Core 60 FPS Acceptance
 
 - **Status:** open
-- **Observed:** the `low_60` quality profile and frame-streaming benchmark exist,
-  but no recorded two-core/720p acceptance run proves p95 frame time and queue
-  stability on the intended low-end target.
+- **Observed:** the full 625-chunk RD12 720p contract passes locally on Apple M4
+  with one generation and one meshing worker at p95 `6.235 ms`, p99 `9.411 ms`,
+  max `15.918 ms`, and all queues drained, but this host cannot prove behavior
+  on the intended physical two-core CPU class.
 - **Desired:** a `low_60` profile targets stable 60 FPS at 720p on a two-core
   CPU-class machine before high-end visual effects are enabled. The profile can
   look simpler, but it must remain readable, Minecraft-like, and free of chunk
@@ -290,10 +257,9 @@ except ImportError:
 - **Architecture direction:** measure first. Keep frame timing and queue
   counters outside render hot paths, then tune worker counts, upload budgets,
   render distance, and shader variants through `RenderQualityProfile`.
-- **Candidate work:** add benchmark/manual smoke route for a deterministic
-  walking camera path; record p50/p95/p99 frame time, mesh/generation/upload
-  queue depths, visible sections, and enabled effects; compare `low_60`,
-  `balanced`, and `high` presets.
+- **Candidate work:** run the N15 command and visible walking route unchanged on
+  representative two-core hardware; attach machine details, frame percentiles,
+  queue state, and F2 evidence without changing the benchmark scenario.
 - **Acceptance idea:** benchmark output proves p95 frame time stays below
   16.7 ms on the target low profile in a controlled scene, or documents the
   measured blocker subsystem before any expensive visual feature is promoted.

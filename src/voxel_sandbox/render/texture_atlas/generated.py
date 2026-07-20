@@ -16,6 +16,7 @@ class GeneratedAtlas:
     uvs: dict[str, tuple[float, float, float, float]]
     tile_size: int = 0
     edge_inset_pixels: float = 0.0
+    gutter_pixels: int = 0
     material_manifest: MaterialAtlasManifest = field(default_factory=MaterialAtlasManifest)
 
 
@@ -28,6 +29,7 @@ class GeneratedMaterialAtlas:
     uvs: dict[str, tuple[float, float, float, float]]
     tile_size: int
     edge_inset_pixels: float
+    gutter_pixels: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,15 +157,21 @@ def build_texture_atlas(
     tiles: dict[str, Image.Image],
     *,
     tile_size: int,
+    gutter_pixels: int = 1,
     material_manifest: MaterialAtlasManifest | None = None,
 ) -> GeneratedAtlas:
     """Pack PIL images into a square-ish atlas and return UV coordinates."""
+    if tile_size < 1:
+        raise ValueError("Atlas tile size must be positive")
+    if gutter_pixels < 0:
+        raise ValueError("Atlas gutter cannot be negative")
     names = sorted(tiles)
     count = len(names)
     columns = max(1, ceil(sqrt(count)))
     rows = max(1, ceil(count / columns))
-    atlas_w = columns * tile_size
-    atlas_h = rows * tile_size
+    cell_size = tile_size + gutter_pixels * 2
+    atlas_w = columns * cell_size
+    atlas_h = rows * cell_size
     image = Image.new("RGBA", (atlas_w, atlas_h))
 
     uvs: dict[str, tuple[float, float, float, float]] = {}
@@ -171,14 +179,19 @@ def build_texture_atlas(
         tile_x = index % columns
         tile_y = index // columns
         tile = tiles[name].convert("RGBA").resize((tile_size, tile_size), Image.Resampling.NEAREST)
-        image.paste(tile, (tile_x * tile_size, tile_y * tile_size))
-        u0 = tile_x / columns
-        v0 = 1.0 - (tile_y + 1) / rows
-        u1 = (tile_x + 1) / columns
-        v1 = 1.0 - tile_y / rows
+        slot_x = tile_x * cell_size
+        slot_y = tile_y * cell_size
+        _paste_extruded_tile(image, tile, slot_x, slot_y, gutter_pixels)
+        content_x = slot_x + gutter_pixels
+        content_y = slot_y + gutter_pixels
         inset_u = 0.5 / atlas_w
         inset_v = 0.5 / atlas_h
-        uvs[name] = (u0 + inset_u, v0 + inset_v, u1 - inset_u, v1 - inset_v)
+        uvs[name] = (
+            content_x / atlas_w + inset_u,
+            1.0 - (content_y + tile_size) / atlas_h + inset_v,
+            (content_x + tile_size) / atlas_w - inset_u,
+            1.0 - content_y / atlas_h - inset_v,
+        )
 
     pixels = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
     return GeneratedAtlas(
@@ -188,8 +201,52 @@ def build_texture_atlas(
         uvs,
         tile_size=tile_size,
         edge_inset_pixels=0.5,
+        gutter_pixels=gutter_pixels,
         material_manifest=material_manifest or MaterialAtlasManifest(),
     )
+
+
+def _paste_extruded_tile(
+    atlas: Image.Image,
+    tile: Image.Image,
+    slot_x: int,
+    slot_y: int,
+    gutter_pixels: int,
+) -> None:
+    width, height = tile.size
+    content_x = slot_x + gutter_pixels
+    content_y = slot_y + gutter_pixels
+    atlas.paste(tile, (content_x, content_y))
+    if gutter_pixels == 0:
+        return
+
+    atlas.paste(
+        tile.crop((0, 0, 1, height)).resize((gutter_pixels, height), Image.Resampling.NEAREST),
+        (slot_x, content_y),
+    )
+    atlas.paste(
+        tile.crop((width - 1, 0, width, height)).resize(
+            (gutter_pixels, height), Image.Resampling.NEAREST
+        ),
+        (content_x + width, content_y),
+    )
+    atlas.paste(
+        tile.crop((0, 0, width, 1)).resize((width, gutter_pixels), Image.Resampling.NEAREST),
+        (content_x, slot_y),
+    )
+    atlas.paste(
+        tile.crop((0, height - 1, width, height)).resize(
+            (width, gutter_pixels), Image.Resampling.NEAREST
+        ),
+        (content_x, content_y + height),
+    )
+    for offset_x, offset_y, pixel in (
+        (slot_x, slot_y, tile.getpixel((0, 0))),
+        (content_x + width, slot_y, tile.getpixel((width - 1, 0))),
+        (slot_x, content_y + height, tile.getpixel((0, height - 1))),
+        (content_x + width, content_y + height, tile.getpixel((width - 1, height - 1))),
+    ):
+        atlas.paste(Image.new("RGBA", (gutter_pixels, gutter_pixels), pixel), (offset_x, offset_y))
 
 
 def build_parallel_material_atlas(
@@ -207,6 +264,7 @@ def build_parallel_material_atlas(
     fallback = Image.new("RGBA", (tile_size, tile_size), default_color)
     inset_u = color_atlas.edge_inset_pixels / color_atlas.width
     inset_v = color_atlas.edge_inset_pixels / color_atlas.height
+    gutter_pixels = color_atlas.gutter_pixels
 
     for resource_id, uv in color_atlas.uvs.items():
         tile = (
@@ -214,9 +272,15 @@ def build_parallel_material_atlas(
             .convert("RGBA")
             .resize((tile_size, tile_size), Image.Resampling.NEAREST)
         )
-        x = round((uv[0] - inset_u) * color_atlas.width)
-        y = round((1.0 - uv[3] - inset_v) * color_atlas.height)
-        image.paste(tile, (x, y))
+        content_x = round((uv[0] - inset_u) * color_atlas.width)
+        content_y = round((1.0 - uv[3] - inset_v) * color_atlas.height)
+        _paste_extruded_tile(
+            image,
+            tile,
+            content_x - gutter_pixels,
+            content_y - gutter_pixels,
+            gutter_pixels,
+        )
 
     return GeneratedMaterialAtlas(
         role=role,
@@ -226,6 +290,7 @@ def build_parallel_material_atlas(
         uvs=dict(color_atlas.uvs),
         tile_size=tile_size,
         edge_inset_pixels=color_atlas.edge_inset_pixels,
+        gutter_pixels=gutter_pixels,
     )
 
 

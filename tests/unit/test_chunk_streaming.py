@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import threading
 import time
+from pathlib import Path
 
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
+from voxel_sandbox.infrastructure.storage import WorldStorage
 
 
 class RecordingGenerator(TerrainGenerator):
@@ -162,5 +164,42 @@ def test_streamer_preserves_fluid_level_across_reload() -> None:
 
         assert streamer.get_block(8, 40, 8) == 8
         assert streamer.get_metadata(8, 40, 8) == 5
+    finally:
+        streamer.close()
+
+
+def test_streamer_limits_deferred_unload_saves_per_update(tmp_path: Path) -> None:
+    storage = WorldStorage(tmp_path / "deferred-save-world")
+    storage.ensure_world(name="Deferred", seed="deferred-save")
+    streamer = ChunkStreamer(
+        TerrainGenerator(WorldSeed.parse("deferred-save")),
+        render_distance=1,
+        workers=1,
+        storage=storage,
+    )
+    try:
+        for x in range(-1, 2):
+            for z in range(-1, 2):
+                streamer.prime(ChunkCoord(x, z))
+
+        streamer.update(ChunkCoord(10, 0), max_completed=0, max_submitted=0)
+
+        assert streamer.loaded_count == 0
+        assert streamer.pending_save_count == 8
+        assert len(tuple(storage.regions.glob("*.vchk"))) == 1
+
+        streamer.update(ChunkCoord(10, 0), max_completed=0, max_submitted=0)
+
+        assert streamer.pending_save_count == 7
+        assert len(tuple(storage.regions.glob("*.vchk"))) == 2
+
+        restored = streamer.update(ChunkCoord(0, 0), max_completed=1, max_submitted=0)
+
+        assert len(restored.loaded) == 1
+        assert restored.loaded[0].coord in {
+            ChunkCoord(x, z) for x in range(-1, 2) for z in range(-1, 2)
+        }
+        assert streamer.loaded_count == 1
+        assert streamer.pending_count == 0
     finally:
         streamer.close()

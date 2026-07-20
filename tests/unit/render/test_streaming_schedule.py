@@ -5,6 +5,7 @@ from voxel_sandbox.render.streaming_schedule import (
     chunk_distance,
     chunk_visible,
     drain_fifo_keys,
+    drain_grouped_priority_keys,
     drain_priority_keys,
     frame_budget,
     section_visible,
@@ -54,6 +55,33 @@ def test_drain_priority_keys_with_zero_budget_does_not_rank_or_mutate() -> None:
 
     assert drain_priority_keys(queue, 0, unexpected_priority) == ()
     assert tuple(queue) == ("a", "b")
+
+
+def test_grouped_priority_scores_secondary_only_for_nearest_cutoff_group() -> None:
+    queue = {"near-hidden": None, "far": None, "near-visible": None, "farther": None}
+    distance = {"near-hidden": 1, "far": 2, "near-visible": 1, "farther": 3}
+    visibility = {"near-hidden": 1, "far": 0, "near-visible": 0, "farther": 0}
+    scored: list[str] = []
+
+    drained = drain_grouped_priority_keys(
+        queue,
+        1,
+        distance.__getitem__,
+        lambda key: scored.append(key) or visibility[key],
+    )
+
+    assert drained == ("near-visible",)
+    assert scored == ["near-hidden", "near-visible"]
+    assert tuple(queue) == ("near-hidden", "far", "farther")
+
+
+def test_grouped_priority_preserves_fifo_for_complete_ties() -> None:
+    queue = {"first": None, "second": None, "far": None}
+
+    assert drain_grouped_priority_keys(queue, 2, lambda key: key == "far", lambda _key: 0) == (
+        "first",
+        "second",
+    )
 
 
 def test_chunk_distance_handles_negative_coordinates_and_boundaries() -> None:

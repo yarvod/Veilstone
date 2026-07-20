@@ -115,6 +115,28 @@ def test_build_texture_atlas_records_sampling_metadata() -> None:
 
     assert atlas.tile_size == 16
     assert atlas.edge_inset_pixels == 0.5
+    assert atlas.gutter_pixels == 1
+
+
+def test_build_texture_atlas_extrudes_tile_edges_into_gutter() -> None:
+    tile = Image.new("RGBA", (2, 2))
+    tile.putpixel((0, 0), (255, 0, 0, 255))
+    tile.putpixel((1, 0), (0, 255, 0, 255))
+    tile.putpixel((0, 1), (0, 0, 255, 255))
+    tile.putpixel((1, 1), (255, 255, 0, 255))
+
+    atlas = build_texture_atlas({"test:block": tile}, tile_size=2)
+    image = Image.frombytes("RGBA", (atlas.width, atlas.height), atlas.pixels).transpose(
+        Image.Transpose.FLIP_TOP_BOTTOM
+    )
+
+    assert image.size == (4, 4)
+    assert image.getpixel((0, 0)) == (255, 0, 0, 255)
+    assert image.getpixel((3, 0)) == (0, 255, 0, 255)
+    assert image.getpixel((0, 3)) == (0, 0, 255, 255)
+    assert image.getpixel((3, 3)) == (255, 255, 0, 255)
+    assert image.getpixel((0, 1)) == image.getpixel((1, 1))
+    assert image.getpixel((3, 2)) == image.getpixel((2, 2))
 
 
 def test_parallel_material_atlas_reuses_color_dimensions_and_uvs() -> None:
@@ -139,6 +161,7 @@ def test_parallel_material_atlas_reuses_color_dimensions_and_uvs() -> None:
     assert material_atlas.uvs == color_atlas.uvs
     assert material_atlas.tile_size == color_atlas.tile_size
     assert material_atlas.edge_inset_pixels == color_atlas.edge_inset_pixels
+    assert material_atlas.gutter_pixels == color_atlas.gutter_pixels
 
 
 def test_parallel_material_atlas_places_tiles_in_matching_color_slots() -> None:
@@ -231,6 +254,7 @@ def test_material_atlas_bundle_keeps_present_roles_aligned_with_color() -> None:
         assert atlas.uvs == color_atlas.uvs
         assert atlas.tile_size == color_atlas.tile_size
         assert atlas.edge_inset_pixels == color_atlas.edge_inset_pixels
+        assert atlas.gutter_pixels == color_atlas.gutter_pixels
 
 
 def test_grass_terrain_uvs_preserve_half_pixel_sampling_gutter() -> None:
@@ -254,8 +278,9 @@ def test_grass_terrain_uvs_preserve_half_pixel_sampling_gutter() -> None:
 def test_build_texture_atlas_dimensions_are_multiples_of_tile_size() -> None:
     tiles = create_default_block_tiles(tile_size=8)
     atlas = build_texture_atlas(tiles, tile_size=8)
-    assert atlas.width % 8 == 0
-    assert atlas.height % 8 == 0
+    cell_size = atlas.tile_size + atlas.gutter_pixels * 2
+    assert atlas.width % cell_size == 0
+    assert atlas.height % cell_size == 0
     assert len(atlas.pixels) == atlas.width * atlas.height * 4
 
 
@@ -272,8 +297,8 @@ def test_build_texture_atlas_accepts_external_tiles() -> None:
     custom = {"minecraft:block/cobblestone": Image.new("RGBA", (16, 16), (140, 130, 120, 255))}
     atlas = build_texture_atlas(custom, tile_size=16)
     assert "minecraft:block/cobblestone" in atlas.uvs
-    assert atlas.width == 16
-    assert atlas.height == 16
+    assert atlas.width == 18
+    assert atlas.height == 18
 
 
 def test_create_block_atlas_backward_compatible() -> None:

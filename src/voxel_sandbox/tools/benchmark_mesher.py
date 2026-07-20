@@ -6,6 +6,7 @@ import numpy as np
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
+from voxel_sandbox.engine.perf.greedy_rectangles import NATIVE_GREEDY_RECTANGLES
 from voxel_sandbox.render.meshes import build_greedy_mesh
 from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
 from voxel_sandbox.render.meshes.worker import SectionMeshWorker
@@ -38,6 +39,7 @@ def run_benchmark(iterations: int = 250) -> int:
         neighborhood, registry, UVS, smooth_lighting=False, ambient_occlusion=False
     )
     single_mesh_time = (time.perf_counter() - start) * 1000.0
+    print(f"greedy scanner backend: {'cython' if NATIVE_GREEDY_RECTANGLES else 'python'}")
     print(
         f"greedy 16^3 single section: {single_mesh_time:.3f} ms. "
         f"Mesh bytes: {mesh.vertices.nbytes + mesh.indices.nbytes}"

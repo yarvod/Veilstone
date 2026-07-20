@@ -85,6 +85,7 @@ def test_quality_preset_menu_label_and_cycle(monkeypatch) -> None:
     class FakeWorldRenderer:
         def __init__(self) -> None:
             self.applied: list[tuple[str, str]] = []
+            self.linear_texture_minification: bool | None = None
             self.fog_enabled = False
             self.vegetation_wind_enabled = True
             self.water_detail_enabled = True
@@ -93,6 +94,9 @@ def test_quality_preset_menu_label_and_cycle(monkeypatch) -> None:
             self, material_quality: str, resource_pack_path: str = ""
         ) -> None:
             self.applied.append((material_quality, resource_pack_path))
+
+        def apply_texture_minification(self, linear_minification: bool) -> None:
+            self.linear_texture_minification = linear_minification
 
     world_renderer = FakeWorldRenderer()
     sky_renderer = SimpleNamespace(clouds=True)
@@ -116,13 +120,14 @@ def test_quality_preset_menu_label_and_cycle(monkeypatch) -> None:
     assert win.settings.graphics.ambient_occlusion is False
     assert win.settings.graphics.material_quality == "color-only"
     assert world_renderer.applied == [("color-only", "")]
+    assert world_renderer.linear_texture_minification is False
     assert world_renderer.fog_enabled is True
     assert world_renderer.vegetation_wind_enabled is False
     assert world_renderer.water_detail_enabled is False
     assert sky_renderer.clouds is False
     assert saved[-1].graphics.quality_preset == "low_60"
     assert win.menu.status == (
-        "Quality preset low_60 saved; live material/fog/clouds/wind/water applied; "
+        "Quality preset low_60 saved; live material/texture/fog/clouds/wind/water applied; "
         "shadows/smooth/AO/render distance apply restart."
     )
 

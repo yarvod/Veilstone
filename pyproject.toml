@@ -1,5 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = [
+    "hatchling",
+    "hatch-cython>=0.6.0rc1,<0.7",
+    "Cython>=3.1,<4",
+    "setuptools>=80",
+]
 build-backend = "hatchling.build"
 
 [project]
@@ -38,11 +43,23 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/voxel_sandbox"]
+artifacts = ["src/voxel_sandbox/engine/perf/*.so", "src/voxel_sandbox/engine/perf/*.pyd"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "config" = "voxel_sandbox/resources/config"
 "data" = "voxel_sandbox/resources/data"
 "resource_packs" = "voxel_sandbox/resources/resource_packs"
+
+[tool.hatch.build.targets.wheel.hooks.cython]
+dependencies = ["hatch-cython>=0.6.0rc1,<0.7"]
+
+[tool.hatch.build.targets.wheel.hooks.cython.options]
+src = "voxel_sandbox"
+compile_py = false
+directives = { boundscheck = false, wraparound = false, cdivision = true, language_level = 3 }
+
+[tool.hatch.build.targets.wheel.hooks.cython.options.files]
+targets = ["*/engine/perf/cy_greedy.pyx", "*/engine/perf/cy_light.pyx"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

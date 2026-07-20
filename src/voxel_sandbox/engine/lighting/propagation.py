@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 
 from voxel_sandbox.domain.blocks import BlockRegistry
 from voxel_sandbox.engine.chunks import CHUNK_HEIGHT, SECTION_SIZE, Chunk, DirtyFlag
+from voxel_sandbox.engine.perf.light_propagation import propagate_light
 
 
 def relight_chunk(chunk: Chunk, registry: BlockRegistry) -> None:
@@ -98,24 +99,4 @@ def _direct_skylight(opaque: NDArray[np.bool_]) -> NDArray[np.uint8]:
 
 
 def _propagate_light(sources: NDArray[np.uint8], opaque: NDArray[np.bool_]) -> NDArray[np.uint8]:
-    light = sources.copy()
-    blocked = opaque & (sources == 0)
-    attenuated = np.empty_like(light)
-    neighbors = np.empty_like(light)
-    updated = np.empty_like(light)
-    for _ in range(15):
-        np.maximum(light, 1, out=attenuated)
-        np.subtract(attenuated, 1, out=attenuated)
-        neighbors.fill(0)
-        np.maximum(neighbors[1:, :, :], attenuated[:-1, :, :], out=neighbors[1:, :, :])
-        np.maximum(neighbors[:-1, :, :], attenuated[1:, :, :], out=neighbors[:-1, :, :])
-        np.maximum(neighbors[:, 1:, :], attenuated[:, :-1, :], out=neighbors[:, 1:, :])
-        np.maximum(neighbors[:, :-1, :], attenuated[:, 1:, :], out=neighbors[:, :-1, :])
-        np.maximum(neighbors[:, :, 1:], attenuated[:, :, :-1], out=neighbors[:, :, 1:])
-        np.maximum(neighbors[:, :, :-1], attenuated[:, :, 1:], out=neighbors[:, :, :-1])
-        np.maximum(sources, neighbors, out=updated)
-        updated[blocked] = 0
-        if np.array_equal(updated, light):
-            break
-        light, updated = updated, light
-    return light
+    return propagate_light(sources, opaque)

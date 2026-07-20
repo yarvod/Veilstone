@@ -9,6 +9,11 @@ from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
 from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk, relight_chunks
 from voxel_sandbox.engine.lighting.propagation import _propagate_light
+from voxel_sandbox.engine.perf.light_propagation import (
+    NATIVE_LIGHT_PROPAGATION,
+    propagate_light,
+    python_propagate_light,
+)
 
 
 def _reference_propagate_light(
@@ -122,14 +127,19 @@ def test_effective_spawn_light_tracks_daylight_and_block_sources() -> None:
 def test_light_propagation_empty_volume_matches_reference_without_mutating_inputs() -> None:
     sources = np.zeros((5, 7, 4), dtype=np.uint8)
     opaque = np.zeros_like(sources, dtype=np.bool_)
+    opaque[1:4, 2:5, 1:3] = True
     source_before = sources.copy()
     opaque_before = opaque.copy()
 
     actual = _propagate_light(sources, opaque)
 
     np.testing.assert_array_equal(actual, _reference_propagate_light(sources, opaque))
+    assert actual.dtype == np.uint8
+    assert actual is not sources
     np.testing.assert_array_equal(sources, source_before)
     np.testing.assert_array_equal(opaque, opaque_before)
+    actual[0, 0, 0] = 9
+    assert sources[0, 0, 0] == 0
 
 
 def test_light_propagation_randomized_volumes_match_reference() -> None:
@@ -144,3 +154,18 @@ def test_light_propagation_randomized_volumes_match_reference() -> None:
         expected = _reference_propagate_light(sources, opaque)
 
         np.testing.assert_array_equal(actual, expected)
+
+
+def test_selected_light_propagation_matches_python_for_dense_sources() -> None:
+    sources = np.full((6, 8, 5), 15, dtype=np.uint8)
+    opaque = np.zeros_like(sources, dtype=np.bool_)
+    opaque[2:4, 2:6, 1:4] = True
+
+    np.testing.assert_array_equal(
+        propagate_light(sources, opaque),
+        python_propagate_light(sources, opaque),
+    )
+
+
+def test_light_backend_state_keeps_optional_native_fallback() -> None:
+    assert isinstance(NATIVE_LIGHT_PROPAGATION, bool)

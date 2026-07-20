@@ -38,11 +38,34 @@ def build_parser() -> argparse.ArgumentParser:
     frame_streaming.add_argument("--frames", type=int, default=240)
     frame_streaming.add_argument("--warmup-frames", type=int, default=30)
     frame_streaming.add_argument(
+        "--quality-preset",
+        choices=("custom", "low_60", "balanced", "high", "cinematic"),
+        default=None,
+    )
+    frame_streaming.add_argument("--width", type=int, default=320)
+    frame_streaming.add_argument("--height", type=int, default=180)
+    frame_streaming.add_argument("--generation-workers", type=int, default=None)
+    frame_streaming.add_argument("--meshing-workers", type=int, default=None)
+    frame_streaming.add_argument("--path", choices=("stress", "walk"), default="stress")
+    frame_streaming.add_argument("--movement-speed", type=float, default=45.0)
+    frame_streaming.add_argument("--startup-timeout", type=float, default=10.0)
+    frame_streaming.add_argument(
+        "--startup-mode",
+        choices=("visible", "full"),
+        default="visible",
+    )
+    frame_streaming.add_argument(
+        "--backend",
+        choices=("window", "standalone"),
+        default="window",
+    )
+    frame_streaming.add_argument(
         "--profile-update",
         action="store_true",
         help="Profile measured fixed-update calls and print bounded Veilstone hotspots",
     )
     frame_streaming.add_argument("--profile-limit", type=int, default=15)
+    frame_streaming.add_argument("--screenshot-output", default=None)
     subparsers.add_parser("benchmark-network", help="Run the network protocol benchmark")
     subparsers.add_parser("benchmark-server", help="Run the multiplayer server tick benchmark")
     subparsers.add_parser("benchmark-shadows", help="Run the medium shadow frame benchmark")

@@ -463,7 +463,8 @@ def test_rgb_png_converted_to_rgba(tmp_path: Path) -> None:
 def test_default_atlas_loads_bundled_resource_pack() -> None:
     atlas = load_active_block_atlas(None, registry=create_core_block_registry())
 
-    assert atlas.width % 16 == 0
+    cell_size = atlas.tile_size + atlas.gutter_pixels * 2
+    assert atlas.width % cell_size == 0
     assert "minecraft:block/stone" in atlas.uvs
     assert "minecraft:block/grass_block_top" in atlas.uvs
 

@@ -33,6 +33,46 @@ def test_developer_benchmark_commands_are_registered() -> None:
         assert parser.parse_args([command]).command == command
 
 
+def test_frame_streaming_benchmark_accepts_low_end_contract_options() -> None:
+    args = build_parser().parse_args(
+        [
+            "benchmark-frame-streaming",
+            "--quality-preset",
+            "low_60",
+            "--width",
+            "1280",
+            "--height",
+            "720",
+            "--generation-workers",
+            "1",
+            "--meshing-workers",
+            "1",
+            "--path",
+            "walk",
+            "--movement-speed",
+            "5",
+            "--startup-timeout",
+            "15",
+            "--startup-mode",
+            "full",
+            "--backend",
+            "standalone",
+            "--screenshot-output",
+            "saves/benchmarks/rd12.png",
+        ]
+    )
+
+    assert args.quality_preset == "low_60"
+    assert (args.width, args.height) == (1280, 720)
+    assert (args.generation_workers, args.meshing_workers) == (1, 1)
+    assert args.path == "walk"
+    assert args.movement_speed == 5.0
+    assert args.startup_timeout == 15.0
+    assert args.startup_mode == "full"
+    assert args.backend == "standalone"
+    assert args.screenshot_output == "saves/benchmarks/rd12.png"
+
+
 def test_client_accepts_connect_address_and_nickname() -> None:
     args = build_parser().parse_args(
         ["client", "--connect", "127.0.0.1:25565", "--name", "Veilwalker"]

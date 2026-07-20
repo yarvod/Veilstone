@@ -4,6 +4,26 @@ This file tracks active bugs, regressions, flaky tests, and unresolved quality i
 
 ## Open
 
+### BUG-R008: Dusk Highlands form abrupt walls and pillar forests
+
+- **Status:** open
+- **Affected area:** world generation / biome blending / highland features
+- **Observed:** fresh deterministic benchmark worlds can produce a flat stone
+  wall at the Dusk Highlands boundary plus many isolated one-block-wide stone
+  columns capped with ore. The result reads as broken chunk geometry even though
+  repeated captures prove the meshes are complete.
+- **Cause:** biome selection applies the highlands `base_height = 80` immediately
+  beside plains `base_height = 64` without transition blending, while the
+  highland decorator accepts roughly 4% of individual x/z columns as pillars.
+- **Evidence:** visually inspected standalone CGL captures
+  `saves/perf_rd12_n15/rd12_low60_long_walk.png` and
+  `saves/perf_rd12_n15/rd12_low60_batched.png`; the final woods capture
+  `saves/perf_rd12_n15/rd12_low60_acceptance_nice.png` confirms fog culling and
+  streaming do not create equivalent missing geometry.
+- **Expected:** biome elevation transitions produce readable ridges/slopes, and
+  highland landmarks form sparse coherent clusters instead of a dense field of
+  isolated vertical needles.
+
 ### BUG-R007: Selection highlight shows translucent diagonal bands
 
 - **Status:** open

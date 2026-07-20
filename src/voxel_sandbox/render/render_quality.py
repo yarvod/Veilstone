@@ -23,6 +23,8 @@ class RenderQualityProfile:
     vegetation_wind: bool
     water_detail: bool
     material_quality: str
+    linear_texture_minification: bool
+    opaque_batch_chunks: int
 
 
 _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
@@ -37,6 +39,8 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         vegetation_wind=False,
         water_detail=False,
         material_quality="color-only",
+        linear_texture_minification=False,
+        opaque_batch_chunks=1,
     ),
     "balanced": RenderQualityProfile(
         preset="balanced",
@@ -49,6 +53,8 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         vegetation_wind=True,
         water_detail=True,
         material_quality="color-only",
+        linear_texture_minification=True,
+        opaque_batch_chunks=1,
     ),
     "high": RenderQualityProfile(
         preset="high",
@@ -61,6 +67,8 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         vegetation_wind=True,
         water_detail=True,
         material_quality="material-preview",
+        linear_texture_minification=True,
+        opaque_batch_chunks=1,
     ),
     "cinematic": RenderQualityProfile(
         preset="cinematic",
@@ -73,6 +81,8 @@ _PRESET_PROFILES: dict[str, RenderQualityProfile] = {
         vegetation_wind=True,
         water_detail=True,
         material_quality="material-preview",
+        linear_texture_minification=True,
+        opaque_batch_chunks=1,
     ),
 }
 
@@ -99,6 +109,8 @@ def build_custom_profile(
         vegetation_wind=True,
         water_detail=water_detail,
         material_quality=material_quality,
+        linear_texture_minification=True,
+        opaque_batch_chunks=1,
     )
 
 

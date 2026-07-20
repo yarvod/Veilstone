@@ -17,6 +17,18 @@ class RenderQueueSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class StreamingStageSample:
+    streamer_ms: float = 0.0
+    integration_ms: float = 0.0
+    relight_ms: float = 0.0
+    remesh_ms: float = 0.0
+
+    @property
+    def total_ms(self) -> float:
+        return self.streamer_ms + self.integration_ms + self.relight_ms + self.remesh_ms
+
+
+@dataclass(frozen=True, slots=True)
 class RuntimePerfSnapshot:
     fps: float = 0.0
     frame_ms: float = 0.0

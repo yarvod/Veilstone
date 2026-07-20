@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import cast
 
+import moderngl
+
 from voxel_sandbox.render.material_binding import MaterialAtlasBinding
 from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.material_shader_runtime import MaterialShaderActivation
@@ -104,8 +106,22 @@ def test_material_atlas_textures_create_only_present_roles() -> None:
     assert context.created[0].size == (1, 1)
     assert context.created[0].components == 4
     assert context.created[0].pixels == b"\x80\x80\xff\xff"
+    assert context.created[0].filter == (moderngl.LINEAR, moderngl.NEAREST)
     assert context.created[0].repeat_x is False
     assert context.created[0].repeat_y is False
+
+
+def test_material_atlas_textures_keep_nearest_minification_for_low_end_profile() -> None:
+    context = _FakeContext()
+
+    build_material_atlas_textures(
+        context,
+        _bundle_with_normal_only(),
+        (_normal_binding(),),
+        linear_minification=False,
+    )
+
+    assert context.created[0].filter == (moderngl.NEAREST, moderngl.NEAREST)
 
 
 def _normal_binding() -> MaterialAtlasBinding:

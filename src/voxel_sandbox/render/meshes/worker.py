@@ -6,6 +6,7 @@ from typing import Literal
 
 from voxel_sandbox.domain.blocks import BlockDef, BlockRegistry
 from voxel_sandbox.engine.chunks import ChunkCoord, SectionCoord
+from voxel_sandbox.engine.perf.process_priority import lower_background_process_priority
 from voxel_sandbox.render.meshes.data import MeshData
 from voxel_sandbox.render.meshes.greedy import build_greedy_mesh
 from voxel_sandbox.render.meshes.neighborhood import MeshingNeighborhood
@@ -22,6 +23,7 @@ class CompletedMesh:
 
 
 MeshTask = tuple[SectionCoord, int, MeshingNeighborhood]
+ChunkMeshRequest = tuple[tuple[MeshTask, ...], bool, bool, bool]
 
 
 class SectionMeshWorker:
@@ -52,11 +54,13 @@ class SectionMeshWorker:
             self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="meshing")
         self._pending: dict[SectionCoord, Future[CompletedMesh]] = {}
         self._pending_chunks: dict[tuple[int, int], Future[tuple[CompletedMesh, ...]]] = {}
+        self._queued_chunks: dict[tuple[int, int], ChunkMeshRequest] = {}
         self._revisions: dict[SectionCoord, int] = {}
+        self._chunk_revision_keys: dict[tuple[int, int], set[SectionCoord]] = {}
 
     @property
     def pending_count(self) -> int:
-        return len(self._pending) + len(self._pending_chunks)
+        return len(self._pending) + len(self._pending_chunks) + len(self._queued_chunks)
 
     def submit(
         self,
@@ -69,6 +73,7 @@ class SectionMeshWorker:
     ) -> None:
         revision = self._revisions.get(key, 0) + 1
         self._revisions[key] = revision
+        self._chunk_revision_keys.setdefault((key.x, key.z), set()).add(key)
         previous = self._pending.get(key)
         if previous is not None:
             previous.cancel()
@@ -106,28 +111,45 @@ class SectionMeshWorker:
         for key, neighborhood in tasks.items():
             revision = self._revisions.get(key, 0) + 1
             self._revisions[key] = revision
+            self._chunk_revision_keys.setdefault((key.x, key.z), set()).add(key)
             previous = self._pending.get(key)
             if previous is not None:
                 previous.cancel()
                 del self._pending[key]
             batch_args.append((key, revision, neighborhood))
 
-        previous_chunk = self._pending_chunks.get((coord.x, coord.z))
-        if previous_chunk is not None:
-            previous_chunk.cancel()
+        key = (coord.x, coord.z)
+        request = (
+            tuple(batch_args),
+            greedy,
+            smooth_lighting,
+            ambient_occlusion,
+        )
+        previous_chunk = self._pending_chunks.get(key)
+        if previous_chunk is not None and not previous_chunk.cancel():
+            self._queued_chunks[key] = request
+            return
+        self._queued_chunks.pop(key, None)
+        self._submit_chunk_request(key, request)
 
+    def _submit_chunk_request(
+        self,
+        key: tuple[int, int],
+        request: ChunkMeshRequest,
+    ) -> None:
+        tasks, greedy, smooth_lighting, ambient_occlusion = request
         if self._backend == "process":
-            self._pending_chunks[(coord.x, coord.z)] = self._executor.submit(
+            self._pending_chunks[key] = self._executor.submit(
                 _build_chunk_process_mesh,
-                tuple(batch_args),
+                tasks,
                 greedy,
                 smooth_lighting,
                 ambient_occlusion,
             )
         else:
-            self._pending_chunks[(coord.x, coord.z)] = self._executor.submit(
+            self._pending_chunks[key] = self._executor.submit(
                 self._build_chunk,
-                tuple(batch_args),
+                tasks,
                 greedy,
                 smooth_lighting,
                 ambient_occlusion,
@@ -153,24 +175,26 @@ class SectionMeshWorker:
             if not future.done():
                 continue
             del self._pending_chunks[key]
-            if future.cancelled():
-                continue
-            results = future.result()
-            for result in results:
-                if self._revisions.get(result.key) == result.revision:
-                    completed.append(result)
+            if not future.cancelled():
+                results = future.result()
+                for result in results:
+                    if self._revisions.get(result.key) == result.revision:
+                        completed.append(result)
+            replacement = self._queued_chunks.pop(key, None)
+            if replacement is not None:
+                self._submit_chunk_request(key, replacement)
 
         return tuple(completed)
 
     def invalidate_chunk(self, chunk_x: int, chunk_z: int) -> None:
-        chunk_future = self._pending_chunks.pop((chunk_x, chunk_z), None)
+        chunk_key = (chunk_x, chunk_z)
+        self._queued_chunks.pop(chunk_key, None)
+        chunk_future = self._pending_chunks.pop(chunk_key, None)
         if chunk_future is not None:
             chunk_future.cancel()
 
-        for key in tuple(self._revisions):
-            if key.x != chunk_x or key.z != chunk_z:
-                continue
-            self._revisions[key] += 1
+        for key in self._chunk_revision_keys.pop(chunk_key, ()):
+            self._revisions.pop(key, None)
             future = self._pending.pop(key, None)
             if future is not None:
                 future.cancel()
@@ -183,6 +207,9 @@ class SectionMeshWorker:
         self._executor.shutdown(wait=True, cancel_futures=True)
         self._pending.clear()
         self._pending_chunks.clear()
+        self._queued_chunks.clear()
+        self._revisions.clear()
+        self._chunk_revision_keys.clear()
 
     def _build(
         self,
@@ -228,6 +255,7 @@ def _initialize_process_worker(
     texture_uvs: dict[str, tuple[float, float, float, float]],
 ) -> None:
     global _process_registry, _process_texture_uvs
+    lower_background_process_priority()
     _process_registry = BlockRegistry(definitions)
     _process_texture_uvs = texture_uvs
 

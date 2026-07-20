@@ -22,6 +22,8 @@ def build_material_atlas_textures(
     context: Any,
     bundle: GeneratedMaterialAtlasBundle | None,
     bindings: tuple[MaterialAtlasBinding, ...],
+    *,
+    linear_minification: bool = True,
 ) -> dict[MaterialMapRole, MaterialAtlasTexture]:
     if bundle is None:
         return {}
@@ -31,7 +33,8 @@ def build_material_atlas_textures(
         if atlas is None:
             continue
         texture = context.texture((atlas.width, atlas.height), 4, atlas.pixels)
-        texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        minification_filter = moderngl.LINEAR if linear_minification else moderngl.NEAREST
+        texture.filter = (minification_filter, moderngl.NEAREST)
         texture.repeat_x = False
         texture.repeat_y = False
         textures[binding.role] = MaterialAtlasTexture(
@@ -46,10 +49,17 @@ def build_activated_material_atlas_textures(
     context: Any,
     activation: MaterialShaderActivation | None,
     bundle: GeneratedMaterialAtlasBundle | None,
+    *,
+    linear_minification: bool = True,
 ) -> dict[MaterialMapRole, MaterialAtlasTexture]:
     if activation is None:
         return {}
-    return build_material_atlas_textures(context, bundle, activation.material_bindings)
+    return build_material_atlas_textures(
+        context,
+        bundle,
+        activation.material_bindings,
+        linear_minification=linear_minification,
+    )
 
 
 def bind_material_atlas_textures(
