@@ -4,6 +4,17 @@
 
 ### Fixed
 
+- **Fog-bounded RD12 streaming work** - `low_60` still generates and retains the
+  full 625-chunk RD12 world, but cross-chunk relight now activates within its
+  15-block propagation radius and meshing within the exact chunk-AABB horizon
+  that can reach the 56-block fog end. Prefetched chunks take a fresh relight and
+  mesh snapshot as they approach; fog-disabled profiles retain full-distance
+  work. On the unchanged 600-frame Windows two-core walk, average improved from
+  `12.736` to `5.895 ms`, p95 from `33.509` to `12.286 ms` (`81.4 FPS`), update
+  p95 to `6.673 ms`, and the remesh tail from `103` to `9`; p99 `37.633 ms` and
+  terminal mesh/remesh `2/9` remain the active N22 blocker. Inspected frame:
+  `saves/rd12_windows_2core_n22_exact_horizon.png`. Visible movement/F3/F2:
+  `saves/n22_horizon_input_lifecycle/screenshots/veilstone_20260721_150125.png`.
 - **Bounded two-core meshing submission** - streaming now waits for expected
   cardinal neighbors before snapshotting a chunk mesh and limits executor work
   to `2 × workers`, retaining unscheduled work in the visible priority queue

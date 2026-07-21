@@ -35,11 +35,13 @@ Promoted from `PERF-B007` after N21 exposed the runtime generation, GPU upload,
 dirty, and deferred-save counters on the Windows target.
 
 Current Windows baseline: the unchanged 600-frame 1280x720 RD12 `low_60` walk
-with one generation and one meshing worker measures average `12.736 ms`, p95
-`33.509 ms`, p99 `41.569 ms`, update p95 `28.137 ms`, and render p95 `7.012 ms`.
-Meshing executor work is now bounded at `2`, but the render-owned remesh queue
-ends at `103`; the remaining blocker is cross-chunk relight plus boundary-remesh
-intake/throughput rather than GPU submission.
+with one generation and one meshing worker measures average `5.895 ms`, p95
+`12.286 ms`, p99 `37.633 ms`, update p95 `6.673 ms`, and render p95 `4.246 ms`.
+Fog-hidden RD12 chunks remain generated and loaded, while mesh work is bounded
+to the exact fog-reachable AABB horizon and cross-chunk relight to its 15-block
+propagation radius. Executor work ends at `2`, relight at `0`, and render-owned
+remesh at `9`; the remaining blocker is the p99 relight spike and terminal
+remesh tail rather than p95 or GPU submission.
 
 - [x] Profile the update-side queue growth: streaming relight measured p95
   `31.791 ms`/max `72.647 ms`; the Python mesher also cannot consume duplicate
@@ -49,13 +51,19 @@ intake/throughput rather than GPU submission.
   Executor queue max fell from `115` to `2`; inspected frame:
   `saves/rd12_windows_2core_n22_bounded_only.png`. Visible movement/F3/F2:
   `saves/n22_bounded_input_lifecycle/screenshots/veilstone_20260721_143938.png`.
-- [ ] Keep main-thread work bounded while draining the sustained mesh queue on one
-  generation and one meshing worker; next reduce/coalesce the render-owned
-  `103`-chunk boundary backlog without hiding it inside the executor.
-- [ ] Repeat the exact 600-frame RD12 command and require p95 below `16.7 ms` with
-  bounded/end-drained queues, or record the remaining measured subsystem blocker.
-- [x] Run full gates plus visible movement/F3/F2 acceptance for the bounded-meshing
-  slice on the physical target; repeat after the next player-facing streaming change.
+- [x] Bound main-thread mesh/relight intake to fog-reachable work without reducing
+  RD12 generation or loaded coverage. Average improved `12.736 -> 5.895 ms`, p95
+  `33.509 -> 12.286 ms`, and the render-owned remesh tail `103 -> 9`. Inspected
+  frame: `saves/rd12_windows_2core_n22_exact_horizon.png`.
+- [x] Repeat the exact 600-frame RD12 command and get p95 below `16.7 ms`; p95 is
+  `12.286 ms`/`81.4 FPS`. The recorded remaining subsystem blocker is p99
+  `37.633 ms` plus terminal mesh/remesh `2/9`, so N22 stays active.
+- [ ] Split cross-chunk relight propagation across bounded frame slices, then drain
+  the final remesh tail without moving work into a hidden executor queue. Reject
+  batching that trades the repeated spike for a larger single hitch.
+- [x] Run full gates plus visible movement/F3/F2 acceptance for the fog-horizon
+  slice on the physical target. Visible evidence:
+  `saves/n22_horizon_input_lifecycle/screenshots/veilstone_20260721_150125.png`.
 
 ## Check Gate
 

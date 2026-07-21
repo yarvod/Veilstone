@@ -132,6 +132,77 @@ def test_fluid_neighborhood_skips_loaded_dry_chunks() -> None:
     assert renderer._fluid_active_chunks == set()
 
 
+def test_stream_work_horizon_keeps_rd12_loaded_but_queues_only_fog_range() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    relight_edge = Chunk(ChunkCoord(1, 0))
+    visible_edge = Chunk(ChunkCoord(4, 0))
+    fogged_corner = Chunk(ChunkCoord(4, 4))
+    prefetched = Chunk(ChunkCoord(5, 0))
+    chunks = {
+        chunk.coord: chunk for chunk in (relight_edge, visible_edge, fogged_corner, prefetched)
+    }
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(render_distance=12, get_chunk=chunks.get),
+    )
+    renderer.fog_enabled = True
+    renderer.fog_end = 56.0
+    renderer._stream_mesh_active = set()
+    renderer._stream_relight_active = set()
+    renderer._stream_relight_queue = {}
+    renderer._stream_remesh_queue = {}
+
+    renderer._refresh_stream_work_horizon(ChunkCoord(0, 0))
+
+    assert visible_edge.coord in renderer._stream_mesh_active
+    assert fogged_corner.coord not in renderer._stream_mesh_active
+    assert prefetched.coord not in renderer._stream_mesh_active
+    assert renderer._stream_relight_queue == {relight_edge.coord: None}
+    assert renderer._stream_remesh_queue == {
+        relight_edge.coord: None,
+        visible_edge.coord: None,
+    }
+
+
+def test_stream_work_horizon_queues_prefetched_chunk_when_player_approaches() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    entering = Chunk(ChunkCoord(5, 0))
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(render_distance=12, get_chunk={entering.coord: entering}.get),
+    )
+    renderer.fog_enabled = True
+    renderer.fog_end = 56.0
+    renderer._stream_mesh_active = {
+        ChunkCoord(dx, dz) for dx in range(-4, 5) for dz in range(-4, 5)
+    }
+    renderer._stream_relight_active = {
+        ChunkCoord(dx, dz) for dx in range(-1, 2) for dz in range(-1, 2)
+    }
+    leaving = ChunkCoord(-4, 0)
+    renderer._stream_relight_queue = {leaving: None}
+    renderer._stream_remesh_queue = {leaving: None}
+
+    renderer._refresh_stream_work_horizon(ChunkCoord(1, 0))
+
+    assert leaving not in renderer._stream_mesh_active
+    assert leaving not in renderer._stream_remesh_queue
+    assert entering.coord not in renderer._stream_relight_queue
+    assert entering.coord in renderer._stream_remesh_queue
+
+
+def test_stream_remesh_queue_ignores_prefetched_chunks_outside_fog_horizon() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    active = Chunk(ChunkCoord(4, 0))
+    prefetched = Chunk(ChunkCoord(5, 0))
+    renderer._stream_mesh_active = {active.coord}
+    renderer._stream_remesh_queue = {}
+
+    renderer._queue_stream_remesh((active, prefetched))
+
+    assert renderer._stream_remesh_queue == {active.coord: None}
+
+
 def test_chunk_removal_coalesces_cache_updates_for_streaming_batch() -> None:
     renderer = object.__new__(DemoWorldRenderer)
     first = ChunkCoord(0, 0)

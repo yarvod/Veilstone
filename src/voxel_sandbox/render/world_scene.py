@@ -271,6 +271,8 @@ class DemoWorldRenderer:
         self.remote_mode = False
         self._stream_relight_queue: dict[ChunkCoord, None] = {}
         self._stream_remesh_queue: dict[ChunkCoord, None] = {}
+        self._stream_mesh_active: set[ChunkCoord] = set()
+        self._stream_relight_active: set[ChunkCoord] = set()
         self._streaming_frustum: Frustum | None = None
         if (
             self.shader.program is None
@@ -567,6 +569,7 @@ class DemoWorldRenderer:
         streamer_ms = 0.0
         integration_ms = 0.0
         if not self.remote_mode:
+            self._refresh_stream_work_horizon(center)
             chunk_budget = frame_budget(self.uploads_per_frame)
             stage_start = perf_counter() if profiling else 0.0
             batch = self._streamer.update(
@@ -579,9 +582,11 @@ class DemoWorldRenderer:
                 stage_start = perf_counter()
             self._remove_chunks(batch.unloaded)
             for chunk in batch.loaded:
-                self._stream_relight_queue[chunk.coord] = None
+                if self._stream_relight_relevant(chunk.coord):
+                    self._stream_relight_queue[chunk.coord] = None
             for coord in batch.unloaded:
-                self._stream_relight_queue[coord] = None
+                if self._stream_relight_relevant(coord):
+                    self._stream_relight_queue[coord] = None
             self._queue_loaded_chunk_boundaries(batch.loaded)
             self._activate_fluid_neighborhood(chunk.coord for chunk in batch.loaded)
             if profiling:
@@ -608,6 +613,63 @@ class DemoWorldRenderer:
                 relight_ms=relight_ms,
                 remesh_ms=(perf_counter() - stage_start) * 1000.0,
             )
+
+    def _refresh_stream_work_horizon(self, center: ChunkCoord) -> None:
+        render_distance = self._streamer.render_distance
+        radius = render_distance
+        if self.fog_enabled:
+            radius = min(
+                render_distance,
+                max(0, int(self.fog_end // SECTION_SIZE) + 1),
+            )
+        mesh_active = {
+            ChunkCoord(center.x + dx, center.z + dz)
+            for dx in range(-radius, radius + 1)
+            for dz in range(-radius, radius + 1)
+            if not self.fog_enabled or self._chunk_may_reach_fog_horizon(dx, dz)
+        }
+        relight_radius = radius if not self.fog_enabled else min(radius, 1)
+        relight_active = {
+            ChunkCoord(center.x + dx, center.z + dz)
+            for dx in range(-relight_radius, relight_radius + 1)
+            for dz in range(-relight_radius, relight_radius + 1)
+        }
+        if (
+            mesh_active == self._stream_mesh_active
+            and relight_active == self._stream_relight_active
+        ):
+            return
+
+        entered_mesh = mesh_active - self._stream_mesh_active
+        entered_relight = relight_active - self._stream_relight_active
+        self._stream_mesh_active = mesh_active
+        self._stream_relight_active = relight_active
+        for coord in tuple(self._stream_remesh_queue):
+            if coord not in mesh_active:
+                self._stream_remesh_queue.pop(coord, None)
+        for coord in tuple(self._stream_relight_queue):
+            if not self._stream_relight_relevant(coord):
+                self._stream_relight_queue.pop(coord, None)
+        for coord in entered_mesh:
+            chunk = self._streamer.get_chunk(coord)
+            if chunk is None:
+                continue
+            self._stream_remesh_queue[coord] = None
+        for coord in entered_relight:
+            if self._streamer.get_chunk(coord) is not None:
+                self._stream_relight_queue[coord] = None
+
+    def _chunk_may_reach_fog_horizon(self, dx: int, dz: int) -> bool:
+        gap_x = max(0, abs(dx) - 1) * SECTION_SIZE
+        gap_z = max(0, abs(dz) - 1) * SECTION_SIZE
+        return gap_x * gap_x + gap_z * gap_z <= self.fog_end * self.fog_end
+
+    def _stream_relight_relevant(self, coord: ChunkCoord) -> bool:
+        return any(
+            ChunkCoord(coord.x + dx, coord.z + dz) in self._stream_relight_active
+            for dx in (-1, 0, 1)
+            for dz in (-1, 0, 1)
+        )
 
     def _queue_loaded_chunk_boundaries(self, chunks: Iterable[Chunk]) -> None:
         affected_chunks = {chunk.coord: chunk for chunk in chunks}
@@ -653,7 +715,8 @@ class DemoWorldRenderer:
 
     def _queue_stream_remesh(self, chunks: Iterable[Chunk]) -> None:
         for chunk in chunks:
-            self._stream_remesh_queue[chunk.coord] = None
+            if chunk.coord in self._stream_mesh_active:
+                self._stream_remesh_queue[chunk.coord] = None
 
     def _flush_stream_remesh_queue(
         self,
