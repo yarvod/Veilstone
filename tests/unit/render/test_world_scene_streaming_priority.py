@@ -229,7 +229,18 @@ def test_world_scene_remesh_queue_prefers_visible_chunk_at_equal_distance() -> N
     renderer._streaming_frustum = cast(Any, _EastFacingView())
     renderer.mesh_uploads_per_frame = 1
     chunks = {offscreen: Chunk(offscreen), visible: Chunk(visible)}
-    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(get_chunk=chunks.get, expects_chunk=lambda _coord: False),
+    )
+    renderer.mesh_worker = cast(
+        Any,
+        SimpleNamespace(
+            pending_count=0,
+            max_pending_count=2,
+            is_chunk_pending=lambda _coord: False,
+        ),
+    )
     scheduled: list[ChunkCoord] = []
     renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
 
@@ -247,7 +258,18 @@ def test_world_scene_remesh_queue_prefers_collision_chunk_over_visibility() -> N
     renderer._streaming_frustum = cast(Any, _EastFacingView())
     renderer.mesh_uploads_per_frame = 1
     chunks = {critical_offscreen: Chunk(critical_offscreen), visible: Chunk(visible)}
-    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(get_chunk=chunks.get, expects_chunk=lambda _coord: False),
+    )
+    renderer.mesh_worker = cast(
+        Any,
+        SimpleNamespace(
+            pending_count=0,
+            max_pending_count=2,
+            is_chunk_pending=lambda _coord: False,
+        ),
+    )
     scheduled: list[ChunkCoord] = []
     renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
 
@@ -268,7 +290,18 @@ def test_world_scene_remesh_queue_honors_shared_frame_limit() -> None:
     renderer._streaming_frustum = None
     renderer.mesh_uploads_per_frame = 2
     chunks = {first: Chunk(first), second: Chunk(second)}
-    renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(get_chunk=chunks.get, expects_chunk=lambda _coord: False),
+    )
+    renderer.mesh_worker = cast(
+        Any,
+        SimpleNamespace(
+            pending_count=0,
+            max_pending_count=2,
+            is_chunk_pending=lambda _coord: False,
+        ),
+    )
     scheduled: list[ChunkCoord] = []
     renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
 
@@ -276,6 +309,50 @@ def test_world_scene_remesh_queue_honors_shared_frame_limit() -> None:
 
     assert len(scheduled) == 1
     assert len(renderer._stream_remesh_queue) == 1
+
+
+def test_world_scene_remesh_queue_waits_for_expected_neighbors_and_worker_capacity() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    center = ChunkCoord(0, 0)
+    expected_neighbor = ChunkCoord(1, 0)
+    chunks = {center: Chunk(center)}
+    renderer._stream_remesh_queue = {center: None}
+    renderer._streaming_frustum = None
+    renderer.mesh_uploads_per_frame = 2
+    renderer._streamer = cast(
+        Any,
+        SimpleNamespace(
+            get_chunk=chunks.get,
+            expects_chunk=lambda coord: coord == expected_neighbor,
+        ),
+    )
+    renderer.mesh_worker = cast(
+        Any,
+        SimpleNamespace(
+            pending_count=0,
+            max_pending_count=2,
+            is_chunk_pending=lambda _coord: False,
+        ),
+    )
+    scheduled: list[ChunkCoord] = []
+    renderer._schedule_chunk = lambda chunk: scheduled.append(chunk.coord)  # type: ignore[method-assign]
+
+    renderer._flush_stream_remesh_queue(center)
+
+    assert scheduled == []
+    assert renderer._stream_remesh_queue == {center: None}
+
+    chunks[expected_neighbor] = Chunk(expected_neighbor)
+    renderer.mesh_worker.pending_count = 2
+    renderer._flush_stream_remesh_queue(center)
+
+    assert scheduled == []
+
+    renderer.mesh_worker.pending_count = 1
+    renderer._flush_stream_remesh_queue(center)
+
+    assert scheduled == [center]
+    assert renderer._stream_remesh_queue == {}
 
 
 def test_world_scene_perf_queues_exposes_chunk_pipeline_work() -> None:

@@ -34,20 +34,28 @@ Windows two-core target while preserving the readable `low_60` scene.
 Promoted from `PERF-B007` after N21 exposed the runtime generation, GPU upload,
 dirty, and deferred-save counters on the Windows target.
 
-Baseline: the unchanged 600-frame 1280x720 RD12 `low_60` walk with one generation
-and one meshing worker measures average `14.637 ms`, p95 `33.474 ms`, p99
-`37.133 ms`, update p95 `28.766 ms`, and render p95 `5.942 ms`. The final mesh
-queue remains at `115`, so the current blocker is update/meshing throughput rather
-than GPU submission.
+Current Windows baseline: the unchanged 600-frame 1280x720 RD12 `low_60` walk
+with one generation and one meshing worker measures average `12.736 ms`, p95
+`33.509 ms`, p99 `41.569 ms`, update p95 `28.137 ms`, and render p95 `7.012 ms`.
+Meshing executor work is now bounded at `2`, but the render-owned remesh queue
+ends at `103`; the remaining blocker is cross-chunk relight plus boundary-remesh
+intake/throughput rather than GPU submission.
 
-- [ ] Profile the update-side queue growth with streaming-stage samples and the
-  N21 counters; identify generation, relight, remesh scheduling, or Python mesh
-  fallback cost before changing budgets.
+- [x] Profile the update-side queue growth: streaming relight measured p95
+  `31.791 ms`/max `72.647 ms`; the Python mesher also cannot consume duplicate
+  intermediate boundary requests at the sprint intake rate.
+- [x] Bound ProcessPool meshing to `2 × workers` in-flight/replacement requests
+  and wait for expected cardinal neighbors before building a chunk snapshot.
+  Executor queue max fell from `115` to `2`; inspected frame:
+  `saves/rd12_windows_2core_n22_bounded_only.png`. Visible movement/F3/F2:
+  `saves/n22_bounded_input_lifecycle/screenshots/veilstone_20260721_143938.png`.
 - [ ] Keep main-thread work bounded while draining the sustained mesh queue on one
-  generation and one meshing worker; avoid hiding backlog with a shorter route.
+  generation and one meshing worker; next reduce/coalesce the render-owned
+  `103`-chunk boundary backlog without hiding it inside the executor.
 - [ ] Repeat the exact 600-frame RD12 command and require p95 below `16.7 ms` with
   bounded/end-drained queues, or record the remaining measured subsystem blocker.
-- [ ] Run full gates plus visible movement/F3/F2 acceptance on the physical target.
+- [x] Run full gates plus visible movement/F3/F2 acceptance for the bounded-meshing
+  slice on the physical target; repeat after the next player-facing streaming change.
 
 ## Check Gate
 

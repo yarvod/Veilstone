@@ -4,6 +4,16 @@
 
 ### Fixed
 
+- **Bounded two-core meshing submission** - streaming now waits for expected
+  cardinal neighbors before snapshotting a chunk mesh and limits executor work
+  to `2 × workers`, retaining unscheduled work in the visible priority queue
+  instead of accumulating duplicate intermediate ProcessPool requests. On the
+  600-frame Windows RD12 sprint, executor queue max/end fell from `115/115` to
+  `2/2` and average frame time improved from `14.637` to `12.736 ms`; p95 remains
+  red at `33.509 ms` with render-owned remesh queue `103`, so physical two-core
+  acceptance continues in Phase N22. Inspected frame:
+  `saves/rd12_windows_2core_n22_bounded_only.png`. Visible movement/F3/F2:
+  `saves/n22_bounded_input_lifecycle/screenshots/veilstone_20260721_143938.png`.
 - **Windows low-end worker and local build fallback** - background generation and
   meshing processes now request Windows `BELOW_NORMAL_PRIORITY_CLASS`, matching
   the existing POSIX frame-owner preference. Optional Cython acceleration no

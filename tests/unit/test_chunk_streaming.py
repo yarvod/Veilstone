@@ -84,6 +84,8 @@ def test_streamer_reuses_desired_coords_until_center_or_distance_changes() -> No
     try:
         streamer.update(center, max_completed=0, max_submitted=0)
         first = streamer._desired
+        assert streamer.expects_chunk(ChunkCoord(1, 1)) is True
+        assert streamer.expects_chunk(ChunkCoord(2, 0)) is False
 
         streamer.update(center, max_completed=0, max_submitted=0)
 

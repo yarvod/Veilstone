@@ -57,10 +57,19 @@ class SectionMeshWorker:
         self._queued_chunks: dict[tuple[int, int], ChunkMeshRequest] = {}
         self._revisions: dict[SectionCoord, int] = {}
         self._chunk_revision_keys: dict[tuple[int, int], set[SectionCoord]] = {}
+        self._max_pending = max(1, workers * 2)
 
     @property
     def pending_count(self) -> int:
         return len(self._pending) + len(self._pending_chunks) + len(self._queued_chunks)
+
+    @property
+    def max_pending_count(self) -> int:
+        return self._max_pending
+
+    def is_chunk_pending(self, coord: ChunkCoord) -> bool:
+        key = (coord.x, coord.z)
+        return key in self._pending_chunks or key in self._queued_chunks
 
     def submit(
         self,

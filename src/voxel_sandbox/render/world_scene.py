@@ -662,9 +662,24 @@ class DemoWorldRenderer:
         collision_chunks: frozenset[ChunkCoord] | None = None,
         limit: int | None = None,
     ) -> None:
-        for key in drain_grouped_priority_keys(
-            self._stream_remesh_queue,
+        available_slots = max(
+            0,
+            self.mesh_worker.max_pending_count - self.mesh_worker.pending_count,
+        )
+        budget = min(
             self.mesh_uploads_per_frame if limit is None else limit,
+            available_slots,
+        )
+        if budget <= 0:
+            return
+        eligible = {
+            coord: None
+            for coord in self._stream_remesh_queue
+            if not self.mesh_worker.is_chunk_pending(coord) and self._stream_mesh_ready(coord)
+        }
+        for key in drain_grouped_priority_keys(
+            eligible,
+            budget,
             lambda coord: chunk_distance((coord.x, coord.z), (center.x, center.z)),
             lambda coord: streaming_priority(
                 0,
@@ -675,9 +690,19 @@ class DemoWorldRenderer:
                 None if collision_chunks is None else coord in collision_chunks,
             )[1:],
         ):
+            self._stream_remesh_queue.pop(key, None)
             chunk = self._streamer.get_chunk(key)
             if chunk is not None:
                 self._schedule_chunk(chunk)
+
+    def _stream_mesh_ready(self, coord: ChunkCoord) -> bool:
+        for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            neighbor = ChunkCoord(coord.x + dx, coord.z + dz)
+            if self._streamer.get_chunk(neighbor) is None and self._streamer.expects_chunk(
+                neighbor
+            ):
+                return False
+        return True
 
     def render(
         self,

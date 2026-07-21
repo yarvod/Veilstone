@@ -81,6 +81,8 @@ def test_mesh_worker_coalesces_chunk_replacements_while_running() -> None:
     worker = _BlockingMeshWorker()
     coord = ChunkCoord(0, 0)
     try:
+        assert worker.max_pending_count == 2
+        assert worker.is_chunk_pending(coord) is False
         worker.submit_chunk(
             coord,
             {},
@@ -89,6 +91,7 @@ def test_mesh_worker_coalesces_chunk_replacements_while_running() -> None:
             ambient_occlusion=False,
         )
         assert worker.started.wait(timeout=2.0)
+        assert worker.is_chunk_pending(coord) is True
 
         for _ in range(3):
             worker.submit_chunk(
@@ -107,6 +110,7 @@ def test_mesh_worker_coalesces_chunk_replacements_while_running() -> None:
             time.sleep(0.001)
 
         assert worker.pending_count == 0
+        assert worker.is_chunk_pending(coord) is False
         assert worker.build_calls == 2
     finally:
         worker.release.set()

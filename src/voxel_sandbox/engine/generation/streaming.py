@@ -107,6 +107,11 @@ class ChunkStreamer:
     def loaded_chunks(self) -> tuple[Chunk, ...]:
         return tuple(self._loaded.values())
 
+    def expects_chunk(self, coord: ChunkCoord) -> bool:
+        """Return whether the active streaming footprint still needs a chunk."""
+
+        return coord in self._desired
+
     def set_render_distance(self, render_distance: int) -> bool:
         if render_distance < 0:
             raise ValueError("Render distance cannot be negative")
