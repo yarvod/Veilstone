@@ -41,8 +41,10 @@ def test_hud_debug_snapshot_formats_window_state_without_controller_reads() -> N
     assert "Biome plains Memory 123 MB" in snapshot.text
     assert "Resource pack Faithful" in snapshot.text
     assert (
-        "Chunks 9 Pending 1 Mesh queue 2 Stream relight 5 Stream remesh 3 Visible sections 4"
+        "Chunks 9 Generation jobs 1 Mesh queue 2 Stream relight 5 "
+        "Stream remesh 3 Visible sections 4"
     ) in snapshot.text
+    assert "GPU uploads 17 Dirty chunks 6 Pending saves 2" in snapshot.text
     assert "Entities 5 Mobs 2 Drops 1 Entity draws 7" in snapshot.text
     assert "Network singleplayer Known players 1" in snapshot.text
     assert "Runtime Python test Frame 1280x720" in snapshot.text
@@ -116,6 +118,9 @@ def _fake_window() -> SimpleNamespace:
                 pending_stream_relights=5,
                 pending_stream_remeshes=3,
                 visible_sections=4,
+                completed_gpu_uploads=17,
+                dirty_chunks=6,
+                pending_saves=2,
             ),
         ),
         camera=SimpleNamespace(

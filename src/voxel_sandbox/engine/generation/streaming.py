@@ -82,6 +82,13 @@ class ChunkStreamer:
     def pending_save_count(self) -> int:
         return len(self._deferred_saves)
 
+    @property
+    def dirty_chunk_count(self) -> int:
+        """Count dirty in-memory chunks without touching world storage."""
+
+        chunks = {**self._deferred_saves, **self._loaded}
+        return sum(self._needs_save(chunk) for chunk in chunks.values())
+
     def prime(self, coord: ChunkCoord) -> Chunk:
         chunk = self._loaded.get(coord)
         if chunk is None:

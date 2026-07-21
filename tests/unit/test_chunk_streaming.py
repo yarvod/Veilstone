@@ -6,7 +6,7 @@ import threading
 import time
 from pathlib import Path
 
-from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
+from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, DirtyFlag
 from voxel_sandbox.engine.generation import ChunkStreamer, TerrainGenerator, WorldSeed
 from voxel_sandbox.infrastructure.storage import WorldStorage
 
@@ -139,6 +139,10 @@ def test_streamer_exposes_loaded_world_blocks_and_mutation() -> None:
         assert original != 0
         assert streamer.set_block(8, 1, 8, 0)
         assert streamer.get_block(8, 1, 8) == 0
+        assert streamer.dirty_chunk_count == 1
+        for section in streamer.get_chunk(ChunkCoord(0, 0)).sections:  # type: ignore[union-attr]
+            section.clear_dirty(DirtyFlag.SAVE)
+        assert streamer.dirty_chunk_count == 0
         assert not streamer.set_block(32, 1, 32, 1)
 
         streamer.update(ChunkCoord(4, 0), max_completed=0)

@@ -52,6 +52,7 @@ artifacts = ["src/voxel_sandbox/engine/perf/*.so", "src/voxel_sandbox/engine/per
 
 [tool.hatch.build.targets.wheel.hooks.cython]
 dependencies = ["hatch-cython>=0.6.0rc1,<0.7"]
+enable-by-default = false
 
 [tool.hatch.build.targets.wheel.hooks.cython.options]
 src = "voxel_sandbox"

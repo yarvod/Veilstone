@@ -59,7 +59,7 @@ class SectionMeshCache:
     def upload(self, key: SectionCoord, mesh: MeshData) -> None:
         self.apply({key: mesh})
 
-    def apply(self, updates: Mapping[SectionCoord, MeshData | None]) -> None:
+    def apply(self, updates: Mapping[SectionCoord, MeshData | None]) -> int:
         affected: set[SectionCoord] = set()
         for key, mesh in updates.items():
             batch_key = self._batch_key(key)
@@ -71,16 +71,15 @@ class SectionMeshCache:
                 sections[key] = mesh
             if not sections:
                 self._batch_sections.pop(batch_key, None)
-        for batch_key in affected:
-            self._rebuild(batch_key)
+        return sum(self._rebuild(batch_key) for batch_key in affected)
 
-    def _rebuild(self, batch_key: SectionCoord) -> None:
+    def _rebuild(self, batch_key: SectionCoord) -> bool:
         previous = self._meshes.pop(batch_key, None)
         if previous is not None:
             previous.release()
         sections = self._batch_sections.get(batch_key)
         if not sections:
-            return
+            return False
         mesh, origin, minimum, maximum = combine_section_meshes(batch_key, sections)
         vertex_buffer = self.context.buffer(mesh.vertices.tobytes())
         index_buffer = self.context.buffer(mesh.indices.tobytes())
@@ -152,6 +151,7 @@ class SectionMeshCache:
             vertex_array,
             depth_vertex_array,
         )
+        return True
 
     def get(self, key: SectionCoord) -> GpuSectionMesh | None:
         return self._meshes.get(self._batch_key(key))

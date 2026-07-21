@@ -12,6 +12,9 @@ def test_runtime_perf_tracker_combines_frame_timings_and_queues() -> None:
         pending_stream_relights=5,
         pending_stream_remeshes=4,
         visible_sections=32,
+        completed_gpu_uploads=18,
+        dirty_chunks=6,
+        pending_saves=2,
     )
 
     tracker.record_update(0.004)
@@ -24,6 +27,7 @@ def test_runtime_perf_tracker_combines_frame_timings_and_queues() -> None:
     assert snapshot.render_ms == 6.0
     assert snapshot.bottleneck == "render"
     assert snapshot.queues == queues
+    assert snapshot.queues.generation_jobs == 2
 
 
 def test_render_queue_snapshot_defaults_hidden_work_to_zero() -> None:
@@ -31,6 +35,9 @@ def test_render_queue_snapshot_defaults_hidden_work_to_zero() -> None:
 
     assert queues.pending_stream_relights == 0
     assert queues.pending_stream_remeshes == 0
+    assert queues.completed_gpu_uploads == 0
+    assert queues.dirty_chunks == 0
+    assert queues.pending_saves == 0
 
 
 def test_runtime_perf_tracker_uses_recorded_frame_time_without_fps() -> None:

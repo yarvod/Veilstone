@@ -178,24 +178,3 @@ class WorldGenerationConfig:
 - **Candidate work:** queue-based propagation budgets, chunk-local dirty masks,
   cross-chunk neighbor invalidation tests, and stress scenes for breaking blocks
   near water/light sources.
-
-### PERF-B007: Physical Two-Core 60 FPS Acceptance
-
-- **Status:** open
-- **Observed:** the full 625-chunk RD12 720p contract passes locally on Apple M4
-  with one generation and one meshing worker at p95 `6.235 ms`, p99 `9.411 ms`,
-  max `15.918 ms`, and all queues drained, but this host cannot prove behavior
-  on the intended physical two-core CPU class.
-- **Desired:** a `low_60` profile targets stable 60 FPS at 720p on a two-core
-  CPU-class machine before high-end visual effects are enabled. The profile can
-  look simpler, but it must remain readable, Minecraft-like, and free of chunk
-  upload stutter during normal walking.
-- **Architecture direction:** measure first. Keep frame timing and queue
-  counters outside render hot paths, then tune worker counts, upload budgets,
-  render distance, and shader variants through `RenderQualityProfile`.
-- **Candidate work:** run the N15 command and visible walking route unchanged on
-  representative two-core hardware; attach machine details, frame percentiles,
-  queue state, and F2 evidence without changing the benchmark scenario.
-- **Acceptance idea:** benchmark output proves p95 frame time stays below
-  16.7 ms on the target low profile in a controlled scene, or documents the
-  measured blocker subsystem before any expensive visual feature is promoted.

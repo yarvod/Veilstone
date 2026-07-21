@@ -24,6 +24,10 @@ class FluidUpdate:
         return self.changed_blocks > 0 or bool(self.neighbor_keys)
 
 
+def chunk_contains_water(chunk: Chunk, *, water_id: int = WATER_BLOCK_ID) -> bool:
+    return any(np.any(section.blocks == water_id) for section in chunk.sections)
+
+
 def _is_source(level: int) -> bool:
     return level == 0 or level >= FLUID_MAX_LEVEL
 

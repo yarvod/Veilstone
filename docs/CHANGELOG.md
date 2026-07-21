@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- **Windows low-end worker and local build fallback** - background generation and
+  meshing processes now request Windows `BELOW_NORMAL_PRIORITY_CLASS`, matching
+  the existing POSIX frame-owner preference. Optional Cython acceleration no
+  longer makes a local editable install require MSVC; package CI explicitly
+  enables the native hook. Dry chunks are no longer activated for fluid ticks,
+  avoiding one full water scan for every streamed land chunk.
 - **Sustained RD12 sprint streaming** - `ChunkStreamer` now reuses its 625-entry
   desired-coordinate set while the player remains inside one chunk and
   invalidates it on center or render-distance changes, removing repeated hot-path
@@ -134,6 +140,16 @@
 
 ### Added
 
+- **Runtime chunk pipeline diagnostics** - the existing immutable performance
+  snapshot and F3 overlay now expose generation jobs, cumulative completed GPU
+  batch uploads, dirty in-memory chunks, and deferred saves. Dirty counts scan
+  only in-memory state and are sampled at most twice per second; queue and save
+  counters remain O(1). The unchanged 600-frame Windows two-core RD12 `low_60`
+  walk measured average `14.637 ms`, p95 `33.474 ms`, p99 `37.133 ms`, update p95
+  `28.766 ms`, render p95 `5.942 ms`, and ended with mesh queue `115`, promoting
+  the measured update/meshing blocker to Phase N22. Inspected benchmark frame:
+  `saves/rd12_windows_2core_n21.png`. Visible movement/F3 and normal F2 evidence:
+  `saves/n21_input_lifecycle/screenshots/veilstone_20260721_134814.png`.
 - **RD12 low-end rendering pipeline** - the production-world standalone CGL
   benchmark can now wait for all 625 radius-12 chunks, profile update work,
   split render submission from GPU wait, report stage timing/draw calls, pace

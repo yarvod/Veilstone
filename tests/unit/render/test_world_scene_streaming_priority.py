@@ -16,7 +16,7 @@ from voxel_sandbox.engine.chunks import (
     ChunkCoord,
     SectionCoord,
 )
-from voxel_sandbox.engine.fluids import FluidUpdate
+from voxel_sandbox.engine.fluids import WATER_BLOCK_ID, FluidUpdate
 from voxel_sandbox.render.material_metadata import MaterialMapRole
 from voxel_sandbox.render.texture_atlas import GeneratedAtlas
 from voxel_sandbox.render.world_scene import (
@@ -106,10 +106,12 @@ def test_world_scene_terrain_height_uses_floored_world_coordinates() -> None:
     assert renderer.terrain_height_at(8.9, -2.1) == 797.0
 
 
-def test_fluid_neighborhood_activates_only_loaded_chunks() -> None:
+def test_fluid_neighborhood_activates_only_loaded_water_chunks() -> None:
     renderer = object.__new__(DemoWorldRenderer)
     center = Chunk(ChunkCoord(0, 0))
     east = Chunk(ChunkCoord(1, 0))
+    center.set_block(8, 1, 8, WATER_BLOCK_ID)
+    east.set_block(8, 1, 8, WATER_BLOCK_ID)
     chunks = {center.coord: center, east.coord: east}
     renderer._streamer = cast(Any, SimpleNamespace(get_chunk=chunks.get))
     renderer._fluid_active_chunks = set()
@@ -117,6 +119,17 @@ def test_fluid_neighborhood_activates_only_loaded_chunks() -> None:
     renderer._activate_fluid_neighborhood((center.coord,))
 
     assert renderer._fluid_active_chunks == {center.coord, east.coord}
+
+
+def test_fluid_neighborhood_skips_loaded_dry_chunks() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    center = Chunk(ChunkCoord(0, 0))
+    renderer._streamer = cast(Any, SimpleNamespace(get_chunk={center.coord: center}.get))
+    renderer._fluid_active_chunks = set()
+
+    renderer._activate_fluid_neighborhood((center.coord,))
+
+    assert renderer._fluid_active_chunks == set()
 
 
 def test_chunk_removal_coalesces_cache_updates_for_streaming_batch() -> None:
@@ -265,19 +278,62 @@ def test_world_scene_remesh_queue_honors_shared_frame_limit() -> None:
     assert len(renderer._stream_remesh_queue) == 1
 
 
-def test_world_scene_perf_queues_exposes_pending_relight_work() -> None:
+def test_world_scene_perf_queues_exposes_chunk_pipeline_work() -> None:
     renderer = object.__new__(DemoWorldRenderer)
-    renderer._streamer = SimpleNamespace(loaded_count=7, pending_count=2)
+    renderer._streamer = SimpleNamespace(
+        loaded_count=7,
+        pending_count=2,
+        pending_save_count=4,
+        dirty_chunk_count=5,
+    )
     renderer.mesh_worker = SimpleNamespace(pending_count=3)
     renderer._stream_relight_queue = {ChunkCoord(0, 0): None, ChunkCoord(1, 0): None}
     renderer._stream_remesh_queue = {ChunkCoord(0, 0): None}
     renderer.visible_sections = 9
+    renderer._completed_gpu_uploads = 11
+    renderer._dirty_chunk_sample = 1
+    renderer._next_pipeline_diagnostic_sample = 0.0
 
     queues = renderer.perf_queues()
 
     assert queues.loaded_chunks == 7
     assert queues.pending_chunks == 2
+    assert queues.generation_jobs == 2
     assert queues.pending_meshes == 3
     assert queues.pending_stream_relights == 2
     assert queues.pending_stream_remeshes == 1
     assert queues.visible_sections == 9
+    assert queues.completed_gpu_uploads == 11
+    assert queues.dirty_chunks == 5
+    assert queues.pending_saves == 4
+
+
+def test_world_scene_perf_queues_bounds_dirty_chunk_sampling() -> None:
+    class DiagnosticStreamer:
+        loaded_count = 7
+        pending_count = 2
+        pending_save_count = 4
+        dirty_reads = 0
+
+        @property
+        def dirty_chunk_count(self) -> int:
+            self.dirty_reads += 1
+            return 5
+
+    renderer = object.__new__(DemoWorldRenderer)
+    streamer = DiagnosticStreamer()
+    renderer._streamer = cast(Any, streamer)
+    renderer.mesh_worker = SimpleNamespace(pending_count=3)
+    renderer._stream_relight_queue = {}
+    renderer._stream_remesh_queue = {}
+    renderer.visible_sections = 9
+    renderer._completed_gpu_uploads = 11
+    renderer._dirty_chunk_sample = 1
+    renderer._next_pipeline_diagnostic_sample = float("inf")
+
+    assert renderer.perf_queues().dirty_chunks == 1
+    assert streamer.dirty_reads == 0
+
+    renderer._next_pipeline_diagnostic_sample = 0.0
+    assert renderer.perf_queues().dirty_chunks == 5
+    assert streamer.dirty_reads == 1

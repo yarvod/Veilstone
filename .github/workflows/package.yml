@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   native-build:
+    env:
+      HATCH_BUILD_HOOK_ENABLE_CYTHON: "true"
     strategy:
       fail-fast: false
       matrix:

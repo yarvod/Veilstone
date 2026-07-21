@@ -14,6 +14,15 @@ class RenderQueueSnapshot:
     pending_stream_relights: int = 0
     pending_stream_remeshes: int = 0
     visible_sections: int = 0
+    completed_gpu_uploads: int = 0
+    dirty_chunks: int = 0
+    pending_saves: int = 0
+
+    @property
+    def generation_jobs(self) -> int:
+        """Expose the existing pending-chunk counter with its runtime meaning."""
+
+        return self.pending_chunks
 
 
 @dataclass(frozen=True, slots=True)

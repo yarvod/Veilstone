@@ -25,7 +25,12 @@ from voxel_sandbox.engine.chunks import (
     SectionCoord,
     split_world_axis,
 )
-from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
+from voxel_sandbox.engine.fluids import (
+    FLUID_MAX_LEVEL,
+    WATER_BLOCK_ID,
+    chunk_contains_water,
+    simulate_water_step,
+)
 from voxel_sandbox.engine.generation import find_safe_spawn
 from voxel_sandbox.engine.lighting import effective_light_level, relight_chunks
 from voxel_sandbox.engine.physics import RaycastHit, collision_chunk_footprint, voxel_raycast
@@ -86,6 +91,8 @@ from voxel_sandbox.render.texture_packs.importer import (
     load_active_block_atlas,
     load_material_atlas_bundle,
 )
+
+_PIPELINE_DIAGNOSTIC_INTERVAL_SECONDS = 0.5
 
 
 def _configure_block_texture(
@@ -295,13 +302,19 @@ class DemoWorldRenderer:
         self.highlight = BlockHighlightRenderer(context)
         self.visible_sections = 0
         self.draw_calls = 0
+        self._completed_gpu_uploads = 0
+        self._dirty_chunk_sample = self._streamer.dirty_chunk_count
+        self._next_pipeline_diagnostic_sample = (
+            perf_counter() + _PIPELINE_DIAGNOSTIC_INTERVAL_SECONDS
+        )
         self._streaming_stage_profiling = False
         self.last_streaming_stage_sample = StreamingStageSample()
         self.face_count = 0
         self.triangle_count = 0
         self.selection: RaycastHit | None = None
         initial_chunk = self._streamer.prime(ChunkCoord(0, 0))
-        self._fluid_active_chunks.add(initial_chunk.coord)
+        if chunk_contains_water(initial_chunk):
+            self._fluid_active_chunks.add(initial_chunk.coord)
         self._upload_chunk_sync(initial_chunk)
 
     @property
@@ -393,6 +406,10 @@ class DemoWorldRenderer:
         )
 
     def perf_queues(self) -> RenderQueueSnapshot:
+        now = perf_counter()
+        if now >= self._next_pipeline_diagnostic_sample:
+            self._dirty_chunk_sample = self._streamer.dirty_chunk_count
+            self._next_pipeline_diagnostic_sample = now + _PIPELINE_DIAGNOSTIC_INTERVAL_SECONDS
         return RenderQueueSnapshot(
             loaded_chunks=self.loaded_chunks,
             pending_chunks=self.pending_chunks,
@@ -400,6 +417,9 @@ class DemoWorldRenderer:
             pending_stream_relights=len(self._stream_relight_queue),
             pending_stream_remeshes=len(self._stream_remesh_queue),
             visible_sections=self.visible_sections,
+            completed_gpu_uploads=self._completed_gpu_uploads,
+            dirty_chunks=self._dirty_chunk_sample,
+            pending_saves=self._streamer.pending_save_count,
         )
 
     def get_block(self, x: int, y: int, z: int) -> int:
@@ -601,13 +621,15 @@ class DemoWorldRenderer:
         self._queue_stream_remesh(affected_chunks.values())
 
     def _activate_fluid_neighborhood(self, coordinates: Iterable[ChunkCoord]) -> None:
+        candidates: set[ChunkCoord] = set()
         for coord in coordinates:
-            if self._streamer.get_chunk(coord) is not None:
-                self._fluid_active_chunks.add(coord)
+            candidates.add(coord)
             for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                neighbor = ChunkCoord(coord.x + dx, coord.z + dz)
-                if self._streamer.get_chunk(neighbor) is not None:
-                    self._fluid_active_chunks.add(neighbor)
+                candidates.add(ChunkCoord(coord.x + dx, coord.z + dz))
+        for coord in candidates:
+            chunk = self._streamer.get_chunk(coord)
+            if chunk is not None and chunk_contains_water(chunk):
+                self._fluid_active_chunks.add(coord)
 
     def _flush_stream_relight_queue(
         self,
@@ -677,8 +699,8 @@ class DemoWorldRenderer:
                 continue
             opaque_updates[completed.key] = completed.mesh
             water_updates[completed.key] = completed.transparent_mesh
-        self.mesh_cache.apply(opaque_updates)
-        self.water_mesh_cache.apply(water_updates)
+        self._completed_gpu_uploads += self.mesh_cache.apply(opaque_updates)
+        self._completed_gpu_uploads += self.water_mesh_cache.apply(water_updates)
 
         light_matrix = (
             sun_light_matrix(
@@ -965,8 +987,8 @@ class DemoWorldRenderer:
             mesh, water_mesh = self._build_mesh(key, section)
             opaque_updates[key] = mesh
             water_updates[key] = water_mesh
-        self.mesh_cache.apply(opaque_updates)
-        self.water_mesh_cache.apply(water_updates)
+        self._completed_gpu_uploads += self.mesh_cache.apply(opaque_updates)
+        self._completed_gpu_uploads += self.water_mesh_cache.apply(water_updates)
 
     def _remove_chunks(self, coords: Iterable[ChunkCoord]) -> None:
         unloaded = tuple(coords)

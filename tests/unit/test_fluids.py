@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord, ChunkSection, DirtyFlag
-from voxel_sandbox.engine.fluids import FLUID_MAX_LEVEL, WATER_BLOCK_ID, simulate_water_step
+from voxel_sandbox.engine.fluids import (
+    FLUID_MAX_LEVEL,
+    WATER_BLOCK_ID,
+    chunk_contains_water,
+    simulate_water_step,
+)
 from voxel_sandbox.render.meshes import build_greedy_mesh, build_visible_face_mesh, build_water_mesh
 from voxel_sandbox.tools.benchmark_mesher import UVS
 
@@ -190,3 +195,13 @@ def test_no_cross_chunk_flow_without_neighbor() -> None:
 
     result = simulate_water_step(left, neighbors=None)
     assert not result.neighbor_keys
+
+
+def test_chunk_water_detection_skips_dry_terrain() -> None:
+    chunk = _chunk_with_stone_floor(ChunkCoord(0, 0))
+
+    assert chunk_contains_water(chunk) is False
+
+    chunk.set_block(8, 1, 8, WATER_BLOCK_ID)
+
+    assert chunk_contains_water(chunk) is True

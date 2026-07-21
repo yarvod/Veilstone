@@ -197,6 +197,7 @@ def run_input_lifecycle_smoke(
             window.on_activate()
             focus_recaptured = bool(window.mouse_captured)
 
+            window.on_key_press(key.F3, 0)
             for _ in range(5):
                 frame(update=False)
             before = set((root / "screenshots").glob("*.png"))
