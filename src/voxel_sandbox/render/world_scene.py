@@ -32,7 +32,7 @@ from voxel_sandbox.engine.fluids import (
     simulate_water_step,
 )
 from voxel_sandbox.engine.generation import find_safe_spawn
-from voxel_sandbox.engine.lighting import effective_light_level, relight_chunks
+from voxel_sandbox.engine.lighting import RelightChunksJob, effective_light_level, relight_chunks
 from voxel_sandbox.engine.physics import RaycastHit, collision_chunk_footprint, voxel_raycast
 from voxel_sandbox.render.atmosphere import (
     celestial_light_direction,
@@ -271,8 +271,10 @@ class DemoWorldRenderer:
         self.remote_mode = False
         self._stream_relight_queue: dict[ChunkCoord, None] = {}
         self._stream_remesh_queue: dict[ChunkCoord, None] = {}
+        self._stream_relight_job: RelightChunksJob | None = None
         self._stream_mesh_active: set[ChunkCoord] = set()
         self._stream_relight_active: set[ChunkCoord] = set()
+        self._stream_work_horizon_key: tuple[ChunkCoord, int, bool, float] | None = None
         self._streaming_frustum: Frustum | None = None
         if (
             self.shader.program is None
@@ -416,7 +418,8 @@ class DemoWorldRenderer:
             loaded_chunks=self.loaded_chunks,
             pending_chunks=self.pending_chunks,
             pending_meshes=self.pending_meshes,
-            pending_stream_relights=len(self._stream_relight_queue),
+            pending_stream_relights=len(self._stream_relight_queue)
+            + int(self._stream_relight_job is not None),
             pending_stream_remeshes=len(self._stream_remesh_queue),
             visible_sections=self.visible_sections,
             completed_gpu_uploads=self._completed_gpu_uploads,
@@ -616,6 +619,10 @@ class DemoWorldRenderer:
 
     def _refresh_stream_work_horizon(self, center: ChunkCoord) -> None:
         render_distance = self._streamer.render_distance
+        horizon_key = (center, render_distance, self.fog_enabled, self.fog_end)
+        if horizon_key == self._stream_work_horizon_key:
+            return
+        self._stream_work_horizon_key = horizon_key
         radius = render_distance
         if self.fog_enabled:
             radius = min(
@@ -699,6 +706,12 @@ class DemoWorldRenderer:
         *,
         collision_chunks: frozenset[ChunkCoord] | None = None,
     ) -> bool:
+        if self._stream_relight_job is not None:
+            if self._stream_relight_job.step():
+                self._queue_stream_remesh(self._stream_relight_job.changed_chunks)
+                self._stream_relight_job = None
+            return True
+
         centers = drain_grouped_priority_keys(
             self._stream_relight_queue,
             self.uploads_per_frame,
@@ -710,7 +723,11 @@ class DemoWorldRenderer:
             )[1:],
         )
         if centers:
-            self._queue_stream_remesh(self._relight_neighborhood(centers))
+            job = RelightChunksJob(self._relight_neighborhood_chunks(centers), self._registry)
+            if job.done:
+                self._queue_stream_remesh(job.changed_chunks)
+            else:
+                self._stream_relight_job = job
         return bool(centers)
 
     def _queue_stream_remesh(self, chunks: Iterable[Chunk]) -> None:
@@ -1146,6 +1163,9 @@ class DemoWorldRenderer:
             self._schedule_section(key)
 
     def _relight_neighborhood(self, centers: Iterable[ChunkCoord]) -> tuple[Chunk, ...]:
+        return relight_chunks(self._relight_neighborhood_chunks(centers), self._registry)
+
+    def _relight_neighborhood_chunks(self, centers: Iterable[ChunkCoord]) -> tuple[Chunk, ...]:
         coordinates = {
             ChunkCoord(center.x + dx, center.z + dz)
             for center in centers
@@ -1157,7 +1177,7 @@ class DemoWorldRenderer:
             for coord in sorted(coordinates, key=lambda item: (item.x, item.z))
             if (chunk := self._streamer.get_chunk(coord)) is not None
         )
-        return relight_chunks(chunks, self._registry)
+        return chunks
 
     def _schedule_chunk(self, chunk: Chunk) -> None:
         tasks = {}

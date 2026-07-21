@@ -35,13 +35,15 @@ Promoted from `PERF-B007` after N21 exposed the runtime generation, GPU upload,
 dirty, and deferred-save counters on the Windows target.
 
 Current Windows baseline: the unchanged 600-frame 1280x720 RD12 `low_60` walk
-with one generation and one meshing worker measures average `5.895 ms`, p95
-`12.286 ms`, p99 `37.633 ms`, update p95 `6.673 ms`, and render p95 `4.246 ms`.
+with one generation and one meshing worker measures average `5.410 ms`, p95
+`11.706 ms`, p99 `15.906 ms`, update p95 `8.805 ms`, and render p95 `3.795 ms`.
 Fog-hidden RD12 chunks remain generated and loaded, while mesh work is bounded
 to the exact fog-reachable AABB horizon and cross-chunk relight to its 15-block
-propagation radius. Executor work ends at `2`, relight at `0`, and render-owned
-remesh at `9`; the remaining blocker is the p99 relight spike and terminal
-remesh tail rather than p95 or GPU submission.
+propagation radius. Cross-chunk propagation is sliced one exact NumPy iteration
+per frame and the unchanged horizon is cached between chunk transitions.
+Executor work ends at `2`, relight at `0`, and render-owned remesh at `15`;
+both p95 and p99 now clear 60 FPS, while the terminal remesh tail and `24.873 ms`
+worst frame remain open.
 
 - [x] Profile the update-side queue growth: streaming relight measured p95
   `31.791 ms`/max `72.647 ms`; the Python mesher also cannot consume duplicate
@@ -55,15 +57,19 @@ remesh tail rather than p95 or GPU submission.
   RD12 generation or loaded coverage. Average improved `12.736 -> 5.895 ms`, p95
   `33.509 -> 12.286 ms`, and the render-owned remesh tail `103 -> 9`. Inspected
   frame: `saves/rd12_windows_2core_n22_exact_horizon.png`.
-- [x] Repeat the exact 600-frame RD12 command and get p95 below `16.7 ms`; p95 is
-  `12.286 ms`/`81.4 FPS`. The recorded remaining subsystem blocker is p99
-  `37.633 ms` plus terminal mesh/remesh `2/9`, so N22 stays active.
-- [ ] Split cross-chunk relight propagation across bounded frame slices, then drain
-  the final remesh tail without moving work into a hidden executor queue. Reject
-  batching that trades the repeated spike for a larger single hitch.
+- [x] Repeat the exact 600-frame RD12 command and get p95 and p99 below `16.7 ms`:
+  p95 is `11.706 ms`/`85.4 FPS`, p99 `15.906 ms`/`62.9 FPS`, and max
+  `24.873 ms`. Inspected frame:
+  `saves/rd12_windows_2core_n22_incremental_cached.png`.
+- [x] Split cross-chunk relight propagation into one result-equivalent iteration
+  per frame and cache the fog horizon while center/quality state is unchanged.
+  The synchronous `45.794 ms` worst frame fell to `24.873 ms`; an active job is
+  included in the public/F3 relight queue count.
+- [ ] Drain the final render-owned remesh tail (`15`) without hiding it in the
+  executor; next measure section-granular relight remesh versus full-chunk rebuilds.
 - [x] Run full gates plus visible movement/F3/F2 acceptance for the fog-horizon
-  slice on the physical target. Visible evidence:
-  `saves/n22_horizon_input_lifecycle/screenshots/veilstone_20260721_150125.png`.
+  and incremental-relight slices on the physical target. Latest visible evidence:
+  `saves/n22_incremental_input_lifecycle/screenshots/veilstone_20260721_151909.png`.
 
 ## Check Gate
 

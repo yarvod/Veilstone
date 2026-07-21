@@ -9,6 +9,7 @@ from typing import Any, cast
 import moderngl
 import pytest
 
+from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import (
     CHUNK_HEIGHT,
     SECTION_SIZE,
@@ -149,6 +150,7 @@ def test_stream_work_horizon_keeps_rd12_loaded_but_queues_only_fog_range() -> No
     renderer.fog_end = 56.0
     renderer._stream_mesh_active = set()
     renderer._stream_relight_active = set()
+    renderer._stream_work_horizon_key = None
     renderer._stream_relight_queue = {}
     renderer._stream_remesh_queue = {}
 
@@ -179,6 +181,7 @@ def test_stream_work_horizon_queues_prefetched_chunk_when_player_approaches() ->
     renderer._stream_relight_active = {
         ChunkCoord(dx, dz) for dx in range(-1, 2) for dz in range(-1, 2)
     }
+    renderer._stream_work_horizon_key = (ChunkCoord(0, 0), 12, True, 56.0)
     leaving = ChunkCoord(-4, 0)
     renderer._stream_relight_queue = {leaving: None}
     renderer._stream_remesh_queue = {leaving: None}
@@ -191,6 +194,34 @@ def test_stream_work_horizon_queues_prefetched_chunk_when_player_approaches() ->
     assert entering.coord in renderer._stream_remesh_queue
 
 
+def test_stream_work_horizon_reuses_unchanged_center_and_quality_state() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+
+    class HorizonStreamer:
+        render_distance = 12
+        reads = 0
+
+        def get_chunk(self, _coord: ChunkCoord) -> None:
+            self.reads += 1
+
+    streamer = HorizonStreamer()
+    renderer._streamer = cast(Any, streamer)
+    renderer.fog_enabled = True
+    renderer.fog_end = 56.0
+    renderer._stream_mesh_active = set()
+    renderer._stream_relight_active = set()
+    renderer._stream_work_horizon_key = None
+    renderer._stream_relight_queue = {}
+    renderer._stream_remesh_queue = {}
+
+    renderer._refresh_stream_work_horizon(ChunkCoord(0, 0))
+    first_reads = streamer.reads
+    renderer._refresh_stream_work_horizon(ChunkCoord(0, 0))
+
+    assert first_reads > 0
+    assert streamer.reads == first_reads
+
+
 def test_stream_remesh_queue_ignores_prefetched_chunks_outside_fog_horizon() -> None:
     renderer = object.__new__(DemoWorldRenderer)
     active = Chunk(ChunkCoord(4, 0))
@@ -201,6 +232,35 @@ def test_stream_remesh_queue_ignores_prefetched_chunks_outside_fog_horizon() -> 
     renderer._queue_stream_remesh((active, prefetched))
 
     assert renderer._stream_remesh_queue == {active.coord: None}
+
+
+def test_stream_relight_advances_incrementally_before_queuing_remesh() -> None:
+    renderer = object.__new__(DemoWorldRenderer)
+    center = ChunkCoord(0, 0)
+    chunk = Chunk(center)
+    chunk.set_block(8, 8, 8, 7)
+    renderer._registry = create_core_block_registry()
+    renderer._streamer = cast(Any, SimpleNamespace(get_chunk={center: chunk}.get))
+    renderer._stream_relight_queue = {center: None}
+    renderer._stream_remesh_queue = {}
+    renderer._stream_relight_job = None
+    renderer._stream_mesh_active = {center}
+    renderer._streaming_frustum = None
+    renderer.uploads_per_frame = 1
+
+    assert renderer._flush_stream_relight_queue(center) is True
+    assert renderer._stream_relight_job is not None
+    assert renderer._stream_relight_queue == {}
+    assert renderer._stream_remesh_queue == {}
+
+    frames = 0
+    while renderer._stream_relight_job is not None:
+        assert renderer._flush_stream_relight_queue(center) is True
+        frames += 1
+        assert frames < 32
+
+    assert frames > 1
+    assert renderer._stream_remesh_queue == {center: None}
 
 
 def test_chunk_removal_coalesces_cache_updates_for_streaming_batch() -> None:
@@ -436,6 +496,7 @@ def test_world_scene_perf_queues_exposes_chunk_pipeline_work() -> None:
     )
     renderer.mesh_worker = SimpleNamespace(pending_count=3)
     renderer._stream_relight_queue = {ChunkCoord(0, 0): None, ChunkCoord(1, 0): None}
+    renderer._stream_relight_job = None
     renderer._stream_remesh_queue = {ChunkCoord(0, 0): None}
     renderer.visible_sections = 9
     renderer._completed_gpu_uploads = 11
@@ -473,6 +534,7 @@ def test_world_scene_perf_queues_bounds_dirty_chunk_sampling() -> None:
     renderer._streamer = cast(Any, streamer)
     renderer.mesh_worker = SimpleNamespace(pending_count=3)
     renderer._stream_relight_queue = {}
+    renderer._stream_relight_job = None
     renderer._stream_remesh_queue = {}
     renderer.visible_sections = 9
     renderer._completed_gpu_uploads = 11

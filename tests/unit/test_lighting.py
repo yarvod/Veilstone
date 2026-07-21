@@ -7,7 +7,12 @@ from numpy.typing import NDArray
 
 from voxel_sandbox.domain.blocks import create_core_block_registry
 from voxel_sandbox.engine.chunks import Chunk, ChunkCoord
-from voxel_sandbox.engine.lighting import effective_light_level, relight_chunk, relight_chunks
+from voxel_sandbox.engine.lighting import (
+    RelightChunksJob,
+    effective_light_level,
+    relight_chunk,
+    relight_chunks,
+)
 from voxel_sandbox.engine.lighting.propagation import _propagate_light
 from voxel_sandbox.engine.perf.light_propagation import (
     NATIVE_LIGHT_PROPAGATION,
@@ -116,6 +121,43 @@ def test_block_light_propagates_across_loaded_chunk_boundary() -> None:
 
     assert left.sections[0].block_light.max() == 0
     assert right.sections[0].block_light.max() == 0
+
+
+def test_incremental_relight_matches_synchronous_cross_chunk_result() -> None:
+    expected_left = Chunk(ChunkCoord(0, 0))
+    expected_right = Chunk(ChunkCoord(1, 0))
+    actual_left = Chunk(ChunkCoord(0, 0))
+    actual_right = Chunk(ChunkCoord(1, 0))
+    expected_left.set_block(15, 8, 8, 7)
+    actual_left.set_block(15, 8, 8, 7)
+    registry = create_core_block_registry()
+
+    expected_changed = relight_chunks((expected_left, expected_right), registry)
+    job = RelightChunksJob((actual_left, actual_right), registry)
+
+    assert not job.done
+    assert actual_right.sections[0].block_light.max() == 0
+    steps = 0
+    while not job.step():
+        steps += 1
+        assert steps < 32
+
+    assert steps > 1
+    assert [chunk.coord for chunk in job.changed_chunks] == [
+        chunk.coord for chunk in expected_changed
+    ]
+    for expected, actual in zip(
+        (expected_left, expected_right),
+        (actual_left, actual_right),
+        strict=True,
+    ):
+        for expected_section, actual_section in zip(
+            expected.sections,
+            actual.sections,
+            strict=True,
+        ):
+            np.testing.assert_array_equal(actual_section.sky_light, expected_section.sky_light)
+            np.testing.assert_array_equal(actual_section.block_light, expected_section.block_light)
 
 
 def test_effective_spawn_light_tracks_daylight_and_block_sources() -> None:

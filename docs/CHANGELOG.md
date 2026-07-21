@@ -4,6 +4,18 @@
 
 ### Fixed
 
+- **Frame-sliced cross-chunk lighting** - streaming relight now prepares an
+  atomic result-equivalent job and advances one light-propagation iteration per
+  frame; chunk light arrays and remesh work change only after the complete job.
+  The F3 relight counter includes active work, and an unchanged fog horizon is
+  cached instead of rebuilding coordinate sets every frame. On the unchanged
+  Windows two-core RD12 walk, average is `5.410 ms`, p95 `11.706 ms` (`85.4
+  FPS`), p99 `15.906 ms` (`62.9 FPS`), and max `24.873 ms`, down from the
+  synchronous `45.794 ms` max. Terminal mesh/remesh `2/15` remains active N22
+  work. Incremental and synchronous cross-boundary light arrays are regression
+  tested for exact equality. Inspected frame:
+  `saves/rd12_windows_2core_n22_incremental_cached.png`. Visible F3/F2:
+  `saves/n22_incremental_input_lifecycle/screenshots/veilstone_20260721_151909.png`.
 - **Fog-bounded RD12 streaming work** - `low_60` still generates and retains the
   full 625-chunk RD12 world, but cross-chunk relight now activates within its
   15-block propagation radius and meshing within the exact chunk-AABB horizon
